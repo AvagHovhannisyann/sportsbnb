@@ -24,6 +24,8 @@ serve(async (req) => {
       imagePrompt = `Create a modern, clean sports team logo/emblem for a team described as: "${prompt}". The logo should be circular or shield-shaped, professional quality, vibrant colors, suitable for a sports team. No text in the image. Simple, iconic design.`;
     } else if (type === "avatar") {
       imagePrompt = `Create a stylish, modern avatar/profile picture based on this description: "${prompt}". The avatar should be a unique, artistic representation suitable for a sports platform profile picture. Clean design, vibrant colors, no real human faces. Abstract or character-style.`;
+    } else if (type === "blog-cover") {
+      imagePrompt = prompt;
     } else {
       imagePrompt = prompt;
     }
