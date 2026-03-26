@@ -42,6 +42,7 @@ import {
 import { Plus, Pencil, Trash2, Eye, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const generateSlug = (title: string) =>
   title
@@ -110,18 +111,52 @@ const BlogPostsTab = () => {
     }));
   };
 
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  const generateCoverImage = async (title: string, content: string, keyword: string): Promise<string | null> => {
+    try {
+      setIsGeneratingImage(true);
+      const { data, error } = await supabase.functions.invoke("generate-ai-image", {
+        body: {
+          prompt: `Create a visually striking, professional blog header image for an article titled "${title}". The article is about: ${keyword || content.slice(0, 200)}. Style: modern, clean, sports-themed with vibrant colors. No text in the image. Landscape orientation, suitable as a blog cover.`,
+          type: "blog-cover",
+          bucket: "blog-images",
+          path: `covers/${Date.now()}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}.png`,
+        },
+      });
+      if (error) throw error;
+      return data?.url || null;
+    } catch (err) {
+      console.error("Failed to generate cover image:", err);
+      return null;
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!form.title.trim() || !form.content.trim()) return;
 
+    let formToSave = { ...form };
+
+    // Auto-generate cover image if publishing and no cover image set
+    if (form.is_published && !form.cover_image_url) {
+      const imageUrl = await generateCoverImage(form.title, form.content, form.target_keyword);
+      if (imageUrl) {
+        formToSave.cover_image_url = imageUrl;
+        setForm((p) => ({ ...p, cover_image_url: imageUrl }));
+      }
+    }
+
     if (editingId) {
-      await updatePost.mutateAsync({ id: editingId, ...form });
+      await updatePost.mutateAsync({ id: editingId, ...formToSave });
     } else {
-      await createPost.mutateAsync(form);
+      await createPost.mutateAsync(formToSave);
     }
     setDialogOpen(false);
   };
 
-  const isSaving = createPost.isPending || updatePost.isPending;
+  const isSaving = createPost.isPending || updatePost.isPending || isGeneratingImage;
 
   return (
     <Card>
@@ -328,7 +363,7 @@ const BlogPostsTab = () => {
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !form.title.trim() || !form.content.trim()}>
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingId ? "Save Changes" : "Create Post"}
+              {isGeneratingImage ? "Generating cover image..." : editingId ? "Save Changes" : "Create Post"}
             </Button>
           </DialogFooter>
         </DialogContent>
