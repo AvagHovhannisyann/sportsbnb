@@ -363,7 +363,7 @@ const BlogPostsTab = () => {
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !form.title.trim() || !form.content.trim()}>
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingId ? "Save Changes" : "Create Post"}
+              {isGeneratingImage ? "Generating cover image..." : editingId ? "Save Changes" : "Create Post"}
             </Button>
           </DialogFooter>
         </DialogContent>
