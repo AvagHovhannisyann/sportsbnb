@@ -74,6 +74,8 @@ const VenueMapPage = lazy(() => import("./pages/VenueMapPage"));
 const OwnerAnalyticsPage = lazy(() => import("./pages/owner/OwnerAnalyticsPage"));
 const NearbyFieldsPage = lazy(() => import("./pages/NearbyFieldsPage"));
 const SubmitFieldPage = lazy(() => import("./pages/SubmitFieldPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 
 const queryClient = new QueryClient();
 
@@ -168,6 +170,8 @@ const App = () => {
                     <Route path="/settings" element={<Navigate to="/profile" replace />} />
                     {/* Info Pages */}
                     <Route path="/for-owners" element={<ForOwnersPage />} />
+                    <Route path="/blog" element={<BlogPage />} />
+                    <Route path="/blog/:slug" element={<BlogPostPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/faq" element={<FAQPage />} />
