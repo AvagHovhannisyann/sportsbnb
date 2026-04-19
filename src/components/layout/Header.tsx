@@ -48,12 +48,12 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
-      <div className="container flex h-28 md:h-[108px] items-center justify-between gap-6 pl-4 md:pl-6">
-        <div className="flex items-center gap-8 md:gap-12">
-          <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-3">
+      <div className="container flex h-16 md:h-[64px] items-center justify-between gap-6 pl-4 md:pl-6">
+        <div className="flex items-center gap-8 md:gap-10">
+          <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-2">
             <Logo
               variant="full"
-              className="h-14 md:h-20 w-auto transition-transform group-hover:scale-[1.02]"
+              className="h-10 md:h-12 w-auto transition-transform group-hover:scale-[1.02]"
             />
           </Link>
 
@@ -70,7 +70,7 @@ const Header = () => {
               >
                 {link.label}
                 {isActive(link.href) && (
-                  <span className="absolute left-3.5 right-3.5 -bottom-[23px] h-0.5 bg-primary rounded-full" />
+                  <span className="absolute left-3.5 right-3.5 -bottom-[17px] h-0.5 bg-primary rounded-full" />
                 )}
               </Link>
             ))}
