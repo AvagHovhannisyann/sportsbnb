@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ type AuthMode = "password" | "magic-link";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
   const { user, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("password");
@@ -162,7 +164,7 @@ const LoginPage = () => {
 
   const handleLoginSuccess = async (userId: string | undefined) => {
     toast.success("Welcome back!");
-    
+
     if (userId) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -171,14 +173,21 @@ const LoginPage = () => {
         .maybeSingle();
 
       if (profile && !profile.onboarding_completed) {
-        navigate(profile.user_type === "owner" ? "/onboarding/owner" : "/onboarding/player");
-      } else if (profile?.user_type === "owner") {
-        navigate("/owner-dashboard");
+        navigate(profile.user_type === "owner" ? "/onboarding/owner" : "/onboarding/player", { replace: true });
+        return;
+      }
+      // Honor the page the user was trying to reach before login
+      if (redirectTo && redirectTo !== "/login") {
+        navigate(redirectTo, { replace: true });
+        return;
+      }
+      if (profile?.user_type === "owner") {
+        navigate("/owner-dashboard", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     } else {
-      navigate("/dashboard");
+      navigate(redirectTo && redirectTo !== "/login" ? redirectTo : "/dashboard", { replace: true });
     }
   };
 
