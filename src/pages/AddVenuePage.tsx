@@ -598,18 +598,12 @@ const AddVenuePage = () => {
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       {uploadingImages ? "Uploading photos..." : "Saving..."}
                     </>
-                  ) : canListVenues ? (
-                    "Add Venue"
                   ) : (
-                    <>
-                      <FileEdit className="h-4 w-4 mr-2" />
-                      Save as Draft
-                    </>
+                    "Add Venue"
                   )}
                 </Button>
               </div>
             </form>
-          )}
           </div>
       </div>
     </Layout>
