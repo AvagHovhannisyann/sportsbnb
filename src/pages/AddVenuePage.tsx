@@ -535,6 +535,75 @@ const AddVenuePage = () => {
                 </CardContent>
               </Card>
 
+              {/* Booking Contact (WhatsApp / SMS) */}
+              <Card className={validationErrors.phone ? 'border-destructive' : ''}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 text-[#25D366]" />
+                    Booking Contact
+                  </CardTitle>
+                  <CardDescription>
+                    Players will contact you directly via WhatsApp or SMS to confirm bookings. This is required.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">WhatsApp / Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+374 99 11 22 33"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        setFormData({ ...formData, phone: e.target.value });
+                        setValidationErrors(prev => ({ ...prev, phone: '' }));
+                      }}
+                    />
+                    {formData.phone && !validationErrors.phone && (
+                      <p className="text-xs text-muted-foreground">
+                        Will be saved as: {formatPhoneDisplay(formData.phone)}
+                      </p>
+                    )}
+                    {validationErrors.phone && (
+                      <p className="text-sm text-destructive">{validationErrors.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactName">Contact Person (optional)</Label>
+                    <Input
+                      id="contactName"
+                      placeholder="e.g. Aram"
+                      value={formData.contactName}
+                      onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                      maxLength={80}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <Label>Accept WhatsApp messages</Label>
+                      <p className="text-xs text-muted-foreground">Recommended — most players prefer this</p>
+                    </div>
+                    <Switch
+                      checked={formData.whatsappEnabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <Label>Accept SMS as fallback</Label>
+                      <p className="text-xs text-muted-foreground">Used when WhatsApp isn't available</p>
+                    </div>
+                    <Switch
+                      checked={formData.smsEnabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Pricing & Settings */}
               <Card>
                 <CardHeader>
