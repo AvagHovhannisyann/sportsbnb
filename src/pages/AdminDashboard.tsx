@@ -73,6 +73,7 @@ import { format } from "date-fns";
 const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissionsTab"));
 const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
 const BlogPostsTab = lazy(() => import("@/components/admin/BlogPostsTab"));
+const BookingLeadsTab = lazy(() => import("@/components/admin/BookingLeadsTab"));
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -197,12 +198,10 @@ const AdminDashboard = () => {
             <div className="overflow-x-auto -mx-4 px-4 mb-6">
               <TabsList className="w-max min-w-full">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="leads">Booking Leads</TabsTrigger>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="venues">Venues</TabsTrigger>
                 <TabsTrigger value="bookings">Bookings</TabsTrigger>
-                <TabsTrigger value="games">Games</TabsTrigger>
-                <TabsTrigger value="fields">Fields</TabsTrigger>
-                <TabsTrigger value="discovery">AI Discovery</TabsTrigger>
                 <TabsTrigger value="blog">Blog</TabsTrigger>
               </TabsList>
             </div>
