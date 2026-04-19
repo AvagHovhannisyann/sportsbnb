@@ -154,31 +154,51 @@ const HomePage = () => {
     fetchReviews();
   }, []);
 
-  const featureRows = [
-    [
-      { icon: Search, label: "Smart Search" }, { icon: Calendar, label: "Instant Booking" },
-      { icon: MapPin, label: "Interactive Map" }, { icon: Bot, label: "AI Matchmaking" },
-      { icon: Trophy, label: "Leaderboards" }, { icon: Award, label: "XP & Achievements" },
-      { icon: Bell, label: "Notifications" }, { icon: Clock, label: "Waitlist" },
-      { icon: Star, label: "Reviews" }, { icon: TrendingUp, label: "Dynamic Pricing" },
-      { icon: BrainCircuit, label: "Smart Scheduling" }, { icon: CloudSun, label: "Weather" },
-    ],
-    [
-      { icon: BarChart3, label: "Analytics" }, { icon: Image, label: "Photo Gallery" },
-      { icon: Layers, label: "Multi-Court" }, { icon: Gamepad2, label: "Open Games" },
-      { icon: Users, label: "Teams" }, { icon: MessageCircle, label: "Chat" },
-      { icon: CreditCard, label: "Payments" }, { icon: Repeat, label: "Recurring" },
-      { icon: Split, label: "Split Payments" }, { icon: Flame, label: "Streaks" },
-      { icon: GitCompare, label: "Venue Compare" }, { icon: UserCircle, label: "Player Profiles" },
-    ],
-    [
-      { icon: UserPlus, label: "Referrals" }, { icon: Shield, label: "Verified Venues" },
-      { icon: Wifi, label: "Real-Time" }, { icon: Map, label: "Geolocation" },
-      { icon: Globe, label: "Multi-Currency" }, { icon: Sparkles, label: "AI Recommendations" },
-      { icon: Building, label: "Owner Dashboard" }, { icon: Zap, label: "Embeddable Widgets" },
-      { icon: Swords, label: "Challenges" }, { icon: Activity, label: "Live Occupancy" },
-      { icon: Lock, label: "Two-Factor Auth" },
-    ],
+  const featureGroups = [
+    {
+      eyebrow: "Find & Book",
+      title: "Discover venues in seconds",
+      description: "Search, see live availability, and reserve your court without a single phone call.",
+      items: [
+        { icon: Search, label: "Smart Search" },
+        { icon: Calendar, label: "Instant Booking" },
+        { icon: Wifi, label: "Real-Time Availability" },
+        { icon: Map, label: "Interactive Map" },
+      ],
+    },
+    {
+      eyebrow: "Play & Connect",
+      title: "Find your team, join a game",
+      description: "Open games, teams, and chat — built so you spend more time playing.",
+      items: [
+        { icon: Gamepad2, label: "Open Games" },
+        { icon: Users, label: "Teams" },
+        { icon: MessageCircle, label: "Chat" },
+        { icon: UserCircle, label: "Player Profiles" },
+      ],
+    },
+    {
+      eyebrow: "For Owners",
+      title: "Run your venue like a pro",
+      description: "One dashboard for schedule, payments, and growth — zero commissions.",
+      items: [
+        { icon: Building, label: "Owner Dashboard" },
+        { icon: CreditCard, label: "Payments" },
+        { icon: BarChart3, label: "Analytics" },
+        { icon: TrendingUp, label: "Dynamic Pricing" },
+      ],
+    },
+    {
+      eyebrow: "Smart Features",
+      title: "Powered by AI",
+      description: "Recommendations, matchmaking, and scheduling that actually understand the game.",
+      items: [
+        { icon: Sparkles, label: "AI Recommendations" },
+        { icon: Bot, label: "Matchmaking" },
+        { icon: CloudSun, label: "Weather" },
+        { icon: BrainCircuit, label: "Smart Scheduling" },
+      ],
+    },
   ];
 
   return (
