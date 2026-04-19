@@ -215,22 +215,6 @@ const HomePage = () => {
             variants={staggerContainer}
             transition={{ staggerChildren: 0.15, delayChildren: 0.2 }}
           >
-            {/* Trust badge */}
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm px-4 py-2 mb-6 md:mb-8"
-            >
-              <div className="flex -space-x-2">
-                {[founderAvag, founderGor, founderIrina].map((img, i) => (
-                  <img key={i} src={img} alt="" className="w-6 h-6 rounded-full border-2 border-black/50 object-cover" />
-                ))}
-              </div>
-              <span className="text-xs md:text-sm font-medium text-primary-foreground/90">
-                Trusted by players worldwide
-              </span>
-            </motion.div>
-
             <motion.h1
               variants={fadeUp}
               transition={sectionTransition}
