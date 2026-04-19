@@ -33,7 +33,6 @@ const HeroSearch = () => {
       setIsLocating(false);
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
@@ -52,93 +51,85 @@ const HeroSearch = () => {
   };
 
   return (
-    <div className="space-y-3 md:space-y-4">
-      <div className="bg-background/95 backdrop-blur-md rounded-xl md:rounded-2xl shadow-2xl p-1.5 md:p-3 border border-border/50">
-        <div className="flex flex-col md:flex-row gap-1 md:gap-0">
-          {/* Location */}
-          <div className="flex-1 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 md:border-r border-border/50">
-            <MapPin className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground shrink-0" />
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground block mb-0.5">
-                Location
-              </label>
-              <input
-                type="text"
-                placeholder="City or neighborhood"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/60 text-sm focus:outline-none"
-              />
-            </div>
+    <div className="rounded-2xl bg-card/95 backdrop-blur-xl shadow-2xl border border-border/60 p-2 md:p-2.5">
+      <div className="flex flex-col md:flex-row md:items-stretch gap-1 md:gap-0">
+        {/* Location */}
+        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2.5 md:border-r border-border/70">
+          <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              Location
+            </label>
+            <input
+              type="text"
+              placeholder="City or neighborhood"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/60 text-sm font-medium focus:outline-none"
+            />
           </div>
+        </div>
 
-          {/* Sport */}
-          <div className="flex-1 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 md:border-r border-border/50">
-            <Search className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground shrink-0" />
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground block mb-0.5">
-                Sport
-              </label>
-              <Select value={sport} onValueChange={setSport}>
-                <SelectTrigger className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm focus:ring-0">
-                  <SelectValue placeholder="Any sport" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any sport</SelectItem>
-                  {sportTypes.map((s) => (
-                    <SelectItem key={s} value={s.toLowerCase()}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Sport */}
+        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2.5 md:border-r border-border/70">
+          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              Sport
+            </label>
+            <Select value={sport} onValueChange={setSport}>
+              <SelectTrigger className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
+                <SelectValue placeholder="Any sport" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any sport</SelectItem>
+                {sportTypes.map((s) => (
+                  <SelectItem key={s} value={s.toLowerCase()}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        </div>
 
-          {/* When */}
-          <div className="flex-1 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 md:border-r border-border/50">
-            <Calendar className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground shrink-0" />
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground block mb-0.5">
-                When
-              </label>
-              <Select value={when} onValueChange={setWhen}>
-                <SelectTrigger className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm focus:ring-0">
-                  <SelectValue placeholder="Any time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                  <SelectItem value="this-week">This week</SelectItem>
-                  <SelectItem value="this-weekend">This weekend</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* When */}
+        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2.5 md:border-r border-border/70">
+          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              When
+            </label>
+            <Select value={when} onValueChange={setWhen}>
+              <SelectTrigger className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
+                <SelectValue placeholder="Any time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                <SelectItem value="this-week">This week</SelectItem>
+                <SelectItem value="this-weekend">This weekend</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        </div>
 
-          {/* Buttons */}
-          <div className="flex gap-2 px-2 py-2">
-            <Button 
-              onClick={handleNearMe}
-              variant="outline"
-              size="default"
-              disabled={isLocating}
-              className="h-10 md:h-12 px-3 md:px-4 rounded-xl text-sm"
-            >
-              <Navigation className={`h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2 ${isLocating ? 'animate-pulse' : ''}`} />
-              <span className="hidden sm:inline">{isLocating ? "Locating..." : "Near me"}</span>
-              <span className="sm:hidden">{isLocating ? "..." : "Near"}</span>
-            </Button>
-            <Button 
-              onClick={handleSearch}
-              size="default"
-              className="flex-1 md:flex-none h-10 md:h-12 px-6 md:px-8 rounded-xl text-sm md:text-base"
-            >
-              <Search className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
-              Search
-            </Button>
-          </div>
+        {/* Buttons */}
+        <div className="flex gap-2 p-1.5 md:p-1">
+          <Button
+            onClick={handleNearMe}
+            variant="outline"
+            disabled={isLocating}
+            className="h-12 px-4 rounded-xl"
+          >
+            <Navigation className={`h-4 w-4 ${isLocating ? "animate-pulse" : ""}`} />
+            <span className="hidden sm:inline">{isLocating ? "Locating…" : "Near me"}</span>
+          </Button>
+          <Button onClick={handleSearch} className="flex-1 md:flex-none h-12 px-7 rounded-xl font-semibold">
+            <Search className="h-4 w-4" />
+            Search
+          </Button>
         </div>
       </div>
     </div>

@@ -43,16 +43,18 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="container flex h-14 md:h-16 items-center justify-between">
-        <div className="flex items-center gap-4 md:gap-8">
-          <Link to="/" className="flex items-center gap-1.5 md:gap-2">
-            <img 
-              src="/favicon.png" 
-              alt="Sportsbnb" 
-              className="h-8 w-8 md:h-10 md:w-10 rounded-lg"
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <div className="container flex h-16 md:h-[68px] items-center justify-between">
+        <div className="flex items-center gap-6 md:gap-10">
+          <Link to="/" className="flex items-center gap-2 group">
+            <img
+              src="/favicon.png"
+              alt="Sportsbnb"
+              className="h-8 w-8 md:h-9 md:w-9 rounded-lg transition-transform group-hover:scale-105"
             />
-            <span className="text-lg md:text-xl font-semibold text-foreground">Sportsbnb</span>
+            <span className="font-display text-lg md:text-xl font-bold text-foreground tracking-extra-tight">
+              Sportsbnb
+            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
@@ -60,13 +62,16 @@ const Header = () => {
               <Link
                 key={link.href}
                 to={link.href}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`relative px-3.5 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive(link.href)
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {link.label}
+                {isActive(link.href) && (
+                  <span className="absolute left-3.5 right-3.5 -bottom-[19px] h-0.5 bg-primary rounded-full" />
+                )}
               </Link>
             ))}
           </nav>

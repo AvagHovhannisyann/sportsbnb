@@ -192,7 +192,7 @@ const HomePage = () => {
       </Helmet>
 
       {/* ── Hero ── */}
-      <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden bg-secondary">
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -204,85 +204,90 @@ const HomePage = () => {
             height={1080}
             decoding="async"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-secondary/85 via-secondary/65 to-secondary/95" />
+          <div className="absolute inset-0 bg-grid-soft opacity-[0.06]" />
         </div>
 
-        <div className="container relative z-10 py-16 pb-28 md:py-0 md:pb-32">
+        <div className="container relative z-10 py-20 pb-32 md:py-0 md:pb-36">
           <motion.div
-            className="max-w-5xl mx-auto text-center"
+            className="max-w-5xl mx-auto"
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            transition={{ staggerChildren: 0.15, delayChildren: 0.2 }}
+            transition={{ staggerChildren: 0.12, delayChildren: 0.15 }}
           >
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="flex justify-center mb-7 md:mb-9"
+            >
+              <span className="inline-flex items-center gap-2 rounded-full border border-secondary-foreground/15 bg-secondary-foreground/[0.06] backdrop-blur px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground/80">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                Now booking via WhatsApp
+              </span>
+            </motion.div>
+
             <motion.h1
               variants={fadeUp}
               transition={sectionTransition}
-              className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground leading-[0.92] tracking-tighter mb-5 md:mb-8"
+              className="text-display-2xl text-secondary-foreground text-center text-balance mb-6 md:mb-8"
             >
-              Book courts.
+              Book the court.
               <br />
-              <span className="text-primary">Find games.</span>
-              <br />
-              Play more.
+              <span className="italic font-normal text-secondary-foreground/85">Play the game.</span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
               transition={sectionTransition}
-              className="text-base md:text-xl lg:text-2xl text-primary-foreground/60 leading-relaxed max-w-2xl mx-auto mb-8 md:mb-12 px-4"
+              className="text-lg md:text-xl text-secondary-foreground/65 leading-relaxed max-w-xl mx-auto text-center mb-10 md:mb-14 px-4"
             >
-              Book sports facilities. Find games. Play more.
+              The fastest way to find and book sports venues — message the owner directly, no friction.
             </motion.p>
 
             <motion.div
               variants={fadeUp}
               transition={sectionTransition}
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8 md:mb-12 px-4"
+              className="max-w-4xl mx-auto px-1 mb-10 md:mb-14"
             >
-              <Link to="/venues">
-                <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold shadow-2xl hover:shadow-primary/25 gap-2">
-                  Start playing today
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/for-owners">
-                <Button
-                  variant="ghost"
-                  size="xl"
-                  className="w-full sm:w-auto rounded-full font-semibold text-primary-foreground/90 hover:text-primary-foreground hover:bg-primary-foreground/10 border border-primary-foreground/20"
-                >
-                  <Building className="h-5 w-5 mr-2" />
-                  I'm a venue owner
-                </Button>
-              </Link>
+              <HeroSearch />
             </motion.div>
 
             <motion.div
               variants={fadeUp}
               transition={sectionTransition}
-              className="max-w-4xl mx-auto px-1"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4"
             >
-              <HeroSearch />
+              <Link to="/venues">
+                <Button size="xl" variant="default" className="w-full sm:w-auto gap-2">
+                  Browse all venues
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link to="/for-owners">
+                <Button size="xl" variant="heroOutline" className="w-full sm:w-auto">
+                  <Building className="h-5 w-5" />
+                  I'm a venue owner
+                </Button>
+              </Link>
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Scroll indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 hidden md:block">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 0.8 }}
-            className="w-6 h-10 rounded-full border-2 border-primary-foreground/20 flex items-start justify-center p-2"
+            className="w-6 h-10 rounded-full border border-secondary-foreground/20 flex items-start justify-center p-2"
           >
-            <div className="w-1 h-2 bg-primary-foreground/40 rounded-full animate-bounce" />
+            <div className="w-1 h-2 bg-secondary-foreground/40 rounded-full animate-bounce" />
           </motion.div>
         </div>
       </section>
 
       {/* ── Social Proof Stats ── */}
-      <section className="relative z-10 -mt-12 md:-mt-16 pb-8 md:pb-0">
+      <section className="relative z-10 -mt-14 md:-mt-20 pb-8 md:pb-0">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -290,13 +295,17 @@ const HomePage = () => {
             viewport={{ once: true }}
             variants={fadeUp}
             transition={sectionTransition}
-            className="bg-card border border-border/50 rounded-2xl md:rounded-3xl shadow-xl p-6 md:p-10 max-w-4xl mx-auto"
+            className="bg-card border border-border rounded-2xl shadow-xl p-6 md:p-10 max-w-5xl mx-auto"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:divide-x md:divide-border">
               {stats.map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <p className="text-2xl md:text-4xl font-bold text-primary tracking-tight">{stat.value}</p>
-                  <p className="text-xs md:text-sm text-muted-foreground mt-1">{stat.label}</p>
+                <div key={stat.label} className="text-center md:px-4">
+                  <p className="font-display text-3xl md:text-5xl font-bold text-foreground tracking-tightest">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-1.5 font-medium">
+                    {stat.label}
+                  </p>
                 </div>
               ))}
             </div>
