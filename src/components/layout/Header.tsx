@@ -22,6 +22,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, isLoading } = useAuth();
   const { data: isAdmin } = useIsAdmin();
+  const isOwner = profile?.user_type === "owner" || user?.user_metadata?.user_type === "owner";
 
   const navLinks = [
     { href: "/venues", label: "Venues" },
@@ -191,13 +192,15 @@ const Header = () => {
             <div className="pt-4 border-t border-border mt-2 flex flex-col gap-2">
               {!isLoading && user ? (
                 <>
-                  {/* Mobile List Venue */}
-                  <Link to="/add-venue" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Building className="h-4 w-4 mr-2" />
-                      List Venue
-                    </Button>
-                  </Link>
+                  {/* Mobile List Venue — owners only */}
+                  {isOwner && (
+                    <Link to="/add-venue" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full justify-start">
+                        <Building className="h-4 w-4 mr-2" />
+                        List Venue
+                      </Button>
+                    </Link>
+                  )}
                   <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full justify-start relative">
                       <MessageCircle className="h-4 w-4 mr-2" />
@@ -231,11 +234,11 @@ const Header = () => {
                 </>
               ) : !isLoading ? (
                 <>
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">Sign in</Button>
-                  </Link>
                   <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">Get started</Button>
+                    <Button className="w-full" size="lg">Get started — it's free</Button>
+                  </Link>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full">Already have an account? Sign in</Button>
                   </Link>
                 </>
               ) : null}
