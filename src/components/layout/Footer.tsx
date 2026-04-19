@@ -3,7 +3,6 @@ import { Logo } from "@/components/brand/Logo";
 
 const Footer = () => {
   const footerLinks = {
-  const footerLinks = {
     product: [
       { href: "/venues", label: "Browse venues" },
       { href: "/nearby", label: "Nearby fields map" },
