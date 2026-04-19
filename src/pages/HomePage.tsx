@@ -366,33 +366,40 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── Stats strip — flush against tinted band ── */}
-      <section className="bg-surface-1 border-y border-border pt-20 md:pt-24 pb-10 md:pb-14">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            transition={sectionTransition}
-            className="grid grid-cols-2 md:grid-cols-4 gap-y-8 md:divide-x md:divide-border"
-          >
-            {stats.map((stat, i) => (
-              <div
-                key={stat.label}
-                className={`md:px-8 ${i === 0 ? "md:pl-0" : ""} ${i === stats.length - 1 ? "md:pr-0" : ""}`}
-              >
-                <p className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-none">
-                  {stat.value}
-                </p>
-                <p className="text-xs md:text-sm text-muted-foreground mt-2 font-medium uppercase tracking-wider">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      {/* ── Stats strip — only when we have real data ── */}
+      {stats.length > 0 && (
+        <section className="bg-surface-1 border-y border-border pt-20 md:pt-24 pb-10 md:pb-14">
+          <div className="container">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              transition={sectionTransition}
+              className={`grid gap-y-8 md:divide-x md:divide-border ${
+                stats.length === 1 ? "grid-cols-1" :
+                stats.length === 2 ? "grid-cols-2" :
+                stats.length === 3 ? "grid-cols-2 md:grid-cols-3" :
+                "grid-cols-2 md:grid-cols-4"
+              }`}
+            >
+              {stats.map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={`md:px-8 ${i === 0 ? "md:pl-0" : ""} ${i === stats.length - 1 ? "md:pr-0" : ""}`}
+                >
+                  <p className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-none">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-2 font-medium uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* ── Categories — asymmetric bento ── */}
       <section className="py-24 md:py-36 bg-background">
