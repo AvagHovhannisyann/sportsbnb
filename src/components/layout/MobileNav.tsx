@@ -4,16 +4,24 @@ import { useAuth } from "@/hooks/useAuth";
 
 const MobileNav = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isOwner = profile?.user_type === "owner" || user?.user_metadata?.user_type === "owner";
 
   const navItems = user
-    ? [
-        { href: "/venues", label: "Explore", icon: Search },
-        { href: "/messages", label: "Messages", icon: MessageCircle },
-        { href: "/add-venue", label: "List", icon: Building2 },
-        { href: "/dashboard", label: "Activity", icon: LayoutDashboard },
-        { href: "/profile", label: "Profile", icon: User },
-      ]
+    ? isOwner
+      ? [
+          { href: "/venues", label: "Explore", icon: Search },
+          { href: "/messages", label: "Messages", icon: MessageCircle },
+          { href: "/owner-dashboard", label: "Manage", icon: Building2 },
+          { href: "/dashboard", label: "Activity", icon: LayoutDashboard },
+          { href: "/profile", label: "Profile", icon: User },
+        ]
+      : [
+          { href: "/venues", label: "Explore", icon: Search },
+          { href: "/messages", label: "Messages", icon: MessageCircle },
+          { href: "/dashboard", label: "Activity", icon: LayoutDashboard },
+          { href: "/profile", label: "Profile", icon: User },
+        ]
     : [
         { href: "/venues", label: "Explore", icon: Search },
         { href: "/for-owners", label: "For Owners", icon: Building2 },

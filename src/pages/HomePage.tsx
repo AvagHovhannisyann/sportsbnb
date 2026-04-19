@@ -237,7 +237,7 @@ const HomePage = () => {
                 <motion.h1
                   variants={fadeUp}
                   transition={sectionTransition}
-                  className="font-display text-[2.75rem] sm:text-6xl md:text-7xl lg:text-[5.75rem] leading-[0.92] font-bold text-foreground tracking-tightest text-balance mb-6 md:mb-8"
+                  className="font-display text-[2.25rem] xs:text-[2.5rem] sm:text-6xl md:text-7xl lg:text-[5.75rem] leading-[0.95] sm:leading-[0.92] font-bold text-foreground tracking-tightest text-balance mb-5 md:mb-8"
                 >
                   Find a court.{" "}
                   <span className="relative inline-block">
@@ -260,18 +260,18 @@ const HomePage = () => {
                 <motion.div
                   variants={fadeUp}
                   transition={sectionTransition}
-                  className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-12 md:mb-14"
+                  className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-10 md:mb-14"
                 >
-                  <Link to="/venues">
+                  <Link to="/venues" className="w-full sm:w-auto">
                     <Button size="xl" className="w-full sm:w-auto gap-2 shadow-lg hover:shadow-xl">
                       Browse venues
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
-                  <Link to="/for-owners">
-                    <Button size="xl" variant="outline" className="w-full sm:w-auto">
+                  <Link to="/for-owners" className="w-full sm:w-auto">
+                    <Button size="xl" variant="ghost" className="w-full sm:w-auto text-foreground-soft hover:text-foreground sm:variant-outline">
                       <Building className="h-5 w-5" />
-                      List your venue
+                      I'm a venue owner
                     </Button>
                   </Link>
                 </motion.div>
@@ -306,12 +306,12 @@ const HomePage = () => {
               </motion.div>
             </div>
 
-            {/* RIGHT — Photo collage with floating cards */}
+            {/* RIGHT — Photo collage with floating cards (desktop/tablet only — saves mobile fold) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-              className="lg:col-span-5 relative h-[420px] sm:h-[520px] lg:h-[640px]"
+              className="hidden sm:block lg:col-span-5 relative h-[420px] sm:h-[520px] lg:h-[640px]"
             >
               {/* main photo */}
               <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl border border-border">
