@@ -85,12 +85,12 @@ const HomePage = () => {
   ];
 
   const benefits = [
-    { icon: Zap, title: "Instant Confirmation", desc: "Book and get confirmed in under 10 seconds." },
-    { icon: Shield, title: "Secure Payments", desc: "PCI-compliant processing with refund protection." },
-    { icon: Star, title: "Verified Venues", desc: "Every facility reviewed and quality-checked." },
-    { icon: Users, title: "Find Teammates", desc: "AI-powered matchmaking for your skill level." },
-    { icon: Calendar, title: "Real-Time Availability", desc: "See open slots updated live, never double-booked." },
-    { icon: Bot, title: "AI Recommendations", desc: "Smart suggestions based on your sport and location." },
+    { icon: Zap, title: "One-Tap Booking", desc: "Message the venue owner on WhatsApp in a single tap." },
+    { icon: Shield, title: "Verified Owners", desc: "Every venue listing is reviewed before going live." },
+    { icon: Star, title: "Real Reviews", desc: "Ratings come from players who actually booked and played." },
+    { icon: Users, title: "Find Teammates", desc: "Join open games and connect with players near you." },
+    { icon: Calendar, title: "Live Availability", desc: "See up-to-date open slots from venue owners." },
+    { icon: Bot, title: "Smart Recommendations", desc: "Suggestions based on your sport and location." },
   ];
 
   const [featuredVenues, setFeaturedVenues] = useState([
@@ -684,26 +684,26 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-gradient-to-tr from-secondary/60 via-transparent to-transparent" />
               </div>
 
-              {/* Floating revenue card */}
-              <div className="absolute -left-6 top-12 bg-card border border-border rounded-2xl shadow-xl p-4 w-56">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">This month</p>
-                <p className="font-display text-3xl font-bold text-foreground tracking-tightest mt-1">+38%</p>
-                <p className="text-xs text-muted-foreground mt-1">bookings vs. last month</p>
-                <div className="mt-3 flex items-center gap-1 h-8">
-                  {[40, 65, 50, 75, 60, 88, 95].map((h, i) => (
-                    <div key={i} className="flex-1 rounded-sm bg-primary/80" style={{ height: `${h}%` }} />
-                  ))}
+              {/* Floating value card — owner benefit */}
+              <div className="absolute -left-6 top-12 bg-card border border-border rounded-2xl shadow-xl p-4 w-60">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-8 w-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4" strokeWidth={2.25} />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Zero commission</p>
                 </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">Keep 100% of your booking revenue. No per-booking cut.</p>
               </div>
 
-              {/* Floating booking card */}
+              {/* Floating WhatsApp lead card — truthful */}
               <div className="absolute -right-4 bottom-10 bg-card border border-border rounded-2xl shadow-xl p-4 w-64">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-bold">M</div>
-                  <p className="text-sm font-semibold text-foreground">New booking</p>
-                  <span className="ml-auto text-[10px] font-semibold text-primary uppercase tracking-wider">live</span>
+                  <div className="h-7 w-7 rounded-xl bg-[#25D366]/12 text-[#075E54] flex items-center justify-center">
+                    <MessageCircle className="h-4 w-4" strokeWidth={2.25} />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Direct leads</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Court 2 · Sat 7:00 PM · 90 min</p>
+                <p className="text-xs text-muted-foreground">Players reach you on WhatsApp — no middleman.</p>
               </div>
 
               <div className="absolute -inset-8 -z-10 bg-primary/15 rounded-[2.5rem] blur-3xl" />
