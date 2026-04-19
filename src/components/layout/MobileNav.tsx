@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, LayoutDashboard, User, MessageCircle, Building2 } from "lucide-react";
+import { Search, LayoutDashboard, User, MessageCircle, Building2, Map } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const MobileNav = () => {
@@ -9,13 +9,14 @@ const MobileNav = () => {
   const navItems = user
     ? [
         { href: "/venues", label: "Explore", icon: Search },
+        { href: "/nearby", label: "Map", icon: Map },
         { href: "/messages", label: "Messages", icon: MessageCircle },
-        { href: "/add-venue", label: "List", icon: Building2 },
         { href: "/dashboard", label: "Activity", icon: LayoutDashboard },
         { href: "/profile", label: "Profile", icon: User },
       ]
     : [
         { href: "/venues", label: "Explore", icon: Search },
+        { href: "/nearby", label: "Map", icon: Map },
         { href: "/for-owners", label: "For Owners", icon: Building2 },
         { href: "/login", label: "Sign in", icon: User },
       ];
