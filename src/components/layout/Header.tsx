@@ -70,7 +70,7 @@ const Header = () => {
               >
                 {link.label}
                 {isActive(link.href) && (
-                  <span className="absolute left-3.5 right-3.5 -bottom-[23px] h-0.5 bg-primary rounded-full" />
+                  <span className="absolute left-3.5 right-3.5 -bottom-[17px] h-0.5 bg-primary rounded-full" />
                 )}
               </Link>
             ))}
