@@ -48,29 +48,29 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
-      <div className="container flex h-16 md:h-[68px] items-center justify-between">
-        <div className="flex items-center gap-6 md:gap-10">
-          <Link to="/" aria-label="Sportsbnb home" className="flex items-center group -my-1">
+      <div className="container flex h-20 md:h-[76px] items-center justify-between gap-6 pl-4 md:pl-6">
+        <div className="flex items-center gap-8 md:gap-12">
+          <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-1">
             <Logo
               variant="full"
-              className="h-7 md:h-8 w-auto transition-transform group-hover:scale-[1.02]"
+              className="h-9 md:h-11 w-auto transition-transform group-hover:scale-[1.02]"
             />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
-                className={`relative px-3.5 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`relative px-3.5 py-2 text-[13.5px] rounded-md transition-colors ${
                   isActive(link.href)
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-foreground font-semibold"
+                    : "text-muted-foreground/90 font-medium hover:text-foreground"
                 }`}
               >
                 {link.label}
                 {isActive(link.href) && (
-                  <span className="absolute left-3.5 right-3.5 -bottom-[19px] h-0.5 bg-primary rounded-full" />
+                  <span className="absolute left-3.5 right-3.5 -bottom-[23px] h-0.5 bg-primary rounded-full" />
                 )}
               </Link>
             ))}
