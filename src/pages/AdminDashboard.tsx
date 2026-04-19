@@ -294,6 +294,13 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
+            {/* Booking Leads Tab */}
+            <TabsContent value="leads">
+              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                <BookingLeadsTab />
+              </Suspense>
+            </TabsContent>
+
             {/* Users Tab */}
             <TabsContent value="users">
               <Card>
