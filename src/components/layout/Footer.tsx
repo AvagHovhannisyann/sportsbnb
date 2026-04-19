@@ -5,7 +5,6 @@ const Footer = () => {
   const footerLinks = {
     product: [
       { href: "/venues", label: "Browse venues" },
-      { href: "/nearby", label: "Nearby fields map" },
       { href: "/for-owners", label: "For venue owners" },
       { href: "/add-venue", label: "List your venue" },
     ],
