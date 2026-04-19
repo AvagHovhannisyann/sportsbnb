@@ -16,7 +16,7 @@ const MobileNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-area-bottom">
-      <div className="grid grid-cols-5 h-14">
+      <div className="grid grid-cols-4 h-14">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Upload, X, Loader2, Trash2, Clock } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, Trash2, Clock, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,7 @@ import { VenueLocationPicker } from "@/components/venues/VenueLocationPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatPhoneDisplay, normalizePhoneE164 } from "@/lib/phone";
 
 const SPORTS_OPTIONS = [
   "Football", "Basketball", "Tennis", "Swimming", 
@@ -66,6 +67,10 @@ const EditVenuePage = () => {
     latitude: null as number | null,
     longitude: null as number | null,
     locationConfirmed: false,
+    phone: "",
+    contactName: "",
+    whatsappEnabled: true,
+    smsEnabled: true,
   });
 
   useEffect(() => {
@@ -99,6 +104,10 @@ const EditVenuePage = () => {
         latitude: venue.latitude || null,
         longitude: venue.longitude || null,
         locationConfirmed: venue.location_confirmed || false,
+        phone: venue.phone || "",
+        contactName: venue.contact_name || "",
+        whatsappEnabled: venue.whatsapp_enabled ?? true,
+        smsEnabled: venue.sms_enabled ?? true,
       });
       if (venue.image_url) {
         setImagePreview(venue.image_url);
@@ -214,6 +223,10 @@ const EditVenuePage = () => {
         latitude: formData.latitude,
         longitude: formData.longitude,
         location_confirmed: formData.locationConfirmed,
+        phone: normalizePhoneE164(formData.phone) || null,
+        contact_name: formData.contactName.trim() || null,
+        whatsapp_enabled: formData.whatsappEnabled,
+        sms_enabled: formData.smsEnabled,
       };
 
       if (imageUrl !== undefined) {
@@ -568,7 +581,68 @@ const EditVenuePage = () => {
               </CardContent>
             </Card>
 
-            {/* Submit */}
+            {/* Booking Contact */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-[#25D366]" />
+                  Booking Contact
+                </CardTitle>
+                <CardDescription>
+                  How customers reach you to book. WhatsApp is the primary channel.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+374 99 123 456"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                    {formData.phone && (
+                      <p className="text-xs text-muted-foreground">
+                        Will be saved as: {formatPhoneDisplay(formData.phone) || "invalid"}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contactName">Contact Name</Label>
+                    <Input
+                      id="contactName"
+                      placeholder="e.g., Armen"
+                      value={formData.contactName}
+                      onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Accept WhatsApp bookings</Label>
+                    <p className="text-sm text-muted-foreground">Primary booking channel</p>
+                  </div>
+                  <Switch
+                    checked={formData.whatsappEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Accept SMS bookings</Label>
+                    <p className="text-sm text-muted-foreground">Fallback if WhatsApp is off</p>
+                  </div>
+                  <Switch
+                    checked={formData.smsEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
             <div className="flex gap-4">
               <Button
                 type="button"

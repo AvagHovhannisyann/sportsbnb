@@ -73,6 +73,7 @@ import { format } from "date-fns";
 const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissionsTab"));
 const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
 const BlogPostsTab = lazy(() => import("@/components/admin/BlogPostsTab"));
+const BookingLeadsTab = lazy(() => import("@/components/admin/BookingLeadsTab"));
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -197,12 +198,10 @@ const AdminDashboard = () => {
             <div className="overflow-x-auto -mx-4 px-4 mb-6">
               <TabsList className="w-max min-w-full">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="leads">Booking Leads</TabsTrigger>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="venues">Venues</TabsTrigger>
                 <TabsTrigger value="bookings">Bookings</TabsTrigger>
-                <TabsTrigger value="games">Games</TabsTrigger>
-                <TabsTrigger value="fields">Fields</TabsTrigger>
-                <TabsTrigger value="discovery">AI Discovery</TabsTrigger>
                 <TabsTrigger value="blog">Blog</TabsTrigger>
               </TabsList>
             </div>
@@ -293,6 +292,13 @@ const AdminDashboard = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* Booking Leads Tab */}
+            <TabsContent value="leads">
+              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                <BookingLeadsTab />
+              </Suspense>
             </TabsContent>
 
             {/* Users Tab */}
@@ -497,115 +503,7 @@ const AdminDashboard = () => {
               </Card>
             </TabsContent>
 
-            {/* Games Tab */}
-            <TabsContent value="games">
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Games</CardTitle>
-                  <CardDescription>Manage platform games and events</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {gamesLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Sport</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Players</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {games?.map((game) => (
-                          <TableRow key={game.id}>
-                            <TableCell className="font-medium">{game.title}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{game.sport}</Badge>
-                            </TableCell>
-                            <TableCell>{game.location}</TableCell>
-                            <TableCell>{format(new Date(game.game_date), "MMM d, yyyy")}</TableCell>
-                            <TableCell>{game.max_players} max</TableCell>
-                            <TableCell>
-                              <Badge variant={game.status === "open" ? "default" : "secondary"}>
-                                {game.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem asChild>
-                                    <Link to={`/game/${game.id}`}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()}
-                                        className="text-destructive"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Game?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          This will permanently delete this game. This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => deleteGame.mutate(game.id)}
-                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        >
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Fields Tab */}
-            <TabsContent value="fields">
-              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                <FieldSubmissionsTab />
-              </Suspense>
-            </TabsContent>
-
-            {/* AI Discovery Tab */}
-            <TabsContent value="discovery">
-              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                <CandidateFieldsTab />
-              </Suspense>
-            </TabsContent>
+            {/* Games / Fields / Discovery tabs hidden for MVP */}
 
             {/* Blog Tab */}
             <TabsContent value="blog">

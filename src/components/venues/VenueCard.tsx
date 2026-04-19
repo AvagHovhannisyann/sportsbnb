@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { MapPin, Star, Clock, Sparkles } from "lucide-react";
+import { MapPin, Star, MessageCircle, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getCustomerPrice, formatPrice } from "@/lib/pricing";
+import { formatPrice } from "@/lib/pricing";
 
 interface VenueCardProps {
   id: string;
@@ -45,16 +45,10 @@ const VenueCard = ({
               Featured
             </Badge>
           )}
-          {available ? (
-            <Badge className="absolute top-3 right-3 bg-primary/90 text-primary-foreground">
-              <Clock className="h-3 w-3 mr-1" />
-              Available
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="absolute top-3 right-3">
-              Fully booked
-            </Badge>
-          )}
+          <Badge className="absolute top-3 right-3 bg-[#25D366] text-white border-0">
+            <MessageCircle className="h-3 w-3 mr-1" />
+            WhatsApp
+          </Badge>
         </div>
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
@@ -89,7 +83,7 @@ const VenueCard = ({
             )}
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-lg font-semibold text-foreground">{formatPrice(getCustomerPrice(price))}</span>
+            <span className="text-lg font-semibold text-foreground">{formatPrice(price)}</span>
             <span className="text-sm text-muted-foreground">/ hour</span>
           </div>
         </div>
