@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, Loader2, AlertTriangle, FileEdit, CreditCard } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, AlertTriangle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,12 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
-import { useStripeConnect } from "@/hooks/useStripeConnect";
-import { StripeConnectBanner } from "@/components/stripe/StripeConnectBanner";
 import { VenueLocationPicker } from "@/components/venues/VenueLocationPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatPhoneDisplay, normalizePhoneE164 } from "@/lib/phone";
 
 const SPORTS_OPTIONS = [
   "Football", "Basketball", "Tennis", "Swimming", 
@@ -36,7 +35,6 @@ const MIN_PHOTOS = 3;
 const AddVenuePage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { canListVenues, isCheckingStatus } = useStripeConnect();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -56,6 +54,10 @@ const AddVenuePage = () => {
     latitude: null as number | null,
     longitude: null as number | null,
     locationConfirmed: false,
+    phone: "",
+    contactName: "",
+    whatsappEnabled: true,
+    smsEnabled: true,
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -172,7 +174,7 @@ const AddVenuePage = () => {
     }
   };
 
-  const validateForm = (isDraft: boolean = false): boolean => {
+  const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
@@ -199,26 +201,25 @@ const AddVenuePage = () => {
       errors.images = `Please upload at least ${MIN_PHOTOS} photos. Currently: ${imageFiles.length} photo(s).`;
     }
 
-    // Location confirmation is required for all submissions
     if (!formData.locationConfirmed) {
       errors.location = "Please confirm the venue location on the map";
     }
 
-    // Only check bank account if not saving as draft
-    if (!isDraft && !canListVenues) {
-      errors.stripe = "You must link your bank account before publishing a venue";
+    const normalizedPhone = normalizePhoneE164(formData.phone);
+    if (!normalizedPhone || normalizedPhone.replace(/\D/g, "").length < 8) {
+      errors.phone = "A valid contact phone number is required so players can reach you";
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft: boolean = false) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) return;
     
-    if (!validateForm(saveAsDraft)) {
+    if (!validateForm()) {
       toast.error("Please fix the errors before submitting");
       return;
     }
@@ -233,8 +234,6 @@ const AddVenuePage = () => {
         return;
       }
 
-      // If no bank account linked, save as draft (is_active: false)
-      // If bank account linked, venue will still start inactive until identity verification completes
       const { error } = await supabase
         .from('venues')
         .insert({
@@ -253,6 +252,10 @@ const AddVenuePage = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           location_confirmed: formData.locationConfirmed,
+          phone: normalizePhoneE164(formData.phone),
+          contact_name: formData.contactName.trim() || null,
+          whatsapp_enabled: formData.whatsappEnabled,
+          sms_enabled: formData.smsEnabled,
         });
 
       if (error) throw error;
@@ -260,11 +263,7 @@ const AddVenuePage = () => {
       queryClient.invalidateQueries({ queryKey: ["owner-venues"] });
       queryClient.invalidateQueries({ queryKey: ["venues"] });
       
-      if (saveAsDraft || !canListVenues) {
-        toast.success("Venue saved as draft! Link your bank account and await admin approval to make it visible to players.");
-      } else {
-        toast.success("Venue submitted for review! It will become visible to players once approved by our team.");
-      }
+      toast.success("Venue submitted for review! It will become visible to players once approved by our team.");
       navigate("/owner-dashboard");
     } catch (error) {
       console.error("Error adding venue:", error);
