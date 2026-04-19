@@ -67,19 +67,9 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Sportsbnb. All rights reserved.
           </p>
-          <div className="flex items-center gap-5">
-            {["Instagram", "Twitter", "LinkedIn"].map((s) => (
-              <a
-                key={s}
-                href={`https://${s.toLowerCase()}.com/sportsbnb`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {s}
-              </a>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Made for players. Built with care.
+          </p>
         </div>
       </div>
     </footer>

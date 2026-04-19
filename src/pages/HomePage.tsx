@@ -113,7 +113,7 @@ const HomePage = () => {
         sports.map((sport, i) => ({
           name: sport,
           image: images[i],
-          count: `${results[i].count ?? 0} venues`,
+          count: (results[i].count ?? 0) > 0 ? `${results[i].count} venues` : "",
         }))
       );
     };
