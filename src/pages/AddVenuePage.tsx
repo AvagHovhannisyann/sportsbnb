@@ -273,7 +273,7 @@ const AddVenuePage = () => {
     }
   };
 
-  if (authLoading || isCheckingStatus) {
+  if (authLoading) {
     return (
       <Layout>
         <div className="container py-16 text-center">
@@ -298,31 +298,7 @@ const AddVenuePage = () => {
             </div>
           </div>
 
-          {/* Stripe Connect Gate */}
-          {!canListVenues && !isCheckingStatus && (
-            <Card className="mb-6">
-              <CardContent className="py-8 text-center space-y-4">
-                <CreditCard className="h-12 w-12 mx-auto text-amber-500" />
-                <h2 className="text-xl font-semibold text-foreground">Set Up Payments First</h2>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Before listing a venue, you need to link your bank account so you can receive payouts from bookings. It only takes a minute.
-                </p>
-                <div className="max-w-md mx-auto">
-                  <StripeConnectBanner variant="inline" />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Stripe Connect Banner (when already set up) */}
-          {canListVenues && (
-            <div className="mb-6">
-              <StripeConnectBanner />
-            </div>
-          )}
-
-          {canListVenues && (
-          <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
               {/* Requirements Notice */}
             <Alert>
               <AlertTriangle className="h-4 w-4" />
