@@ -43,12 +43,8 @@ const HomePage = () => {
   const { user, isLoading } = useAuth();
   const { isArmenia, isUS, regionLabel } = useRegion();
 
-  const [stats, setStats] = useState([
-    { value: "—", label: "Venues Listed" },
-    { value: "—", label: "Games Created" },
-    { value: "—", label: "Teams Formed" },
-    { value: "—", label: "Average Rating" },
-  ]);
+  const [stats, setStats] = useState<{ value: string; label: string }[]>([]);
+  const [statsLoaded, setStatsLoaded] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -64,13 +60,14 @@ const HomePage = () => {
       const ratings = ratingsRes.data ?? [];
       const avgRating = ratings.length > 0
         ? (ratings.reduce((sum, v) => sum + Number(v.rating), 0) / ratings.length).toFixed(1)
-        : "—";
-      setStats([
-        { value: venueCount.toString(), label: "Venues Listed" },
-        { value: gameCount.toString(), label: "Games Created" },
-        { value: teamCount.toString(), label: "Teams Formed" },
-        { value: avgRating !== "—" ? `${avgRating}★` : "—", label: "Average Rating" },
-      ]);
+        : null;
+      const next: { value: string; label: string }[] = [];
+      if (venueCount > 0) next.push({ value: venueCount.toString(), label: "Venues Listed" });
+      if (gameCount > 0) next.push({ value: gameCount.toString(), label: "Games Created" });
+      if (teamCount > 0) next.push({ value: teamCount.toString(), label: "Teams Formed" });
+      if (avgRating) next.push({ value: `${avgRating}★`, label: "Average Rating" });
+      setStats(next);
+      setStatsLoaded(true);
     };
     fetchStats();
   }, []);
