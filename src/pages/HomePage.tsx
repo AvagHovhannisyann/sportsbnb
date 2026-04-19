@@ -237,7 +237,7 @@ const HomePage = () => {
                 <motion.h1
                   variants={fadeUp}
                   transition={sectionTransition}
-                  className="font-display text-[2.75rem] sm:text-6xl md:text-7xl lg:text-[5.75rem] leading-[0.92] font-bold text-foreground tracking-tightest text-balance mb-6 md:mb-8"
+                  className="font-display text-[2.25rem] xs:text-[2.5rem] sm:text-6xl md:text-7xl lg:text-[5.75rem] leading-[0.95] sm:leading-[0.92] font-bold text-foreground tracking-tightest text-balance mb-5 md:mb-8"
                 >
                   Find a court.{" "}
                   <span className="relative inline-block">
