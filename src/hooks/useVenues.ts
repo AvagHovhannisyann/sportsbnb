@@ -22,6 +22,10 @@ export interface Venue {
   latitude?: number | null;
   longitude?: number | null;
   location_confirmed?: boolean;
+  phone?: string | null;
+  contact_name?: string | null;
+  whatsapp_enabled?: boolean;
+  sms_enabled?: boolean;
 }
 
 // Default images for venues without custom images

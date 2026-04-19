@@ -1,14 +1,13 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useState } from "react";
-import { MapPin, Star, Clock, Users, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Calendar, Loader2 } from "lucide-react";
+import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
-import BookingDialog from "@/components/booking/BookingDialog";
-import RecurringBookingDialog from "@/components/booking/RecurringBookingDialog";
+import BookingHandoffDialog from "@/components/booking/BookingHandoffDialog";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import ReviewList from "@/components/reviews/ReviewList";
 import WeatherWidget from "@/components/venue/WeatherWidget";
