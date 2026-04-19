@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Star, MessageCircle, Sparkles } from "lucide-react";
+import { MapPin, Star, MessageCircle, Sparkles, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/pricing";
 
@@ -26,68 +26,97 @@ const VenueCard = ({
   price,
   rating,
   reviewCount,
-  available,
   distance,
   isPromoted,
 }: VenueCardProps) => {
   return (
-    <Link to={`/venue/${id}`} className="group block">
-      <div className={`bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${isPromoted ? "border-primary/40 ring-1 ring-primary/20" : "border-border"}`}>
-        <div className="relative aspect-[4/3] overflow-hidden">
+    <Link to={`/venue/${id}`} className="group block focus-ring rounded-2xl">
+      <article
+        className={`relative overflow-hidden rounded-2xl bg-card border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+          isPromoted ? "border-primary/40 ring-1 ring-primary/15" : "border-border hover:border-border-strong"
+        }`}
+      >
+        {/* Image */}
+        <div className="relative aspect-[5/4] overflow-hidden bg-surface-3">
           <img
             src={image}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
+          {/* subtle gradient for label legibility */}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 to-transparent" />
+
+          {/* Top-left: featured */}
           {isPromoted && (
-            <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground gap-1">
+            <Badge className="absolute top-3 left-3 bg-foreground text-background border-0 gap-1 font-medium">
               <Sparkles className="h-3 w-3" />
               Featured
             </Badge>
           )}
-          <Badge className="absolute top-3 right-3 bg-[#25D366] text-white border-0">
-            <MessageCircle className="h-3 w-3 mr-1" />
+
+          {/* Top-right: WhatsApp pill */}
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-[#075E54] shadow-sm">
+            <MessageCircle className="h-3 w-3" />
             WhatsApp
-          </Badge>
+          </span>
+
+          {/* Distance pill */}
+          {distance !== undefined && distance !== null && (
+            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-white">
+              <MapPin className="h-3 w-3" />
+              {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`}
+            </span>
+          )}
         </div>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+
+        {/* Content */}
+        <div className="p-4 md:p-5">
+          <div className="flex items-start justify-between gap-3 mb-1.5">
+            <h3 className="font-display text-base md:text-lg font-semibold text-foreground tracking-extra-tight leading-snug line-clamp-1 group-hover:text-primary transition-colors">
               {name}
             </h3>
             <div className="flex items-center gap-1 text-sm shrink-0">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="font-medium text-foreground">{rating}</span>
-              <span className="text-muted-foreground">({reviewCount})</span>
+              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+              <span className="font-semibold text-foreground">{rating || "—"}</span>
+              {reviewCount > 0 && (
+                <span className="text-muted-foreground text-xs">({reviewCount})</span>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-            <MapPin className="h-4 w-4" />
-            <span className="line-clamp-1">{location}</span>
-            {distance !== undefined && distance !== null && (
-              <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">
-                {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`}
+
+          <p className="text-sm text-muted-foreground line-clamp-1 mb-3">{location}</p>
+
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {sports.slice(0, 3).map((sport) => (
+              <span
+                key={sport}
+                className="inline-flex items-center rounded-md bg-surface-1 border border-border px-2 py-0.5 text-[11px] font-medium text-foreground-soft"
+              >
+                {sport}
+              </span>
+            ))}
+            {sports.length > 3 && (
+              <span className="inline-flex items-center rounded-md bg-surface-1 border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                +{sports.length - 3}
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {sports.slice(0, 3).map((sport) => (
-              <Badge key={sport} variant="secondary" className="text-xs font-normal">
-                {sport}
-              </Badge>
-            ))}
-            {sports.length > 3 && (
-              <Badge variant="secondary" className="text-xs font-normal">
-                +{sports.length - 3}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-lg font-semibold text-foreground">{formatPrice(price)}</span>
-            <span className="text-sm text-muted-foreground">/ hour</span>
+
+          <div className="flex items-end justify-between pt-3 border-t border-border">
+            <div className="flex items-baseline gap-1">
+              <span className="font-display text-xl font-bold text-foreground tracking-extra-tight">
+                {formatPrice(price)}
+              </span>
+              <span className="text-xs text-muted-foreground">/ hour</span>
+            </div>
+            <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+              View
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </span>
           </div>
         </div>
-      </div>
+      </article>
     </Link>
   );
 };
