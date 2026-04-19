@@ -404,18 +404,30 @@ const VenueDetailsPage = () => {
                   </p>
                 )}
 
-                <Button
-                  className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white gap-2"
-                  size="lg"
-                  onClick={() => setIsBookingOpen(true)}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  Book via WhatsApp
-                </Button>
-
-                <p className="text-xs text-muted-foreground text-center mt-3">
-                  Booking is confirmed directly with the venue owner.
-                </p>
+                {venue.phone ? (
+                  <>
+                    <Button
+                      className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white gap-2"
+                      size="lg"
+                      onClick={() => setIsBookingOpen(true)}
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                      {venue.whatsapp_enabled ? "Book via WhatsApp" : "Contact owner to book"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      Booking is confirmed directly with the venue owner.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Button className="w-full" size="lg" disabled>
+                      Contact details coming soon
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      This venue hasn't added contact details yet — check back shortly.
+                    </p>
+                  </>
+                )}
 
                 {/* Message Owner Button */}
                 <div className="mt-4 pt-4 border-t">
