@@ -1,14 +1,13 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useState } from "react";
-import { MapPin, Star, Clock, Users, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Calendar, Loader2 } from "lucide-react";
+import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
-import BookingDialog from "@/components/booking/BookingDialog";
-import RecurringBookingDialog from "@/components/booking/RecurringBookingDialog";
+import BookingHandoffDialog from "@/components/booking/BookingHandoffDialog";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import ReviewList from "@/components/reviews/ReviewList";
 import WeatherWidget from "@/components/venue/WeatherWidget";
@@ -26,7 +25,6 @@ import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   
   const { data: venue, isLoading: venueLoading } = useVenueById(id);
@@ -39,7 +37,7 @@ const VenueDetailsPage = () => {
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   if (venueLoading) {
@@ -57,8 +55,8 @@ const VenueDetailsPage = () => {
       <Layout>
         <div className="container py-16 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Venue not found</h1>
-          <Link to="/discover">
-            <Button>Back to Discover</Button>
+          <Link to="/venues">
+            <Button>Back to Venues</Button>
           </Link>
         </div>
       </Layout>
@@ -159,7 +157,7 @@ const VenueDetailsPage = () => {
         {/* Back Navigation */}
         <div className="container py-4">
           <Link
-            to="/discover"
+            to="/venues"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -379,65 +377,45 @@ const VenueDetailsPage = () => {
             {/* Booking Card */}
             <div className="lg:col-span-1">
               <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
-                <div className="flex items-baseline gap-1 mb-6">
+                <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-3xl font-bold text-foreground">{formatPrice(getCustomerPrice(venue.price_per_hour))}</span>
                   <span className="text-muted-foreground">/ hour</span>
                 </div>
+                <p className="text-xs text-muted-foreground mb-6">
+                  Indicative price — final price is confirmed by the venue owner.
+                </p>
 
                 {selectedDate && selectedTime ? (
-                  <div className="space-y-4 mb-6">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Date</span>
+                  <div className="space-y-2 mb-6 p-3 rounded-lg bg-muted/50 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Preferred date</span>
                       <span className="font-medium text-foreground">
                         {dates.find((d) => d.value === selectedDate)?.label}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Time</span>
-                      <span className="font-medium text-foreground">{selectedTime}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Duration</span>
-                      <span className="font-medium text-foreground">1 hour</span>
-                    </div>
-                    <Separator />
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">Total</span>
-                      <span className="text-xl font-bold text-foreground">{formatPrice(getCustomerPrice(venue.price_per_hour))}</span>
+                      <span className="text-muted-foreground">Preferred time</span>
+                      <span className="font-medium text-foreground">{selectedTime}</span>
                     </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground mb-6">
-                    Select a date and time to see availability and book.
+                    Optionally pick a preferred date and time below — or just message the owner directly.
                   </p>
                 )}
 
                 <Button
-                  className="w-full"
+                  className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white gap-2"
                   size="lg"
-                  disabled={!selectedDate || !selectedTime}
-                  onClick={() => {
-                    if (!user) {
-                      navigate("/login");
-                      return;
-                    }
-                    setIsBookingDialogOpen(true);
-                  }}
+                  onClick={() => setIsBookingOpen(true)}
                 >
-                  {selectedDate && selectedTime ? "Book Now" : "Select time to book"}
+                  <MessageCircle className="h-5 w-5" />
+                  Book via WhatsApp
                 </Button>
 
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  Free cancellation up to 24 hours before
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  Booking is confirmed directly with the venue owner.
                 </p>
-
-                {/* Recurring Booking */}
-                <div className="mt-3 flex justify-center">
-                  <RecurringBookingDialog
-                    venue={{ id: venue.id, name: venue.name, price: venue.price_per_hour }}
-                    selectedTime={selectedTime || undefined}
-                  />
-                </div>
 
                 {/* Message Owner Button */}
                 <div className="mt-4 pt-4 border-t">
@@ -448,21 +426,24 @@ const VenueDetailsPage = () => {
                   />
                 </div>
 
-                {selectedDate && selectedTime && (
-                  <BookingDialog
-                    isOpen={isBookingDialogOpen}
-                    onClose={() => setIsBookingDialogOpen(false)}
-                    venue={{
-                      id: venue.id,
-                      name: venue.name,
-                      location: location,
-                      price: venue.price_per_hour,
-                    }}
-                    selectedDate={selectedDate}
-                    selectedDateLabel={dates.find((d) => d.value === selectedDate)?.label || ""}
-                    selectedTime={selectedTime}
-                  />
-                )}
+                <BookingHandoffDialog
+                  isOpen={isBookingOpen}
+                  onClose={() => setIsBookingOpen(false)}
+                  venue={{
+                    id: venue.id,
+                    name: venue.name,
+                    location,
+                    phone: venue.phone ?? null,
+                    contactName: venue.contact_name ?? null,
+                    whatsappEnabled: venue.whatsapp_enabled ?? true,
+                    smsEnabled: venue.sms_enabled ?? true,
+                  }}
+                  preselected={{
+                    date: selectedDate,
+                    dateLabel: dates.find((d) => d.value === selectedDate)?.label ?? null,
+                    time: selectedTime,
+                  }}
+                />
               </div>
 
               {/* Weather Widget */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, Loader2, AlertTriangle, FileEdit, CreditCard } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, AlertTriangle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,12 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
-import { useStripeConnect } from "@/hooks/useStripeConnect";
-import { StripeConnectBanner } from "@/components/stripe/StripeConnectBanner";
 import { VenueLocationPicker } from "@/components/venues/VenueLocationPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatPhoneDisplay, normalizePhoneE164 } from "@/lib/phone";
 
 const SPORTS_OPTIONS = [
   "Football", "Basketball", "Tennis", "Swimming", 
@@ -36,7 +35,6 @@ const MIN_PHOTOS = 3;
 const AddVenuePage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { canListVenues, isCheckingStatus } = useStripeConnect();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -56,6 +54,10 @@ const AddVenuePage = () => {
     latitude: null as number | null,
     longitude: null as number | null,
     locationConfirmed: false,
+    phone: "",
+    contactName: "",
+    whatsappEnabled: true,
+    smsEnabled: true,
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -172,7 +174,7 @@ const AddVenuePage = () => {
     }
   };
 
-  const validateForm = (isDraft: boolean = false): boolean => {
+  const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
@@ -199,26 +201,25 @@ const AddVenuePage = () => {
       errors.images = `Please upload at least ${MIN_PHOTOS} photos. Currently: ${imageFiles.length} photo(s).`;
     }
 
-    // Location confirmation is required for all submissions
     if (!formData.locationConfirmed) {
       errors.location = "Please confirm the venue location on the map";
     }
 
-    // Only check bank account if not saving as draft
-    if (!isDraft && !canListVenues) {
-      errors.stripe = "You must link your bank account before publishing a venue";
+    const normalizedPhone = normalizePhoneE164(formData.phone);
+    if (!normalizedPhone || normalizedPhone.replace(/\D/g, "").length < 8) {
+      errors.phone = "A valid contact phone number is required so players can reach you";
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft: boolean = false) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) return;
     
-    if (!validateForm(saveAsDraft)) {
+    if (!validateForm()) {
       toast.error("Please fix the errors before submitting");
       return;
     }
@@ -233,8 +234,6 @@ const AddVenuePage = () => {
         return;
       }
 
-      // If no bank account linked, save as draft (is_active: false)
-      // If bank account linked, venue will still start inactive until identity verification completes
       const { error } = await supabase
         .from('venues')
         .insert({
@@ -253,6 +252,10 @@ const AddVenuePage = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           location_confirmed: formData.locationConfirmed,
+          phone: normalizePhoneE164(formData.phone),
+          contact_name: formData.contactName.trim() || null,
+          whatsapp_enabled: formData.whatsappEnabled,
+          sms_enabled: formData.smsEnabled,
         });
 
       if (error) throw error;
@@ -260,11 +263,7 @@ const AddVenuePage = () => {
       queryClient.invalidateQueries({ queryKey: ["owner-venues"] });
       queryClient.invalidateQueries({ queryKey: ["venues"] });
       
-      if (saveAsDraft || !canListVenues) {
-        toast.success("Venue saved as draft! Link your bank account and await admin approval to make it visible to players.");
-      } else {
-        toast.success("Venue submitted for review! It will become visible to players once approved by our team.");
-      }
+      toast.success("Venue submitted for review! It will become visible to players once approved by our team.");
       navigate("/owner-dashboard");
     } catch (error) {
       console.error("Error adding venue:", error);
@@ -274,7 +273,7 @@ const AddVenuePage = () => {
     }
   };
 
-  if (authLoading || isCheckingStatus) {
+  if (authLoading) {
     return (
       <Layout>
         <div className="container py-16 text-center">
@@ -299,31 +298,7 @@ const AddVenuePage = () => {
             </div>
           </div>
 
-          {/* Stripe Connect Gate */}
-          {!canListVenues && !isCheckingStatus && (
-            <Card className="mb-6">
-              <CardContent className="py-8 text-center space-y-4">
-                <CreditCard className="h-12 w-12 mx-auto text-amber-500" />
-                <h2 className="text-xl font-semibold text-foreground">Set Up Payments First</h2>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Before listing a venue, you need to link your bank account so you can receive payouts from bookings. It only takes a minute.
-                </p>
-                <div className="max-w-md mx-auto">
-                  <StripeConnectBanner variant="inline" />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Stripe Connect Banner (when already set up) */}
-          {canListVenues && (
-            <div className="mb-6">
-              <StripeConnectBanner />
-            </div>
-          )}
-
-          {canListVenues && (
-          <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
               {/* Requirements Notice */}
             <Alert>
               <AlertTriangle className="h-4 w-4" />
@@ -560,6 +535,75 @@ const AddVenuePage = () => {
                 </CardContent>
               </Card>
 
+              {/* Booking Contact (WhatsApp / SMS) */}
+              <Card className={validationErrors.phone ? 'border-destructive' : ''}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 text-[#25D366]" />
+                    Booking Contact
+                  </CardTitle>
+                  <CardDescription>
+                    Players will contact you directly via WhatsApp or SMS to confirm bookings. This is required.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">WhatsApp / Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+374 99 11 22 33"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        setFormData({ ...formData, phone: e.target.value });
+                        setValidationErrors(prev => ({ ...prev, phone: '' }));
+                      }}
+                    />
+                    {formData.phone && !validationErrors.phone && (
+                      <p className="text-xs text-muted-foreground">
+                        Will be saved as: {formatPhoneDisplay(formData.phone)}
+                      </p>
+                    )}
+                    {validationErrors.phone && (
+                      <p className="text-sm text-destructive">{validationErrors.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactName">Contact Person (optional)</Label>
+                    <Input
+                      id="contactName"
+                      placeholder="e.g. Aram"
+                      value={formData.contactName}
+                      onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                      maxLength={80}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <Label>Accept WhatsApp messages</Label>
+                      <p className="text-xs text-muted-foreground">Recommended — most players prefer this</p>
+                    </div>
+                    <Switch
+                      checked={formData.whatsappEnabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <Label>Accept SMS as fallback</Label>
+                      <p className="text-xs text-muted-foreground">Used when WhatsApp isn't available</p>
+                    </div>
+                    <Switch
+                      checked={formData.smsEnabled}
+                      onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Pricing & Settings */}
               <Card>
                 <CardHeader>
@@ -623,18 +667,12 @@ const AddVenuePage = () => {
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       {uploadingImages ? "Uploading photos..." : "Saving..."}
                     </>
-                  ) : canListVenues ? (
-                    "Add Venue"
                   ) : (
-                    <>
-                      <FileEdit className="h-4 w-4 mr-2" />
-                      Save as Draft
-                    </>
+                    "Add Venue"
                   )}
                 </Button>
               </div>
             </form>
-          )}
           </div>
       </div>
     </Layout>

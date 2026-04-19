@@ -165,6 +165,63 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_intents: {
+        Row: {
+          admin_notes: string | null
+          booking_code: string
+          booking_date: string | null
+          booking_time: string | null
+          channel_used: string
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          note: string | null
+          players_count: number | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          venue_id: string
+          venue_name: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          booking_code: string
+          booking_date?: string | null
+          booking_time?: string | null
+          channel_used: string
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          note?: string | null
+          players_count?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          venue_id: string
+          venue_name: string
+        }
+        Update: {
+          admin_notes?: string | null
+          booking_code?: string
+          booking_date?: string | null
+          booking_time?: string | null
+          channel_used?: string
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          note?: string | null
+          players_count?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          venue_id?: string
+          venue_name?: string
+        }
+        Relationships: []
+      }
       booking_waitlist: {
         Row: {
           booking_date: string
@@ -1662,6 +1719,7 @@ export type Database = {
           address: string | null
           amenities: string[] | null
           city: string
+          contact_name: string | null
           created_at: string
           description: string | null
           id: string
@@ -1675,17 +1733,21 @@ export type Database = {
           make_webhook_url: string | null
           name: string
           owner_id: string
+          phone: string | null
           price_per_hour: number
           rating: number | null
           review_count: number | null
+          sms_enabled: boolean
           sports: string[]
           updated_at: string
+          whatsapp_enabled: boolean
           zip_code: string | null
         }
         Insert: {
           address?: string | null
           amenities?: string[] | null
           city: string
+          contact_name?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1699,17 +1761,21 @@ export type Database = {
           make_webhook_url?: string | null
           name: string
           owner_id: string
+          phone?: string | null
           price_per_hour?: number
           rating?: number | null
           review_count?: number | null
+          sms_enabled?: boolean
           sports?: string[]
           updated_at?: string
+          whatsapp_enabled?: boolean
           zip_code?: string | null
         }
         Update: {
           address?: string | null
           amenities?: string[] | null
           city?: string
+          contact_name?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1723,11 +1789,14 @@ export type Database = {
           make_webhook_url?: string | null
           name?: string
           owner_id?: string
+          phone?: string | null
           price_per_hour?: number
           rating?: number | null
           review_count?: number | null
+          sms_enabled?: boolean
           sports?: string[]
           updated_at?: string
+          whatsapp_enabled?: boolean
           zip_code?: string | null
         }
         Relationships: []
