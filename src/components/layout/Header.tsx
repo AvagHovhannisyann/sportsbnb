@@ -24,6 +24,9 @@ const Header = () => {
 
   const navLinks = [
     { href: "/venues", label: "Venues" },
+    { href: "/games", label: "Games" },
+    { href: "/teams", label: "Teams" },
+    { href: "/community", label: "Community" },
     ...(user ? [{ href: "/dashboard", label: "My Activity" }] : []),
   ];
 
