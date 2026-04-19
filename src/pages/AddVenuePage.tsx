@@ -64,9 +64,10 @@ const AddVenuePage = () => {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/login");
+      navigate("/login", { state: { from: { pathname: "/add-venue" } } });
     }
-    if (!authLoading && user && profile?.user_type !== "owner") {
+    if (!authLoading && user && profile && profile.user_type !== "owner") {
+      toast.info("Switch to an owner account to list a venue.");
       navigate("/dashboard");
     }
   }, [user, profile, authLoading, navigate]);

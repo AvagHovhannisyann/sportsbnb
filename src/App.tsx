@@ -165,7 +165,7 @@ const App = () => {
                     {/* Onboarding */}
                     <Route path="/onboarding/player" element={<ProtectedRoute><PlayerOnboarding /></ProtectedRoute>} />
                     <Route path="/onboarding/owner" element={<ProtectedRoute><OwnerOnboarding /></ProtectedRoute>} />
-                    <Route path="/list-venue" element={<ProtectedRoute><OwnerOnboarding /></ProtectedRoute>} />
+                    <Route path="/list-venue" element={<Navigate to="/add-venue" replace />} />
                     {/* Settings - redirect to profile */}
                     <Route path="/settings" element={<Navigate to="/profile" replace />} />
                     {/* Info Pages */}
