@@ -154,31 +154,51 @@ const HomePage = () => {
     fetchReviews();
   }, []);
 
-  const featureRows = [
-    [
-      { icon: Search, label: "Smart Search" }, { icon: Calendar, label: "Instant Booking" },
-      { icon: MapPin, label: "Interactive Map" }, { icon: Bot, label: "AI Matchmaking" },
-      { icon: Trophy, label: "Leaderboards" }, { icon: Award, label: "XP & Achievements" },
-      { icon: Bell, label: "Notifications" }, { icon: Clock, label: "Waitlist" },
-      { icon: Star, label: "Reviews" }, { icon: TrendingUp, label: "Dynamic Pricing" },
-      { icon: BrainCircuit, label: "Smart Scheduling" }, { icon: CloudSun, label: "Weather" },
-    ],
-    [
-      { icon: BarChart3, label: "Analytics" }, { icon: Image, label: "Photo Gallery" },
-      { icon: Layers, label: "Multi-Court" }, { icon: Gamepad2, label: "Open Games" },
-      { icon: Users, label: "Teams" }, { icon: MessageCircle, label: "Chat" },
-      { icon: CreditCard, label: "Payments" }, { icon: Repeat, label: "Recurring" },
-      { icon: Split, label: "Split Payments" }, { icon: Flame, label: "Streaks" },
-      { icon: GitCompare, label: "Venue Compare" }, { icon: UserCircle, label: "Player Profiles" },
-    ],
-    [
-      { icon: UserPlus, label: "Referrals" }, { icon: Shield, label: "Verified Venues" },
-      { icon: Wifi, label: "Real-Time" }, { icon: Map, label: "Geolocation" },
-      { icon: Globe, label: "Multi-Currency" }, { icon: Sparkles, label: "AI Recommendations" },
-      { icon: Building, label: "Owner Dashboard" }, { icon: Zap, label: "Embeddable Widgets" },
-      { icon: Swords, label: "Challenges" }, { icon: Activity, label: "Live Occupancy" },
-      { icon: Lock, label: "Two-Factor Auth" },
-    ],
+  const featureGroups = [
+    {
+      eyebrow: "Find & Book",
+      title: "Discover venues in seconds",
+      description: "Search, see live availability, and reserve your court without a single phone call.",
+      items: [
+        { icon: Search, label: "Smart Search" },
+        { icon: Calendar, label: "Instant Booking" },
+        { icon: Wifi, label: "Real-Time Availability" },
+        { icon: Map, label: "Interactive Map" },
+      ],
+    },
+    {
+      eyebrow: "Play & Connect",
+      title: "Find your team, join a game",
+      description: "Open games, teams, and chat — built so you spend more time playing.",
+      items: [
+        { icon: Gamepad2, label: "Open Games" },
+        { icon: Users, label: "Teams" },
+        { icon: MessageCircle, label: "Chat" },
+        { icon: UserCircle, label: "Player Profiles" },
+      ],
+    },
+    {
+      eyebrow: "For Owners",
+      title: "Run your venue like a pro",
+      description: "One dashboard for schedule, payments, and growth — zero commissions.",
+      items: [
+        { icon: Building, label: "Owner Dashboard" },
+        { icon: CreditCard, label: "Payments" },
+        { icon: BarChart3, label: "Analytics" },
+        { icon: TrendingUp, label: "Dynamic Pricing" },
+      ],
+    },
+    {
+      eyebrow: "Smart Features",
+      title: "Powered by AI",
+      description: "Recommendations, matchmaking, and scheduling that actually understand the game.",
+      items: [
+        { icon: Sparkles, label: "AI Recommendations" },
+        { icon: Bot, label: "Matchmaking" },
+        { icon: CloudSun, label: "Weather" },
+        { icon: BrainCircuit, label: "Smart Scheduling" },
+      ],
+    },
   ];
 
   return (
@@ -751,8 +771,8 @@ const HomePage = () => {
       </section>
       )}
 
-      {/* ── Platform Features — marquee feel ── */}
-      <section className="py-24 md:py-32 section-tinted border-y border-border overflow-hidden">
+      {/* ── Platform Features — grouped use-case journey ── */}
+      <section className="py-20 md:py-32 section-tinted border-y border-border overflow-hidden">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -763,34 +783,70 @@ const HomePage = () => {
             <motion.div
               variants={fadeUp}
               transition={sectionTransition}
-              className="max-w-3xl mb-12 md:mb-14"
+              className="max-w-3xl mb-10 md:mb-14"
             >
-              <p className="text-eyebrow mb-3">Built in, not bolted on</p>
+              <p className="text-eyebrow mb-3">Everything you need</p>
               <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
-                35+ features. <span className="italic font-medium text-foreground-soft">Zero friction.</span>
+                Discover. Book. Play.{" "}
+                <span className="italic font-medium text-foreground-soft">All in one place.</span>
               </h2>
             </motion.div>
 
-            <div className="space-y-3">
-              {featureRows.map((row, rowIdx) => (
+            {/* WhatsApp spotlight banner */}
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="mb-8 md:mb-10 relative overflow-hidden rounded-2xl border border-border bg-card p-5 md:p-7"
+            >
+              <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+                <div className="shrink-0 h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-[#25D366]/12 text-[#075E54] flex items-center justify-center">
+                  <MessageCircle className="h-6 w-6 md:h-7 md:w-7" strokeWidth={2.25} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.16em] text-[#075E54] mb-1">
+                    WhatsApp-first
+                  </p>
+                  <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight leading-tight mb-1">
+                    Message the venue owner instantly
+                  </h3>
+                  <p className="text-sm md:text-[15px] text-foreground-soft leading-relaxed">
+                    No phone calls. No waiting. Reach owners directly on WhatsApp — your primary booking channel.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
+              {featureGroups.map((group) => (
                 <motion.div
-                  key={rowIdx}
+                  key={group.title}
                   variants={fadeUp}
                   transition={sectionTransition}
-                  className={`flex flex-wrap gap-2 md:gap-2.5 ${rowIdx % 2 === 1 ? "md:pl-16" : ""}`}
+                  className="group relative bg-card border border-border rounded-2xl p-6 md:p-7 hover:border-border-strong hover:shadow-md transition-all"
                 >
-                  {row.map((f) => {
-                    const Icon = f.icon;
-                    return (
-                      <div
-                        key={f.label}
-                        className="group flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 md:px-4 md:py-2.5 hover:bg-primary hover:border-primary hover:text-primary-foreground transition-colors shadow-xs"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-primary group-hover:text-primary-foreground shrink-0" strokeWidth={2.25} />
-                        <span className="text-xs md:text-[13px] font-semibold whitespace-nowrap">{f.label}</span>
-                      </div>
-                    );
-                  })}
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.16em] text-primary mb-3">
+                    {group.eyebrow}
+                  </p>
+                  <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight leading-tight mb-2">
+                    {group.title}
+                  </h3>
+                  <p className="text-sm text-foreground-soft leading-relaxed mb-5 md:mb-6">
+                    {group.description}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 md:gap-2.5">
+                    {group.items.map((f) => {
+                      const Icon = f.icon;
+                      return (
+                        <div
+                          key={f.label}
+                          className="flex items-center gap-2 rounded-xl border border-border bg-surface-1 px-3 py-2.5"
+                        >
+                          <Icon className="h-3.5 w-3.5 text-primary shrink-0" strokeWidth={2.25} />
+                          <span className="text-xs md:text-[13px] font-semibold text-foreground truncate">{f.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </motion.div>
               ))}
             </div>

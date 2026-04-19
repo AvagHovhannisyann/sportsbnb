@@ -48,12 +48,12 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
-      <div className="container flex h-16 md:h-[64px] items-center justify-between gap-6 pl-4 md:pl-6">
-        <div className="flex items-center gap-8 md:gap-10">
+      <div className="container flex h-14 md:h-[64px] items-center justify-between gap-4 md:gap-6 px-4 md:px-6">
+        <div className="flex items-center gap-6 md:gap-10">
           <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-2">
             <Logo
               variant="full"
-              className="h-10 md:h-12 w-auto transition-transform group-hover:scale-[1.02]"
+              className="h-9 md:h-12 w-auto transition-transform group-hover:scale-[1.02]"
             />
           </Link>
 
