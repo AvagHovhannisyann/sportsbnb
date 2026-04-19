@@ -378,8 +378,8 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── Categories ── */}
-      <section className="py-20 md:py-36 bg-background">
+      {/* ── Categories — asymmetric bento ── */}
+      <section className="py-24 md:py-36 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -387,37 +387,69 @@ const HomePage = () => {
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
           >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="text-center mb-12 md:mb-20">
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-                Popular Categories
-              </p>
-              <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter mb-4 md:mb-6">
-                Every sport. Every venue.
-              </h2>
-              <p className="text-base md:text-xl text-muted-foreground max-w-xl mx-auto">
-                From football fields to swimming pools — find the perfect spot to play.
-              </p>
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 md:mb-14"
+            >
+              <div className="max-w-2xl">
+                <p className="text-eyebrow mb-3">Browse by sport</p>
+                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
+                  Every sport has a court.{" "}
+                  <span className="text-foreground-soft italic font-medium">Pick yours.</span>
+                </h2>
+              </div>
+              <Link
+                to="/venues"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors group self-start md:self-end shrink-0"
+              >
+                See all venues
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
             </motion.div>
 
-            <motion.div variants={fadeUp} transition={sectionTransition} className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-              {featuredVenues.map((venue) => (
-                <Link key={venue.name} to="/venues" className="group relative aspect-[3/4] rounded-2xl md:rounded-3xl overflow-hidden block">
-                  <img
-                    src={venue.image}
-                    alt={`${venue.name} venues on Sportsbnb`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    loading="lazy"
-                    decoding="async"
-                    width={516}
-                    height={688}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                    <h3 className="font-semibold text-primary-foreground text-lg md:text-2xl tracking-tight">{venue.name}</h3>
-                    <p className="text-primary-foreground/60 text-xs md:text-sm mt-1">{venue.count}</p>
-                  </div>
-                </Link>
-              ))}
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="grid grid-cols-2 md:grid-cols-6 md:grid-rows-2 gap-3 md:gap-4 md:h-[520px]"
+            >
+              {featuredVenues.map((venue, i) => {
+                // Bento sizing: tile 0 = wide+tall, 1 = tall, 2 = wide, 3 = small
+                const span = [
+                  "md:col-span-3 md:row-span-2",
+                  "md:col-span-3 md:row-span-1",
+                  "md:col-span-2 md:row-span-1",
+                  "md:col-span-1 md:row-span-1",
+                ][i];
+                return (
+                  <Link
+                    key={venue.name}
+                    to="/venues"
+                    className={`group relative overflow-hidden rounded-2xl block ${span} ${i > 1 ? "aspect-[3/4] md:aspect-auto" : "aspect-[4/5] md:aspect-auto"}`}
+                  >
+                    <img
+                      src={venue.image}
+                      alt={`${venue.name} venues on Sportsbnb`}
+                      className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 flex items-end justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-display font-semibold text-white text-lg md:text-2xl tracking-extra-tight leading-tight">
+                          {venue.name}
+                        </h3>
+                        <p className="text-white/65 text-xs md:text-sm mt-1 font-medium">{venue.count}</p>
+                      </div>
+                      <span className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </motion.div>
           </motion.div>
         </div>
