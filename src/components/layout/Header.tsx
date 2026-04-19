@@ -92,12 +92,14 @@ const Header = () => {
 
               <span className="mx-1 h-6 w-px bg-border" aria-hidden />
 
-              <Link to="/add-venue">
-                <Button size="sm" variant="outline" className="gap-1.5 h-9">
-                  <Building className="h-4 w-4" />
-                  List venue
-                </Button>
-              </Link>
+              {isOwner && (
+                <Link to="/add-venue">
+                  <Button size="sm" variant="outline" className="gap-1.5 h-9">
+                    <Building className="h-4 w-4" />
+                    List venue
+                  </Button>
+                </Link>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
