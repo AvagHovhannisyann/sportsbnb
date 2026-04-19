@@ -55,8 +55,8 @@ const VenueDetailsPage = () => {
       <Layout>
         <div className="container py-16 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Venue not found</h1>
-          <Link to="/discover">
-            <Button>Back to Discover</Button>
+          <Link to="/venues">
+            <Button>Back to Venues</Button>
           </Link>
         </div>
       </Layout>
@@ -157,7 +157,7 @@ const VenueDetailsPage = () => {
         {/* Back Navigation */}
         <div className="container py-4">
           <Link
-            to="/discover"
+            to="/venues"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
