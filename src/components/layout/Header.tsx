@@ -77,40 +77,40 @@ const Header = () => {
           </nav>
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2">
           {!isLoading && user ? (
             <>
-              {/* List Venue CTA */}
-              <Link to="/add-venue">
-                <Button size="sm" className="gap-1.5">
-                  <Building className="h-4 w-4" />
-                  List Venue
-                </Button>
-              </Link>
-
-              {/* Messages with badge */}
               <Link to="/messages" className="relative">
-                <Button variant="ghost" size="icon" className="relative">
-                  <MessageCircle className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative rounded-full text-foreground-soft hover:text-foreground">
+                  <MessageCircle className="h-[18px] w-[18px]" />
                   <ChatBadge />
                 </Button>
               </Link>
 
               <NotificationDropdown />
 
+              <span className="mx-1 h-6 w-px bg-border" aria-hidden />
+
+              <Link to="/add-venue">
+                <Button size="sm" variant="outline" className="gap-1.5 h-9">
+                  <Building className="h-4 w-4" />
+                  List venue
+                </Button>
+              </Link>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="rounded-full ml-1 h-10 w-10">
+                    <Avatar className="h-9 w-9 ring-1 ring-border">
                       <AvatarImage src={user.user_metadata?.avatar_url} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
                         {getUserInitials()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-2 py-1.5 text-sm font-medium text-foreground">
+                <DropdownMenuContent align="end" className="w-52">
+                  <div className="px-2 py-1.5 text-sm font-medium text-foreground truncate">
                     {user.user_metadata?.full_name || user.email}
                   </div>
                   <DropdownMenuSeparator />
@@ -150,10 +150,12 @@ const Header = () => {
           ) : !isLoading ? (
             <>
               <Link to="/login">
-                <Button variant="ghost" size="sm">Sign in</Button>
+                <Button variant="ghost" size="sm" className="text-foreground-soft hover:text-foreground">
+                  Sign in
+                </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm">Get started</Button>
+                <Button size="sm" className="h-9 px-4">Get started</Button>
               </Link>
             </>
           ) : null}

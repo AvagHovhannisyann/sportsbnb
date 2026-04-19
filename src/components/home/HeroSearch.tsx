@@ -51,13 +51,13 @@ const HeroSearch = () => {
   };
 
   return (
-    <div className="rounded-2xl bg-card/95 backdrop-blur-xl shadow-2xl border border-border/60 p-2 md:p-2.5">
+    <div className="rounded-2xl bg-card shadow-2xl border border-border p-1.5 md:p-2 ring-1 ring-foreground/5">
       <div className="flex flex-col md:flex-row md:items-stretch gap-1 md:gap-0">
         {/* Location */}
-        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2.5 md:border-r border-border/70">
+        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
           <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block">
               Location
             </label>
             <input
@@ -71,10 +71,10 @@ const HeroSearch = () => {
         </div>
 
         {/* Sport */}
-        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2.5 md:border-r border-border/70">
+        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block">
               Sport
             </label>
             <Select value={sport} onValueChange={setSport}>
@@ -94,10 +94,10 @@ const HeroSearch = () => {
         </div>
 
         {/* When */}
-        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2.5 md:border-r border-border/70">
+        <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
           <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block">
               When
             </label>
             <Select value={when} onValueChange={setWhen}>
@@ -126,7 +126,10 @@ const HeroSearch = () => {
             <Navigation className={`h-4 w-4 ${isLocating ? "animate-pulse" : ""}`} />
             <span className="hidden sm:inline">{isLocating ? "Locating…" : "Near me"}</span>
           </Button>
-          <Button onClick={handleSearch} className="flex-1 md:flex-none h-12 px-7 rounded-xl font-semibold">
+          <Button
+            onClick={handleSearch}
+            className="flex-1 md:flex-none h-12 px-7 rounded-xl font-semibold shadow-md hover:shadow-lg"
+          >
             <Search className="h-4 w-4" />
             Search
           </Button>
