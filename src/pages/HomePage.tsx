@@ -43,12 +43,8 @@ const HomePage = () => {
   const { user, isLoading } = useAuth();
   const { isArmenia, isUS, regionLabel } = useRegion();
 
-  const [stats, setStats] = useState([
-    { value: "—", label: "Venues Listed" },
-    { value: "—", label: "Games Created" },
-    { value: "—", label: "Teams Formed" },
-    { value: "—", label: "Average Rating" },
-  ]);
+  const [stats, setStats] = useState<{ value: string; label: string }[]>([]);
+  const [statsLoaded, setStatsLoaded] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -64,13 +60,14 @@ const HomePage = () => {
       const ratings = ratingsRes.data ?? [];
       const avgRating = ratings.length > 0
         ? (ratings.reduce((sum, v) => sum + Number(v.rating), 0) / ratings.length).toFixed(1)
-        : "—";
-      setStats([
-        { value: venueCount.toString(), label: "Venues Listed" },
-        { value: gameCount.toString(), label: "Games Created" },
-        { value: teamCount.toString(), label: "Teams Formed" },
-        { value: avgRating !== "—" ? `${avgRating}★` : "—", label: "Average Rating" },
-      ]);
+        : null;
+      const next: { value: string; label: string }[] = [];
+      if (venueCount > 0) next.push({ value: venueCount.toString(), label: "Venues Listed" });
+      if (gameCount > 0) next.push({ value: gameCount.toString(), label: "Games Created" });
+      if (teamCount > 0) next.push({ value: teamCount.toString(), label: "Teams Formed" });
+      if (avgRating) next.push({ value: `${avgRating}★`, label: "Average Rating" });
+      setStats(next);
+      setStatsLoaded(true);
     };
     fetchStats();
   }, []);
@@ -116,7 +113,7 @@ const HomePage = () => {
         sports.map((sport, i) => ({
           name: sport,
           image: images[i],
-          count: `${results[i].count ?? 0} venues`,
+          count: (results[i].count ?? 0) > 0 ? `${results[i].count} venues` : "",
         }))
       );
     };
@@ -302,8 +299,7 @@ const HomePage = () => {
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">{stats[0].value}</span>{" "}
-                      verified venues across the network
+                      Built for players in your city — message owners directly.
                     </p>
                   </div>
                 </motion.div>
@@ -340,8 +336,8 @@ const HomePage = () => {
                   <Activity className="h-4 w-4" strokeWidth={2.25} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Live now</p>
-                  <p className="text-sm font-semibold text-foreground truncate">12 courts available nearby</p>
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Real-time</p>
+                  <p className="text-sm font-semibold text-foreground truncate">Live availability, no calls</p>
                 </div>
               </div>
 
@@ -370,33 +366,40 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── Stats strip — flush against tinted band ── */}
-      <section className="bg-surface-1 border-y border-border pt-20 md:pt-24 pb-10 md:pb-14">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            transition={sectionTransition}
-            className="grid grid-cols-2 md:grid-cols-4 gap-y-8 md:divide-x md:divide-border"
-          >
-            {stats.map((stat, i) => (
-              <div
-                key={stat.label}
-                className={`md:px-8 ${i === 0 ? "md:pl-0" : ""} ${i === stats.length - 1 ? "md:pr-0" : ""}`}
-              >
-                <p className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-none">
-                  {stat.value}
-                </p>
-                <p className="text-xs md:text-sm text-muted-foreground mt-2 font-medium uppercase tracking-wider">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      {/* ── Stats strip — only when we have real data ── */}
+      {stats.length > 0 && (
+        <section className="bg-surface-1 border-y border-border pt-20 md:pt-24 pb-10 md:pb-14">
+          <div className="container">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              transition={sectionTransition}
+              className={`grid gap-y-8 md:divide-x md:divide-border ${
+                stats.length === 1 ? "grid-cols-1" :
+                stats.length === 2 ? "grid-cols-2" :
+                stats.length === 3 ? "grid-cols-2 md:grid-cols-3" :
+                "grid-cols-2 md:grid-cols-4"
+              }`}
+            >
+              {stats.map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={`md:px-8 ${i === 0 ? "md:pl-0" : ""} ${i === stats.length - 1 ? "md:pr-0" : ""}`}
+                >
+                  <p className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-none">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-2 font-medium uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* ── Categories — asymmetric bento ── */}
       <section className="py-24 md:py-36 bg-background">
@@ -461,7 +464,7 @@ const HomePage = () => {
                         <h3 className="font-display font-semibold text-white text-lg md:text-2xl tracking-extra-tight leading-tight">
                           {venue.name}
                         </h3>
-                        <p className="text-white/65 text-xs md:text-sm mt-1 font-medium">{venue.count}</p>
+                        {venue.count && <p className="text-white/65 text-xs md:text-sm mt-1 font-medium">{venue.count}</p>}
                       </div>
                       <span className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
                         <ArrowRight className="h-4 w-4" />
