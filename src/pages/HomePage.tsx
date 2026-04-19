@@ -464,7 +464,7 @@ const HomePage = () => {
                         <h3 className="font-display font-semibold text-white text-lg md:text-2xl tracking-extra-tight leading-tight">
                           {venue.name}
                         </h3>
-                        <p className="text-white/65 text-xs md:text-sm mt-1 font-medium">{venue.count}</p>
+                        {venue.count && <p className="text-white/65 text-xs md:text-sm mt-1 font-medium">{venue.count}</p>}
                       </div>
                       <span className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
                         <ArrowRight className="h-4 w-4" />
