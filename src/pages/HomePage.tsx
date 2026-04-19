@@ -593,40 +593,42 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── For Venue Owners ── */}
-      <section className="py-20 md:py-36 bg-secondary">
-        <div className="container">
+      {/* ── For Venue Owners — dark editorial split ── */}
+      <section className="relative py-24 md:py-36 bg-secondary overflow-hidden">
+        <div className="absolute inset-0 bg-grid-soft opacity-[0.04] pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-[80%] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+        <div className="container relative">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
-            className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center"
+            className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center"
           >
-            <motion.div variants={fadeUp} transition={sectionTransition}>
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-                For Venue Owners
-              </p>
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-secondary-foreground tracking-tighter leading-[1.05] mb-5 md:mb-8">
-                Fill your courts.
-                <br />
-                Grow your business.
+            <motion.div variants={fadeUp} transition={sectionTransition} className="lg:col-span-6">
+              <span className="inline-flex items-center gap-2 rounded-full border border-secondary-foreground/15 bg-secondary-foreground/[0.06] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground/80 mb-6">
+                For venue owners
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-secondary-foreground tracking-tightest leading-[1.02] mb-6 md:mb-7 text-balance">
+                Fill empty courts.<br />
+                <span className="italic font-medium text-secondary-foreground/80">Keep every booking.</span>
               </h2>
-              <p className="text-base md:text-lg text-secondary-foreground/60 mb-8 md:mb-12 leading-relaxed max-w-lg">
-                Join facility owners who manage bookings, reach new customers, and maximize revenue — all from a single dashboard.
+              <p className="text-base md:text-lg text-secondary-foreground/65 mb-10 leading-relaxed max-w-lg">
+                Get discovered by local players, manage availability in one place, and let bookings flow straight to your WhatsApp — zero commissions, zero fuss.
               </p>
 
-              <div className="space-y-5 md:space-y-6 mb-8 md:mb-12">
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6 mb-10 md:mb-12">
                 {forOwners.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.title} className="flex gap-5">
-                      <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-primary/15 flex items-center justify-center text-primary">
-                        <Icon className="h-6 w-6 md:h-7 md:w-7" strokeWidth={1.5} />
+                    <div key={item.title} className="flex gap-4">
+                      <div className="shrink-0 w-11 h-11 rounded-xl bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center text-primary">
+                        <Icon className="h-5 w-5" strokeWidth={2} />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-secondary-foreground text-base md:text-lg mb-1">{item.title}</h3>
-                        <p className="text-sm md:text-base text-secondary-foreground/60">{item.description}</p>
+                      <div className="min-w-0">
+                        <h3 className="font-display font-semibold text-secondary-foreground text-base mb-1">{item.title}</h3>
+                        <p className="text-sm text-secondary-foreground/60 leading-relaxed">{item.description}</p>
                       </div>
                     </div>
                   );
@@ -634,37 +636,62 @@ const HomePage = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link to="/list-venue">
-                  <Button size="lg" className="h-14 px-10 text-base rounded-full gap-2">
+                <Link to="/add-venue">
+                  <Button size="lg" className="gap-2">
                     List your venue free
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link to="/for-owners">
-                  <Button size="lg" variant="heroOutline" className="h-14 px-10 text-base rounded-full">
+                  <Button size="lg" variant="heroOutline">
                     Learn more
                   </Button>
                 </Link>
               </div>
             </motion.div>
 
+            {/* Visual side — image with metric overlays */}
             <motion.div
               variants={fadeUp}
               transition={{ ...sectionTransition, duration: 0.8 } as any}
-              className="relative hidden lg:block"
+              className="lg:col-span-6 relative hidden lg:block"
             >
-              <div className="aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl">
-                <img src={venueBasketball} alt="Basketball venue interior" className="w-full h-full object-cover" loading="lazy" />
+              <div className="relative aspect-[5/6] rounded-[1.75rem] overflow-hidden shadow-2xl border border-secondary-foreground/10">
+                <img src={venueBasketball} alt="Venue interior at golden hour" className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-secondary/60 via-transparent to-transparent" />
               </div>
-              <div className="absolute -inset-6 -z-10 bg-primary/10 rounded-[3rem] blur-3xl" />
+
+              {/* Floating revenue card */}
+              <div className="absolute -left-6 top-12 bg-card border border-border rounded-2xl shadow-xl p-4 w-56">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">This month</p>
+                <p className="font-display text-3xl font-bold text-foreground tracking-tightest mt-1">+38%</p>
+                <p className="text-xs text-muted-foreground mt-1">bookings vs. last month</p>
+                <div className="mt-3 flex items-center gap-1 h-8">
+                  {[40, 65, 50, 75, 60, 88, 95].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-sm bg-primary/80" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Floating booking card */}
+              <div className="absolute -right-4 bottom-10 bg-card border border-border rounded-2xl shadow-xl p-4 w-64">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-bold">M</div>
+                  <p className="text-sm font-semibold text-foreground">New booking</p>
+                  <span className="ml-auto text-[10px] font-semibold text-primary uppercase tracking-wider">live</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Court 2 · Sat 7:00 PM · 90 min</p>
+              </div>
+
+              <div className="absolute -inset-8 -z-10 bg-primary/15 rounded-[2.5rem] blur-3xl" />
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
+      {/* ── Testimonials — magazine layout ── */}
       {testimonials.length > 0 && (
-      <section className="py-20 md:py-36 bg-background">
+      <section className="py-24 md:py-36 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -672,28 +699,51 @@ const HomePage = () => {
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
           >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="text-center mb-12 md:mb-20">
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-                What Players Say
-              </p>
-              <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
-                Loved by the community.
-              </h2>
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 md:mb-16"
+            >
+              <div>
+                <p className="text-eyebrow mb-3">Voices from the community</p>
+                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
+                  Real players.<br />
+                  <span className="italic font-medium text-foreground-soft">Real reviews.</span>
+                </h2>
+              </div>
             </motion.div>
 
-            <motion.div variants={fadeUp} transition={sectionTransition} className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-              {testimonials.map((t) => (
-                <div key={t.name} className="bg-card border border-border/40 rounded-2xl md:rounded-3xl p-6 md:p-8">
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 text-primary fill-primary" />
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="grid md:grid-cols-3 gap-4 md:gap-6"
+            >
+              {testimonials.map((t, i) => (
+                <figure
+                  key={t.name}
+                  className={`group relative bg-card border border-border rounded-2xl p-7 md:p-8 hover:shadow-md transition-all ${
+                    i === 1 ? "md:translate-y-6" : ""
+                  }`}
+                >
+                  <span className="absolute -top-4 left-7 font-display text-6xl text-primary/30 leading-none select-none">"</span>
+                  <div className="flex gap-0.5 mb-5">
+                    {Array.from({ length: t.rating }).map((_, j) => (
+                      <Star key={j} className="h-4 w-4 text-warning fill-warning" />
                     ))}
                   </div>
-                  <p className="text-sm md:text-base text-foreground leading-relaxed mb-6">"{t.text}"</p>
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                  </div>
-                </div>
+                  <blockquote className="text-base md:text-[17px] text-foreground leading-relaxed mb-6 font-medium">
+                    {t.text}
+                  </blockquote>
+                  <figcaption className="flex items-center gap-3 pt-5 border-t border-border">
+                    <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      {t.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">Verified player</p>
+                    </div>
+                  </figcaption>
+                </figure>
               ))}
             </motion.div>
           </motion.div>
