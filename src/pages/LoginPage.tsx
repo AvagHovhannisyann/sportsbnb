@@ -238,11 +238,13 @@ const LoginPage = () => {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 w-full">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30 transition-transform group-hover:scale-105">
-              <span className="text-lg font-bold text-primary-foreground">S</span>
-            </div>
-            <span className="text-xl font-semibold text-white">Sportsbnb</span>
+          <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center group">
+            <img
+              src="/favicon.png"
+              alt="Sportsbnb"
+              className="h-10 w-10 object-contain transition-transform group-hover:scale-105 drop-shadow-[0_4px_24px_rgba(22,163,74,0.45)]"
+            />
+            <span className="ml-3 font-display text-xl font-bold text-white tracking-tight">Sportsbnb</span>
           </Link>
           
           {/* Hero Text */}
@@ -377,11 +379,8 @@ const LoginPage = () => {
             <>
               {/* Mobile Logo */}
               <div className="lg:hidden mb-8">
-                <Link to="/" className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                    <span className="text-lg font-bold text-primary-foreground">S</span>
-                  </div>
-                  <span className="text-xl font-semibold text-foreground">Sportsbnb</span>
+                <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
+                  <Logo variant="full" className="h-8 w-auto" />
                 </Link>
               </div>
 
