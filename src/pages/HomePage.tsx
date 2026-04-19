@@ -299,8 +299,7 @@ const HomePage = () => {
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">{stats[0].value}</span>{" "}
-                      verified venues across the network
+                      Built for players in your city — message owners directly.
                     </p>
                   </div>
                 </motion.div>
@@ -337,8 +336,8 @@ const HomePage = () => {
                   <Activity className="h-4 w-4" strokeWidth={2.25} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Live now</p>
-                  <p className="text-sm font-semibold text-foreground truncate">12 courts available nearby</p>
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Real-time</p>
+                  <p className="text-sm font-semibold text-foreground truncate">Live availability, no calls</p>
                 </div>
               </div>
 
