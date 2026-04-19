@@ -751,8 +751,8 @@ const HomePage = () => {
       </section>
       )}
 
-      {/* ── Platform Features ── */}
-      <section className="py-20 md:py-32 bg-muted/20 overflow-hidden">
+      {/* ── Platform Features — marquee feel ── */}
+      <section className="py-24 md:py-32 section-tinted border-y border-border overflow-hidden">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -760,81 +760,91 @@ const HomePage = () => {
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
           >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="text-center mb-10 md:mb-16">
-              <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
-                35+ features.{" "}
-                <span className="text-primary">Zero friction.</span>
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="max-w-3xl mb-12 md:mb-14"
+            >
+              <p className="text-eyebrow mb-3">Built in, not bolted on</p>
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
+                35+ features. <span className="italic font-medium text-foreground-soft">Zero friction.</span>
               </h2>
             </motion.div>
 
-            {featureRows.map((row, rowIdx) => (
-              <motion.div key={rowIdx} variants={fadeUp} transition={sectionTransition} className="flex flex-wrap justify-center gap-2 md:gap-3 mb-2 md:mb-3">
-                {row.map((f) => {
-                  const Icon = f.icon;
-                  return (
-                    <div key={f.label} className="group flex items-center gap-2 rounded-full border border-border/40 bg-background/60 px-4 py-2.5 md:px-5 md:py-3 hover:bg-primary/10 hover:border-primary/30 transition-colors">
-                      <Icon className="h-4 w-4 text-primary shrink-0" strokeWidth={2} />
-                      <span className="text-xs md:text-sm font-medium text-foreground whitespace-nowrap">{f.label}</span>
-                    </div>
-                  );
-                })}
-              </motion.div>
-            ))}
+            <div className="space-y-3">
+              {featureRows.map((row, rowIdx) => (
+                <motion.div
+                  key={rowIdx}
+                  variants={fadeUp}
+                  transition={sectionTransition}
+                  className={`flex flex-wrap gap-2 md:gap-2.5 ${rowIdx % 2 === 1 ? "md:pl-16" : ""}`}
+                >
+                  {row.map((f) => {
+                    const Icon = f.icon;
+                    return (
+                      <div
+                        key={f.label}
+                        className="group flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 md:px-4 md:py-2.5 hover:bg-primary hover:border-primary hover:text-primary-foreground transition-colors shadow-xs"
+                      >
+                        <Icon className="h-3.5 w-3.5 text-primary group-hover:text-primary-foreground shrink-0" strokeWidth={2.25} />
+                        <span className="text-xs md:text-[13px] font-semibold whitespace-nowrap">{f.label}</span>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Mission & Vision ── */}
-      <section className="py-20 md:py-36 bg-background">
+      {/* ── Mission & Vision — quieter, pull-quote feel ── */}
+      <section className="py-24 md:py-36 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
+            className="max-w-5xl mx-auto"
           >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="text-center mb-12 md:mb-20">
-              <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
-                What drives us.
-              </h2>
-            </motion.div>
-
-            <motion.div variants={fadeUp} transition={sectionTransition} className="grid md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
-              <div className="bg-card border border-border/40 rounded-3xl p-8 md:p-12">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6">
-                  <Target className="h-6 w-6" strokeWidth={1.5} />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4 tracking-tight">Our Mission</h3>
-                <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                  To make it easy for anyone to find, organize, and join sports activity — removing the friction that prevents active people from playing regularly.
-                </p>
+            <motion.div variants={fadeUp} transition={sectionTransition} className="grid md:grid-cols-12 gap-10 md:gap-14 items-start">
+              <div className="md:col-span-5">
+                <p className="text-eyebrow mb-3">What drives us</p>
+                <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tightest leading-[1.05]">
+                  Sport should be a tap away — not a hassle.
+                </h2>
               </div>
-
-              <div className="bg-card border border-border/40 rounded-3xl p-8 md:p-12">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6">
-                  <Eye className="h-6 w-6" strokeWidth={1.5} />
+              <div className="md:col-span-7 space-y-8">
+                <div className="border-l-2 border-primary pl-6">
+                  <h3 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Mission
+                  </h3>
+                  <p className="text-base md:text-lg text-foreground-soft leading-relaxed">
+                    Make it effortless for anyone to find, organize, and join sport — removing every barrier between people and play.
+                  </p>
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4 tracking-tight">Our Vision</h3>
-                <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                  A world where finding a game is as easy as opening an app — one trusted place to discover, connect, and stay active.
-                </p>
+                <div className="border-l-2 border-border pl-6">
+                  <h3 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-primary" />
+                    Vision
+                  </h3>
+                  <p className="text-base md:text-lg text-foreground-soft leading-relaxed">
+                    A world where finding a game is as easy as opening an app — one trusted place to discover, connect, and stay active.
+                  </p>
+                </div>
               </div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
-      <section className="relative py-24 md:py-40 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Sports complex"
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/65 to-black/80" />
-        </div>
+      {/* ── Final CTA — solid color, brand-forward ── */}
+      <section className="relative py-24 md:py-36 bg-secondary overflow-hidden">
+        <div className="absolute inset-0 bg-grid-soft opacity-[0.05] pointer-events-none" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+
         <div className="container relative z-10">
           <motion.div
             initial="hidden"
@@ -843,33 +853,43 @@ const HomePage = () => {
             variants={staggerContainer}
             className="max-w-3xl mx-auto text-center"
           >
-            <motion.p variants={fadeUp} transition={sectionTransition} className="text-sm font-semibold text-primary tracking-widest uppercase mb-4">
-              Get Started Today
-            </motion.p>
-            <motion.h2 variants={fadeUp} transition={sectionTransition} className="text-3xl md:text-5xl lg:text-7xl font-bold text-primary-foreground tracking-tighter mb-5 md:mb-8">
-              Your next game<br />is one click away.
+            <motion.h2
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="font-display text-display-xl text-secondary-foreground mb-6 md:mb-8 text-balance"
+            >
+              Your next game is{" "}
+              <span className="italic font-medium text-primary">one tap away.</span>
             </motion.h2>
-            <motion.p variants={fadeUp} transition={sectionTransition} className="text-base md:text-xl text-primary-foreground/60 mb-8 md:mb-12 max-w-md mx-auto">
-              Join players and venues already on Sportsbnb. Free to start, no credit card required.
+            <motion.p
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="text-base md:text-xl text-secondary-foreground/65 mb-10 md:mb-12 max-w-md mx-auto leading-relaxed"
+            >
+              Free to start. No card required. Just play more.
             </motion.p>
-            <motion.div variants={fadeUp} transition={sectionTransition} className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-20 md:mb-0">
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-20 md:mb-0"
+            >
               {!isLoading && !user ? (
                 <Link to="/signup">
-                  <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold gap-2 shadow-2xl">
+                  <Button size="xl" className="w-full sm:w-auto gap-2 shadow-2xl">
                     Create free account
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                 </Link>
               ) : (
                 <Link to="/dashboard">
-                  <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold gap-2 shadow-2xl">
-                    Go to Dashboard
+                  <Button size="xl" className="w-full sm:w-auto gap-2 shadow-2xl">
+                    Go to dashboard
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                 </Link>
               )}
               <Link to="/venues">
-                <Button variant="ghost" size="xl" className="w-full sm:w-auto rounded-full border border-primary-foreground/20 text-primary-foreground/90 hover:text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="heroOutline" size="xl" className="w-full sm:w-auto bg-secondary-foreground/[0.06] border-secondary-foreground/20 text-secondary-foreground hover:bg-secondary-foreground/10 hover:border-secondary-foreground/30">
                   Explore venues
                 </Button>
               </Link>
