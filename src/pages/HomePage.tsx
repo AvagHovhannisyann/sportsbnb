@@ -455,55 +455,70 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="py-20 md:py-36 bg-muted/20">
+      {/* ── How It Works — left-aligned editorial ── */}
+      <section className="py-24 md:py-36 section-tinted border-y border-border">
         <div className="container">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
+            className="grid lg:grid-cols-12 gap-10 lg:gap-16"
           >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="text-center mb-12 md:mb-20">
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-                How It Works
-              </p>
-              <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter mb-4 md:mb-6">
-                Book in minutes,<br className="hidden md:block" /> not hours.
+            <motion.div variants={fadeUp} transition={sectionTransition} className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
+              <p className="text-eyebrow mb-3">How it works</p>
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] mb-5 md:mb-6 text-balance">
+                Three taps,<br />
+                <span className="text-foreground-soft italic font-medium">one game.</span>
               </h2>
-              <p className="text-base md:text-xl text-muted-foreground max-w-xl mx-auto">
-                No more phone calls, spreadsheets, or endless group chats.
+              <p className="text-base md:text-lg text-foreground-soft leading-relaxed mb-8 max-w-md">
+                Skip the calls, the screenshots, and the group-chat back-and-forth. Sportsbnb is built for the way players actually book.
               </p>
-            </motion.div>
-
-            <motion.div variants={fadeUp} transition={sectionTransition} className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto mb-12 md:mb-16">
-              {howItWorks.map((step) => {
-                const Icon = step.icon;
-                return (
-                  <div key={step.title} className="relative bg-card border border-border/50 rounded-2xl md:rounded-3xl p-6 md:p-10 text-center group hover:border-primary/30 transition-colors">
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
-                      {step.step}
-                    </div>
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-primary/10 text-primary mx-auto mb-5 md:mb-6 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-7 w-7 md:h-8 md:w-8" strokeWidth={1.5} />
-                    </div>
-                    <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2 md:mb-3 tracking-tight">{step.title}</h3>
-                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{step.description}</p>
-                  </div>
-                );
-              })}
-            </motion.div>
-
-            <motion.div variants={fadeUp} transition={sectionTransition} className="flex flex-col items-center gap-6">
               <Link to="/venues">
-                <Button size="lg" className="h-14 px-10 text-base rounded-full gap-2">
-                  Start exploring venues
-                  <ArrowRight className="h-5 w-5" />
+                <Button size="lg" className="gap-2">
+                  Start exploring
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <NearbyPlayers />
             </motion.div>
+
+            <div className="lg:col-span-7 space-y-3 md:space-y-4">
+              {howItWorks.map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <motion.div
+                    key={step.title}
+                    variants={fadeUp}
+                    transition={sectionTransition}
+                    className="group relative bg-card border border-border rounded-2xl p-6 md:p-7 hover:shadow-md hover:border-border-strong transition-all"
+                  >
+                    <div className="flex items-start gap-5 md:gap-6">
+                      <div className="shrink-0 flex flex-col items-center gap-2">
+                        <span className="font-display text-xs font-bold text-primary tracking-wider">
+                          {step.step}
+                        </span>
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-primary-soft text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2} />
+                        </div>
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight mb-2">
+                          {step.title}
+                        </h3>
+                        <p className="text-sm md:text-base text-foreground-soft leading-relaxed">
+                          {step.description}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.div>
+
+          <div className="mt-12 md:mt-16 flex justify-center">
+            <NearbyPlayers />
+          </div>
         </div>
       </section>
 
