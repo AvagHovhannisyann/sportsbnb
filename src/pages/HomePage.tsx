@@ -522,8 +522,8 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── Why Sportsbnb ── */}
-      <section className="py-20 md:py-36 bg-background">
+      {/* ── Why Sportsbnb — asymmetric grid w/ feature spotlight ── */}
+      <section className="py-24 md:py-36 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -531,28 +531,60 @@ const HomePage = () => {
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
           >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="text-center mb-12 md:mb-20">
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-                Why Sportsbnb
-              </p>
-              <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter mb-4 md:mb-6">
-                Built for players,<br className="hidden md:block" /> by players.
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="max-w-3xl mb-12 md:mb-16"
+            >
+              <p className="text-eyebrow mb-3">Why Sportsbnb</p>
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
+                Built for players who<br className="hidden md:block" />{" "}
+                <span className="italic font-medium text-foreground-soft">just want to play.</span>
               </h2>
-              <p className="text-base md:text-xl text-muted-foreground max-w-xl mx-auto">
-                Every feature designed to eliminate friction from sport.
-              </p>
             </motion.div>
 
-            <motion.div variants={fadeUp} transition={sectionTransition} className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto">
-              {benefits.map((benefit) => {
+            <motion.div
+              variants={fadeUp}
+              transition={sectionTransition}
+              className="grid md:grid-cols-6 gap-4 md:gap-5"
+            >
+              {benefits.map((benefit, i) => {
                 const Icon = benefit.icon;
+                // First card spans 2 cols + 2 rows (visual spotlight); rest = 2 cols
+                const isSpotlight = i === 0;
                 return (
-                  <div key={benefit.title} className="bg-card border border-border/40 rounded-2xl p-6 md:p-8 group hover:border-primary/30 hover:shadow-lg transition-all">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-6 w-6" strokeWidth={1.5} />
+                  <div
+                    key={benefit.title}
+                    className={`group relative overflow-hidden rounded-2xl border border-border bg-card p-6 md:p-7 transition-all hover:border-border-strong hover:shadow-md ${
+                      isSpotlight
+                        ? "md:col-span-3 md:row-span-2 md:p-9 bg-gradient-to-br from-primary-soft via-card to-card"
+                        : "md:col-span-3 lg:col-span-2"
+                    }`}
+                  >
+                    {isSpotlight && (
+                      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+                    )}
+                    <div
+                      className={`relative inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground mb-5 ${
+                        isSpotlight ? "h-14 w-14" : "h-11 w-11"
+                      }`}
+                    >
+                      <Icon className={isSpotlight ? "h-6 w-6" : "h-5 w-5"} strokeWidth={2} />
                     </div>
-                    <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">{benefit.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{benefit.desc}</p>
+                    <h3
+                      className={`font-display font-semibold text-foreground tracking-extra-tight mb-2 ${
+                        isSpotlight ? "text-2xl md:text-3xl leading-tight" : "text-lg"
+                      }`}
+                    >
+                      {benefit.title}
+                    </h3>
+                    <p
+                      className={`text-foreground-soft leading-relaxed ${
+                        isSpotlight ? "text-base md:text-lg max-w-md" : "text-sm"
+                      }`}
+                    >
+                      {benefit.desc}
+                    </p>
                   </div>
                 );
               })}
