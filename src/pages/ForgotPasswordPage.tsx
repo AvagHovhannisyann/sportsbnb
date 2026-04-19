@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,11 +55,8 @@ const ForgotPasswordPage = () => {
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
         <div>
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <span className="text-lg font-bold text-primary-foreground">S</span>
-            </div>
-            <span className="text-xl font-semibold text-secondary-foreground">Sportsbnb</span>
+          <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
+            <Logo variant="full" className="h-8 w-auto" />
           </Link>
         </div>
         

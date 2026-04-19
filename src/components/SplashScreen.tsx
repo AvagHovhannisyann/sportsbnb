@@ -17,16 +17,14 @@ const SplashScreen = ({ onFinished }: { onFinished: () => void }) => {
         fadeOut ? "opacity-0" : "opacity-100"
       }`}
     >
-      {/* Logo mark */}
-      <div className="flex flex-col items-center gap-4">
-        <img 
-          src="/favicon.png" 
-          alt="Sportsbnb" 
-          className="w-16 h-16 rounded-2xl shadow-lg"
+      {/* Logo */}
+      <div className="flex flex-col items-center gap-2 animate-in fade-in zoom-in-95 duration-500">
+        <img
+          src="/favicon.png"
+          alt="Sportsbnb"
+          className="w-16 h-16 object-contain animate-pulse"
+          draggable={false}
         />
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Sportsbnb
-        </h1>
       </div>
 
       {/* Loading indicator */}

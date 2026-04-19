@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Logo } from "@/components/brand/Logo";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,15 +50,11 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
       <div className="container flex h-16 md:h-[68px] items-center justify-between">
         <div className="flex items-center gap-6 md:gap-10">
-          <Link to="/" className="flex items-center gap-2 group">
-            <img
-              src="/favicon.png"
-              alt="Sportsbnb"
-              className="h-8 w-8 md:h-9 md:w-9 rounded-lg transition-transform group-hover:scale-105"
+          <Link to="/" aria-label="Sportsbnb home" className="flex items-center group -my-1">
+            <Logo
+              variant="full"
+              className="h-7 md:h-8 w-auto transition-transform group-hover:scale-[1.02]"
             />
-            <span className="font-display text-lg md:text-xl font-bold text-foreground tracking-extra-tight">
-              Sportsbnb
-            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">

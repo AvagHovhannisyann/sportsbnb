@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Logo } from "@/components/brand/Logo";
 
 const Footer = () => {
   const footerLinks = {
@@ -25,11 +26,8 @@ const Footer = () => {
       <div className="container py-16 md:py-20">
         <div className="grid grid-cols-2 md:grid-cols-12 gap-10 md:gap-8">
           <div className="col-span-2 md:col-span-5 max-w-sm">
-            <Link to="/" className="inline-flex items-center gap-2 mb-5">
-              <img src="/favicon.png" alt="Sportsbnb" className="h-9 w-9 rounded-lg" />
-              <span className="font-display text-xl font-bold text-foreground tracking-extra-tight">
-                Sportsbnb
-              </span>
+            <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center mb-5 opacity-90 hover:opacity-100 transition-opacity">
+              <Logo variant="full" className="h-8 w-auto" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               The simplest way to find and book sports venues. Built for players, designed for owners.
