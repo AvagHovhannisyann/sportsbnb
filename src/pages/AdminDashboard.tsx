@@ -69,6 +69,7 @@ import {
   type AppRole,
 } from "@/hooks/useAdmin";
 import { format } from "date-fns";
+import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
 
 const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissionsTab"));
 const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
@@ -200,7 +201,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Overview Tab */}
-            <TabsContent value="overview">
+            <TabsContent value="overview" className="space-y-6">
+              <AdminPulseCard />
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* Pending Venues */}
                 <Card>
