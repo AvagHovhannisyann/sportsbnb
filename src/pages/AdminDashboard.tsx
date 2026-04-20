@@ -70,6 +70,7 @@ import {
 } from "@/hooks/useAdmin";
 import { format } from "date-fns";
 import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
+import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
 
 const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissionsTab"));
 const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
@@ -203,6 +204,7 @@ const AdminDashboard = () => {
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
               <AdminPulseCard />
+              <SupplyDemandHeatmap />
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* Pending Venues */}
                 <Card>

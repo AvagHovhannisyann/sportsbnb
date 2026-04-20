@@ -12,6 +12,7 @@ import AchievementsSection from "@/components/achievements/AchievementsSection";
 import GameMatchmakingCard from "@/components/games/GameMatchmakingCard";
 import { UpcomingPlansCard } from "@/components/player/UpcomingPlansCard";
 import { NextMoveCard } from "@/components/dashboard/NextMoveCard";
+import { SportsDNACard } from "@/components/player/SportsDNACard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserGames } from "@/hooks/useGames";
 import { useMyLeads } from "@/hooks/useLeads";
@@ -169,9 +170,10 @@ const PlayerDashboard = () => {
 
           {/* Stats / Referrals / Matchmaking / Achievements */}
           <div className="grid md:grid-cols-2 gap-6">
+            <SportsDNACard />
             <PlayerStatsCard />
-            <ReferralCard />
           </div>
+          <ReferralCard />
           <div className="grid md:grid-cols-2 gap-6">
             <GameMatchmakingCard />
             <AchievementsSection />
