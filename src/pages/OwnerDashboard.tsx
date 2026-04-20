@@ -10,6 +10,7 @@ import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { useOwnerLeads, summarizeLeads } from "@/hooks/useLeads";
 import { LeadInboxCard } from "@/components/owner/LeadInboxCard";
 import { OwnerCoachCard } from "@/components/dashboard/OwnerCoachCard";
+import { ListingHealthCard } from "@/components/owner/ListingHealthCard";
 import { formatPrice } from "@/lib/pricing";
 
 const OwnerDashboard = () => {
@@ -125,21 +126,7 @@ const OwnerDashboard = () => {
                   <Link to="/profile" className="block"><Button variant="outline" className="w-full justify-start"><Settings className="h-4 w-4 mr-2" />Account Settings</Button></Link>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader><CardTitle>Listing Health</CardTitle></CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  {myVenues.length === 0 ? (
-                    <p className="text-muted-foreground">Add a venue to see your listing health score.</p>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between"><span className="text-muted-foreground">Active venues</span><span className="font-medium text-foreground">{activeVenues.length}</span></div>
-                      <div className="flex items-center justify-between"><span className="text-muted-foreground">Pending review</span><span className="font-medium text-foreground">{pendingVenues.length}</span></div>
-                      <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg rating</span><span className="font-medium text-foreground">{avgRating ? avgRating.toFixed(1) : "—"}</span></div>
-                      <div className="flex items-center justify-between"><span className="text-muted-foreground">Total reviews</span><span className="font-medium text-foreground">{totalReviews}</span></div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <ListingHealthCard />
             </div>
           </div>
 
