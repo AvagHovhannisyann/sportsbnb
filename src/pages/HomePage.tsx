@@ -311,7 +311,7 @@ const HomePage = () => {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-              className="hidden sm:block lg:col-span-5 relative h-[420px] sm:h-[520px] lg:h-[640px]"
+              className="hidden lg:block lg:col-span-5 relative h-[640px]"
             >
               {/* main photo */}
               <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl border border-border">
