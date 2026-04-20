@@ -22,6 +22,8 @@ interface Profile {
   venue_address: string | null;
   sports_offered: string[] | null;
   venue_description: string | null;
+  xp?: number;
+  level?: number;
 }
 
 interface AuthContextType {
