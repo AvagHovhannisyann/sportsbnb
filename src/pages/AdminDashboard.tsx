@@ -101,7 +101,7 @@ const AdminDashboard = () => {
       bgColor: "bg-blue-500/10",
     },
     {
-      label: "Total Venues",
+      label: "Active Venues",
       value: stats?.totalVenues || 0,
       icon: Building2,
       color: "text-green-500",
@@ -109,25 +109,18 @@ const AdminDashboard = () => {
       subValue: stats?.pendingVenues ? `${stats.pendingVenues} pending` : undefined,
     },
     {
-      label: "Total Bookings",
+      label: "Lead Volume",
       value: stats?.totalBookings || 0,
       icon: Calendar,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
     {
-      label: "Total Games",
+      label: "Active Games",
       value: stats?.totalGames || 0,
       icon: Gamepad2,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
-    },
-    {
-      label: "Total Revenue",
-      value: formatCurrency(stats?.totalRevenue || 0),
-      icon: DollarSign,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
     },
   ];
 
