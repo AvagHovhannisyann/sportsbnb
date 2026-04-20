@@ -359,7 +359,7 @@ const HomePage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="relative mt-2 md:-mb-16 z-20"
+            className="relative mt-2 mb-8 md:mb-0 md:-mb-16 z-20"
           >
             <HeroSearch />
           </motion.div>
