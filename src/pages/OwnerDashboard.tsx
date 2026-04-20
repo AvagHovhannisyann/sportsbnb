@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { useOwnerLeads, summarizeLeads } from "@/hooks/useLeads";
 import { LeadInboxCard } from "@/components/owner/LeadInboxCard";
+import { OwnerCoachCard } from "@/components/dashboard/OwnerCoachCard";
 import { formatPrice } from "@/lib/pricing";
 
 const OwnerDashboard = () => {
@@ -114,6 +115,7 @@ const OwnerDashboard = () => {
               <LeadInboxCard />
             </div>
             <div className="space-y-6">
+              <OwnerCoachCard />
               <Card>
                 <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
