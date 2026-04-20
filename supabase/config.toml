@@ -74,3 +74,12 @@ verify_jwt = false
 
 [functions.discover-fields]
 verify_jwt = false
+
+[functions.player-insights]
+verify_jwt = false
+
+[functions.owner-coach]
+verify_jwt = false
+
+[functions.admin-pulse]
+verify_jwt = false
