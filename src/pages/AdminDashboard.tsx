@@ -163,7 +163,7 @@ const AdminDashboard = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {statCards.map((stat) => {
                 const Icon = stat.icon;
                 return (
