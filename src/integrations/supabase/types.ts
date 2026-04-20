@@ -50,6 +50,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insights_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          insight_type: string
+          payload: Json
+          scope_key: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          insight_type: string
+          payload?: Json
+          scope_key?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          insight_type?: string
+          payload?: Json
+          scope_key?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       blocked_dates: {
         Row: {
           blocked_date: string
@@ -176,7 +209,9 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           id: string
+          lead_outcome: string
           note: string | null
+          outcome_updated_at: string | null
           players_count: number | null
           status: string
           updated_at: string
@@ -194,7 +229,9 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          lead_outcome?: string
           note?: string | null
+          outcome_updated_at?: string | null
           players_count?: number | null
           status?: string
           updated_at?: string
@@ -212,7 +249,9 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          lead_outcome?: string
           note?: string | null
+          outcome_updated_at?: string | null
           players_count?: number | null
           status?: string
           updated_at?: string
