@@ -11,6 +11,7 @@ import ReferralCard from "@/components/referral/ReferralCard";
 import AchievementsSection from "@/components/achievements/AchievementsSection";
 import GameMatchmakingCard from "@/components/games/GameMatchmakingCard";
 import { UpcomingPlansCard } from "@/components/player/UpcomingPlansCard";
+import { NextMoveCard } from "@/components/dashboard/NextMoveCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserGames } from "@/hooks/useGames";
 import { useMyLeads } from "@/hooks/useLeads";
@@ -97,22 +98,8 @@ const PlayerDashboard = () => {
             </div>
           </div>
 
-          {/* Hero "Next Move" card */}
-          <Card className="overflow-hidden border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background">
-            <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-medium text-primary uppercase tracking-wide mb-1">Next Move</div>
-                  <h2 className="text-xl sm:text-2xl font-semibold text-foreground truncate">{nextMove.title}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">{nextMove.subtitle}</p>
-                </div>
-              </div>
-              <Link to={nextMove.href}><Button size="lg">{nextMove.cta}</Button></Link>
-            </CardContent>
-          </Card>
+          {/* AI-powered Next Move */}
+          <NextMoveCard />
 
           {/* Lightweight signal strip (no payments) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
