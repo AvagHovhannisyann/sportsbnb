@@ -21,9 +21,6 @@ import venueFootball from "@/assets/venue-football.jpg";
 import venueTennis from "@/assets/venue-tennis.jpg";
 import venueBasketball from "@/assets/venue-basketball.jpg";
 import venueSwimming from "@/assets/venue-swimming.jpg";
-import founderAvag from "@/assets/founder-avag.jpg";
-import founderGor from "@/assets/founder-gor.jpg";
-import founderIrina from "@/assets/founder-irina.jpg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
