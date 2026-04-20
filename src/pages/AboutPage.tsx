@@ -3,9 +3,6 @@ import SEOHead from "@/components/seo/SEOHead";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Target, Users, Globe, ArrowRight, Eye, Heart, Shield, Sparkles } from "lucide-react";
-import founderAvag from "@/assets/founder-avag.jpg";
-import founderGor from "@/assets/founder-gor.jpg";
-import founderIrina from "@/assets/founder-irina.jpg";
 
 const AboutPage = () => {
   const values = [
@@ -31,26 +28,6 @@ const AboutPage = () => {
     },
   ];
 
-  const founders = [
-    {
-      img: founderAvag,
-      name: "Avag Hovhannisyan",
-      role: "Founder & CEO",
-      bio: "Driving the vision to connect players with venues seamlessly. Passionate about making sport accessible to everyone.",
-    },
-    {
-      img: founderGor,
-      name: "Gor Meliksetyan",
-      role: "Co-Founder & CTO",
-      bio: "Building the technology that powers thousands of bookings. Turns complex problems into simple experiences.",
-    },
-    {
-      img: founderIrina,
-      name: "Irina Grigoryan",
-      role: "Co-Founder & CPO",
-      bio: "Shaping the product and community experience. Every feature starts with the player in mind.",
-    },
-  ];
 
   return (
     <Layout>
@@ -104,34 +81,6 @@ const AboutPage = () => {
           </div>
         </section>
 
-        {/* Founders */}
-        <section className="py-16 md:py-24">
-          <div className="container">
-            <div className="text-center mb-12">
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
-                Meet The Team
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Built by people who love the game
-              </h2>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {founders.map((founder) => (
-                <div key={founder.name} className="bg-card border border-border/40 rounded-2xl p-6 md:p-8 text-center group hover:border-primary/30 transition-colors">
-                  <img
-                    src={founder.img}
-                    alt={founder.name}
-                    className="w-20 h-20 object-cover rounded-full border-2 border-primary/15 mx-auto mb-4"
-                    loading="lazy"
-                  />
-                  <h3 className="text-base font-semibold text-foreground">{founder.name}</h3>
-                  <p className="text-primary font-medium text-sm mb-3">{founder.role}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{founder.bio}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* Values */}
         <section className="py-16 md:py-24 bg-muted/20">
