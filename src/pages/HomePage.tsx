@@ -155,11 +155,11 @@ const HomePage = () => {
     {
       eyebrow: "Find & Book",
       title: "Discover venues in seconds",
-      description: "Search, see live availability, and reserve your court without a single phone call.",
+      description: "Search verified venues and reach the owner instantly — no calls, no friction.",
       items: [
         { icon: Search, label: "Smart Search" },
-        { icon: Calendar, label: "Instant Booking" },
-        { icon: Wifi, label: "Real-Time Availability" },
+        { icon: MessageCircle, label: "WhatsApp Booking" },
+        { icon: Shield, label: "Verified Venues" },
         { icon: Map, label: "Interactive Map" },
       ],
     },
@@ -177,23 +177,23 @@ const HomePage = () => {
     {
       eyebrow: "For Owners",
       title: "Run your venue like a pro",
-      description: "One dashboard for schedule, payments, and growth — zero commissions.",
+      description: "One cockpit for leads, listing health, and growth — zero commissions.",
       items: [
         { icon: Building, label: "Owner Dashboard" },
-        { icon: CreditCard, label: "Payments" },
+        { icon: Bell, label: "Lead Inbox" },
         { icon: BarChart3, label: "Analytics" },
-        { icon: TrendingUp, label: "Dynamic Pricing" },
+        { icon: Activity, label: "Listing Health" },
       ],
     },
     {
       eyebrow: "Smart Features",
       title: "Powered by AI",
-      description: "Recommendations, matchmaking, and scheduling that actually understand the game.",
+      description: "Recommendations, matchmaking, and coaching that actually understand the game.",
       items: [
         { icon: Sparkles, label: "AI Recommendations" },
         { icon: Bot, label: "Matchmaking" },
         { icon: CloudSun, label: "Weather" },
-        { icon: BrainCircuit, label: "Smart Scheduling" },
+        { icon: BrainCircuit, label: "AI Coach" },
       ],
     },
   ];
