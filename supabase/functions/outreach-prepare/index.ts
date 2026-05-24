@@ -2,6 +2,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const MAPS_GW = 'https://connector-gateway.lovable.dev/google_maps';
+const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
 
 const SYSTEM_EN = `You write warm, concise B2B outreach emails on behalf of Avag, founder of Sportsbnb, a booking platform for sports venues. Sportsbnb takes only a 5% fee, helps fill empty slots, brings new customers, and gives owners a free smart calendar and online booking widget. Write in a personal, founder-to-owner tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\n).`;
 
@@ -12,16 +13,38 @@ function json(data: Record<string, unknown>, status = 200) {
 }
 
 function cleanEmail(email: string): string {
-  return email.toLowerCase().replace(/^mailto:/, '').replace(/[.,;:)\]>]+$/, '').trim();
+  return email.toLowerCase().replace(/^mailto:/, '').replace(/\?.*$/, '').replace(/[.,;:)\]>]+$/, '').trim();
 }
 
 function extractEmails(text: string): string[] {
   const normalized = text
-    .replace(/\s+\[at\]\s+|\s+\(at\)\s+|\s+ at \s+/gi, '@')
-    .replace(/\s+\[dot\]\s+|\s+\(dot\)\s+|\s+ dot \s+/gi, '.');
+    .replace(/&#64;|%40|\s*\[at\]\s*|\s*\(at\)\s*|\s+at\s+/gi, '@')
+    .replace(/&#46;|%2e|\s*\[dot\]\s*|\s*\(dot\)\s*|\s+dot\s+/gi, '.')
+    .replace(/\s*@\s*/g, '@')
+    .replace(/\s*\.\s*/g, '.');
   const matches = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
-  const blocked = /\.(png|jpe?g|gif|webp|svg|css|js)$|example\.com|wixpress|sentry|noreply|no-reply|donotreply/i;
+  const blocked = /\.(png|jpe?g|gif|webp|svg|css|js)$|example\.com|wixpress|sentry|noreply|no-reply|donotreply|privacy|abuse|postmaster|mailer-daemon/i;
   return [...new Set(matches.map(cleanEmail).filter((email) => !blocked.test(email)))];
+}
+
+function scoreEmail(email: string, website?: string): number {
+  const local = email.split('@')[0] ?? '';
+  const domain = email.split('@')[1] ?? '';
+  let score = 0;
+  if (/^(info|hello|contact|office|admin|booking|bookings|sales|team|manager|director|support)$/i.test(local)) score += 30;
+  if (/football|soccer|sport|academy|field|foundation|club|venue/i.test(email)) score += 15;
+  if (!/(gmail|yahoo|hotmail|outlook|icloud|aol)\./i.test(domain)) score += 10;
+  if (website) {
+    try {
+      const host = new URL(website).hostname.replace(/^www\./, '');
+      if (domain.endsWith(host) || host.endsWith(domain)) score += 50;
+    } catch { /* ignore invalid URL */ }
+  }
+  return score;
+}
+
+function bestEmail(emails: string[], website?: string): string | null {
+  return [...new Set(emails)].sort((a, b) => scoreEmail(b, website) - scoreEmail(a, website))[0] ?? null;
 }
 
 async function searchPlace(query: string) {
@@ -64,47 +87,99 @@ function toText(html: string): string {
     .trim();
 }
 
-async function scrapeWithFirecrawl(url: string): Promise<string | null> {
+async function firecrawlScrape(url: string): Promise<{ text: string; links: string[] }> {
   const key = Deno.env.get('FIRECRAWL_API_KEY');
-  if (!key) return null;
+  if (!key) return { text: '', links: [] };
   try {
-    const r = await fetch('https://api.firecrawl.dev/v2/scrape', {
+    const r = await fetch(`${FIRECRAWL_V2}/scrape`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false }),
+      body: JSON.stringify({ url, formats: ['markdown', 'html', 'links'], onlyMainContent: false, waitFor: 1500 }),
     });
     const data = await r.json();
-    return data?.markdown || data?.data?.markdown || null;
-  } catch { return null; }
+    const payload = data?.data ?? data;
+    return {
+      text: [payload?.markdown, payload?.html].filter(Boolean).join('\n'),
+      links: Array.isArray(payload?.links) ? payload.links : [],
+    };
+  } catch { return { text: '', links: [] }; }
 }
 
 function candidateUrls(website: string, html: string | null): string[] {
   const base = new URL(website);
-  const urls = new Set<string>([base.href, new URL('/contact', base).href, new URL('/contact-us', base).href, new URL('/about', base).href, new URL('/about-us', base).href, new URL('/team', base).href]);
+  const urls = new Set<string>([
+    base.href,
+    new URL('/contact', base).href,
+    new URL('/contact-us', base).href,
+    new URL('/contacts', base).href,
+    new URL('/about', base).href,
+    new URL('/about-us', base).href,
+    new URL('/team', base).href,
+    new URL('/staff', base).href,
+    new URL('/coaches', base).href,
+    new URL('/location', base).href,
+  ]);
   const linkMatches = html?.matchAll(/href=["']([^"']+)["']/gi) ?? [];
   for (const match of linkMatches) {
     const href = match[1];
-    if (!/contact|about|team|staff|email|mail/i.test(href)) continue;
+    if (!/contact|about|team|staff|coach|email|mail|office|location/i.test(href)) continue;
     try { urls.add(new URL(href, base).href); } catch { /* ignore invalid links */ }
   }
-  return [...urls].filter((url) => new URL(url).hostname === base.hostname).slice(0, 8);
+  return [...urls].filter((url) => new URL(url).hostname === base.hostname).slice(0, 16);
 }
 
 async function collectWebsiteResearch(website: string) {
   const homeRaw = await fetchRaw(website);
   const urls = candidateUrls(website, homeRaw);
+  const seen = new Set<string>();
   const pages: string[] = [];
   const emails = new Set<string>();
 
-  for (const url of urls) {
+  while (urls.length > 0 && seen.size < 18) {
+    const url = urls.shift()!;
+    if (seen.has(url)) continue;
+    seen.add(url);
     const raw = url === website && homeRaw ? homeRaw : await fetchRaw(url);
-    const markdown = await scrapeWithFirecrawl(url);
-    const combined = [raw ?? '', markdown ?? ''].join('\n');
+    const firecrawl = await firecrawlScrape(url);
+    firecrawl.links
+      .filter((link) => /contact|about|team|staff|coach|email|mail|office|location/i.test(link))
+      .forEach((link) => { try { urls.push(new URL(link, website).href); } catch { /* ignore invalid URL */ } });
+    const combined = [raw ?? '', firecrawl.text].join('\n');
     extractEmails(combined).forEach((email) => emails.add(email));
     if (combined.trim()) pages.push(`URL: ${url}\n${toText(combined).slice(0, 5000)}`);
+    if (emails.size >= 5) break;
   }
 
-  return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls };
+  return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls: [...seen] };
+}
+
+async function firecrawlSearchEmails(query: string): Promise<{ text: string; emails: string[]; urls: string[] }> {
+  const key = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!key) return { text: '', emails: [], urls: [] };
+  try {
+    const r = await fetch(`${FIRECRAWL_V2}/search`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        limit: 8,
+        scrapeOptions: { formats: ['markdown', 'html'] },
+      }),
+    });
+    const data = await r.json();
+    const results = Array.isArray(data?.data) ? data.data : Array.isArray(data?.web) ? data.web : [];
+    const emails = new Set<string>();
+    const urls: string[] = [];
+    const snippets: string[] = [];
+    for (const result of results) {
+      const url = result.url || result.link || result.metadata?.sourceURL;
+      if (url) urls.push(url);
+      const text = [result.title, result.description, result.markdown, result.html].filter(Boolean).join('\n');
+      extractEmails(text).forEach((email) => emails.add(email));
+      if (text.trim()) snippets.push(`URL: ${url ?? 'search result'}\n${toText(text).slice(0, 2500)}`);
+    }
+    return { text: snippets.join('\n\n---\n\n').slice(0, 10000), emails: [...emails], urls };
+  } catch { return { text: '', emails: [], urls: [] }; }
 }
 
 async function summarize(text: string, venueName: string, emails: string[]): Promise<Record<string, unknown>> {
@@ -118,6 +193,7 @@ async function summarize(text: string, venueName: string, emails: string[]): Pro
         { role: 'user', content: `Venue: ${venueName}\nCandidate emails found: ${emails.join(', ') || 'none'}\n\nWebsite/contact text:\n${text}` },
       ],
       response_format: { type: 'json_object' },
+      max_tokens: 2048,
     }),
   });
   const d = await r.json();
@@ -137,6 +213,7 @@ async function draftEmail(target: Record<string, unknown>, enriched: Record<stri
         { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify({ venue: target.name, city: target.city, enriched, research, contact_name: target.contact_name }, null, 2)}` },
       ],
       response_format: { type: 'json_object' },
+      max_tokens: 2048,
     }),
   });
   const d = await r.json();
@@ -180,13 +257,34 @@ Deno.serve(async (req) => {
 
     let research: Record<string, unknown> = { source: 'none', note: 'No website found in Google Maps data' };
     const website = enriched.website as string | undefined;
+    const allEmails = new Set<string>();
+    let externalText = '';
+    let externalUrls: string[] = [];
+
     if (website) {
       const collected = await collectWebsiteResearch(website);
+      collected.emails.forEach((email) => allEmails.add(email));
+      if (allEmails.size === 0) {
+        const searched = await firecrawlSearchEmails(`"${target.name}" ${target.city ?? ''} email OR contact OR owner OR manager`);
+        searched.emails.forEach((email) => allEmails.add(email));
+        externalText = searched.text;
+        externalUrls = searched.urls;
+      }
       if (collected.text) {
-        const profile = await summarize(collected.text, target.name, collected.emails);
-        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+direct' : 'direct', website, pages_checked: collected.urls, candidate_emails: collected.emails, ...profile, contact_email: profile.contact_email || collected.emails[0] || null };
+        const researchText = [collected.text, externalText].filter(Boolean).join('\n\n--- external search ---\n\n');
+        const candidateEmails = [...allEmails];
+        const profile = await summarize(researchText, target.name, candidateEmails);
+        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+search+direct' : 'direct', website, pages_checked: collected.urls, external_pages_checked: externalUrls, candidate_emails: candidateEmails, ...profile, contact_email: profile.contact_email || bestEmail(candidateEmails, website) };
       } else {
         research = { source: 'failed', website, note: 'Could not fetch website/contact pages' };
+      }
+    } else {
+      const searched = await firecrawlSearchEmails(`"${target.name}" ${target.city ?? ''} ${target.country ?? ''} email OR contact OR owner OR manager`);
+      searched.emails.forEach((email) => allEmails.add(email));
+      if (searched.text) {
+        const candidateEmails = [...allEmails];
+        const profile = await summarize(searched.text, target.name, candidateEmails);
+        research = { source: 'firecrawl-search', external_pages_checked: searched.urls, candidate_emails: candidateEmails, ...profile, contact_email: profile.contact_email || bestEmail(candidateEmails) };
       }
     }
 
