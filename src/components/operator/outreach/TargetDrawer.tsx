@@ -121,17 +121,34 @@ export function TargetDrawer({ target, onClose }: Props) {
           </div>
         </SheetHeader>
 
-        <div className="flex gap-2 mt-4 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => enrich.mutate(target.id)} disabled={enrich.isPending}>
-            <MapPin className="h-3.5 w-3.5 mr-1.5" /> {enrich.isPending ? "Enriching…" : "Enrich (Maps)"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => research.mutate(target.id)} disabled={research.isPending || !website}>
-            <Search className="h-3.5 w-3.5 mr-1.5" /> {research.isPending ? "Researching…" : "Research site"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => draft.mutate(target.id)} disabled={draft.isPending}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {draft.isPending ? "Drafting…" : "AI draft"}
-          </Button>
-        </div>
+        <TooltipProvider delayDuration={200}>
+          <div className="flex gap-2 mt-4 flex-wrap">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => enrich.mutate(target.id)} disabled={enrich.isPending}>
+                  <MapPin className="h-3.5 w-3.5 mr-1.5" /> {enrich.isPending ? "Enriching…" : "Enrich (Maps)"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">Pulls address, phone, website, hours and rating from Google Maps.</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={handleResearch} disabled={research.isPending}>
+                  <Search className="h-3.5 w-3.5 mr-1.5" /> {research.isPending ? "Researching…" : "Research site"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">Scrapes the venue's website with AI to extract owner name, contact email, sports offered, and a unique angle for your email.</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => draft.mutate(target.id)} disabled={draft.isPending}>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {draft.isPending ? "Drafting…" : "AI draft"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">Generates a personalized outreach email using all enriched + research data.</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
 
         <Tabs defaultValue="contact" className="mt-6">
           <TabsList className="grid grid-cols-4 w-full">
