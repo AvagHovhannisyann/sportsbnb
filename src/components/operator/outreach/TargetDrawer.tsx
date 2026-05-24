@@ -15,7 +15,7 @@ import {
 } from "@/hooks/useOutreach";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, FileEdit, Send, Calendar, AlertCircle, Info } from "lucide-react";
+import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Send, Calendar, AlertCircle, Info } from "lucide-react";
 
 interface Props {
   target: OutreachTarget | null;
@@ -72,14 +72,6 @@ export function TargetDrawer({ target, onClose }: Props) {
       },
     });
     toast({ title: "Contact saved" });
-  };
-
-  const saveDraft = async () => {
-    await update.mutateAsync({
-      id: target.id,
-      patch: { ai_subject: subject, ai_body: body },
-    });
-    toast({ title: "Draft saved" });
   };
 
   const handleSend = async () => {
@@ -227,9 +219,8 @@ export function TargetDrawer({ target, onClose }: Props) {
               <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} className="font-mono text-sm" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={saveDraft} disabled={update.isPending || (!subject && !body)}><FileEdit className="h-3.5 w-3.5 mr-1.5" /> Save draft</Button>
               <Button onClick={handleSend} disabled={send.isPending} className="flex-1">
-                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : contactEmail ? `Send to ${contactEmail}` : "Send (add email first)"}
+                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : contactEmail ? `Send to ${contactEmail}` : "Send (email not found)"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
