@@ -7,16 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   OutreachTarget,
-  useEnrichTarget, useResearchTarget, useDraftTarget, useSendTarget,
+  usePrepareTarget, useSendTarget,
   useUpdateTarget, useOutreachMessages,
 } from "@/hooks/useOutreach";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Search, FileEdit, Send, Calendar, AlertCircle, Info } from "lucide-react";
+import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Send, Calendar, AlertCircle, Info } from "lucide-react";
 
 interface Props {
   target: OutreachTarget | null;
@@ -31,10 +30,9 @@ export function TargetDrawer({ target, onClose }: Props) {
   const [body, setBody] = useState("");
   const [notes, setNotes] = useState("");
   const [followup, setFollowup] = useState("");
+  const [activeTab, setActiveTab] = useState("contact");
 
-  const enrich = useEnrichTarget();
-  const research = useResearchTarget();
-  const draft = useDraftTarget();
+  const prepare = usePrepareTarget();
   const send = useSendTarget();
   const update = useUpdateTarget();
   const { data: messages = [] } = useOutreachMessages(target?.id ?? null);
@@ -48,6 +46,7 @@ export function TargetDrawer({ target, onClose }: Props) {
     setBody(target.ai_body ?? "");
     setNotes(target.notes ?? "");
     setFollowup(target.followup_at ? target.followup_at.slice(0, 16) : "");
+    setActiveTab(target.ai_subject || target.ai_body ? "email" : "contact");
   }, [target]);
 
   if (!target) return null;
@@ -61,49 +60,42 @@ export function TargetDrawer({ target, onClose }: Props) {
   const rating = e?.rating as number | undefined;
   const hours = (e?.hours as string[] | undefined) ?? [];
 
-  const saveMeta = async () => {
+  const saveBeforeSend = async () => {
     await update.mutateAsync({
       id: target.id,
       patch: {
         contact_email: contactEmail || null,
         contact_name: contactName || null,
         language,
+        ai_subject: subject,
+        ai_body: body,
         notes: notes || null,
         followup_at: followup ? new Date(followup).toISOString() : null,
       },
     });
-    toast({ title: "Contact saved" });
-  };
-
-  const saveDraft = async () => {
-    await update.mutateAsync({
-      id: target.id,
-      patch: { ai_subject: subject, ai_body: body },
-    });
-    toast({ title: "Draft saved" });
   };
 
   const handleSend = async () => {
     if (!contactEmail) {
-      toast({ title: "Add a contact email first", description: "Go to the Contact tab and enter the owner's email.", variant: "destructive" });
+      toast({ title: "No contact email found", description: "Run AI prepare first. If the venue does not publish an email, sending cannot continue automatically.", variant: "destructive" });
       return;
     }
     if (!subject || !body) {
       toast({ title: "Subject and body required", variant: "destructive" });
       return;
     }
-    await saveMeta();
+    await saveBeforeSend();
     await send.mutateAsync({ target_id: target.id, to: contactEmail, subject, body });
   };
 
-  const handleResearch = async () => {
-    if (!website) {
-      toast({ title: "No website to research", description: "Click Enrich (Maps) first — research scrapes the venue's website to find contact email and details.", variant: "destructive" });
-      return;
-    }
+  const handlePrepare = async () => {
     try {
-      await research.mutateAsync(target.id);
-      toast({ title: "Research complete", description: "Check the Data tab for AI summary, and Contact tab — we tried to auto-fill the email." });
+      const result = await prepare.mutateAsync(target.id);
+      setContactEmail(result?.contact_email ?? "");
+      setContactName(result?.contact_name ?? "");
+      setSubject(result?.subject ?? "");
+      setBody(result?.body ?? "");
+      setActiveTab("email");
     } catch { /* hook shows toast */ }
   };
 
@@ -122,36 +114,17 @@ export function TargetDrawer({ target, onClose }: Props) {
           </div>
         </SheetHeader>
 
-        <TooltipProvider delayDuration={200}>
-          <div className="flex gap-2 mt-4 flex-wrap">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={() => enrich.mutate(target.id)} disabled={enrich.isPending}>
-                  <MapPin className="h-3.5 w-3.5 mr-1.5" /> {enrich.isPending ? "Enriching…" : "Enrich (Maps)"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">Pulls address, phone, website, hours and rating from Google Maps.</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={handleResearch} disabled={research.isPending}>
-                  <Search className="h-3.5 w-3.5 mr-1.5" /> {research.isPending ? "Researching…" : "Research site"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">Scrapes the venue's website with AI to extract owner name, contact email, sports offered, and a unique angle for your email.</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={() => draft.mutate(target.id)} disabled={draft.isPending}>
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {draft.isPending ? "Drafting…" : "AI draft"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">Generates a personalized outreach email using all enriched + research data.</TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
+        <div className="mt-4 space-y-2">
+          <Button onClick={handlePrepare} disabled={prepare.isPending} className="w-full">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {prepare.isPending ? "AI is preparing outreach…" : "AI prepare outreach"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            One click: Google Maps enrichment, website research, contact extraction, and email draft.
+          </p>
+        </div>
 
-        <Tabs defaultValue="contact" className="mt-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="data">Data</TabsTrigger>
@@ -162,12 +135,12 @@ export function TargetDrawer({ target, onClose }: Props) {
           <TabsContent value="contact" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground">Contact name</label>
-                <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Owner / manager" />
+                <label className="text-xs text-muted-foreground">AI-found contact name</label>
+                <Input value={contactName || "Not found yet"} readOnly className="bg-muted/30" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Language</label>
-                <Select value={language} onValueChange={(v) => setLanguage(v as "en" | "hy")}>
+                <label className="text-xs text-muted-foreground">Email language</label>
+                <Select value={language} onValueChange={(v) => setLanguage(v as "en" | "hy")} disabled>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
@@ -177,8 +150,8 @@ export function TargetDrawer({ target, onClose }: Props) {
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Email</label>
-              <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="owner@venue.com" />
+              <label className="text-xs text-muted-foreground">AI-found email</label>
+              <Input type="email" value={contactEmail || "Not found yet"} readOnly className="bg-muted/30" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Manual follow-up reminder</label>
@@ -189,7 +162,6 @@ export function TargetDrawer({ target, onClose }: Props) {
               <label className="text-xs text-muted-foreground">Notes</label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
             </div>
-            <Button onClick={saveMeta} disabled={update.isPending} className="w-full">Save</Button>
           </TabsContent>
 
           <TabsContent value="data" className="space-y-3 mt-4 text-sm">
@@ -206,7 +178,7 @@ export function TargetDrawer({ target, onClose }: Props) {
             )}
             {!address && !website && (
               <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-lg text-center">
-                No data yet. Click <span className="font-medium text-foreground">Enrich (Maps)</span> above.
+                No data yet. Click <span className="font-medium text-foreground">AI prepare outreach</span> above.
               </div>
             )}
 
@@ -228,7 +200,7 @@ export function TargetDrawer({ target, onClose }: Props) {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  No contact email yet. Add one in the <span className="font-medium">Contact</span> tab before sending.
+                  AI could not find a public contact email for this venue, so sending is blocked until one is available.
                 </AlertDescription>
               </Alert>
             )}
@@ -247,9 +219,8 @@ export function TargetDrawer({ target, onClose }: Props) {
               <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} className="font-mono text-sm" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={saveDraft} disabled={update.isPending || (!subject && !body)}><FileEdit className="h-3.5 w-3.5 mr-1.5" /> Save draft</Button>
               <Button onClick={handleSend} disabled={send.isPending} className="flex-1">
-                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : contactEmail ? `Send to ${contactEmail}` : "Send (add email first)"}
+                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : contactEmail ? `Send to ${contactEmail}` : "Send (email not found)"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">

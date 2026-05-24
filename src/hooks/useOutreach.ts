@@ -127,6 +127,21 @@ export function useDraftTarget() {
   });
 }
 
+export function usePrepareTarget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (target_id: string) => invoke("outreach-prepare", { target_id }),
+    onSuccess: (data) => {
+      toast({
+        title: data?.contact_email ? "Outreach prepared" : "Outreach prepared — email not found",
+        description: data?.contact_email ? data.contact_email : "AI could not find a public contact email for this venue.",
+      });
+      qc.invalidateQueries({ queryKey: ["outreach_targets"] });
+    },
+    onError: (e: Error) => toast({ title: "AI preparation failed", description: e.message, variant: "destructive" }),
+  });
+}
+
 export function useSendTarget() {
   const qc = useQueryClient();
   return useMutation({

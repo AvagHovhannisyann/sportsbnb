@@ -1,0 +1,213 @@
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const MAPS_GW = 'https://connector-gateway.lovable.dev/google_maps';
+
+const SYSTEM_EN = `You write warm, concise B2B outreach emails on behalf of Avag, founder of Sportsbnb, a booking platform for sports venues. Sportsbnb takes only a 5% fee, helps fill empty slots, brings new customers, and gives owners a free smart calendar and online booking widget. Write in a personal, founder-to-owner tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\n).`;
+
+const SYSTEM_HY = `Դու գրում ես ջերմ, հակիրճ B2B email-ներ Sportsbnb-ի հիմնադիր Ավագի անունից։ Sportsbnb-ը սպորտային հարթակների ամրագրման հարթակ է՝ ընդամենը 5% միջնորդավճարով, օգնում է լրացնել դատարկ ժամերը, բերում է նոր հաճախորդներ և տալիս է անվճար խելացի օրացույց ու օնլայն ամրագրման վիջեթ։ Գրիր անձնական, հիմնադիր-սեփականատեր տոնով։ ԵՐԲԵՔ չհնչիր ձևանմուշային։ Հղում արա մեկ կոնկրետ դետալի՝ վենյուի վերաբերյալ։ Մինչև 130 բառ։ Ավարտիր մեղմ CTA-ով (15-րոպեանոց զանգ կամ պատասխան)։ Վերադարձրու ՄԻԱՅՆ JSON՝ { "subject": "...", "body": "..." } որտեղ body-ն օգտագործում է իրական տողանջատումներ (\n)։`;
+
+function json(data: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
+function cleanEmail(email: string): string {
+  return email.toLowerCase().replace(/^mailto:/, '').replace(/[.,;:)\]>]+$/, '').trim();
+}
+
+function extractEmails(text: string): string[] {
+  const normalized = text
+    .replace(/\s+\[at\]\s+|\s+\(at\)\s+|\s+ at \s+/gi, '@')
+    .replace(/\s+\[dot\]\s+|\s+\(dot\)\s+|\s+ dot \s+/gi, '.');
+  const matches = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
+  const blocked = /\.(png|jpe?g|gif|webp|svg|css|js)$|example\.com|wixpress|sentry|noreply|no-reply|donotreply/i;
+  return [...new Set(matches.map(cleanEmail).filter((email) => !blocked.test(email)))];
+}
+
+async function searchPlace(query: string) {
+  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+  const mapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY_1') ?? Deno.env.get('GOOGLE_MAPS_API_KEY');
+  if (!lovableKey) throw new Error('LOVABLE_API_KEY is not configured');
+  if (!mapsKey) throw new Error('Google Maps connection is not configured');
+
+  const r = await fetch(`${MAPS_GW}/places/v1/places:searchText`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableKey}`,
+      'X-Connection-Api-Key': mapsKey,
+      'Content-Type': 'application/json',
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.googleMapsUri,places.regularOpeningHours.weekdayDescriptions,places.location,places.businessStatus',
+    },
+    body: JSON.stringify({ textQuery: query }),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(`Maps error ${r.status}: ${JSON.stringify(data)}`);
+  return data.places?.[0] || null;
+}
+
+async function fetchRaw(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 SportsbnbBot' }, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) return null;
+    return (await r.text()).slice(0, 30000);
+  } catch { return null; }
+}
+
+function toText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function scrapeWithFirecrawl(url: string): Promise<string | null> {
+  const key = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!key) return null;
+  try {
+    const r = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false }),
+    });
+    const data = await r.json();
+    return data?.markdown || data?.data?.markdown || null;
+  } catch { return null; }
+}
+
+function candidateUrls(website: string, html: string | null): string[] {
+  const base = new URL(website);
+  const urls = new Set<string>([base.href, new URL('/contact', base).href, new URL('/contact-us', base).href, new URL('/about', base).href, new URL('/about-us', base).href, new URL('/team', base).href]);
+  const linkMatches = html?.matchAll(/href=["']([^"']+)["']/gi) ?? [];
+  for (const match of linkMatches) {
+    const href = match[1];
+    if (!/contact|about|team|staff|email|mail/i.test(href)) continue;
+    try { urls.add(new URL(href, base).href); } catch { /* ignore invalid links */ }
+  }
+  return [...urls].filter((url) => new URL(url).hostname === base.hostname).slice(0, 8);
+}
+
+async function collectWebsiteResearch(website: string) {
+  const homeRaw = await fetchRaw(website);
+  const urls = candidateUrls(website, homeRaw);
+  const pages: string[] = [];
+  const emails = new Set<string>();
+
+  for (const url of urls) {
+    const raw = url === website && homeRaw ? homeRaw : await fetchRaw(url);
+    const markdown = await scrapeWithFirecrawl(url);
+    const combined = [raw ?? '', markdown ?? ''].join('\n');
+    extractEmails(combined).forEach((email) => emails.add(email));
+    if (combined.trim()) pages.push(`URL: ${url}\n${toText(combined).slice(0, 5000)}`);
+  }
+
+  return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls };
+}
+
+async function summarize(text: string, venueName: string, emails: string[]): Promise<Record<string, unknown>> {
+  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website/contact-page text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), contact_email (string or null), tone (formal|casual|professional). Choose contact_email from the provided candidate emails if one looks like the best public venue/business contact. Do not invent emails or names.' },
+        { role: 'user', content: `Venue: ${venueName}\nCandidate emails found: ${emails.join(', ') || 'none'}\n\nWebsite/contact text:\n${text}` },
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(`AI research ${r.status}: ${JSON.stringify(d)}`);
+  try { return JSON.parse(d.choices?.[0]?.message?.content || '{}'); } catch { return {}; }
+}
+
+async function draftEmail(target: Record<string, unknown>, enriched: Record<string, unknown>, research: Record<string, unknown>) {
+  const lang = target.language === 'hy' ? 'hy' : 'en';
+  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: lang === 'hy' ? SYSTEM_HY : SYSTEM_EN },
+        { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify({ venue: target.name, city: target.city, enriched, research, contact_name: target.contact_name }, null, 2)}` },
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(`AI draft ${r.status}: ${JSON.stringify(d)}`);
+  try { return JSON.parse(d.choices?.[0]?.message?.content || '{}'); } catch { return {}; }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  try {
+    const auth = req.headers.get('Authorization');
+    if (!auth) return json({ error: 'unauthorized' }, 401);
+
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return json({ error: 'unauthorized' }, 401);
+    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+    if (!roles) return json({ error: 'forbidden' }, 403);
+
+    const { target_id } = await req.json();
+    if (!target_id) return json({ error: 'target_id required' }, 400);
+
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: target } = await admin.from('outreach_targets').select('*').eq('id', target_id).single();
+    if (!target) return json({ error: 'target not found' }, 404);
+
+    const place = await searchPlace([target.name, target.city, target.country].filter(Boolean).join(' '));
+    const enriched = place ? {
+      place_id: place.id,
+      name: place.displayName?.text,
+      address: place.formattedAddress,
+      phone: place.internationalPhoneNumber || place.nationalPhoneNumber,
+      website: place.websiteUri,
+      rating: place.rating,
+      review_count: place.userRatingCount,
+      maps_url: place.googleMapsUri,
+      hours: place.regularOpeningHours?.weekdayDescriptions || [],
+      location: place.location,
+      business_status: place.businessStatus,
+    } : { error: 'no_match' };
+
+    let research: Record<string, unknown> = { source: 'none', note: 'No website found in Google Maps data' };
+    const website = enriched.website as string | undefined;
+    if (website) {
+      const collected = await collectWebsiteResearch(website);
+      if (collected.text) {
+        const profile = await summarize(collected.text, target.name, collected.emails);
+        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+direct' : 'direct', website, pages_checked: collected.urls, candidate_emails: collected.emails, ...profile, contact_email: profile.contact_email || collected.emails[0] || null };
+      } else {
+        research = { source: 'failed', website, note: 'Could not fetch website/contact pages' };
+      }
+    }
+
+    const contactName = typeof research.owner_or_contact_name === 'string' && research.owner_or_contact_name.trim() ? research.owner_or_contact_name.trim() : null;
+    const contactEmail = typeof research.contact_email === 'string' && research.contact_email.trim() ? cleanEmail(research.contact_email) : null;
+    const draft = await draftEmail({ ...target, contact_name: target.contact_name || contactName }, enriched, research);
+    if (!draft.subject || !draft.body) throw new Error('AI did not return subject and body');
+
+    await admin.from('outreach_targets').update({
+      enriched,
+      research,
+      contact_name: target.contact_name || contactName,
+      contact_email: target.contact_email || contactEmail,
+      ai_subject: draft.subject,
+      ai_body: draft.body,
+      status: ['new', 'enriched', 'researched'].includes(target.status) ? 'drafted' : target.status,
+    }).eq('id', target_id);
+
+    return json({ success: true, enriched, research, contact_name: target.contact_name || contactName, contact_email: target.contact_email || contactEmail, subject: draft.subject, body: draft.body });
+  } catch (e) {
+    console.error('prepare error', e);
+    return json({ error: e instanceof Error ? e.message : 'unknown' }, 500);
+  }
+});

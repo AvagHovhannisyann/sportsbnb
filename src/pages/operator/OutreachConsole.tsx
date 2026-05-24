@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useOutreachTargets, useEnrichTarget, useDeleteTarget, type OutreachTarget } from "@/hooks/useOutreach";
+import { useOutreachTargets, usePrepareTarget, useDeleteTarget, type OutreachTarget } from "@/hooks/useOutreach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function OutreachConsole() {
   const { data: targets = [], isLoading } = useOutreachTargets();
-  const enrich = useEnrichTarget();
+  const prepare = usePrepareTarget();
   const del = useDeleteTarget();
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<OutreachTarget | null>(null);
@@ -62,10 +62,10 @@ export default function OutreachConsole() {
     [targets, selected]
   );
 
-  const enrichAllNew = async () => {
-    const news = targets.filter((t) => t.status === "new");
+  const prepareAllNew = async () => {
+    const news = targets.filter((t) => ["new", "enriched", "researched"].includes(t.status));
     for (const t of news) {
-      try { await enrich.mutateAsync(t.id); } catch { /* noop */ }
+      try { await prepare.mutateAsync(t.id); } catch { /* noop */ }
     }
   };
 
@@ -79,10 +79,10 @@ export default function OutreachConsole() {
           </Button>
           <div className="flex-1">
             <h1 className="text-xl font-semibold tracking-tight">AI Venue Outreach</h1>
-            <p className="text-xs text-muted-foreground">Enrich · Research · Draft · Send · Track replies</p>
+            <p className="text-xs text-muted-foreground">One-click research, contact discovery, draft, send, and reply tracking</p>
           </div>
-          <Button variant="outline" size="sm" onClick={enrichAllNew} disabled={enrich.isPending}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Enrich all new
+          <Button variant="outline" size="sm" onClick={prepareAllNew} disabled={prepare.isPending}>
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" /> AI prepare all
           </Button>
           <Button size="sm" onClick={() => setImportOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Import venues
