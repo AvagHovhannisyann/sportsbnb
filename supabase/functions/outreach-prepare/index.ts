@@ -136,13 +136,46 @@ async function collectWebsiteResearch(website: string) {
 
   for (const url of urls) {
     const raw = url === website && homeRaw ? homeRaw : await fetchRaw(url);
-    const markdown = await scrapeWithFirecrawl(url);
-    const combined = [raw ?? '', markdown ?? ''].join('\n');
+    const firecrawl = await firecrawlScrape(url);
+    firecrawl.links
+      .filter((link) => /contact|about|team|staff|coach|email|mail|office|location/i.test(link))
+      .forEach((link) => { try { urls.push(new URL(link, website).href); } catch { /* ignore invalid URL */ } });
+    const combined = [raw ?? '', firecrawl.text].join('\n');
     extractEmails(combined).forEach((email) => emails.add(email));
     if (combined.trim()) pages.push(`URL: ${url}\n${toText(combined).slice(0, 5000)}`);
+    if (emails.size >= 5) break;
   }
 
   return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls };
+}
+
+async function firecrawlSearchEmails(query: string): Promise<{ text: string; emails: string[]; urls: string[] }> {
+  const key = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!key) return { text: '', emails: [], urls: [] };
+  try {
+    const r = await fetch(`${FIRECRAWL_V2}/search`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        limit: 8,
+        scrapeOptions: { formats: ['markdown', 'html'] },
+      }),
+    });
+    const data = await r.json();
+    const results = Array.isArray(data?.data) ? data.data : Array.isArray(data?.web) ? data.web : [];
+    const emails = new Set<string>();
+    const urls: string[] = [];
+    const snippets: string[] = [];
+    for (const result of results) {
+      const url = result.url || result.link || result.metadata?.sourceURL;
+      if (url) urls.push(url);
+      const text = [result.title, result.description, result.markdown, result.html].filter(Boolean).join('\n');
+      extractEmails(text).forEach((email) => emails.add(email));
+      if (text.trim()) snippets.push(`URL: ${url ?? 'search result'}\n${toText(text).slice(0, 2500)}`);
+    }
+    return { text: snippets.join('\n\n---\n\n').slice(0, 10000), emails: [...emails], urls };
+  } catch { return { text: '', emails: [], urls: [] }; }
 }
 
 async function summarize(text: string, venueName: string, emails: string[]): Promise<Record<string, unknown>> {
