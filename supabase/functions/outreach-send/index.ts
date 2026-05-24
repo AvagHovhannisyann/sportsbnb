@@ -2,7 +2,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const GW = 'https://connector-gateway.lovable.dev/resend';
-const FROM = 'Avag from Sportsbnb <avag@sportsbnb.org>';
+const FROM = 'Sportsbnb <hello@sportsbnb.org>';
 const REPLY_TO = 'support@sportsbnb.org';
 
 function bodyToHtml(text: string): string {

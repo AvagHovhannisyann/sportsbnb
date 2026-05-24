@@ -10,7 +10,7 @@ const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY_1') || Deno.env.ge
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY')!;
 const TELEGRAM_API_KEY = Deno.env.get('TELEGRAM_API_KEY')!;
-const FROM_EMAIL = Deno.env.get('OUTREACH_FROM_EMAIL') || 'Avag from Sportsbnb <avag@sportsbnb.org>';
+const FROM_EMAIL = Deno.env.get('OUTREACH_FROM_EMAIL') || 'Sportsbnb <hello@sportsbnb.org>';
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -141,7 +141,7 @@ async function sendOutreach(target: { id: string; name: string; contact_email: s
         ? `Just floating this back up — wanted to make sure it didn't get buried.\n\n`
         : `One more nudge — happy to make this a 10-min call instead of email tag.\n\n`)
     : '';
-  const bodyText = `${greeting}\n\n${followupPrefix}${target.ai_body}\n\n— Avag, Sportsbnb\nhttps://sportsbnb.org`;
+  const bodyText = `${greeting}\n\n${followupPrefix}${target.ai_body}\n\n— The Sportsbnb Team\nhttps://sportsbnb.org`;
   const html = bodyText.split('\n').map((l) => l ? `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>` : '').join('');
 
   const r = await fetch('https://connector-gateway.lovable.dev/resend/emails', {
@@ -153,7 +153,7 @@ async function sendOutreach(target: { id: string; name: string; contact_email: s
       subject,
       html,
       text: bodyText,
-      reply_to: 'avag@sportsbnb.org',
+      reply_to: 'hello@sportsbnb.org',
       tags: [{ name: 'autopilot', value: isFollowup ? `followup_${followupNum}` : 'initial' }, { name: 'target_id', value: target.id }],
     }),
   });
@@ -191,8 +191,8 @@ function buildChannelKeyboard(target: any): { inline_keyboard: Array<Array<Recor
     : (enriched.phone ? [enriched.phone] : []);
   const formUrl: string | undefined = research.contact_form_url;
   const website: string | undefined = enriched.website || research.website;
-  const pitchEn = `Hi! I'm Avag from Sportsbnb. We're onboarding ${target.city ?? 'local'} venues with 0% commission for 3 months. Open to a quick chat?`;
-  const pitchHy = `Բարև! Ես Ավագն եմ՝ Sportsbnb-ից։ Առաջին 3 ամիսը 0% միջնորդավճար։ Կարո՞ղ ենք կարճ զրուցել։`;
+  const pitchEn = `Hi! I'm from the Sportsbnb team. We're onboarding ${target.city ?? 'local'} venues with 0% commission for 3 months. Open to a quick chat?`;
+  const pitchHy = `Բարև! Ես Sportsbnb-ի թիմից եմ։ Առաջին 3 ամիսը 0% միջնորդավճար։ Կարո՞ղ ենք կարճ զրուցել։`;
   const msg = target.language === 'hy' ? pitchHy : pitchEn;
   const enc = encodeURIComponent(msg);
 
