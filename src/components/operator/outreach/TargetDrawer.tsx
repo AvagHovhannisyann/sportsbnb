@@ -7,13 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   OutreachTarget,
   useEnrichTarget, useResearchTarget, useDraftTarget, useSendTarget,
   useUpdateTarget, useOutreachMessages,
 } from "@/hooks/useOutreach";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Search, FileEdit, Send, Calendar } from "lucide-react";
+import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Search, FileEdit, Send, Calendar, AlertCircle, Info } from "lucide-react";
 
 interface Props {
   target: OutreachTarget | null;
@@ -69,6 +72,7 @@ export function TargetDrawer({ target, onClose }: Props) {
         followup_at: followup ? new Date(followup).toISOString() : null,
       },
     });
+    toast({ title: "Contact saved" });
   };
 
   const saveDraft = async () => {
@@ -76,12 +80,31 @@ export function TargetDrawer({ target, onClose }: Props) {
       id: target.id,
       patch: { ai_subject: subject, ai_body: body },
     });
+    toast({ title: "Draft saved" });
   };
 
   const handleSend = async () => {
-    if (!contactEmail || !subject || !body) return;
+    if (!contactEmail) {
+      toast({ title: "Add a contact email first", description: "Go to the Contact tab and enter the owner's email.", variant: "destructive" });
+      return;
+    }
+    if (!subject || !body) {
+      toast({ title: "Subject and body required", variant: "destructive" });
+      return;
+    }
     await saveMeta();
     await send.mutateAsync({ target_id: target.id, to: contactEmail, subject, body });
+  };
+
+  const handleResearch = async () => {
+    if (!website) {
+      toast({ title: "No website to research", description: "Click Enrich (Maps) first — research scrapes the venue's website to find contact email and details.", variant: "destructive" });
+      return;
+    }
+    try {
+      await research.mutateAsync(target.id);
+      toast({ title: "Research complete", description: "Check the Data tab for AI summary, and Contact tab — we tried to auto-fill the email." });
+    } catch { /* hook shows toast */ }
   };
 
   return (
@@ -99,17 +122,34 @@ export function TargetDrawer({ target, onClose }: Props) {
           </div>
         </SheetHeader>
 
-        <div className="flex gap-2 mt-4 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => enrich.mutate(target.id)} disabled={enrich.isPending}>
-            <MapPin className="h-3.5 w-3.5 mr-1.5" /> {enrich.isPending ? "Enriching…" : "Enrich (Maps)"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => research.mutate(target.id)} disabled={research.isPending || !website}>
-            <Search className="h-3.5 w-3.5 mr-1.5" /> {research.isPending ? "Researching…" : "Research site"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => draft.mutate(target.id)} disabled={draft.isPending}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {draft.isPending ? "Drafting…" : "AI draft"}
-          </Button>
-        </div>
+        <TooltipProvider delayDuration={200}>
+          <div className="flex gap-2 mt-4 flex-wrap">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => enrich.mutate(target.id)} disabled={enrich.isPending}>
+                  <MapPin className="h-3.5 w-3.5 mr-1.5" /> {enrich.isPending ? "Enriching…" : "Enrich (Maps)"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">Pulls address, phone, website, hours and rating from Google Maps.</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={handleResearch} disabled={research.isPending}>
+                  <Search className="h-3.5 w-3.5 mr-1.5" /> {research.isPending ? "Researching…" : "Research site"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">Scrapes the venue's website with AI to extract owner name, contact email, sports offered, and a unique angle for your email.</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => draft.mutate(target.id)} disabled={draft.isPending}>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {draft.isPending ? "Drafting…" : "AI draft"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">Generates a personalized outreach email using all enriched + research data.</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
 
         <Tabs defaultValue="contact" className="mt-6">
           <TabsList className="grid grid-cols-4 w-full">
@@ -184,6 +224,20 @@ export function TargetDrawer({ target, onClose }: Props) {
           </TabsContent>
 
           <TabsContent value="email" className="space-y-3 mt-4">
+            {!contactEmail && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No contact email yet. Add one in the <span className="font-medium">Contact</span> tab before sending.
+                </AlertDescription>
+              </Alert>
+            )}
+            {contactEmail && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
+                <Info className="h-3.5 w-3.5" />
+                Will send to <span className="font-medium text-foreground">{contactEmail}</span>
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground">Subject</label>
               <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
@@ -193,9 +247,9 @@ export function TargetDrawer({ target, onClose }: Props) {
               <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} className="font-mono text-sm" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={saveDraft} disabled={update.isPending}><FileEdit className="h-3.5 w-3.5 mr-1.5" /> Save draft</Button>
-              <Button onClick={handleSend} disabled={send.isPending || !contactEmail || !subject || !body} className="flex-1">
-                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : `Send to ${contactEmail || "…"}`}
+              <Button variant="outline" onClick={saveDraft} disabled={update.isPending || (!subject && !body)}><FileEdit className="h-3.5 w-3.5 mr-1.5" /> Save draft</Button>
+              <Button onClick={handleSend} disabled={send.isPending} className="flex-1">
+                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : contactEmail ? `Send to ${contactEmail}` : "Send (add email first)"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
