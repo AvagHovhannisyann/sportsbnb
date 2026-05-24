@@ -93,11 +93,12 @@ export default function OutreachConsole() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <StatCard label="Total" value={stats.total} onClick={() => setStatusFilter(null)} active={!statusFilter} />
           <StatCard label="Contacted" value={stats.contacted} />
           <StatCard label="Replied" value={stats.replied} onClick={() => setStatusFilter("replied")} active={statusFilter === "replied"} />
           <StatCard label="Onboarded" value={stats.onboarded} onClick={() => setStatusFilter("onboarded")} active={statusFilter === "onboarded"} />
+          <StatCard label="Unreachable" value={stats.unreachable} onClick={() => setStatusFilter("unreachable")} active={statusFilter === "unreachable"} />
           <StatCard label="Follow-ups due" value={stats.followups_due} highlight={stats.followups_due > 0} />
         </div>
 
