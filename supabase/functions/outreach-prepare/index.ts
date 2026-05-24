@@ -87,30 +87,45 @@ function toText(html: string): string {
     .trim();
 }
 
-async function scrapeWithFirecrawl(url: string): Promise<string | null> {
+async function firecrawlScrape(url: string): Promise<{ text: string; links: string[] }> {
   const key = Deno.env.get('FIRECRAWL_API_KEY');
-  if (!key) return null;
+  if (!key) return { text: '', links: [] };
   try {
-    const r = await fetch('https://api.firecrawl.dev/v2/scrape', {
+    const r = await fetch(`${FIRECRAWL_V2}/scrape`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false }),
+      body: JSON.stringify({ url, formats: ['markdown', 'html', 'links'], onlyMainContent: false, waitFor: 1500 }),
     });
     const data = await r.json();
-    return data?.markdown || data?.data?.markdown || null;
-  } catch { return null; }
+    const payload = data?.data ?? data;
+    return {
+      text: [payload?.markdown, payload?.html].filter(Boolean).join('\n'),
+      links: Array.isArray(payload?.links) ? payload.links : [],
+    };
+  } catch { return { text: '', links: [] }; }
 }
 
 function candidateUrls(website: string, html: string | null): string[] {
   const base = new URL(website);
-  const urls = new Set<string>([base.href, new URL('/contact', base).href, new URL('/contact-us', base).href, new URL('/about', base).href, new URL('/about-us', base).href, new URL('/team', base).href]);
+  const urls = new Set<string>([
+    base.href,
+    new URL('/contact', base).href,
+    new URL('/contact-us', base).href,
+    new URL('/contacts', base).href,
+    new URL('/about', base).href,
+    new URL('/about-us', base).href,
+    new URL('/team', base).href,
+    new URL('/staff', base).href,
+    new URL('/coaches', base).href,
+    new URL('/location', base).href,
+  ]);
   const linkMatches = html?.matchAll(/href=["']([^"']+)["']/gi) ?? [];
   for (const match of linkMatches) {
     const href = match[1];
-    if (!/contact|about|team|staff|email|mail/i.test(href)) continue;
+    if (!/contact|about|team|staff|coach|email|mail|office|location/i.test(href)) continue;
     try { urls.add(new URL(href, base).href); } catch { /* ignore invalid links */ }
   }
-  return [...urls].filter((url) => new URL(url).hostname === base.hostname).slice(0, 8);
+  return [...urls].filter((url) => new URL(url).hostname === base.hostname).slice(0, 16);
 }
 
 async function collectWebsiteResearch(website: string) {
