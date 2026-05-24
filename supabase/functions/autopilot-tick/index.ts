@@ -201,8 +201,7 @@ function buildChannelKeyboard(target: any): { inline_keyboard: Array<Array<Recor
     const phone = String(phones[0]).replace(/[^\d]/g, '');
     if (phone.length >= 8) {
       rows.push([
-        { text: '💬 WhatsApp', url: `https://wa.me/${phone}?text=${enc}` },
-        { text: '📞 Call', url: `tel:+${phone}` },
+        { text: `💬 WhatsApp +${phone}`, url: `https://wa.me/${phone}?text=${enc}` },
       ]);
     }
   }
