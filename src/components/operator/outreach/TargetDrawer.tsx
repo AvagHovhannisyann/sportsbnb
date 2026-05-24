@@ -7,16 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   OutreachTarget,
-  useEnrichTarget, useResearchTarget, useDraftTarget, useSendTarget,
+  usePrepareTarget, useSendTarget,
   useUpdateTarget, useOutreachMessages,
 } from "@/hooks/useOutreach";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Search, FileEdit, Send, Calendar, AlertCircle, Info } from "lucide-react";
+import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, FileEdit, Send, Calendar, AlertCircle, Info } from "lucide-react";
 
 interface Props {
   target: OutreachTarget | null;
@@ -31,10 +30,9 @@ export function TargetDrawer({ target, onClose }: Props) {
   const [body, setBody] = useState("");
   const [notes, setNotes] = useState("");
   const [followup, setFollowup] = useState("");
+  const [activeTab, setActiveTab] = useState("contact");
 
-  const enrich = useEnrichTarget();
-  const research = useResearchTarget();
-  const draft = useDraftTarget();
+  const prepare = usePrepareTarget();
   const send = useSendTarget();
   const update = useUpdateTarget();
   const { data: messages = [] } = useOutreachMessages(target?.id ?? null);
@@ -48,6 +46,7 @@ export function TargetDrawer({ target, onClose }: Props) {
     setBody(target.ai_body ?? "");
     setNotes(target.notes ?? "");
     setFollowup(target.followup_at ? target.followup_at.slice(0, 16) : "");
+    setActiveTab(target.ai_subject || target.ai_body ? "email" : "contact");
   }, [target]);
 
   if (!target) return null;
@@ -85,7 +84,7 @@ export function TargetDrawer({ target, onClose }: Props) {
 
   const handleSend = async () => {
     if (!contactEmail) {
-      toast({ title: "Add a contact email first", description: "Go to the Contact tab and enter the owner's email.", variant: "destructive" });
+      toast({ title: "No contact email found", description: "Run AI prepare first. If the venue does not publish an email, sending cannot continue automatically.", variant: "destructive" });
       return;
     }
     if (!subject || !body) {
@@ -96,14 +95,14 @@ export function TargetDrawer({ target, onClose }: Props) {
     await send.mutateAsync({ target_id: target.id, to: contactEmail, subject, body });
   };
 
-  const handleResearch = async () => {
-    if (!website) {
-      toast({ title: "No website to research", description: "Click Enrich (Maps) first — research scrapes the venue's website to find contact email and details.", variant: "destructive" });
-      return;
-    }
+  const handlePrepare = async () => {
     try {
-      await research.mutateAsync(target.id);
-      toast({ title: "Research complete", description: "Check the Data tab for AI summary, and Contact tab — we tried to auto-fill the email." });
+      const result = await prepare.mutateAsync(target.id);
+      setContactEmail(result?.contact_email ?? "");
+      setContactName(result?.contact_name ?? "");
+      setSubject(result?.subject ?? "");
+      setBody(result?.body ?? "");
+      setActiveTab("email");
     } catch { /* hook shows toast */ }
   };
 
