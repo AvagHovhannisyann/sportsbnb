@@ -79,7 +79,7 @@ export default function OutreachConsole() {
           </Button>
           <div className="flex-1">
             <h1 className="text-xl font-semibold tracking-tight">AI Venue Outreach</h1>
-            <p className="text-xs text-muted-foreground">Enrich · Research · Draft · Send · Track replies</p>
+            <p className="text-xs text-muted-foreground">One-click research, contact discovery, draft, send, and reply tracking</p>
           </div>
           <Button variant="outline" size="sm" onClick={prepareAllNew} disabled={prepare.isPending}>
             <Sparkles className="h-3.5 w-3.5 mr-1.5" /> AI prepare all
