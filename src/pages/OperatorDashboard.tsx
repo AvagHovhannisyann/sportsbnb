@@ -25,12 +25,17 @@ const OperatorDashboard = () => {
                 <p className="text-muted-foreground">Live liquidity, GMV, and retention across Yerevan & LA</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Admin
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" asChild>
+                <Link to="/operator/outreach">AI Outreach</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/admin">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Admin
+                </Link>
+              </Button>
+            </div>
           </div>
 
           {isLoading && (
