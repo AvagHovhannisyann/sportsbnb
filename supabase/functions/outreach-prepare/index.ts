@@ -2,6 +2,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const MAPS_GW = 'https://connector-gateway.lovable.dev/google_maps';
+const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
 
 const SYSTEM_EN = `You write warm, concise B2B outreach emails on behalf of Avag, founder of Sportsbnb, a booking platform for sports venues. Sportsbnb takes only a 5% fee, helps fill empty slots, brings new customers, and gives owners a free smart calendar and online booking widget. Write in a personal, founder-to-owner tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\n).`;
 
@@ -12,16 +13,38 @@ function json(data: Record<string, unknown>, status = 200) {
 }
 
 function cleanEmail(email: string): string {
-  return email.toLowerCase().replace(/^mailto:/, '').replace(/[.,;:)\]>]+$/, '').trim();
+  return email.toLowerCase().replace(/^mailto:/, '').replace(/\?.*$/, '').replace(/[.,;:)\]>]+$/, '').trim();
 }
 
 function extractEmails(text: string): string[] {
   const normalized = text
-    .replace(/\s+\[at\]\s+|\s+\(at\)\s+|\s+ at \s+/gi, '@')
-    .replace(/\s+\[dot\]\s+|\s+\(dot\)\s+|\s+ dot \s+/gi, '.');
+    .replace(/&#64;|%40|\s*\[at\]\s*|\s*\(at\)\s*|\s+at\s+/gi, '@')
+    .replace(/&#46;|%2e|\s*\[dot\]\s*|\s*\(dot\)\s*|\s+dot\s+/gi, '.')
+    .replace(/\s*@\s*/g, '@')
+    .replace(/\s*\.\s*/g, '.');
   const matches = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
-  const blocked = /\.(png|jpe?g|gif|webp|svg|css|js)$|example\.com|wixpress|sentry|noreply|no-reply|donotreply/i;
+  const blocked = /\.(png|jpe?g|gif|webp|svg|css|js)$|example\.com|wixpress|sentry|noreply|no-reply|donotreply|privacy|abuse|postmaster|mailer-daemon/i;
   return [...new Set(matches.map(cleanEmail).filter((email) => !blocked.test(email)))];
+}
+
+function scoreEmail(email: string, website?: string): number {
+  const local = email.split('@')[0] ?? '';
+  const domain = email.split('@')[1] ?? '';
+  let score = 0;
+  if (/^(info|hello|contact|office|admin|booking|bookings|sales|team|manager|director|support)$/i.test(local)) score += 30;
+  if (/football|soccer|sport|academy|field|foundation|club|venue/i.test(email)) score += 15;
+  if (!/(gmail|yahoo|hotmail|outlook|icloud|aol)\./i.test(domain)) score += 10;
+  if (website) {
+    try {
+      const host = new URL(website).hostname.replace(/^www\./, '');
+      if (domain.endsWith(host) || host.endsWith(domain)) score += 50;
+    } catch { /* ignore invalid URL */ }
+  }
+  return score;
+}
+
+function bestEmail(emails: string[], website?: string): string | null {
+  return [...new Set(emails)].sort((a, b) => scoreEmail(b, website) - scoreEmail(a, website))[0] ?? null;
 }
 
 async function searchPlace(query: string) {
