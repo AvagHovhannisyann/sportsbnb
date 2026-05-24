@@ -60,18 +60,19 @@ export function TargetDrawer({ target, onClose }: Props) {
   const rating = e?.rating as number | undefined;
   const hours = (e?.hours as string[] | undefined) ?? [];
 
-  const saveMeta = async () => {
+  const saveBeforeSend = async () => {
     await update.mutateAsync({
       id: target.id,
       patch: {
         contact_email: contactEmail || null,
         contact_name: contactName || null,
         language,
+        ai_subject: subject,
+        ai_body: body,
         notes: notes || null,
         followup_at: followup ? new Date(followup).toISOString() : null,
       },
     });
-    toast({ title: "Contact saved" });
   };
 
   const handleSend = async () => {
@@ -83,7 +84,7 @@ export function TargetDrawer({ target, onClose }: Props) {
       toast({ title: "Subject and body required", variant: "destructive" });
       return;
     }
-    await saveMeta();
+    await saveBeforeSend();
     await send.mutateAsync({ target_id: target.id, to: contactEmail, subject, body });
   };
 
