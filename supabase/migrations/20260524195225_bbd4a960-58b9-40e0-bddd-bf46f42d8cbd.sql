@@ -1,0 +1,1 @@
+ALTER TABLE public.autopilot_runs ADD COLUMN IF NOT EXISTS multi_channel int NOT NULL DEFAULT 0;

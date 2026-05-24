@@ -1,5 +1,6 @@
 // Autopilot tick — runs every 5 minutes via pg_cron.
-// Fully autonomous: discover venues, research, draft+send, follow up, notify.
+// Returns immediately and processes work in the background (EdgeRuntime.waitUntil)
+// so the HTTP request never hits the 150s gateway timeout.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -15,32 +16,52 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
 const SPORT_KEYWORDS = ['soccer field', 'football field', 'tennis court', 'basketball court', 'sports complex', 'sports center', 'futsal court', 'padel court', 'volleyball court'];
 
+// Per-step budgets keep a single tick well under the function lifetime
+const RESEARCH_BUDGET_MS = 90_000;
+const SEND_BUDGET_MS = 60_000;
+const MAX_RESEARCH_PER_TICK = 3;
+const MAX_SEND_PER_TICK = 8;
+const MAX_FOLLOWUPS_PER_TICK = 5;
+const MAX_MULTI_CHANNEL_PINGS_PER_TICK = 5;
+
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
 async function logEvent(target_id: string | null, kind: string, payload: Record<string, unknown> = {}) {
   await admin.from('outreach_events').insert({ target_id, kind, payload });
 }
 
-async function enqueueTelegram(text: string, parse_mode = 'HTML') {
-  await admin.from('notifications_outbox').insert({ channel: 'telegram', payload: { text, parse_mode } });
+async function enqueueTelegram(text: string, extra: Record<string, unknown> = {}) {
+  await admin.from('notifications_outbox').insert({
+    channel: 'telegram',
+    payload: { text, parse_mode: 'HTML', ...extra },
+  });
 }
 
 async function flushNotifications(chatId: string | null) {
   if (!chatId) return;
-  const { data: pending } = await admin.from('notifications_outbox').select('*').eq('status', 'pending').eq('channel', 'telegram').order('created_at').limit(20);
+  const { data: pending } = await admin.from('notifications_outbox').select('*').eq('status', 'pending').eq('channel', 'telegram').order('created_at').limit(30);
   for (const n of pending ?? []) {
     try {
+      const p = n.payload as { text: string; parse_mode?: string; reply_markup?: unknown };
       const r = await fetch('https://connector-gateway.lovable.dev/telegram/sendMessage', {
         method: 'POST',
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': TELEGRAM_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: (n.payload as { text: string }).text, parse_mode: (n.payload as { parse_mode?: string }).parse_mode || 'HTML', disable_web_page_preview: true }),
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: p.text,
+          parse_mode: p.parse_mode || 'HTML',
+          disable_web_page_preview: true,
+          ...(p.reply_markup ? { reply_markup: p.reply_markup } : {}),
+        }),
       });
       if (r.ok) {
         await admin.from('notifications_outbox').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', n.id);
       } else {
         const errTxt = await r.text();
-        await admin.from('notifications_outbox').update({ attempts: n.attempts + 1, last_error: errTxt }).eq('id', n.id);
+        await admin.from('notifications_outbox').update({ attempts: n.attempts + 1, last_error: errTxt.slice(0, 500) }).eq('id', n.id);
       }
     } catch (e) {
-      await admin.from('notifications_outbox').update({ attempts: n.attempts + 1, last_error: String(e) }).eq('id', n.id);
+      await admin.from('notifications_outbox').update({ attempts: n.attempts + 1, last_error: String(e).slice(0, 500) }).eq('id', n.id);
     }
   }
 }
@@ -102,6 +123,7 @@ async function researchTarget(targetId: string): Promise<{ ok: boolean; hasEmail
     method: 'POST',
     headers: { Authorization: `Bearer ${SERVICE_ROLE}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ target_id: targetId }),
+    signal: AbortSignal.timeout(120_000),
   });
   const data = await r.json().catch(() => ({}));
   const ok = r.ok && data.success;
@@ -156,11 +178,67 @@ async function sendOutreach(target: { id: string; name: string; contact_email: s
   return true;
 }
 
+// ---------- MULTI-CHANNEL TAP-TO-REACH ----------
+// For targets with no email but with phone / socials / contact form, push a
+// Telegram message with inline-keyboard deep links so the user can ping the
+// venue with one tap. This is the free, fully-autonomous non-email channel.
+function buildChannelKeyboard(target: any): { inline_keyboard: Array<Array<Record<string, string>>> } | null {
+  const research = (target.research ?? {}) as Record<string, any>;
+  const socials = (research.socials ?? {}) as Record<string, string>;
+  const phones: string[] = Array.isArray(research.candidate_phones) ? research.candidate_phones : [];
+  const formUrl: string | undefined = research.contact_form_url;
+  const pitchEn = `Hi! I'm Avag from Sportsbnb. We're onboarding ${target.city ?? 'local'} venues with 0% commission for 3 months. Open to a quick chat?`;
+  const pitchHy = `Բարև! Ես Ավագն եմ՝ Sportsbnb-ից։ Առաջին 3 ամիսը 0% միջնորդավճար։ Կարո՞ղ ենք կարճ զրուցել։`;
+  const msg = target.language === 'hy' ? pitchHy : pitchEn;
+  const enc = encodeURIComponent(msg);
+
+  const rows: Array<Array<Record<string, string>>> = [];
+  if (phones.length) {
+    const phone = phones[0].replace(/[^\d]/g, '');
+    if (phone.length >= 8) rows.push([{ text: '💬 WhatsApp', url: `https://wa.me/${phone}?text=${enc}` }]);
+  }
+  if (socials.telegram) rows.push([{ text: '📨 Telegram', url: socials.telegram }]);
+  if (socials.instagram) rows.push([{ text: '📷 Instagram DM', url: socials.instagram }]);
+  if (socials.facebook) rows.push([{ text: '👍 Facebook', url: socials.facebook }]);
+  if (formUrl) rows.push([{ text: '📝 Contact form', url: formUrl }]);
+  if (research.maps_url || target.enriched?.maps_url) rows.push([{ text: '📍 Open in Maps', url: research.maps_url || target.enriched.maps_url }]);
+  return rows.length ? { inline_keyboard: rows } : null;
+}
+
+async function pingMultiChannelTargets(): Promise<number> {
+  // Targets that have channels but no email — surface once via Telegram
+  const { data: targets } = await admin.from('outreach_targets')
+    .select('id,name,city,country,language,research,enriched,status')
+    .in('status', ['researched', 'unreachable'])
+    .is('contact_email', null)
+    .is('last_followup_at', null) // re-use this column to mark "pinged once"
+    .limit(MAX_MULTI_CHANNEL_PINGS_PER_TICK);
+  let sent = 0;
+  for (const t of targets ?? []) {
+    const kb = buildChannelKeyboard(t);
+    if (!kb) continue;
+    const research = (t.research ?? {}) as Record<string, any>;
+    const lines = [
+      `<b>📡 ${t.name}</b>`,
+      t.city ? `📍 ${t.city}` : null,
+      research.summary ? `\n${String(research.summary).slice(0, 280)}` : null,
+      `\n<i>Tap a channel below to message them now.</i>`,
+    ].filter(Boolean).join('\n');
+    await enqueueTelegram(lines, { reply_markup: kb });
+    await admin.from('outreach_targets').update({
+      last_followup_at: new Date().toISOString(),
+      status: 'channel_pinged',
+    }).eq('id', t.id);
+    await logEvent(t.id, 'channel_pinged', { channels: kb.inline_keyboard.flat().map((b) => b.text) });
+    sent++;
+  }
+  return sent;
+}
+
 // ---------- FOLLOWUPS ----------
 async function processFollowups(dailyRemaining: { count: number }): Promise<number> {
   let count = 0;
   const now = new Date();
-  // Followup 1 at day 3
   const day3 = new Date(now.getTime() - 3 * 86400_000).toISOString();
   const { data: fu1 } = await admin.from('outreach_targets')
     .select('id,name,contact_email,contact_name,ai_subject,ai_body')
@@ -168,23 +246,21 @@ async function processFollowups(dailyRemaining: { count: number }): Promise<numb
     .eq('followup_count', 0)
     .lte('last_contacted_at', day3)
     .not('contact_email', 'is', null)
-    .limit(Math.max(0, dailyRemaining.count));
+    .limit(Math.min(MAX_FOLLOWUPS_PER_TICK, Math.max(0, dailyRemaining.count)));
   for (const t of fu1 ?? []) {
     if (dailyRemaining.count <= 0) break;
     if (await sendOutreach(t as any, true, 1)) { count++; dailyRemaining.count--; }
   }
-  // Followup 2 at day 10 (7 days after followup 1)
   const day7 = new Date(now.getTime() - 7 * 86400_000).toISOString();
   const { data: fu2 } = await admin.from('outreach_targets')
     .select('id,name,contact_email,contact_name,ai_subject,ai_body')
     .eq('status', 'followup_1')
     .lte('last_followup_at', day7)
-    .limit(Math.max(0, dailyRemaining.count));
+    .limit(Math.min(MAX_FOLLOWUPS_PER_TICK, Math.max(0, dailyRemaining.count)));
   for (const t of fu2 ?? []) {
     if (dailyRemaining.count <= 0) break;
     if (await sendOutreach(t as any, true, 2)) { count++; dailyRemaining.count--; }
   }
-  // Day 14 after followup 2 → mark lost
   const day14 = new Date(now.getTime() - 14 * 86400_000).toISOString();
   const { data: lost } = await admin.from('outreach_targets')
     .select('id,name')
@@ -203,40 +279,32 @@ async function countSentToday(): Promise<number> {
   return count ?? 0;
 }
 
-// ---------- MAIN ----------
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-
-  const { data: cfg } = await admin.from('autopilot_config').select('*').eq('id', 1).single();
-  if (!cfg) return new Response(JSON.stringify({ error: 'no config' }), { status: 500, headers: corsHeaders });
-
-  if (cfg.is_paused) {
-    return new Response(JSON.stringify({ paused: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
-
-  const { data: run } = await admin.from('autopilot_runs').insert({ status: 'running' }).select().single();
-  const runId = run!.id;
+// ---------- ORCHESTRATOR (background) ----------
+async function runTick(runId: string, cfg: any) {
   const errors: Array<{ step: string; error: string }> = [];
-  const counts = { discovered: 0, researched: 0, sent: 0, followups: 0, replies: 0, bookings_handled: 0 };
+  const counts = { discovered: 0, researched: 0, sent: 0, followups: 0, multi_channel: 0, replies: 0, bookings_handled: 0 };
+  const tickStart = Date.now();
 
   try {
-    // Stagger discovery: only run once per hour to save API quota
+    // Discovery — at most once per hour
     const lastDiscover = await admin.from('outreach_events').select('created_at').eq('kind', 'discovered').order('created_at', { ascending: false }).limit(1).maybeSingle();
     const discoverAge = lastDiscover.data ? Date.now() - new Date(lastDiscover.data.created_at).getTime() : Infinity;
     if (discoverAge > 3600_000) {
       try { counts.discovered = await discoverVenues(cfg.target_cities as any); } catch (e) { errors.push({ step: 'discover', error: String(e) }); }
     }
 
-    // Research up to 5 new targets per tick
-    const { data: newTargets } = await admin.from('outreach_targets').select('id').eq('status', 'new').limit(5);
+    // Research (budgeted)
+    const { data: newTargets } = await admin.from('outreach_targets').select('id').eq('status', 'new').limit(MAX_RESEARCH_PER_TICK);
+    const researchStart = Date.now();
     for (const t of newTargets ?? []) {
+      if (Date.now() - researchStart > RESEARCH_BUDGET_MS) break;
       try {
         const res = await researchTarget(t.id);
         if (res.ok) counts.researched++;
-      } catch (e) { errors.push({ step: `research:${t.id}`, error: String(e) }); }
+      } catch (e) { errors.push({ step: `research:${t.id}`, error: String(e).slice(0, 200) }); }
     }
 
-    // Send initial outreach (respect daily cap)
+    // Sends (respect daily cap)
     const sentToday = await countSentToday();
     const remaining = { count: Math.max(0, cfg.daily_send_cap - sentToday) };
     const { data: drafts } = await admin.from('outreach_targets')
@@ -244,23 +312,29 @@ Deno.serve(async (req) => {
       .eq('status', 'drafted')
       .not('contact_email', 'is', null)
       .not('ai_body', 'is', null)
-      .limit(Math.min(10, remaining.count));
+      .limit(Math.min(MAX_SEND_PER_TICK, remaining.count));
+    const sendStart = Date.now();
     for (const t of drafts ?? []) {
       if (remaining.count <= 0) break;
+      if (Date.now() - sendStart > SEND_BUDGET_MS) break;
       try {
         if (await sendOutreach(t as any)) { counts.sent++; remaining.count--; }
-      } catch (e) { errors.push({ step: `send:${t.id}`, error: String(e) }); }
+      } catch (e) { errors.push({ step: `send:${t.id}`, error: String(e).slice(0, 200) }); }
     }
 
-    // Followups
-    try { counts.followups = await processFollowups(remaining); } catch (e) { errors.push({ step: 'followups', error: String(e) }); }
+    // Multi-channel tap-to-reach pings
+    try { counts.multi_channel = await pingMultiChannelTargets(); } catch (e) { errors.push({ step: 'multi_channel', error: String(e).slice(0, 200) }); }
 
-    // Unreachable summary notification
-    if (counts.discovered > 0 || counts.sent > 0 || counts.followups > 0) {
+    // Followups
+    try { counts.followups = await processFollowups(remaining); } catch (e) { errors.push({ step: 'followups', error: String(e).slice(0, 200) }); }
+
+    // Summary
+    if (counts.discovered || counts.sent || counts.followups || counts.multi_channel) {
       const lines = [`<b>🤖 Autopilot tick</b>`];
       if (counts.discovered) lines.push(`🔍 Discovered: ${counts.discovered}`);
       if (counts.researched) lines.push(`🧠 Researched: ${counts.researched}`);
-      if (counts.sent) lines.push(`📨 Sent: ${counts.sent}`);
+      if (counts.sent) lines.push(`📨 Emails sent: ${counts.sent}`);
+      if (counts.multi_channel) lines.push(`📡 Multi-channel pings: ${counts.multi_channel}`);
       if (counts.followups) lines.push(`🔁 Followups: ${counts.followups}`);
       await enqueueTelegram(lines.join('\n'));
     }
@@ -268,7 +342,6 @@ Deno.serve(async (req) => {
       await enqueueTelegram(`<b>⚠️ Autopilot errors (${errors.length})</b>\n${errors.slice(0,3).map(e => `• ${e.step}: ${e.error.slice(0,100)}`).join('\n')}`);
     }
 
-    // Flush telegram queue
     await flushNotifications(cfg.telegram_chat_id);
 
     await admin.from('autopilot_runs').update({
@@ -277,10 +350,48 @@ Deno.serve(async (req) => {
       errors,
       ...counts,
     }).eq('id', runId);
-
-    return new Response(JSON.stringify({ runId, ...counts, errors: errors.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    console.log('tick complete', { runId, counts, errors: errors.length, ms: Date.now() - tickStart });
   } catch (e) {
-    await admin.from('autopilot_runs').update({ finished_at: new Date().toISOString(), status: 'failed', errors: [...errors, { step: 'main', error: String(e) }] }).eq('id', runId);
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    await admin.from('autopilot_runs').update({
+      finished_at: new Date().toISOString(),
+      status: 'failed',
+      errors: [...errors, { step: 'main', error: String(e).slice(0, 200) }],
+    }).eq('id', runId);
+    console.error('tick crashed', e);
   }
+}
+
+// ---------- HTTP ENTRYPOINT (returns immediately) ----------
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const { data: cfg } = await admin.from('autopilot_config').select('*').eq('id', 1).single();
+  if (!cfg) return new Response(JSON.stringify({ error: 'no config' }), { status: 500, headers: corsHeaders });
+  if (cfg.is_paused) {
+    return new Response(JSON.stringify({ paused: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Skip if another tick started in the last 4 minutes and is still running
+  const fourMinAgo = new Date(Date.now() - 4 * 60_000).toISOString();
+  const { data: inflight } = await admin.from('autopilot_runs')
+    .select('id').eq('status', 'running').gte('started_at', fourMinAgo).limit(1);
+  if (inflight && inflight.length) {
+    return new Response(JSON.stringify({ skipped: 'inflight' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  const { data: run } = await admin.from('autopilot_runs').insert({ status: 'running' }).select().single();
+  const runId = run!.id;
+
+  // Background the heavy work — HTTP returns now
+  const task = runTick(runId, cfg);
+  if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) {
+    EdgeRuntime.waitUntil(task);
+  } else {
+    // Fallback: detach (best-effort)
+    task.catch((e) => console.error('tick bg error', e));
+  }
+
+  return new Response(JSON.stringify({ runId, backgrounded: true }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 });
