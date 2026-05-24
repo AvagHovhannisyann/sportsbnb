@@ -130,6 +130,7 @@ export type Database = {
           finished_at: string | null
           followups: number
           id: string
+          multi_channel: number
           replies: number
           researched: number
           sent: number
@@ -143,6 +144,7 @@ export type Database = {
           finished_at?: string | null
           followups?: number
           id?: string
+          multi_channel?: number
           replies?: number
           researched?: number
           sent?: number
@@ -156,6 +158,7 @@ export type Database = {
           finished_at?: string | null
           followups?: number
           id?: string
+          multi_channel?: number
           replies?: number
           researched?: number
           sent?: number
