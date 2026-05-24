@@ -121,36 +121,17 @@ export function TargetDrawer({ target, onClose }: Props) {
           </div>
         </SheetHeader>
 
-        <TooltipProvider delayDuration={200}>
-          <div className="flex gap-2 mt-4 flex-wrap">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={() => enrich.mutate(target.id)} disabled={enrich.isPending}>
-                  <MapPin className="h-3.5 w-3.5 mr-1.5" /> {enrich.isPending ? "Enriching…" : "Enrich (Maps)"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">Pulls address, phone, website, hours and rating from Google Maps.</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={handleResearch} disabled={research.isPending}>
-                  <Search className="h-3.5 w-3.5 mr-1.5" /> {research.isPending ? "Researching…" : "Research site"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">Scrapes the venue's website with AI to extract owner name, contact email, sports offered, and a unique angle for your email.</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={() => draft.mutate(target.id)} disabled={draft.isPending}>
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> {draft.isPending ? "Drafting…" : "AI draft"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">Generates a personalized outreach email using all enriched + research data.</TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
+        <div className="mt-4 space-y-2">
+          <Button onClick={handlePrepare} disabled={prepare.isPending} className="w-full">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {prepare.isPending ? "AI is preparing outreach…" : "AI prepare outreach"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            One click: Google Maps enrichment, website research, contact extraction, and email draft.
+          </p>
+        </div>
 
-        <Tabs defaultValue="contact" className="mt-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="data">Data</TabsTrigger>
