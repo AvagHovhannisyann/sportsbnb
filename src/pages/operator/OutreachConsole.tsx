@@ -21,6 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
   replied: "bg-green-500/20 text-green-400 border-green-500/30",
   onboarded: "bg-primary/20 text-primary border-primary/30",
   passed: "bg-red-500/15 text-red-400 border-red-500/30",
+  unreachable: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
 };
 
 export default function OutreachConsole() {
@@ -46,12 +47,13 @@ export default function OutreachConsole() {
   }, [targets, query, statusFilter]);
 
   const stats = useMemo(() => {
-    const s = { total: targets.length, contacted: 0, replied: 0, onboarded: 0, followups_due: 0 };
+    const s = { total: targets.length, contacted: 0, replied: 0, onboarded: 0, unreachable: 0, followups_due: 0 };
     const now = Date.now();
     targets.forEach((t) => {
       if (["contacted", "replied", "onboarded"].includes(t.status)) s.contacted++;
       if (t.status === "replied") s.replied++;
       if (t.status === "onboarded") s.onboarded++;
+      if (t.status === "unreachable") s.unreachable++;
       if (t.followup_at && new Date(t.followup_at).getTime() <= now) s.followups_due++;
     });
     return s;
@@ -63,7 +65,7 @@ export default function OutreachConsole() {
   );
 
   const prepareAllNew = async () => {
-    const news = targets.filter((t) => ["new", "enriched", "researched"].includes(t.status));
+    const news = targets.filter((t) => ["new", "enriched", "researched", "unreachable"].includes(t.status));
     for (const t of news) {
       try { await prepare.mutateAsync(t.id); } catch { /* noop */ }
     }
@@ -91,11 +93,12 @@ export default function OutreachConsole() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <StatCard label="Total" value={stats.total} onClick={() => setStatusFilter(null)} active={!statusFilter} />
           <StatCard label="Contacted" value={stats.contacted} />
           <StatCard label="Replied" value={stats.replied} onClick={() => setStatusFilter("replied")} active={statusFilter === "replied"} />
           <StatCard label="Onboarded" value={stats.onboarded} onClick={() => setStatusFilter("onboarded")} active={statusFilter === "onboarded"} />
+          <StatCard label="Unreachable" value={stats.unreachable} onClick={() => setStatusFilter("unreachable")} active={statusFilter === "unreachable"} />
           <StatCard label="Follow-ups due" value={stats.followups_due} highlight={stats.followups_due > 0} />
         </div>
 

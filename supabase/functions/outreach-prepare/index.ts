@@ -4,9 +4,11 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const MAPS_GW = 'https://connector-gateway.lovable.dev/google_maps';
 const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
 
-const SYSTEM_EN = `You write warm, concise B2B outreach emails on behalf of Avag, founder of Sportsbnb, a booking platform for sports venues. Sportsbnb takes only a 5% fee, helps fill empty slots, brings new customers, and gives owners a free smart calendar and online booking widget. Write in a personal, founder-to-owner tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\n).`;
+const PITCH_EN = `Sportsbnb is a booking platform for sports venues. Founding offer: 0% commission for the first 3 months, then only 3% — we help fill empty slots, bring new customers, and give owners a free smart calendar and online booking widget.`;
+const PITCH_HY = `Sportsbnb-ը սպորտային հարթակների ամրագրման հարթակ է։ Հիմնադիր առաջարկ՝ առաջին 3 ամիսը 0% միջնորդավճար, հետո ընդամենը 3%։ Օգնում ենք լրացնել դատարկ ժամերը, բերում ենք նոր հաճախորդներ և տալիս ենք անվճար խելացի օրացույց ու օնլայն ամրագրման վիջեթ։`;
 
-const SYSTEM_HY = `Դու գրում ես ջերմ, հակիրճ B2B email-ներ Sportsbnb-ի հիմնադիր Ավագի անունից։ Sportsbnb-ը սպորտային հարթակների ամրագրման հարթակ է՝ ընդամենը 5% միջնորդավճարով, օգնում է լրացնել դատարկ ժամերը, բերում է նոր հաճախորդներ և տալիս է անվճար խելացի օրացույց ու օնլայն ամրագրման վիջեթ։ Գրիր անձնական, հիմնադիր-սեփականատեր տոնով։ ԵՐԲԵՔ չհնչիր ձևանմուշային։ Հղում արա մեկ կոնկրետ դետալի՝ վենյուի վերաբերյալ։ Մինչև 130 բառ։ Ավարտիր մեղմ CTA-ով (15-րոպեանոց զանգ կամ պատասխան)։ Վերադարձրու ՄԻԱՅՆ JSON՝ { "subject": "...", "body": "..." } որտեղ body-ն օգտագործում է իրական տողանջատումներ (\n)։`;
+const SYSTEM_EN = `You write warm, concise B2B outreach messages on behalf of Avag, founder of Sportsbnb. ${PITCH_EN} Write in a personal, founder-to-owner tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\\n).`;
+const SYSTEM_HY = `Դու գրում ես ջերմ, հակիրճ B2B հաղորդագրություններ Sportsbnb-ի հիմնադիր Ավագի անունից։ ${PITCH_HY} Գրիր անձնական, հիմնադիր-սեփականատեր տոնով։ ԵՐԲԵՔ չհնչիր ձևանմուշային։ Հղում արա մեկ կոնկրետ դետալի՝ վենյուի վերաբերյալ։ Մինչև 130 բառ։ Ավարտիր մեղմ CTA-ով (15-րոպեանոց զանգ կամ պատասխան)։ Վերադարձրու ՄԻԱՅՆ JSON՝ { "subject": "...", "body": "..." } որտեղ body-ն օգտագործում է իրական տողանջատումներ (\\n)։`;
 
 function json(data: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -27,6 +29,35 @@ function extractEmails(text: string): string[] {
   return [...new Set(matches.map(cleanEmail).filter((email) => !blocked.test(email)))];
 }
 
+function extractPhones(text: string): string[] {
+  const matches = text.match(/(?:\+?\d[\d\s().-]{7,}\d)/g) ?? [];
+  return [...new Set(matches.map((p) => p.replace(/[^\d+]/g, '')).filter((p) => p.length >= 8 && p.length <= 16))];
+}
+
+function extractSocials(text: string, html: string | null): Record<string, string> {
+  const out: Record<string, string> = {};
+  const sources = [text, html ?? ''].join(' ');
+  const patterns: Record<string, RegExp> = {
+    facebook: /https?:\/\/(?:www\.)?facebook\.com\/[A-Za-z0-9_.\-/]+/i,
+    instagram: /https?:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9_.\-/]+/i,
+    twitter: /https?:\/\/(?:www\.)?(?:twitter|x)\.com\/[A-Za-z0-9_.\-/]+/i,
+    linkedin: /https?:\/\/(?:www\.)?linkedin\.com\/(?:company|in)\/[A-Za-z0-9_.\-/]+/i,
+    youtube: /https?:\/\/(?:www\.)?youtube\.com\/(?:@|c\/|channel\/|user\/)[A-Za-z0-9_.\-/]+/i,
+    tiktok: /https?:\/\/(?:www\.)?tiktok\.com\/@[A-Za-z0-9_.\-/]+/i,
+    whatsapp: /https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[A-Za-z0-9_.\-/?=&]+/i,
+    telegram: /https?:\/\/(?:t\.me|telegram\.me)\/[A-Za-z0-9_.\-/]+/i,
+  };
+  for (const [k, re] of Object.entries(patterns)) {
+    const m = sources.match(re);
+    if (m) out[k] = m[0].replace(/[)\]>.,;]+$/, '');
+  }
+  return out;
+}
+
+function findContactFormUrl(urls: string[]): string | null {
+  return urls.find((u) => /contact|reach|get-in-touch|enquir|inquir/i.test(u)) ?? null;
+}
+
 function scoreEmail(email: string, website?: string): number {
   const local = email.split('@')[0] ?? '';
   const domain = email.split('@')[1] ?? '';
@@ -38,7 +69,7 @@ function scoreEmail(email: string, website?: string): number {
     try {
       const host = new URL(website).hostname.replace(/^www\./, '');
       if (domain.endsWith(host) || host.endsWith(domain)) score += 50;
-    } catch { /* ignore invalid URL */ }
+    } catch { /* ignore */ }
   }
   return score;
 }
@@ -87,9 +118,9 @@ function toText(html: string): string {
     .trim();
 }
 
-async function firecrawlScrape(url: string): Promise<{ text: string; links: string[] }> {
+async function firecrawlScrape(url: string): Promise<{ text: string; html: string; links: string[] }> {
   const key = Deno.env.get('FIRECRAWL_API_KEY');
-  if (!key) return { text: '', links: [] };
+  if (!key) return { text: '', html: '', links: [] };
   try {
     const r = await fetch(`${FIRECRAWL_V2}/scrape`, {
       method: 'POST',
@@ -100,9 +131,10 @@ async function firecrawlScrape(url: string): Promise<{ text: string; links: stri
     const payload = data?.data ?? data;
     return {
       text: [payload?.markdown, payload?.html].filter(Boolean).join('\n'),
+      html: payload?.html ?? '',
       links: Array.isArray(payload?.links) ? payload.links : [],
     };
-  } catch { return { text: '', links: [] }; }
+  } catch { return { text: '', html: '', links: [] }; }
 }
 
 function candidateUrls(website: string, html: string | null): string[] {
@@ -123,7 +155,7 @@ function candidateUrls(website: string, html: string | null): string[] {
   for (const match of linkMatches) {
     const href = match[1];
     if (!/contact|about|team|staff|coach|email|mail|office|location/i.test(href)) continue;
-    try { urls.add(new URL(href, base).href); } catch { /* ignore invalid links */ }
+    try { urls.add(new URL(href, base).href); } catch { /* ignore */ }
   }
   return [...urls].filter((url) => new URL(url).hostname === base.hostname).slice(0, 16);
 }
@@ -134,6 +166,9 @@ async function collectWebsiteResearch(website: string) {
   const seen = new Set<string>();
   const pages: string[] = [];
   const emails = new Set<string>();
+  const phones = new Set<string>();
+  const socials: Record<string, string> = {};
+  const allHtml: string[] = [];
 
   while (urls.length > 0 && seen.size < 18) {
     const url = urls.shift()!;
@@ -143,19 +178,29 @@ async function collectWebsiteResearch(website: string) {
     const firecrawl = await firecrawlScrape(url);
     firecrawl.links
       .filter((link) => /contact|about|team|staff|coach|email|mail|office|location/i.test(link))
-      .forEach((link) => { try { urls.push(new URL(link, website).href); } catch { /* ignore invalid URL */ } });
+      .forEach((link) => { try { urls.push(new URL(link, website).href); } catch { /* ignore */ } });
     const combined = [raw ?? '', firecrawl.text].join('\n');
     extractEmails(combined).forEach((email) => emails.add(email));
+    extractPhones(combined).forEach((p) => phones.add(p));
+    Object.assign(socials, extractSocials(combined, firecrawl.html || raw));
+    allHtml.push(firecrawl.html || raw || '');
     if (combined.trim()) pages.push(`URL: ${url}\n${toText(combined).slice(0, 5000)}`);
     if (emails.size >= 5) break;
   }
 
-  return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls: [...seen] };
+  return {
+    text: pages.join('\n\n---\n\n').slice(0, 14000),
+    emails: [...emails],
+    phones: [...phones],
+    socials,
+    urls: [...seen],
+    contact_form_url: findContactFormUrl([...seen]),
+  };
 }
 
-async function firecrawlSearchEmails(query: string): Promise<{ text: string; emails: string[]; urls: string[] }> {
+async function firecrawlSearchEmails(query: string): Promise<{ text: string; emails: string[]; phones: string[]; socials: Record<string, string>; urls: string[] }> {
   const key = Deno.env.get('FIRECRAWL_API_KEY');
-  if (!key) return { text: '', emails: [], urls: [] };
+  if (!key) return { text: '', emails: [], phones: [], socials: {}, urls: [] };
   try {
     const r = await fetch(`${FIRECRAWL_V2}/search`, {
       method: 'POST',
@@ -169,6 +214,8 @@ async function firecrawlSearchEmails(query: string): Promise<{ text: string; ema
     const data = await r.json();
     const results = Array.isArray(data?.data) ? data.data : Array.isArray(data?.web) ? data.web : [];
     const emails = new Set<string>();
+    const phones = new Set<string>();
+    const socials: Record<string, string> = {};
     const urls: string[] = [];
     const snippets: string[] = [];
     for (const result of results) {
@@ -176,10 +223,12 @@ async function firecrawlSearchEmails(query: string): Promise<{ text: string; ema
       if (url) urls.push(url);
       const text = [result.title, result.description, result.markdown, result.html].filter(Boolean).join('\n');
       extractEmails(text).forEach((email) => emails.add(email));
+      extractPhones(text).forEach((p) => phones.add(p));
+      Object.assign(socials, extractSocials(text, result.html ?? null));
       if (text.trim()) snippets.push(`URL: ${url ?? 'search result'}\n${toText(text).slice(0, 2500)}`);
     }
-    return { text: snippets.join('\n\n---\n\n').slice(0, 10000), emails: [...emails], urls };
-  } catch { return { text: '', emails: [], urls: [] }; }
+    return { text: snippets.join('\n\n---\n\n').slice(0, 10000), emails: [...emails], phones: [...phones], socials, urls };
+  } catch { return { text: '', emails: [], phones: [], socials: {}, urls: [] }; }
 }
 
 async function summarize(text: string, venueName: string, emails: string[]): Promise<Record<string, unknown>> {
@@ -241,7 +290,7 @@ Deno.serve(async (req) => {
     if (!target) return json({ error: 'target not found' }, 404);
 
     const place = await searchPlace([target.name, target.city, target.country].filter(Boolean).join(' '));
-    const enriched = place ? {
+    const enriched: Record<string, unknown> = place ? {
       place_id: place.id,
       name: place.displayName?.text,
       address: place.formattedAddress,
@@ -258,15 +307,26 @@ Deno.serve(async (req) => {
     let research: Record<string, unknown> = { source: 'none', note: 'No website found in Google Maps data' };
     const website = enriched.website as string | undefined;
     const allEmails = new Set<string>();
+    const allPhones = new Set<string>();
+    const allSocials: Record<string, string> = {};
+    let contactFormUrl: string | null = null;
     let externalText = '';
     let externalUrls: string[] = [];
+
+    if (enriched.phone) allPhones.add(String(enriched.phone));
 
     if (website) {
       const collected = await collectWebsiteResearch(website);
       collected.emails.forEach((email) => allEmails.add(email));
+      collected.phones.forEach((p) => allPhones.add(p));
+      Object.assign(allSocials, collected.socials);
+      contactFormUrl = collected.contact_form_url;
+
       if (allEmails.size === 0) {
         const searched = await firecrawlSearchEmails(`"${target.name}" ${target.city ?? ''} email OR contact OR owner OR manager`);
         searched.emails.forEach((email) => allEmails.add(email));
+        searched.phones.forEach((p) => allPhones.add(p));
+        Object.assign(allSocials, searched.socials);
         externalText = searched.text;
         externalUrls = searched.urls;
       }
@@ -274,36 +334,92 @@ Deno.serve(async (req) => {
         const researchText = [collected.text, externalText].filter(Boolean).join('\n\n--- external search ---\n\n');
         const candidateEmails = [...allEmails];
         const profile = await summarize(researchText, target.name, candidateEmails);
-        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+search+direct' : 'direct', website, pages_checked: collected.urls, external_pages_checked: externalUrls, candidate_emails: candidateEmails, ...profile, contact_email: profile.contact_email || bestEmail(candidateEmails, website) };
+        research = {
+          source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+search+direct' : 'direct',
+          website,
+          pages_checked: collected.urls,
+          external_pages_checked: externalUrls,
+          candidate_emails: candidateEmails,
+          candidate_phones: [...allPhones],
+          socials: allSocials,
+          contact_form_url: contactFormUrl,
+          ...profile,
+          contact_email: profile.contact_email || bestEmail(candidateEmails, website),
+        };
       } else {
-        research = { source: 'failed', website, note: 'Could not fetch website/contact pages' };
+        research = { source: 'failed', website, candidate_phones: [...allPhones], socials: allSocials, contact_form_url: contactFormUrl, note: 'Could not fetch website/contact pages' };
       }
     } else {
       const searched = await firecrawlSearchEmails(`"${target.name}" ${target.city ?? ''} ${target.country ?? ''} email OR contact OR owner OR manager`);
       searched.emails.forEach((email) => allEmails.add(email));
+      searched.phones.forEach((p) => allPhones.add(p));
+      Object.assign(allSocials, searched.socials);
       if (searched.text) {
         const candidateEmails = [...allEmails];
         const profile = await summarize(searched.text, target.name, candidateEmails);
-        research = { source: 'firecrawl-search', external_pages_checked: searched.urls, candidate_emails: candidateEmails, ...profile, contact_email: profile.contact_email || bestEmail(candidateEmails) };
+        research = {
+          source: 'firecrawl-search',
+          external_pages_checked: searched.urls,
+          candidate_emails: candidateEmails,
+          candidate_phones: [...allPhones],
+          socials: allSocials,
+          ...profile,
+          contact_email: profile.contact_email || bestEmail(candidateEmails),
+        };
+      } else {
+        research = { source: 'search-empty', candidate_phones: [...allPhones], socials: allSocials, note: 'No public web data found' };
       }
     }
 
     const contactName = typeof research.owner_or_contact_name === 'string' && research.owner_or_contact_name.trim() ? research.owner_or_contact_name.trim() : null;
     const contactEmail = typeof research.contact_email === 'string' && research.contact_email.trim() ? cleanEmail(research.contact_email) : null;
-    const draft = await draftEmail({ ...target, contact_name: target.contact_name || contactName }, enriched, research);
-    if (!draft.subject || !draft.body) throw new Error('AI did not return subject and body');
+
+    const hasEmail = !!contactEmail;
+    const hasPhone = allPhones.size > 0;
+    const hasSocial = Object.keys(allSocials).length > 0;
+    const hasContactForm = !!contactFormUrl;
+    const hasAnyChannel = hasEmail || hasPhone || hasSocial || hasContactForm;
+
+    let draftSubject: string | null = null;
+    let draftBody: string | null = null;
+    if (hasAnyChannel) {
+      const draft = await draftEmail({ ...target, contact_name: target.contact_name || contactName }, enriched, research);
+      if (!draft.subject || !draft.body) throw new Error('AI did not return subject and body');
+      draftSubject = draft.subject;
+      draftBody = draft.body;
+    }
+
+    let nextStatus = target.status;
+    if (!hasAnyChannel) {
+      nextStatus = 'unreachable';
+    } else if (['new', 'enriched', 'researched', 'unreachable'].includes(target.status)) {
+      nextStatus = hasEmail ? 'drafted' : 'researched';
+    }
 
     await admin.from('outreach_targets').update({
       enriched,
       research,
       contact_name: target.contact_name || contactName,
       contact_email: target.contact_email || contactEmail,
-      ai_subject: draft.subject,
-      ai_body: draft.body,
-      status: ['new', 'enriched', 'researched'].includes(target.status) ? 'drafted' : target.status,
+      ai_subject: draftSubject ?? target.ai_subject,
+      ai_body: draftBody ?? target.ai_body,
+      status: nextStatus,
     }).eq('id', target_id);
 
-    return json({ success: true, enriched, research, contact_name: target.contact_name || contactName, contact_email: target.contact_email || contactEmail, subject: draft.subject, body: draft.body });
+    return json({
+      success: true,
+      enriched,
+      research,
+      contact_name: target.contact_name || contactName,
+      contact_email: target.contact_email || contactEmail,
+      phones: [...allPhones],
+      socials: allSocials,
+      contact_form_url: contactFormUrl,
+      subject: draftSubject,
+      body: draftBody,
+      status: nextStatus,
+      unreachable: !hasAnyChannel,
+    });
   } catch (e) {
     console.error('prepare error', e);
     return json({ error: e instanceof Error ? e.message : 'unknown' }, 500);

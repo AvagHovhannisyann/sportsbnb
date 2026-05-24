@@ -14,7 +14,7 @@ export type OutreachTarget = {
   research: Record<string, unknown>;
   ai_subject: string | null;
   ai_body: string | null;
-  status: "new" | "enriched" | "researched" | "drafted" | "contacted" | "replied" | "onboarded" | "passed";
+  status: "new" | "enriched" | "researched" | "drafted" | "contacted" | "replied" | "onboarded" | "passed" | "unreachable";
   notes: string | null;
   last_contacted_at: string | null;
   followup_at: string | null;
@@ -132,10 +132,20 @@ export function usePrepareTarget() {
   return useMutation({
     mutationFn: (target_id: string) => invoke("outreach-prepare", { target_id }),
     onSuccess: (data) => {
-      toast({
-        title: data?.contact_email ? "Outreach prepared" : "Outreach prepared — email not found",
-        description: data?.contact_email ? data.contact_email : "AI could not find a public contact email for this venue.",
-      });
+      const phones = Array.isArray(data?.phones) ? data.phones : [];
+      const socials = data?.socials && typeof data.socials === "object" ? Object.keys(data.socials) : [];
+      if (data?.unreachable) {
+        toast({
+          title: "No contact channel found",
+          description: "Moved to Unreachable for later review.",
+          variant: "destructive",
+        });
+      } else if (data?.contact_email) {
+        toast({ title: "Outreach prepared", description: `Email: ${data.contact_email}` });
+      } else {
+        const alt = [phones.length && `${phones.length} phone${phones.length > 1 ? "s" : ""}`, socials.length && `${socials.length} social link${socials.length > 1 ? "s" : ""}`, data?.contact_form_url && "contact form"].filter(Boolean).join(", ");
+        toast({ title: "No email — try other channels", description: alt || "Only partial data found." });
+      }
       qc.invalidateQueries({ queryKey: ["outreach_targets"] });
     },
     onError: (e: Error) => toast({ title: "AI preparation failed", description: e.message, variant: "destructive" }),

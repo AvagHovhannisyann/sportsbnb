@@ -153,6 +153,9 @@ export function TargetDrawer({ target, onClose }: Props) {
               <label className="text-xs text-muted-foreground">AI-found email</label>
               <Input type="email" value={contactEmail || "Not found yet"} readOnly className="bg-muted/30" />
             </div>
+
+            <AlternativeChannels enriched={e} research={r} hasEmail={!!contactEmail} status={target.status} />
+
             <div>
               <label className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Manual follow-up reminder</label>
               <Input type="datetime-local" value={followup} onChange={(e) => setFollowup(e.target.value)} />
@@ -258,6 +261,59 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-sm break-words">{value}</div>
       </div>
+    </div>
+  );
+}
+
+const SOCIAL_LABELS: Record<string, string> = {
+  facebook: "Facebook", instagram: "Instagram", twitter: "X / Twitter", linkedin: "LinkedIn",
+  youtube: "YouTube", tiktok: "TikTok", whatsapp: "WhatsApp", telegram: "Telegram",
+};
+
+function AlternativeChannels({ enriched, research, hasEmail, status }: {
+  enriched: Record<string, unknown>;
+  research: Record<string, unknown>;
+  hasEmail: boolean;
+  status: string;
+}) {
+  const phones = new Set<string>();
+  if (enriched?.phone) phones.add(String(enriched.phone));
+  (research?.candidate_phones as string[] | undefined)?.forEach((p) => phones.add(p));
+  const socials = (research?.socials as Record<string, string> | undefined) ?? {};
+  const contactFormUrl = research?.contact_form_url as string | undefined;
+  const hasAny = phones.size > 0 || Object.keys(socials).length > 0 || !!contactFormUrl;
+
+  if (hasEmail && !hasAny) return null;
+
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Other channels</div>
+        {status === "unreachable" && (
+          <Badge variant="outline" className="bg-zinc-500/15 text-zinc-400 border-zinc-500/30 text-[10px]">Unreachable</Badge>
+        )}
+      </div>
+      {!hasAny ? (
+        <p className="text-xs text-muted-foreground">No public phone, social, or contact form found either. Filed under <span className="font-medium text-foreground">Unreachable</span> for manual review.</p>
+      ) : (
+        <div className="space-y-1.5 text-sm">
+          {[...phones].map((p) => (
+            <a key={p} href={`tel:${p}`} className="flex items-center gap-2 text-primary hover:underline">
+              <Phone className="h-3.5 w-3.5" /> {p}
+            </a>
+          ))}
+          {Object.entries(socials).map(([k, url]) => (
+            <a key={k} href={url} target="_blank" rel="noopener" className="flex items-center gap-2 text-primary hover:underline">
+              <ExternalLink className="h-3.5 w-3.5" /> {SOCIAL_LABELS[k] ?? k}
+            </a>
+          ))}
+          {contactFormUrl && (
+            <a href={contactFormUrl} target="_blank" rel="noopener" className="flex items-center gap-2 text-primary hover:underline">
+              <ExternalLink className="h-3.5 w-3.5" /> Contact form
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
