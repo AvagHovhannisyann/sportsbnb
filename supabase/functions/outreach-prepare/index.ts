@@ -255,13 +255,34 @@ Deno.serve(async (req) => {
 
     let research: Record<string, unknown> = { source: 'none', note: 'No website found in Google Maps data' };
     const website = enriched.website as string | undefined;
+    const allEmails = new Set<string>();
+    let externalText = '';
+    let externalUrls: string[] = [];
+
     if (website) {
       const collected = await collectWebsiteResearch(website);
+      collected.emails.forEach((email) => allEmails.add(email));
+      if (allEmails.size === 0) {
+        const searched = await firecrawlSearchEmails(`"${target.name}" ${target.city ?? ''} email OR contact OR owner OR manager`);
+        searched.emails.forEach((email) => allEmails.add(email));
+        externalText = searched.text;
+        externalUrls = searched.urls;
+      }
       if (collected.text) {
-        const profile = await summarize(collected.text, target.name, collected.emails);
-        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+direct' : 'direct', website, pages_checked: collected.urls, candidate_emails: collected.emails, ...profile, contact_email: profile.contact_email || collected.emails[0] || null };
+        const researchText = [collected.text, externalText].filter(Boolean).join('\n\n--- external search ---\n\n');
+        const candidateEmails = [...allEmails];
+        const profile = await summarize(researchText, target.name, candidateEmails);
+        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl+search+direct' : 'direct', website, pages_checked: collected.urls, external_pages_checked: externalUrls, candidate_emails: candidateEmails, ...profile, contact_email: profile.contact_email || bestEmail(candidateEmails, website) };
       } else {
         research = { source: 'failed', website, note: 'Could not fetch website/contact pages' };
+      }
+    } else {
+      const searched = await firecrawlSearchEmails(`"${target.name}" ${target.city ?? ''} ${target.country ?? ''} email OR contact OR owner OR manager`);
+      searched.emails.forEach((email) => allEmails.add(email));
+      if (searched.text) {
+        const candidateEmails = [...allEmails];
+        const profile = await summarize(searched.text, target.name, candidateEmails);
+        research = { source: 'firecrawl-search', external_pages_checked: searched.urls, candidate_emails: candidateEmails, ...profile, contact_email: profile.contact_email || bestEmail(candidateEmails) };
       }
     }
 
