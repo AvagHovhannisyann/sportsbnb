@@ -57,6 +57,11 @@ export default function OutreachConsole() {
     return s;
   }, [targets]);
 
+  const selectedTarget = useMemo(
+    () => targets.find((t) => t.id === selected?.id) ?? selected,
+    [targets, selected]
+  );
+
   const enrichAllNew = async () => {
     const news = targets.filter((t) => t.status === "new");
     for (const t of news) {
@@ -174,7 +179,7 @@ export default function OutreachConsole() {
       </div>
 
       <PasteImportDialog open={importOpen} onOpenChange={setImportOpen} />
-      <TargetDrawer target={selected} onClose={() => setSelected(null)} />
+      <TargetDrawer target={selectedTarget} onClose={() => setSelected(null)} />
     </div>
   );
 }

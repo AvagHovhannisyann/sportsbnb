@@ -24,6 +24,11 @@ async function fetchPlain(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
+function extractEmail(text: string): string | null {
+  const match = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match?.[0]?.replace(/[.,;:)]+$/, '') ?? null;
+}
+
 async function summarize(text: string, venueName: string): Promise<Record<string, unknown>> {
   const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
@@ -31,7 +36,7 @@ async function summarize(text: string, venueName: string): Promise<Record<string
     body: JSON.stringify({
       model: 'google/gemini-2.5-flash',
       messages: [
-        { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), tone (formal|casual|professional).' },
+        { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), contact_email (string or null), tone (formal|casual|professional). Only include contact_email if it appears in the website text.' },
         { role: 'user', content: `Venue: ${venueName}\n\nWebsite text:\n${text.slice(0, 6000)}` },
       ],
       response_format: { type: 'json_object' },
@@ -64,7 +69,7 @@ Deno.serve(async (req) => {
       const text = (await scrapeWithFirecrawl(website)) || (await fetchPlain(website));
       if (text) {
         const profile = await summarize(text, target.name);
-        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl' : 'direct', website, ...profile };
+        research = { source: Deno.env.get('FIRECRAWL_API_KEY') ? 'firecrawl' : 'direct', website, ...profile, contact_email: profile.contact_email || extractEmail(text) };
       } else {
         research = { source: 'failed', website, note: 'Could not fetch website' };
       }
@@ -72,7 +77,19 @@ Deno.serve(async (req) => {
       research = { source: 'none', note: 'No website found in enrichment data' };
     }
 
-    await admin.from('outreach_targets').update({ research, status: target.status === 'enriched' || target.status === 'new' ? 'researched' : target.status }).eq('id', target_id);
+    const contactName = typeof research.owner_or_contact_name === 'string' && research.owner_or_contact_name.trim()
+      ? research.owner_or_contact_name.trim()
+      : null;
+    const contactEmail = typeof research.contact_email === 'string' && research.contact_email.trim()
+      ? research.contact_email.trim()
+      : null;
+
+    await admin.from('outreach_targets').update({
+      research,
+      status: target.status === 'enriched' || target.status === 'new' ? 'researched' : target.status,
+      contact_name: target.contact_name || contactName,
+      contact_email: target.contact_email || contactEmail,
+    }).eq('id', target_id);
     return new Response(JSON.stringify({ success: true, research }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('research error', e);

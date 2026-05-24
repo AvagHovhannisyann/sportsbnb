@@ -45,7 +45,7 @@ export function TargetDrawer({ target, onClose }: Props) {
     setBody(target.ai_body ?? "");
     setNotes(target.notes ?? "");
     setFollowup(target.followup_at ? target.followup_at.slice(0, 16) : "");
-  }, [target?.id]);
+  }, [target]);
 
   if (!target) return null;
 
