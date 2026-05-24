@@ -51,7 +51,7 @@ async function discoverVenues(cities: Array<{ city: string; country: string; lat
   for (const c of cities) {
     for (const kw of SPORT_KEYWORDS) {
       try {
-        const r = await fetch('https://connector-gateway.lovable.dev/google_maps/places.googleapis.com/v1/places:searchText', {
+        const r = await fetch('https://connector-gateway.lovable.dev/google_maps/v1/places:searchText', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${LOVABLE_API_KEY}`,
