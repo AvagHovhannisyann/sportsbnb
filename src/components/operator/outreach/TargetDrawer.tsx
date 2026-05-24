@@ -79,12 +79,31 @@ export function TargetDrawer({ target, onClose }: Props) {
       id: target.id,
       patch: { ai_subject: subject, ai_body: body },
     });
+    toast({ title: "Draft saved" });
   };
 
   const handleSend = async () => {
-    if (!contactEmail || !subject || !body) return;
+    if (!contactEmail) {
+      toast({ title: "Add a contact email first", description: "Go to the Contact tab and enter the owner's email.", variant: "destructive" });
+      return;
+    }
+    if (!subject || !body) {
+      toast({ title: "Subject and body required", variant: "destructive" });
+      return;
+    }
     await saveMeta();
     await send.mutateAsync({ target_id: target.id, to: contactEmail, subject, body });
+  };
+
+  const handleResearch = async () => {
+    if (!website) {
+      toast({ title: "No website to research", description: "Click Enrich (Maps) first — research scrapes the venue's website to find contact email and details.", variant: "destructive" });
+      return;
+    }
+    try {
+      await research.mutateAsync(target.id);
+      toast({ title: "Research complete", description: "Check the Data tab for AI summary, and Contact tab — we tried to auto-fill the email." });
+    } catch { /* hook shows toast */ }
   };
 
   return (
