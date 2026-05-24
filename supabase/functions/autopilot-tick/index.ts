@@ -184,9 +184,13 @@ async function sendOutreach(target: { id: string; name: string; contact_email: s
 // venue with one tap. This is the free, fully-autonomous non-email channel.
 function buildChannelKeyboard(target: any): { inline_keyboard: Array<Array<Record<string, string>>> } | null {
   const research = (target.research ?? {}) as Record<string, any>;
+  const enriched = (target.enriched ?? {}) as Record<string, any>;
   const socials = (research.socials ?? {}) as Record<string, string>;
-  const phones: string[] = Array.isArray(research.candidate_phones) ? research.candidate_phones : [];
+  const phones: string[] = Array.isArray(research.candidate_phones) && research.candidate_phones.length
+    ? research.candidate_phones
+    : (enriched.phone ? [enriched.phone] : []);
   const formUrl: string | undefined = research.contact_form_url;
+  const website: string | undefined = enriched.website || research.website;
   const pitchEn = `Hi! I'm Avag from Sportsbnb. We're onboarding ${target.city ?? 'local'} venues with 0% commission for 3 months. Open to a quick chat?`;
   const pitchHy = `Բարև! Ես Ավագն եմ՝ Sportsbnb-ից։ Առաջին 3 ամիսը 0% միջնորդավճար։ Կարո՞ղ ենք կարճ զրուցել։`;
   const msg = target.language === 'hy' ? pitchHy : pitchEn;
@@ -194,24 +198,31 @@ function buildChannelKeyboard(target: any): { inline_keyboard: Array<Array<Recor
 
   const rows: Array<Array<Record<string, string>>> = [];
   if (phones.length) {
-    const phone = phones[0].replace(/[^\d]/g, '');
-    if (phone.length >= 8) rows.push([{ text: '💬 WhatsApp', url: `https://wa.me/${phone}?text=${enc}` }]);
+    const phone = String(phones[0]).replace(/[^\d]/g, '');
+    if (phone.length >= 8) {
+      rows.push([
+        { text: '💬 WhatsApp', url: `https://wa.me/${phone}?text=${enc}` },
+        { text: '📞 Call', url: `tel:+${phone}` },
+      ]);
+    }
   }
   if (socials.telegram) rows.push([{ text: '📨 Telegram', url: socials.telegram }]);
   if (socials.instagram) rows.push([{ text: '📷 Instagram DM', url: socials.instagram }]);
   if (socials.facebook) rows.push([{ text: '👍 Facebook', url: socials.facebook }]);
   if (formUrl) rows.push([{ text: '📝 Contact form', url: formUrl }]);
-  if (research.maps_url || target.enriched?.maps_url) rows.push([{ text: '📍 Open in Maps', url: research.maps_url || target.enriched.maps_url }]);
+  if (website) rows.push([{ text: '🌐 Website', url: website }]);
+  if (target.place_id) rows.push([{ text: '📍 Open in Maps', url: `https://www.google.com/maps/place/?q=place_id:${target.place_id}` }]);
   return rows.length ? { inline_keyboard: rows } : null;
 }
 
 async function pingMultiChannelTargets(): Promise<number> {
-  // Targets that have channels but no email — surface once via Telegram
+  // Any target without an email but with phone/website/social — surface once via Telegram.
+  // Includes 'new' so we don't need research first (Google Maps already provides phone + website).
   const { data: targets } = await admin.from('outreach_targets')
-    .select('id,name,city,country,language,research,enriched,status')
-    .in('status', ['researched', 'unreachable'])
+    .select('id,name,city,country,language,research,enriched,status,place_id')
+    .in('status', ['new', 'researched', 'unreachable'])
     .is('contact_email', null)
-    .is('last_followup_at', null) // re-use this column to mark "pinged once"
+    .is('last_followup_at', null)
     .limit(MAX_MULTI_CHANNEL_PINGS_PER_TICK);
   let sent = 0;
   for (const t of targets ?? []) {
