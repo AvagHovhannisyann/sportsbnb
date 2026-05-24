@@ -63,6 +63,21 @@ const ContactPage = () => {
         title="Contact Us"
         description="Get in touch with the Sportsbnb team. We're here to help with venue bookings, listings, or any questions about our platform."
         canonical="/contact"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: "Sportsbnb",
+          url: "https://www.sportsbnb.org/contact",
+          email: "support@sportsbnb.org",
+          telephone: "+374 77 189839",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Nor Nork 5th Block, Artem Mikoyan St., 35 Building",
+            addressLocality: "Yerevan",
+            postalCode: "0079",
+            addressCountry: "AM",
+          },
+        }}
       />
       <div className="bg-background">
         <div className="container py-16 md:py-24">

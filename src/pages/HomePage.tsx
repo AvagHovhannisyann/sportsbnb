@@ -199,7 +199,17 @@ const HomePage = () => {
     <div className="flex flex-col">
       <SEOHead
         canonical="/"
-        jsonLd={createWebsiteJsonLd()}
+        jsonLd={[
+          createWebsiteJsonLd(),
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Sportsbnb",
+            url: "https://www.sportsbnb.org",
+            logo: "https://www.sportsbnb.org/favicon.png",
+            sameAs: [],
+          },
+        ]}
       />
       <Helmet>
         <link rel="preload" as="image" href={heroImage} />
