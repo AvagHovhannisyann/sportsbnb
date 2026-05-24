@@ -32,6 +32,7 @@ const PlayerDashboard = lazy(() => import("./pages/PlayerDashboard"));
 const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const OperatorDashboard = lazy(() => import("./pages/OperatorDashboard"));
+const OutreachConsole = lazy(() => import("./pages/operator/OutreachConsole"));
 const AddVenuePage = lazy(() => import("./pages/AddVenuePage"));
 const EditVenuePage = lazy(() => import("./pages/EditVenuePage"));
 const VenueAvailabilityPage = lazy(() => import("./pages/VenueAvailabilityPage"));
