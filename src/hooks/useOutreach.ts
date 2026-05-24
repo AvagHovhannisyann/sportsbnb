@@ -144,8 +144,8 @@ export function useSendTarget() {
 export function useUpdateTarget() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<OutreachTarget> }) => {
-      const { error } = await supabase.from("outreach_targets").update(patch).eq("id", id);
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const { error } = await supabase.from("outreach_targets").update(patch as never).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outreach_targets"] }),
