@@ -35,6 +35,14 @@ const AboutPage = () => {
         title="About Sportsbnb"
         description="Learn about Sportsbnb's mission to make sports accessible to everyone. We're building the easiest way to find, book, and play at sports venues near you."
         canonical="/about"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Sportsbnb",
+          url: "https://www.sportsbnb.org",
+          logo: "https://www.sportsbnb.org/favicon.png",
+          description: "Sports venue booking marketplace for Armenia and California.",
+        }}
       />
       <div className="bg-background">
         {/* Hero */}

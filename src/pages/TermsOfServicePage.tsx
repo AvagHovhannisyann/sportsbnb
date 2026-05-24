@@ -1,6 +1,12 @@
 import Layout from "@/components/layout/Layout";
+import SEOHead from "@/components/seo/SEOHead";
 const TermsOfServicePage = () => {
   return <Layout>
+      <SEOHead
+        title="Terms of Service"
+        description="The terms and conditions governing your use of Sportsbnb — bookings, payments, cancellations, and the rights and responsibilities of users and venue owners."
+        canonical="/terms"
+      />
       <div className="container py-12 md:py-16">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-8">Terms of Service</h1>

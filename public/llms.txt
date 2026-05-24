@@ -1,0 +1,26 @@
+# Sportsbnb
+
+> Find and book sports venues near you — courts, fields and pools. Join open games, create teams, and play with your community.
+
+Sportsbnb is a sports venue booking marketplace serving Armenia and California (USD/AMD). Players discover and book courts, fields, and pools; venue owners list facilities and accept payments via Stripe.
+
+## Pages
+- [Home](/): Platform overview, search, featured venues.
+- [Venues](/venues): Browse and filter all sports venues.
+- [Venues Map](/venues/map): Map-based venue discovery.
+- [Nearby Fields](/nearby): Community-submitted public fields near you.
+- [Games](/games): Open pickup games to join.
+- [Teams](/teams): Find or create teams.
+- [Community](/community): Players, leaderboards, social.
+- [For Owners](/for-owners): Pitch and onboarding for venue owners.
+- [Blog](/blog): Articles on sports, booking tips, and community.
+- [About](/about): Company mission and values.
+- [FAQ](/faq): Common questions answered.
+- [Contact](/contact): Reach the Sportsbnb team.
+
+## Optional
+- [Privacy Policy](/privacy)
+- [Terms of Service](/terms)
+- [Cookie Policy](/cookies)
+- [Signup](/signup)
+- [Login](/login)
