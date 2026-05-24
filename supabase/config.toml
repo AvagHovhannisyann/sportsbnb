@@ -83,3 +83,16 @@ verify_jwt = false
 
 [functions.admin-pulse]
 verify_jwt = false
+
+[functions.autopilot-tick]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.resend-inbound]
+verify_jwt = false
+
+[functions.daily-digest]
+verify_jwt = false
+

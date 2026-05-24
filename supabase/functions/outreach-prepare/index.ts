@@ -275,12 +275,15 @@ Deno.serve(async (req) => {
   try {
     const auth = req.headers.get('Authorization');
     if (!auth) return json({ error: 'unauthorized' }, 401);
-
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return json({ error: 'unauthorized' }, 401);
-    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
-    if (!roles) return json({ error: 'forbidden' }, 403);
+    const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const isInternal = auth === `Bearer ${serviceRole}`;
+    if (!isInternal) {
+      const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return json({ error: 'unauthorized' }, 401);
+      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+      if (!roles) return json({ error: 'forbidden' }, 403);
+    }
 
     const { target_id } = await req.json();
     if (!target_id) return json({ error: 'target_id required' }, 400);
