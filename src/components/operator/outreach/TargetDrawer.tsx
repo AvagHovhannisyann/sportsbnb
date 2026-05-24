@@ -223,6 +223,20 @@ export function TargetDrawer({ target, onClose }: Props) {
           </TabsContent>
 
           <TabsContent value="email" className="space-y-3 mt-4">
+            {!contactEmail && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No contact email yet. Add one in the <span className="font-medium">Contact</span> tab before sending.
+                </AlertDescription>
+              </Alert>
+            )}
+            {contactEmail && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
+                <Info className="h-3.5 w-3.5" />
+                Will send to <span className="font-medium text-foreground">{contactEmail}</span>
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground">Subject</label>
               <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
@@ -232,9 +246,9 @@ export function TargetDrawer({ target, onClose }: Props) {
               <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} className="font-mono text-sm" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={saveDraft} disabled={update.isPending}><FileEdit className="h-3.5 w-3.5 mr-1.5" /> Save draft</Button>
-              <Button onClick={handleSend} disabled={send.isPending || !contactEmail || !subject || !body} className="flex-1">
-                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : `Send to ${contactEmail || "…"}`}
+              <Button variant="outline" onClick={saveDraft} disabled={update.isPending || (!subject && !body)}><FileEdit className="h-3.5 w-3.5 mr-1.5" /> Save draft</Button>
+              <Button onClick={handleSend} disabled={send.isPending} className="flex-1">
+                <Send className="h-3.5 w-3.5 mr-1.5" /> {send.isPending ? "Sending…" : contactEmail ? `Send to ${contactEmail}` : "Send (add email first)"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
