@@ -134,12 +134,12 @@ export function TargetDrawer({ target, onClose }: Props) {
           <TabsContent value="contact" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground">Contact name</label>
-                <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Owner / manager" />
+                <label className="text-xs text-muted-foreground">AI-found contact name</label>
+                <Input value={contactName || "Not found yet"} readOnly className="bg-muted/30" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Language</label>
-                <Select value={language} onValueChange={(v) => setLanguage(v as "en" | "hy")}>
+                <label className="text-xs text-muted-foreground">Email language</label>
+                <Select value={language} onValueChange={(v) => setLanguage(v as "en" | "hy")} disabled>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
@@ -149,8 +149,8 @@ export function TargetDrawer({ target, onClose }: Props) {
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Email</label>
-              <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="owner@venue.com" />
+              <label className="text-xs text-muted-foreground">AI-found email</label>
+              <Input type="email" value={contactEmail || "Not found yet"} readOnly className="bg-muted/30" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Manual follow-up reminder</label>
@@ -161,7 +161,6 @@ export function TargetDrawer({ target, onClose }: Props) {
               <label className="text-xs text-muted-foreground">Notes</label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
             </div>
-            <Button onClick={saveMeta} disabled={update.isPending} className="w-full">Save</Button>
           </TabsContent>
 
           <TabsContent value="data" className="space-y-3 mt-4 text-sm">
@@ -178,7 +177,7 @@ export function TargetDrawer({ target, onClose }: Props) {
             )}
             {!address && !website && (
               <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-lg text-center">
-                No data yet. Click <span className="font-medium text-foreground">Enrich (Maps)</span> above.
+                No data yet. Click <span className="font-medium text-foreground">AI prepare outreach</span> above.
               </div>
             )}
 
@@ -200,7 +199,7 @@ export function TargetDrawer({ target, onClose }: Props) {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  No contact email yet. Add one in the <span className="font-medium">Contact</span> tab before sending.
+                  AI could not find a public contact email for this venue, so sending is blocked until one is available.
                 </AlertDescription>
               </Alert>
             )}
