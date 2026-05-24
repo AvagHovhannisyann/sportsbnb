@@ -51,10 +51,11 @@ async function discoverVenues(cities: Array<{ city: string; country: string; lat
   for (const c of cities) {
     for (const kw of SPORT_KEYWORDS) {
       try {
-        const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        const r = await fetch('https://connector-gateway.lovable.dev/google_maps/places.googleapis.com/v1/places:searchText', {
           method: 'POST',
           headers: {
-            'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
             'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.websiteUri,places.internationalPhoneNumber',
             'Content-Type': 'application/json',
           },
@@ -64,7 +65,7 @@ async function discoverVenues(cities: Array<{ city: string; country: string; lat
             maxResultCount: 10,
           }),
         });
-        if (!r.ok) continue;
+        if (!r.ok) { console.error('places fail', r.status, await r.text().catch(() => '')); continue; }
         const data = await r.json();
         for (const p of data.places ?? []) {
           const placeId = p.id;
