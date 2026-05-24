@@ -858,6 +858,119 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_messages: {
+        Row: {
+          body: string
+          direction: string
+          from_email: string | null
+          id: string
+          resend_id: string | null
+          sent_at: string
+          sent_by: string | null
+          status: string
+          subject: string | null
+          target_id: string
+          to_email: string | null
+        }
+        Insert: {
+          body: string
+          direction: string
+          from_email?: string | null
+          id?: string
+          resend_id?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          status?: string
+          subject?: string | null
+          target_id: string
+          to_email?: string | null
+        }
+        Update: {
+          body?: string
+          direction?: string
+          from_email?: string | null
+          id?: string
+          resend_id?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          status?: string
+          subject?: string | null
+          target_id?: string
+          to_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_messages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_targets: {
+        Row: {
+          ai_body: string | null
+          ai_subject: string | null
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          enriched: Json
+          followup_at: string | null
+          id: string
+          language: string
+          last_contacted_at: string | null
+          name: string
+          notes: string | null
+          research: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_body?: string | null
+          ai_subject?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          enriched?: Json
+          followup_at?: string | null
+          id?: string
+          language?: string
+          last_contacted_at?: string | null
+          name: string
+          notes?: string | null
+          research?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_body?: string | null
+          ai_subject?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          enriched?: Json
+          followup_at?: string | null
+          id?: string
+          language?: string
+          last_contacted_at?: string | null
+          name?: string
+          notes?: string | null
+          research?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       owner_reply_templates: {
         Row: {
           created_at: string
