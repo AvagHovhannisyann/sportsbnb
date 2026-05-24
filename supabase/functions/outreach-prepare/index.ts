@@ -131,10 +131,14 @@ function candidateUrls(website: string, html: string | null): string[] {
 async function collectWebsiteResearch(website: string) {
   const homeRaw = await fetchRaw(website);
   const urls = candidateUrls(website, homeRaw);
+  const seen = new Set<string>();
   const pages: string[] = [];
   const emails = new Set<string>();
 
-  for (const url of urls) {
+  while (urls.length > 0 && seen.size < 18) {
+    const url = urls.shift()!;
+    if (seen.has(url)) continue;
+    seen.add(url);
     const raw = url === website && homeRaw ? homeRaw : await fetchRaw(url);
     const firecrawl = await firecrawlScrape(url);
     firecrawl.links
@@ -146,7 +150,7 @@ async function collectWebsiteResearch(website: string) {
     if (emails.size >= 5) break;
   }
 
-  return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls };
+  return { text: pages.join('\n\n---\n\n').slice(0, 14000), emails: [...emails], urls: [...seen] };
 }
 
 async function firecrawlSearchEmails(query: string): Promise<{ text: string; emails: string[]; urls: string[] }> {
