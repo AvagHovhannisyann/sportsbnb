@@ -153,6 +153,9 @@ export function TargetDrawer({ target, onClose }: Props) {
               <label className="text-xs text-muted-foreground">AI-found email</label>
               <Input type="email" value={contactEmail || "Not found yet"} readOnly className="bg-muted/30" />
             </div>
+
+            <AlternativeChannels enriched={e} research={r} hasEmail={!!contactEmail} status={target.status} />
+
             <div>
               <label className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Manual follow-up reminder</label>
               <Input type="datetime-local" value={followup} onChange={(e) => setFollowup(e.target.value)} />
