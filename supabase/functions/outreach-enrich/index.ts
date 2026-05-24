@@ -8,7 +8,7 @@ async function searchPlace(query: string) {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-      'X-Connection-Api-Key': Deno.env.get('GOOGLE_MAPS_API_KEY')!,
+      'X-Connection-Api-Key': Deno.env.get('GOOGLE_MAPS_API_KEY_1') ?? Deno.env.get('GOOGLE_MAPS_API_KEY')!,
       'Content-Type': 'application/json',
       'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.googleMapsUri,places.regularOpeningHours.weekdayDescriptions,places.location,places.businessStatus',
     },
