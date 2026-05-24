@@ -149,14 +149,22 @@ const AdminDashboard = () => {
       <div className="bg-background min-h-screen">
         <div className="container py-8">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
+          <div className="flex items-center justify-between gap-3 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                <p className="text-muted-foreground">Manage users, venues, and platform activity</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Manage users, venues, and platform activity</p>
-            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/operator">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Operator view
+              </Link>
+            </Button>
           </div>
 
           {/* Stats Grid */}
