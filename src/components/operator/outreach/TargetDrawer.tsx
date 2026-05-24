@@ -7,13 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   OutreachTarget,
   useEnrichTarget, useResearchTarget, useDraftTarget, useSendTarget,
   useUpdateTarget, useOutreachMessages,
 } from "@/hooks/useOutreach";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Search, FileEdit, Send, Calendar } from "lucide-react";
+import { ExternalLink, Mail, Phone, Star, Globe, MapPin, Sparkles, Search, FileEdit, Send, Calendar, AlertCircle, Info } from "lucide-react";
 
 interface Props {
   target: OutreachTarget | null;
