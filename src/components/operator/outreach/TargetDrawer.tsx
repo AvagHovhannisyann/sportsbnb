@@ -72,6 +72,7 @@ export function TargetDrawer({ target, onClose }: Props) {
         followup_at: followup ? new Date(followup).toISOString() : null,
       },
     });
+    toast({ title: "Contact saved" });
   };
 
   const saveDraft = async () => {
