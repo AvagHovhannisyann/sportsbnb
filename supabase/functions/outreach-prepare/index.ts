@@ -193,6 +193,7 @@ async function summarize(text: string, venueName: string, emails: string[]): Pro
         { role: 'user', content: `Venue: ${venueName}\nCandidate emails found: ${emails.join(', ') || 'none'}\n\nWebsite/contact text:\n${text}` },
       ],
       response_format: { type: 'json_object' },
+      max_tokens: 2048,
     }),
   });
   const d = await r.json();
@@ -212,6 +213,7 @@ async function draftEmail(target: Record<string, unknown>, enriched: Record<stri
         { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify({ venue: target.name, city: target.city, enriched, research, contact_name: target.contact_name }, null, 2)}` },
       ],
       response_format: { type: 'json_object' },
+      max_tokens: 2048,
     }),
   });
   const d = await r.json();
