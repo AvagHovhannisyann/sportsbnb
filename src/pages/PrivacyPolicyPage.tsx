@@ -1,6 +1,12 @@
 import Layout from "@/components/layout/Layout";
+import SEOHead from "@/components/seo/SEOHead";
 const PrivacyPolicyPage = () => {
   return <Layout>
+      <SEOHead
+        title="Privacy Policy"
+        description="How Sportsbnb collects, uses, and protects your personal data when you book venues, join games, or list a facility on our platform."
+        canonical="/privacy"
+      />
       <div className="container py-12 md:py-16">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-8">Privacy Policy</h1>

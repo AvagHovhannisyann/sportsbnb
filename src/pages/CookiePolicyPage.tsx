@@ -1,6 +1,12 @@
 import Layout from "@/components/layout/Layout";
+import SEOHead from "@/components/seo/SEOHead";
 const CookiePolicyPage = () => {
   return <Layout>
+      <SEOHead
+        title="Cookie Policy"
+        description="How Sportsbnb uses cookies and similar technologies to remember preferences, secure accounts, and improve your booking experience."
+        canonical="/cookies"
+      />
       <div className="container py-12 md:py-16">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-8">Cookie Policy</h1>

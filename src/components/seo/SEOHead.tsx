@@ -16,7 +16,7 @@ interface SEOHeadProps {
 
 const SEOHead = ({
   title,
-  description = "Find and book sports venues in Armenia and California — basketball courts, football fields, tennis courts, swimming pools and more. Join open games, create teams, and play with your community on Sportsbnb.",
+  description = "Find and book sports venues in Armenia and California. Join open games, create teams, and play with your community on Sportsbnb.",
   canonical,
   image = DEFAULT_IMAGE,
   type = "website",
