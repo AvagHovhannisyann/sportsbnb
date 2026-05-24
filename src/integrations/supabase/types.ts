@@ -83,6 +83,87 @@ export type Database = {
         }
         Relationships: []
       }
+      autopilot_config: {
+        Row: {
+          created_at: string
+          daily_send_cap: number
+          digest_email: string | null
+          id: number
+          is_paused: boolean
+          last_digest_at: string | null
+          target_cities: Json
+          telegram_chat_id: string | null
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_send_cap?: number
+          digest_email?: string | null
+          id?: number
+          is_paused?: boolean
+          last_digest_at?: string | null
+          target_cities?: Json
+          telegram_chat_id?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_send_cap?: number
+          digest_email?: string | null
+          id?: number
+          is_paused?: boolean
+          last_digest_at?: string | null
+          target_cities?: Json
+          telegram_chat_id?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      autopilot_runs: {
+        Row: {
+          bookings_handled: number
+          discovered: number
+          errors: Json
+          finished_at: string | null
+          followups: number
+          id: string
+          replies: number
+          researched: number
+          sent: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          bookings_handled?: number
+          discovered?: number
+          errors?: Json
+          finished_at?: string | null
+          followups?: number
+          id?: string
+          replies?: number
+          researched?: number
+          sent?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          bookings_handled?: number
+          discovered?: number
+          errors?: Json
+          finished_at?: string | null
+          followups?: number
+          id?: string
+          replies?: number
+          researched?: number
+          sent?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       blocked_dates: {
         Row: {
           blocked_date: string
@@ -858,6 +939,71 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications_outbox: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          id: string
+          last_error: string | null
+          payload: Json
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          payload: Json
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      outreach_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          target_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          target_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_events_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outreach_messages: {
         Row: {
           body: string
@@ -912,6 +1058,7 @@ export type Database = {
         Row: {
           ai_body: string | null
           ai_subject: string | null
+          autopilot_locked: boolean
           city: string | null
           contact_email: string | null
           contact_name: string | null
@@ -920,11 +1067,18 @@ export type Database = {
           created_by: string | null
           enriched: Json
           followup_at: string | null
+          followup_count: number
           id: string
           language: string
           last_contacted_at: string | null
+          last_followup_at: string | null
+          lat: number | null
+          lng: number | null
           name: string
           notes: string | null
+          place_id: string | null
+          replied_at: string | null
+          reply_sentiment: string | null
           research: Json
           status: string
           updated_at: string
@@ -932,6 +1086,7 @@ export type Database = {
         Insert: {
           ai_body?: string | null
           ai_subject?: string | null
+          autopilot_locked?: boolean
           city?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -940,11 +1095,18 @@ export type Database = {
           created_by?: string | null
           enriched?: Json
           followup_at?: string | null
+          followup_count?: number
           id?: string
           language?: string
           last_contacted_at?: string | null
+          last_followup_at?: string | null
+          lat?: number | null
+          lng?: number | null
           name: string
           notes?: string | null
+          place_id?: string | null
+          replied_at?: string | null
+          reply_sentiment?: string | null
           research?: Json
           status?: string
           updated_at?: string
@@ -952,6 +1114,7 @@ export type Database = {
         Update: {
           ai_body?: string | null
           ai_subject?: string | null
+          autopilot_locked?: boolean
           city?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -960,11 +1123,18 @@ export type Database = {
           created_by?: string | null
           enriched?: Json
           followup_at?: string | null
+          followup_count?: number
           id?: string
           language?: string
           last_contacted_at?: string | null
+          last_followup_at?: string | null
+          lat?: number | null
+          lng?: number | null
           name?: string
           notes?: string | null
+          place_id?: string | null
+          replied_at?: string | null
+          reply_sentiment?: string | null
           research?: Json
           status?: string
           updated_at?: string
