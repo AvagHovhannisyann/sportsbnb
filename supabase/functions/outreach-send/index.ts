@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'X-Connection-Api-Key': Deno.env.get('RESEND_API_KEY')!,
+        'X-Connection-Api-Key': Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY')!,
       },
       body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, html: bodyToHtml(body), text: body }),
     });
