@@ -121,7 +121,6 @@ const BlogPostsTab = () => {
           prompt: `Create a visually striking, professional blog header image for an article titled "${title}". The article is about: ${keyword || content.slice(0, 200)}. Style: modern, clean, sports-themed with vibrant colors. No text in the image. Landscape orientation, suitable as a blog cover.`,
           type: "blog-cover",
           bucket: "blog-images",
-          path: `covers/${Date.now()}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}.png`,
         },
       });
       if (error) throw error;

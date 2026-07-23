@@ -1,6 +1,7 @@
 // Resend inbound webhook — captures replies and classifies sentiment with Gemini.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { verifySvixSignature } from '../_shared/webhooks.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -30,7 +31,19 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  const payload = await req.json().catch(() => ({}));
+  // Verify the Resend (Svix) webhook signature before trusting anything in the body.
+  const rawBody = await req.text();
+  const webhookSecret = Deno.env.get('RESEND_WEBHOOK_SECRET');
+  if (!webhookSecret) {
+    console.error('RESEND_WEBHOOK_SECRET is not configured — rejecting inbound webhook');
+    return new Response('Unauthorized', { status: 401 });
+  }
+  if (!(await verifySvixSignature(req, rawBody, webhookSecret))) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  let payload: Record<string, any> = {};
+  try { payload = JSON.parse(rawBody); } catch { payload = {}; }
   // Resend webhook events: type=email.bounced|email.replied (Resend Inbound webhook delivers parsed message)
   // We handle both Resend Inbound (parsed email) and event webhooks.
   const fromEmail: string = (payload.from || payload.data?.from || payload.headers?.from || '').toLowerCase().match(/[\w._%+-]+@[\w.-]+/)?.[0] || '';

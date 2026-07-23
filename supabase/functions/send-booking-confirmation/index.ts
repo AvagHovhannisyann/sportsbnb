@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { requireCronSecret, HttpError } from "../_shared/auth.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -22,6 +23,9 @@ serve(async (req) => {
   }
 
   try {
+    // Internal-only: called by payment verification / booking flows, never by browsers.
+    requireCronSecret(req);
+
     const { email, venueName, bookingDate, bookingTime, totalPrice, bookingId }: BookingConfirmationRequest = await req.json();
 
     console.log("Sending booking confirmation to:", email);
@@ -124,6 +128,12 @@ serve(async (req) => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: unknown) {
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error sending confirmation email:", errorMessage);
     return new Response(

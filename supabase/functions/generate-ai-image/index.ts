@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireUser, HttpError } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +11,21 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, type, bucket, path } = await req.json();
-    
+    const { user } = await requireUser(req);
+
+    const { prompt, type, bucket } = await req.json();
+
+    if (typeof prompt !== "string" || !prompt.trim() || prompt.length > 2000) {
+      return new Response(JSON.stringify({ error: "Invalid prompt" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Only known public buckets; path is always server-generated and scoped to the caller.
+    const ALLOWED_BUCKETS = ["team-logos", "avatars", "blog-images"];
+    const targetBucket = ALLOWED_BUCKETS.includes(bucket) ? bucket : "team-logos";
+    const targetPath = `${user.id}/${crypto.randomUUID()}.png`;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -73,9 +87,6 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const targetBucket = bucket || "team-logos";
-    const targetPath = path || `${crypto.randomUUID()}.png`;
-
     const { error: uploadError } = await supabaseAdmin.storage
       .from(targetBucket)
       .upload(targetPath, imageBytes, {
@@ -96,6 +107,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof HttpError) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("generate-ai-image error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

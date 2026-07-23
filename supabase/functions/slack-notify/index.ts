@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { requireCronSecret, HttpError } from "../_shared/auth.ts";
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/slack/api';
 
@@ -10,6 +11,15 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    requireCronSecret(req);
+  } catch (e) {
+    const status = e instanceof HttpError ? e.status : 401;
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

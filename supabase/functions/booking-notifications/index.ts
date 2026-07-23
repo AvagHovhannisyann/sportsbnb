@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireCronSecret, HttpError } from "../_shared/auth.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -19,6 +20,8 @@ serve(async (req) => {
   }
 
   try {
+    requireCronSecret(req);
+
     const { type, bookingId }: NotificationRequest = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -112,6 +115,12 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("Notification error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {

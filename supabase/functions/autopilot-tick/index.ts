@@ -3,6 +3,7 @@
 // so the HTTP request never hits the 150s gateway timeout.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireCronSecret, HttpError } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -374,6 +375,16 @@ async function runTick(runId: string, cfg: any) {
 // ---------- HTTP ENTRYPOINT (returns immediately) ----------
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  try {
+    requireCronSecret(req);
+  } catch (e) {
+    const status = e instanceof HttpError ? e.status : 401;
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const { data: cfg } = await admin.from('autopilot_config').select('*').eq('id', 1).single();
   if (!cfg) return new Response(JSON.stringify({ error: 'no config' }), { status: 500, headers: corsHeaders });

@@ -2265,10 +2265,30 @@ export type Database = {
         Args: { p_role: string; p_room_id: string; p_user_id: string }
         Returns: undefined
       }
-      get_or_create_chat_room:
-        | { Args: { p_reference_id: string; p_type: string }; Returns: string }
-        | { Args: { p_reference_id: string; p_type: string }; Returns: string }
+      get_or_create_chat_room: {
+        Args: { p_reference_id: string; p_type: string }
+        Returns: string
+      }
+      get_or_create_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          user_id: string
+          code: string
+          created_at: string
+        }[]
+      }
       get_player_stats: { Args: { p_user_id: string }; Returns: Json }
+      notify_user: {
+        Args: {
+          p_user_id: string
+          p_type: string
+          p_title: string
+          p_message: string
+          p_link?: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
