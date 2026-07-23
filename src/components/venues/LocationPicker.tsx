@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
+import { MapsReady } from "@/components/maps/GoogleMapsProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -158,7 +159,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         )}
 
         <div className="relative rounded-lg overflow-hidden border border-border">
-          <GoogleMap
+          <MapsReady><GoogleMap
             mapContainerStyle={{ width: "100%", height: "300px" }}
             center={mapCenter}
             zoom={13}
@@ -166,7 +167,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             onLoad={(map) => { mapRef.current = map; }}
           >
             {selectedPosition && <Marker position={selectedPosition} />}
-          </GoogleMap>
+          </GoogleMap></MapsReady>
           <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded px-2 py-1 text-xs text-muted-foreground">
             Click on map to select exact location
           </div>

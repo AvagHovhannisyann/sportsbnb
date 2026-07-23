@@ -73,14 +73,14 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   }, []);
 
   const getAutocompleteService = () => {
-    if (!autocompleteServiceRef.current && google?.maps?.places) {
+    if (!autocompleteServiceRef.current && typeof google !== "undefined" && google.maps?.places) {
       autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
     }
     return autocompleteServiceRef.current;
   };
 
   const getGeocoder = () => {
-    if (!geocoderRef.current && google?.maps) {
+    if (!geocoderRef.current && typeof google !== "undefined" && google.maps) {
       geocoderRef.current = new google.maps.Geocoder();
     }
     return geocoderRef.current;
