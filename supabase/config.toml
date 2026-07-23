@@ -39,42 +39,6 @@ verify_jwt = true
 [functions.calendar-sync]
 verify_jwt = true
 
-[functions.check-subscription]
-verify_jwt = true
-
-[functions.create-checkout]
-verify_jwt = true
-
-[functions.customer-portal]
-verify_jwt = true
-
-[functions.create-billing-portal]
-verify_jwt = true
-
-[functions.get-billing-info]
-verify_jwt = true
-
-[functions.create-booking-checkout]
-verify_jwt = true
-
-[functions.verify-booking-payment]
-verify_jwt = true
-
-[functions.refund-booking]
-verify_jwt = true
-
-[functions.create-game-payment]
-verify_jwt = true
-
-[functions.verify-game-payment]
-verify_jwt = true
-
-[functions.create-connect-account]
-verify_jwt = true
-
-[functions.check-connect-status]
-verify_jwt = true
-
 # --- Admin/ops (JWT at gateway + requireAdmin in-code) ---
 
 [functions.admin-pulse]
@@ -101,6 +65,31 @@ verify_jwt = true
 
 [functions.outreach-research]
 verify_jwt = true
+
+# --- Payments (Phase 2) ---
+
+[functions.payments-init]
+verify_jwt = true
+
+[functions.payments-verify]
+verify_jwt = true
+
+[functions.payments-refund]
+verify_jwt = true
+
+# Provider callbacks verify server-side (Ameria re-verification / Idram checksum)
+
+[functions.payments-callback-ameria]
+verify_jwt = false
+
+[functions.payments-callback-idram]
+verify_jwt = false
+
+[functions.payouts-run]
+verify_jwt = false
+
+[functions.bookings-expire]
+verify_jwt = false
 
 # --- Machine-invoked: cron secret / service-role enforced in-code ---
 

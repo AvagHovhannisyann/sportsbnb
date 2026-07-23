@@ -26,7 +26,10 @@ const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const CreateTeamPage = lazy(() => import("./pages/CreateTeamPage"));
 const TeamDetailsPage = lazy(() => import("./pages/TeamDetailsPage"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
-const GameJoinSuccessPage = lazy(() => import("./pages/GameJoinSuccessPage"));
+const GameJoinStatusPage = lazy(() => import("./features/booking/GameJoinStatusPage"));
+const CheckoutPage = lazy(() => import("./features/booking/CheckoutPage"));
+const BookingStatusPage = lazy(() => import("./features/booking/BookingStatusPage"));
+const MockPayPage = lazy(() => import("./features/booking/MockPayPage"));
 const VenueDetailsPage = lazy(() => import("./pages/VenueDetailsPage"));
 const PlayerDashboard = lazy(() => import("./pages/PlayerDashboard"));
 const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
@@ -46,7 +49,6 @@ const FAQPage = lazy(() => import("./pages/FAQPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PlayerOnboarding = lazy(() => import("./pages/PlayerOnboarding"));
 const OwnerOnboarding = lazy(() => import("./pages/OwnerOnboarding"));
-const BookingSuccessPage = lazy(() => import("./pages/BookingSuccessPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
@@ -71,9 +73,9 @@ const OwnerPoliciesPage = lazy(() => import("./pages/owner/OwnerPoliciesPage"));
 const OwnerSettingsPage = lazy(() => import("./pages/owner/OwnerSettingsPage"));
 const OwnerWidgetPage = lazy(() => import("./pages/owner/OwnerWidgetPage"));
 const CalendarCallbackPage = lazy(() => import("./pages/owner/CalendarCallbackPage"));
-const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const VenueMapPage = lazy(() => import("./pages/VenueMapPage"));
 const OwnerAnalyticsPage = lazy(() => import("./pages/owner/OwnerAnalyticsPage"));
+const OwnerEarningsPage = lazy(() => import("./pages/owner/OwnerEarningsPage"));
 const NearbyFieldsPage = lazy(() => import("./pages/NearbyFieldsPage"));
 const SubmitFieldPage = lazy(() => import("./pages/SubmitFieldPage"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
@@ -126,7 +128,8 @@ const App = () => {
                     <Route path="/community" element={<CommunityPage />} />
                     <Route path="/create-game" element={<ProtectedRoute><CreateGamePage /></ProtectedRoute>} />
                     <Route path="/game/:id" element={<GameDetailsPage />} />
-                    <Route path="/game/:id/join-success" element={<ProtectedRoute><GameJoinSuccessPage /></ProtectedRoute>} />
+                    <Route path="/game/:id/join-status" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
+                    <Route path="/game/:id/join-success" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
                     {/* Teams */}
                     <Route path="/teams" element={<TeamsPage />} />
                     <Route path="/create-team" element={<ProtectedRoute><CreateTeamPage /></ProtectedRoute>} />
@@ -152,6 +155,7 @@ const App = () => {
                     <Route path="/owner/settings" element={<ProtectedRoute><OwnerSettingsPage /></ProtectedRoute>} />
                     <Route path="/owner/widget" element={<ProtectedRoute><OwnerWidgetPage /></ProtectedRoute>} />
                     <Route path="/owner/analytics" element={<ProtectedRoute><OwnerAnalyticsPage /></ProtectedRoute>} />
+                    <Route path="/owner/earnings" element={<ProtectedRoute><OwnerEarningsPage /></ProtectedRoute>} />
                     
                     {/* Embed booking widget (public) */}
                     <Route path="/embed/booking/:venueId" element={<EmbedBookingPage />} />
@@ -190,8 +194,9 @@ const App = () => {
                     <Route path="/cookies" element={<CookiePolicyPage />} />
                     {/* Profile & Billing */}
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                    <Route path="/subscription" element={<SubscriptionPage />} />
-                    <Route path="/booking-success" element={<ProtectedRoute><BookingSuccessPage /></ProtectedRoute>} />
+                    <Route path="/book/:bookingId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                    <Route path="/booking/:bookingId/status" element={<ProtectedRoute><BookingStatusPage /></ProtectedRoute>} />
+                    <Route path="/pay/mock/:paymentId" element={<ProtectedRoute><MockPayPage /></ProtectedRoute>} />
                     {/* Admin */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                     <Route path="/operator" element={<AdminRoute><OperatorDashboard /></AdminRoute>} />
