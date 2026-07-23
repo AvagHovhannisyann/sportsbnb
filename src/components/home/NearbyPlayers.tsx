@@ -24,7 +24,7 @@ const NearbyPlayers = () => {
   const fetchPlayers = async (sport: string) => {
     setState("loading");
     try {
-      let query = supabase
+      const query = supabase
         .from("profiles_public")
         .select("full_name, preferred_sports, skill_level, city")
         .eq("user_type", "player")

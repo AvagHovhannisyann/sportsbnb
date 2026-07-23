@@ -55,70 +55,13 @@ export const useCheckAndAwardAchievements = () => {
     mutationFn: async () => {
       if (!user) return [];
 
-      // Get player stats
-      const { data: stats } = await supabase.rpc("get_player_stats", { p_user_id: user.id });
-      if (!stats) return [];
-
-      const parsedStats = typeof stats === "string" ? JSON.parse(stats) : stats;
-
-      // Get all achievements
-      const { data: achievements } = await supabase.from("achievements").select("*");
-      if (!achievements) return [];
-
-      // Get already earned
-      const { data: earned } = await supabase
-        .from("user_achievements")
-        .select("achievement_id")
-        .eq("user_id", user.id);
-      const earnedIds = new Set(earned?.map((e) => e.achievement_id) || []);
-
-      const statMap: Record<string, number> = {
-        bookings_made: parsedStats.total_bookings || 0,
-        games_played: parsedStats.games_played || 0,
-        games_hosted: parsedStats.games_hosted || 0,
-        reviews_written: 0, // Will be fetched separately if needed
-        referrals_made: 0,
-      };
-
-      // Check reviews count
-      const { count: reviewCount } = await supabase
-        .from("reviews")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id);
-      statMap.reviews_written = reviewCount || 0;
-
-      // Check referrals
-      const { count: refCount } = await supabase
-        .from("referral_credits")
-        .select("*", { count: "exact", head: true })
-        .eq("referrer_id", user.id);
-      statMap.referrals_made = refCount || 0;
-
-      const newlyEarned: any[] = [];
-
-      for (const achievement of achievements) {
-        if (earnedIds.has(achievement.id)) continue;
-        const currentValue = statMap[achievement.requirement_type] || 0;
-        if (currentValue >= achievement.requirement_value) {
-          const { error } = await supabase.from("user_achievements").insert({
-            user_id: user.id,
-            achievement_id: achievement.id,
-          });
-          if (!error) {
-            newlyEarned.push(achievement);
-            // Add XP
-            await supabase
-              .from("profiles")
-              .update({
-                xp: (parsedStats.xp || 0) + achievement.xp_reward,
-                level: Math.floor(((parsedStats.xp || 0) + achievement.xp_reward) / 100) + 1,
-              })
-              .eq("user_id", user.id);
-          }
-        }
+      // Awarding happens atomically server-side; returns newly earned rows.
+      const { data, error } = await supabase.rpc("check_and_award_achievements");
+      if (error) {
+        console.error("Achievement check failed:", error.message);
+        return [];
       }
-
-      return newlyEarned;
+      return data ?? [];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-achievements"] });

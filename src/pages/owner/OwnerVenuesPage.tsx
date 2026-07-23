@@ -14,15 +14,12 @@ import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/owner/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
-import { useStripeConnect } from "@/hooks/useStripeConnect";
-import { StripeConnectBanner } from "@/components/stripe/StripeConnectBanner";
 import { Building2 } from "lucide-react";
 
 const OwnerVenuesPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
-  const { canListVenues, isCheckingStatus } = useStripeConnect();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -48,24 +45,6 @@ const OwnerVenuesPage = () => {
 
   return (
     <OwnerLayout title="My Venues" subtitle="Manage your venue listings and settings">
-      {/* Stripe Setup Required */}
-      {!canListVenues && !isCheckingStatus && (
-        <Card className="mb-6">
-          <CardContent className="py-8 text-center space-y-4">
-            <CreditCard className="h-12 w-12 mx-auto text-amber-500" />
-            <h2 className="text-xl font-semibold text-foreground">Set Up Payments to List Venues</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Link your bank account before adding venues. This ensures you can receive payouts from bookings.
-            </p>
-            <div className="max-w-md mx-auto">
-              <StripeConnectBanner variant="inline" />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {canListVenues && (
-      <>
       {/* Header Actions */}
       <div className="flex justify-between items-center mb-6">
         <div className="text-sm text-muted-foreground">
@@ -213,8 +192,6 @@ const OwnerVenuesPage = () => {
             </div>
           )}
         </div>
-      )}
-      </>
       )}
     </OwnerLayout>
   );

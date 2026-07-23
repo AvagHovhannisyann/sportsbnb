@@ -291,12 +291,12 @@ export const useInviteToTeam = () => {
       // Send notification if inviting by user ID
       if (userId) {
         const { data: team } = await supabase.from("teams").select("name").eq("id", teamId).single();
-        await supabase.from("notifications").insert({
-          user_id: userId,
-          type: "team",
-          title: "Team Invite! 🏆",
-          message: `You've been invited to join "${team?.name}".`,
-          link: `/teams`,
+        await supabase.rpc("notify_user", {
+          p_user_id: userId,
+          p_type: "team",
+          p_title: "Team Invite! 🏆",
+          p_message: `You've been invited to join "${team?.name}".`,
+          p_link: `/teams`,
         });
       }
 

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Star, MessageCircle, Sparkles, ArrowUpRight } from "lucide-react";
+import { MapPin, Star, Zap, Sparkles, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/pricing";
 
@@ -55,10 +55,10 @@ const VenueCard = ({
             </Badge>
           )}
 
-          {/* Top-right: WhatsApp pill */}
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-[#075E54] shadow-sm">
-            <MessageCircle className="h-3 w-3" />
-            WhatsApp
+          {/* Top-right: instant booking pill */}
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-primary/95 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
+            <Zap className="h-3 w-3" />
+            Instant Book
           </span>
 
           {/* Distance pill */}
@@ -105,7 +105,7 @@ const VenueCard = ({
 
           <div className="flex items-end justify-between pt-3 border-t border-border">
             <div className="flex items-baseline gap-1">
-              <span className="font-display text-xl font-bold text-foreground tracking-extra-tight">
+              <span className="stat-numeral text-xl font-bold text-foreground">
                 {formatPrice(price)}
               </span>
               <span className="text-xs text-muted-foreground">/ hour</span>

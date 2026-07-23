@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 
 const ForgotPasswordPage = () => {
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
@@ -31,9 +32,7 @@ const ForgotPasswordPage = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await resetPassword(email);
 
       if (error) {
         throw error;

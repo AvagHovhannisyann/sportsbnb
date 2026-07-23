@@ -1,6 +1,7 @@
 // Daily digest — sends one summary email + Telegram message at 08:00 local.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireCronSecret, HttpError } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -12,6 +13,15 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  try {
+    requireCronSecret(req);
+  } catch (e) {
+    const status = e instanceof HttpError ? e.status : 401;
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   const { data: cfg } = await admin.from('autopilot_config').select('*').eq('id', 1).single();
   if (!cfg) return new Response(JSON.stringify({ error: 'no config' }), { status: 500 });
 

@@ -94,26 +94,38 @@ const GameDetailsPage = () => {
       return;
     }
 
-    // For paid games, redirect to payment (will be approved after payment)
+    // For paid games, start a payment (spot is confirmed after payment)
     if (isPaidGame) {
       setIsProcessingPayment(true);
       try {
-        const { data, error } = await supabase.functions.invoke("create-game-payment", {
-          body: { gameId: game.id },
+        const { data, error } = await supabase.functions.invoke("payments-init", {
+          body: { gameId: game.id, provider: import.meta.env.DEV ? "mock" : "ameria" },
         });
 
         if (error) throw new Error(error.message);
 
-        if (data.free) {
-          toast.success("You've joined the game!");
-          window.location.reload();
+        if (data.formAction && data.formFields) {
+          // Form-post providers (Idram)
+          const form = document.createElement("form");
+          form.method = "POST";
+          form.action = data.formAction;
+          form.style.display = "none";
+          for (const [name, value] of Object.entries(data.formFields as Record<string, string>)) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+          }
+          document.body.appendChild(form);
+          form.submit();
           return;
         }
 
-        if (data.url) {
-          window.location.href = data.url;
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
         } else {
-          throw new Error("No checkout URL received");
+          throw new Error("No payment URL received");
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to process payment";

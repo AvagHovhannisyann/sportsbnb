@@ -1,91 +1,114 @@
 project_id = "aeyqnrwmqmvsfendqypd"
 
+# Auth posture
+# ------------
+# Default (unlisted) and verify_jwt = true: the gateway rejects requests without
+# a valid user JWT. Functions still do their own authorization in-code
+# (requireUser/requireAdmin from _shared/auth.ts) as defense in depth.
+#
+# verify_jwt = false is reserved for machine-invoked endpoints, which MUST
+# enforce their own verification in-code:
+#   - cron/internal: requireCronSecret (x-cron-secret header or service-role bearer)
+#   - webhooks: provider signature verification (Svix for Resend, secret token for Telegram)
+#   - deliberately public, read-only or rate-limited: widget-data, send-contact-email,
+#     get-weather, geosuggest
+
+# --- User-facing (JWT required at the gateway) ---
+
+[functions.ai-chat]
+verify_jwt = true
+
+[functions.ai-game-matchmaking]
+verify_jwt = true
+
+[functions.ai-venue-recommendations]
+verify_jwt = true
+
+[functions.player-insights]
+verify_jwt = true
+
+[functions.owner-coach]
+verify_jwt = true
+
+[functions.generate-ai-image]
+verify_jwt = true
+
 [functions.calendar-auth]
-verify_jwt = false
+verify_jwt = true
 
 [functions.calendar-sync]
+verify_jwt = true
+
+# --- Admin/ops (JWT at gateway + requireAdmin in-code) ---
+
+[functions.admin-pulse]
+verify_jwt = true
+
+[functions.discover-fields]
+verify_jwt = true
+
+# outreach-prepare / outreach-draft accept a service-role bearer for internal
+# calls from autopilot-tick; the service-role key is a valid JWT so the gateway
+# check passes for those too.
+
+[functions.outreach-prepare]
+verify_jwt = true
+
+[functions.outreach-draft]
+verify_jwt = true
+
+[functions.outreach-send]
+verify_jwt = true
+
+[functions.outreach-enrich]
+verify_jwt = true
+
+[functions.outreach-research]
+verify_jwt = true
+
+# --- Payments (Phase 2) ---
+
+[functions.payments-init]
+verify_jwt = true
+
+[functions.payments-verify]
+verify_jwt = true
+
+[functions.payments-refund]
+verify_jwt = true
+
+# Provider callbacks verify server-side (Ameria re-verification / Idram checksum)
+
+[functions.payments-callback-ameria]
 verify_jwt = false
 
-[functions.widget-data]
+[functions.payments-callback-idram]
+verify_jwt = false
+
+[functions.payouts-run]
+verify_jwt = false
+
+[functions.bookings-expire]
+verify_jwt = false
+
+# --- Machine-invoked: cron secret / service-role enforced in-code ---
+
+[functions.autopilot-tick]
+verify_jwt = false
+
+[functions.daily-digest]
 verify_jwt = false
 
 [functions.booking-notifications]
 verify_jwt = false
 
-[functions.generate-ai-image]
-verify_jwt = false
-
-[functions.get-weather]
-verify_jwt = false
-
-[functions.ai-venue-recommendations]
+[functions.send-booking-confirmation]
 verify_jwt = false
 
 [functions.slack-notify]
 verify_jwt = false
 
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.ai-chat]
-verify_jwt = false
-
-[functions.ai-game-matchmaking]
-verify_jwt = false
-
-[functions.create-booking-checkout]
-verify_jwt = false
-
-[functions.verify-booking-payment]
-verify_jwt = false
-
-[functions.create-game-payment]
-verify_jwt = false
-
-[functions.verify-game-payment]
-verify_jwt = false
-
-[functions.refund-booking]
-verify_jwt = false
-
-[functions.create-connect-account]
-verify_jwt = false
-
-[functions.check-connect-status]
-verify_jwt = false
-
-[functions.create-billing-portal]
-verify_jwt = false
-
-[functions.get-billing-info]
-verify_jwt = false
-
-[functions.send-booking-confirmation]
-verify_jwt = false
-
-[functions.send-contact-email]
-verify_jwt = false
-
-[functions.discover-fields]
-verify_jwt = false
-
-[functions.player-insights]
-verify_jwt = false
-
-[functions.owner-coach]
-verify_jwt = false
-
-[functions.admin-pulse]
-verify_jwt = false
-
-[functions.autopilot-tick]
-verify_jwt = false
+# --- Webhooks: provider signature enforced in-code ---
 
 [functions.telegram-webhook]
 verify_jwt = false
@@ -93,6 +116,16 @@ verify_jwt = false
 [functions.resend-inbound]
 verify_jwt = false
 
-[functions.daily-digest]
+# --- Deliberately public ---
+
+[functions.widget-data]
 verify_jwt = false
 
+[functions.send-contact-email]
+verify_jwt = false
+
+[functions.get-weather]
+verify_jwt = false
+
+[functions.geosuggest]
+verify_jwt = false

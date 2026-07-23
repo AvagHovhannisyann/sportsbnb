@@ -82,7 +82,7 @@ const HomePage = () => {
   ];
 
   const benefits = [
-    { icon: Zap, title: "One-Tap Booking", desc: "Message the venue owner on WhatsApp in a single tap." },
+    { icon: Zap, title: "Instant Booking", desc: "Pick a slot, pay in-app, and your court is locked in seconds." },
     { icon: Shield, title: "Verified Owners", desc: "Every venue listing is reviewed before going live." },
     { icon: Star, title: "Real Reviews", desc: "Ratings come from players who actually booked and played." },
     { icon: Users, title: "Find Teammates", desc: "Join open games and connect with players near you." },
@@ -155,7 +155,7 @@ const HomePage = () => {
       description: "Search verified venues and reach the owner instantly — no calls, no friction.",
       items: [
         { icon: Search, label: "Smart Search" },
-        { icon: MessageCircle, label: "WhatsApp Booking" },
+        { icon: CreditCard, label: "Secure In-App Payment" },
         { icon: Shield, label: "Verified Venues" },
         { icon: Map, label: "Interactive Map" },
       ],
@@ -233,7 +233,7 @@ const HomePage = () => {
                 <motion.div variants={fadeUp} transition={sectionTransition} className="mb-7 md:mb-9 flex items-center gap-3">
                   <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground-soft shadow-xs">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    WhatsApp-first booking
+                    Instant booking · Pay in-app
                   </span>
                   <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Star className="h-3.5 w-3.5 fill-warning text-warning" />
@@ -260,8 +260,8 @@ const HomePage = () => {
                   transition={sectionTransition}
                   className="text-base md:text-lg text-foreground-soft leading-relaxed max-w-xl mb-9 md:mb-11"
                 >
-                  Browse verified sports venues, see real availability, and message the owner on
-                  WhatsApp in one tap. Built for players who'd rather play than schedule.
+                  Browse verified sports venues, see live availability, and lock in your slot with
+                  secure in-app payment — card or Idram. Built for players who'd rather play than schedule.
                 </motion.p>
 
                 <motion.div
@@ -348,14 +348,14 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Floating WhatsApp card */}
-              <div className="absolute bottom-8 -right-3 lg:-right-8 bg-card border border-border rounded-2xl shadow-xl p-3.5 pr-5 flex items-center gap-3 max-w-[280px]">
-                <div className="h-10 w-10 rounded-xl bg-[#25D366]/12 text-[#075E54] flex items-center justify-center shrink-0">
-                  <MessageCircle className="h-5 w-5" strokeWidth={2.25} />
+              {/* Floating booking-confirmed card */}
+              <div className="glass absolute bottom-8 -right-3 lg:-right-8 rounded-2xl p-3.5 pr-5 flex items-center gap-3 max-w-[280px]">
+                <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
+                  <CheckCircle className="h-5 w-5" strokeWidth={2.25} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">"Court free at 7pm — see you!"</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Reply via WhatsApp · 12s ago</p>
+                  <p className="text-sm font-semibold text-foreground leading-tight">Booking confirmed — 19:00</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Paid <span className="stat-numeral">֏8,400</span> · just now</p>
                 </div>
               </div>
             </motion.div>
@@ -645,7 +645,7 @@ const HomePage = () => {
                 <span className="italic font-medium text-secondary-foreground/80">Keep every booking.</span>
               </h2>
               <p className="text-base md:text-lg text-secondary-foreground/65 mb-10 leading-relaxed max-w-lg">
-                Get discovered by local players, manage availability in one place, and let bookings flow straight to your WhatsApp — zero commissions, zero fuss.
+                Get discovered by local players, manage availability in one place, and get paid automatically for every booking — payouts straight to your bank or Idram.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6 mb-10 md:mb-12">
@@ -699,18 +699,18 @@ const HomePage = () => {
                   </div>
                   <p className="text-sm font-semibold text-foreground">Zero commission</p>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">Keep 100% of your booking revenue. No per-booking cut.</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">You keep 100% of your listed price — the small service fee is paid by the player.</p>
               </div>
 
-              {/* Floating WhatsApp lead card — truthful */}
-              <div className="absolute -right-4 bottom-10 bg-card border border-border rounded-2xl shadow-xl p-4 w-64">
+              {/* Floating payout card */}
+              <div className="glass absolute -right-4 bottom-10 rounded-2xl p-4 w-64">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="h-7 w-7 rounded-xl bg-[#25D366]/12 text-[#075E54] flex items-center justify-center">
-                    <MessageCircle className="h-4 w-4" strokeWidth={2.25} />
+                  <div className="h-7 w-7 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+                    <CreditCard className="h-4 w-4" strokeWidth={2.25} />
                   </div>
-                  <p className="text-sm font-semibold text-foreground">Direct leads</p>
+                  <p className="text-sm font-semibold text-foreground">Automatic payouts</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Players reach you on WhatsApp — no middleman.</p>
+                <p className="text-xs text-muted-foreground">Earnings land in your bank or Idram — <span className="stat-numeral">֏42,000</span> this week.</p>
               </div>
 
               <div className="absolute -inset-8 -z-10 bg-primary/15 rounded-[2.5rem] blur-3xl" />
@@ -802,25 +802,25 @@ const HomePage = () => {
               </h2>
             </motion.div>
 
-            {/* WhatsApp spotlight banner */}
+            {/* Secure payment spotlight banner */}
             <motion.div
               variants={fadeUp}
               transition={sectionTransition}
               className="mb-8 md:mb-10 relative overflow-hidden rounded-2xl border border-border bg-card p-5 md:p-7"
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-                <div className="shrink-0 h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-[#25D366]/12 text-[#075E54] flex items-center justify-center">
-                  <MessageCircle className="h-6 w-6 md:h-7 md:w-7" strokeWidth={2.25} />
+                <div className="shrink-0 h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-primary-soft text-primary flex items-center justify-center">
+                  <Lock className="h-6 w-6 md:h-7 md:w-7" strokeWidth={2.25} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.16em] text-[#075E54] mb-1">
-                    WhatsApp-first
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.16em] text-primary mb-1">
+                    Book &amp; pay in the app
                   </p>
                   <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight leading-tight mb-1">
-                    Message the venue owner instantly
+                    Your slot is locked the moment you pay
                   </h3>
                   <p className="text-sm md:text-[15px] text-foreground-soft leading-relaxed">
-                    No phone calls. No waiting. Reach owners directly on WhatsApp — your primary booking channel.
+                    No phone calls. No double bookings. Pay securely with your card or Idram — refunds follow the venue's cancellation policy automatically.
                   </p>
                 </div>
               </div>

@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { useInitializeVenueChat, useChatMessages, useSendMessage, useReportMessage, useUpdateLastRead, useBlockUser } from "@/hooks/useVenueChat";
+import { useInitializeVenueChat, useChatMessages, useSendMessage, useReportMessage, useUpdateLastRead, useBlockUser } from "@/hooks/useChat";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

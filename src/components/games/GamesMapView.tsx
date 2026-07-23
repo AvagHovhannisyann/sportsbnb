@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
+import { MapsReady } from "@/components/maps/GoogleMapsProvider";
 import { format } from "date-fns";
 import type { Game } from "@/hooks/useGames";
 import { useState } from "react";
@@ -37,7 +38,7 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
-      <GoogleMap
+      <MapsReady><GoogleMap
         mapContainerStyle={{ width: "100%", height: "600px" }}
         center={center}
         zoom={12}
@@ -85,7 +86,7 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
             </div>
           </InfoWindow>
         )}
-      </GoogleMap>
+      </GoogleMap></MapsReady>
     </div>
   );
 };

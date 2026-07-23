@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
+import { MapsReady } from "@/components/maps/GoogleMapsProvider";
 import { MapPin, Users, Sun, Zap, List, Map as MapIcon, Filter, ChevronRight, Plus, Check, Star, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -161,7 +162,7 @@ const NearbyFieldsPage: React.FC = () => {
 
         {view === "map" ? (
           <div className="h-[calc(100vh-180px)]">
-            <GoogleMap
+            <MapsReady><GoogleMap
               mapContainerStyle={{ width: "100%", height: "100%" }}
               center={mapCenter}
               zoom={13}
@@ -256,7 +257,7 @@ const NearbyFieldsPage: React.FC = () => {
                   </div>
                 </InfoWindow>
               )}
-            </GoogleMap>
+            </GoogleMap></MapsReady>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">

@@ -48,7 +48,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+    <header className="glass sticky top-0 z-50 w-full rounded-none border-x-0 border-t-0">
       <div className="container flex h-14 md:h-[64px] items-center justify-between gap-4 md:gap-6 px-4 md:px-6">
         <div className="flex items-center gap-6 md:gap-10">
           <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-2">

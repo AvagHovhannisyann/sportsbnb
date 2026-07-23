@@ -51,7 +51,6 @@ const CreateTeamPage = () => {
           prompt,
           type: "team-logo",
           bucket: "team-logos",
-          path: `${crypto.randomUUID()}.png`,
         },
       });
 

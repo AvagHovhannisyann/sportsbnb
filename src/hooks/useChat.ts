@@ -504,3 +504,48 @@ export const useInitializeBookingChat = () => {
 
   return { initializeBookingChat, isLoading: getOrCreateRoom.isPending };
 };
+
+// Initialize venue inquiry chat (customer <-> owner)
+export const useInitializeVenueChat = () => {
+  const getOrCreateRoom = useGetOrCreateChatRoom();
+  const addMember = useAddChatMember();
+
+  const initializeVenueChat = useCallback(async (
+    venueId: string,
+    userId: string,
+    ownerId: string,
+    _venueName?: string
+  ) => {
+    try {
+      const roomId = await getOrCreateRoom.mutateAsync({ type: "venue", referenceId: venueId });
+      await addMember.mutateAsync({ roomId, userId, role: "customer" });
+      await addMember.mutateAsync({ roomId, userId: ownerId, role: "owner" });
+      return roomId;
+    } catch (error) {
+      console.error("Error initializing venue chat:", error);
+      throw error;
+    }
+  }, [getOrCreateRoom, addMember]);
+
+  return { initializeVenueChat, isLoading: getOrCreateRoom.isPending };
+};
+
+// Block a user in a room
+export const useBlockUser = () => {
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ roomId, blockedId, reason }: { roomId: string; blockedId: string; reason?: string }) => {
+      const { error } = await supabase
+        .from("blocked_users")
+        .insert({
+          blocker_id: user?.id,
+          blocked_id: blockedId,
+          room_id: roomId,
+          reason,
+        });
+
+      if (error) throw error;
+    },
+  });
+};

@@ -321,12 +321,12 @@ export const useRequestToJoinGame = () => {
         .single();
       
       if (game && game.host_id !== userId) {
-        await supabase.from("notifications").insert({
-          user_id: game.host_id,
-          type: "game",
-          title: "New Join Request! 🙋",
-          message: `${requester?.full_name || "Someone"} wants to join your game "${game.title}". Review their request.`,
-          link: `/game/${gameId}`,
+        await supabase.rpc("notify_user", {
+          p_user_id: game.host_id,
+          p_type: "game",
+          p_title: "New Join Request! 🙋",
+          p_message: `${requester?.full_name || "Someone"} wants to join your game "${game.title}". Review their request.`,
+          p_link: `/game/${gameId}`,
         });
       }
       
@@ -388,12 +388,12 @@ export const useApproveParticipant = () => {
         .eq("id", gameId)
         .single();
       
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "game",
-        title: "Request Approved! 🎉",
-        message: `Your request to join "${game?.title}" has been approved. See you there!`,
-        link: `/game/${gameId}`,
+      await supabase.rpc("notify_user", {
+        p_user_id: userId,
+        p_type: "game",
+        p_title: "Request Approved! 🎉",
+        p_message: `Your request to join "${game?.title}" has been approved. See you there!`,
+        p_link: `/game/${gameId}`,
       });
     },
     onSuccess: (_, variables) => {
@@ -423,12 +423,12 @@ export const useRejectParticipant = () => {
         .eq("id", gameId)
         .single();
       
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "game",
-        title: "Request Declined",
-        message: `Your request to join "${game?.title}" was not approved.`,
-        link: `/games`,
+      await supabase.rpc("notify_user", {
+        p_user_id: userId,
+        p_type: "game",
+        p_title: "Request Declined",
+        p_message: `Your request to join "${game?.title}" was not approved.`,
+        p_link: `/games`,
       });
     },
     onSuccess: (_, variables) => {
@@ -487,15 +487,17 @@ export const useCancelGame = () => {
       
       // Notify all participants that the game was cancelled
       if (participants && participants.length > 0 && game) {
-        const notifications = participants.map(p => ({
-          user_id: p.user_id,
-          type: "game",
-          title: "Game Cancelled 😔",
-          message: `The game "${game.title}" has been cancelled by the host.`,
-          link: `/games`,
-        }));
-        
-        await supabase.from("notifications").insert(notifications);
+        await Promise.all(
+          participants.map((p) =>
+            supabase.rpc("notify_user", {
+              p_user_id: p.user_id,
+              p_type: "game",
+              p_title: "Game Cancelled 😔",
+              p_message: `The game "${game.title}" has been cancelled by the host.`,
+              p_link: `/games`,
+            })
+          )
+        );
       }
     },
     onSuccess: (_, gameId) => {

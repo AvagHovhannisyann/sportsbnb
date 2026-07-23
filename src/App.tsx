@@ -11,6 +11,7 @@ import { RegionProvider } from "@/hooks/useRegion";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
+import { RequireRole } from "@/components/auth/RequireRole";
 import Layout from "./components/layout/Layout";
 
 // Eagerly load HomePage since it's the landing page
@@ -26,10 +27,12 @@ const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const CreateTeamPage = lazy(() => import("./pages/CreateTeamPage"));
 const TeamDetailsPage = lazy(() => import("./pages/TeamDetailsPage"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
-const GameJoinSuccessPage = lazy(() => import("./pages/GameJoinSuccessPage"));
+const GameJoinStatusPage = lazy(() => import("./features/booking/GameJoinStatusPage"));
+const CheckoutPage = lazy(() => import("./features/booking/CheckoutPage"));
+const BookingStatusPage = lazy(() => import("./features/booking/BookingStatusPage"));
+const MockPayPage = lazy(() => import("./features/booking/MockPayPage"));
 const VenueDetailsPage = lazy(() => import("./pages/VenueDetailsPage"));
 const PlayerDashboard = lazy(() => import("./pages/PlayerDashboard"));
-const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const OperatorDashboard = lazy(() => import("./pages/OperatorDashboard"));
 const OutreachConsole = lazy(() => import("./pages/operator/OutreachConsole"));
@@ -46,12 +49,10 @@ const FAQPage = lazy(() => import("./pages/FAQPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PlayerOnboarding = lazy(() => import("./pages/PlayerOnboarding"));
 const OwnerOnboarding = lazy(() => import("./pages/OwnerOnboarding"));
-const BookingSuccessPage = lazy(() => import("./pages/BookingSuccessPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
 const MyVenuesPage = lazy(() => import("./pages/MyVenuesPage"));
-const OwnerSchedulePage = lazy(() => import("./pages/OwnerSchedulePage"));
 const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForOwnersPage = lazy(() => import("./pages/ForOwnersPage"));
@@ -71,15 +72,23 @@ const OwnerPoliciesPage = lazy(() => import("./pages/owner/OwnerPoliciesPage"));
 const OwnerSettingsPage = lazy(() => import("./pages/owner/OwnerSettingsPage"));
 const OwnerWidgetPage = lazy(() => import("./pages/owner/OwnerWidgetPage"));
 const CalendarCallbackPage = lazy(() => import("./pages/owner/CalendarCallbackPage"));
-const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const VenueMapPage = lazy(() => import("./pages/VenueMapPage"));
 const OwnerAnalyticsPage = lazy(() => import("./pages/owner/OwnerAnalyticsPage"));
+const OwnerEarningsPage = lazy(() => import("./pages/owner/OwnerEarningsPage"));
 const NearbyFieldsPage = lazy(() => import("./pages/NearbyFieldsPage"));
 const SubmitFieldPage = lazy(() => import("./pages/SubmitFieldPage"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Minimal loading fallback
 const PageLoader = () => (
@@ -118,7 +127,8 @@ const App = () => {
                     <Route path="/community" element={<CommunityPage />} />
                     <Route path="/create-game" element={<ProtectedRoute><CreateGamePage /></ProtectedRoute>} />
                     <Route path="/game/:id" element={<GameDetailsPage />} />
-                    <Route path="/game/:id/join-success" element={<ProtectedRoute><GameJoinSuccessPage /></ProtectedRoute>} />
+                    <Route path="/game/:id/join-status" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
+                    <Route path="/game/:id/join-success" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
                     {/* Teams */}
                     <Route path="/teams" element={<TeamsPage />} />
                     <Route path="/create-team" element={<ProtectedRoute><CreateTeamPage /></ProtectedRoute>} />
@@ -131,19 +141,20 @@ const App = () => {
                     <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                     
                     {/* New Owner Dashboard Routes */}
-                    <Route path="/owner-dashboard" element={<ProtectedRoute><OwnerOverviewPage /></ProtectedRoute>} />
-                    <Route path="/owner/venues" element={<ProtectedRoute><OwnerVenuesPage /></ProtectedRoute>} />
-                    <Route path="/owner/schedule" element={<ProtectedRoute><OwnerSchedulePageNew /></ProtectedRoute>} />
-                    <Route path="/owner/bookings" element={<ProtectedRoute><OwnerBookingsPage /></ProtectedRoute>} />
-                    <Route path="/owner/hours" element={<ProtectedRoute><OwnerHoursPage /></ProtectedRoute>} />
-                    <Route path="/owner/pricing" element={<ProtectedRoute><OwnerPricingPage /></ProtectedRoute>} />
-                    <Route path="/owner/equipment" element={<ProtectedRoute><OwnerEquipmentPage /></ProtectedRoute>} />
-                    <Route path="/owner/integrations" element={<ProtectedRoute><OwnerIntegrationsPage /></ProtectedRoute>} />
-                    <Route path="/owner/integrations/callback" element={<ProtectedRoute><CalendarCallbackPage /></ProtectedRoute>} />
-                    <Route path="/owner/policies" element={<ProtectedRoute><OwnerPoliciesPage /></ProtectedRoute>} />
-                    <Route path="/owner/settings" element={<ProtectedRoute><OwnerSettingsPage /></ProtectedRoute>} />
-                    <Route path="/owner/widget" element={<ProtectedRoute><OwnerWidgetPage /></ProtectedRoute>} />
-                    <Route path="/owner/analytics" element={<ProtectedRoute><OwnerAnalyticsPage /></ProtectedRoute>} />
+                    <Route path="/owner-dashboard" element={<ProtectedRoute><RequireRole role="owner"><OwnerOverviewPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/venues" element={<ProtectedRoute><RequireRole role="owner"><OwnerVenuesPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/schedule" element={<ProtectedRoute><RequireRole role="owner"><OwnerSchedulePageNew /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/bookings" element={<ProtectedRoute><RequireRole role="owner"><OwnerBookingsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/hours" element={<ProtectedRoute><RequireRole role="owner"><OwnerHoursPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/pricing" element={<ProtectedRoute><RequireRole role="owner"><OwnerPricingPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/equipment" element={<ProtectedRoute><RequireRole role="owner"><OwnerEquipmentPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/integrations" element={<ProtectedRoute><RequireRole role="owner"><OwnerIntegrationsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/integrations/callback" element={<ProtectedRoute><RequireRole role="owner"><CalendarCallbackPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/policies" element={<ProtectedRoute><RequireRole role="owner"><OwnerPoliciesPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/settings" element={<ProtectedRoute><RequireRole role="owner"><OwnerSettingsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/widget" element={<ProtectedRoute><RequireRole role="owner"><OwnerWidgetPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/analytics" element={<ProtectedRoute><RequireRole role="owner"><OwnerAnalyticsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/earnings" element={<ProtectedRoute><RequireRole role="owner"><OwnerEarningsPage /></RequireRole></ProtectedRoute>} />
                     
                     {/* Embed booking widget (public) */}
                     <Route path="/embed/booking/:venueId" element={<EmbedBookingPage />} />
@@ -152,7 +163,6 @@ const App = () => {
                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
                     
                     {/* Legacy owner routes */}
-                    <Route path="/owner-schedule" element={<ProtectedRoute><OwnerSchedulePage /></ProtectedRoute>} />
                     
                     {/* Venue Management */}
                     <Route path="/add-venue" element={<ProtectedRoute><AddVenuePage /></ProtectedRoute>} />
@@ -182,8 +192,9 @@ const App = () => {
                     <Route path="/cookies" element={<CookiePolicyPage />} />
                     {/* Profile & Billing */}
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                    <Route path="/subscription" element={<SubscriptionPage />} />
-                    <Route path="/booking-success" element={<ProtectedRoute><BookingSuccessPage /></ProtectedRoute>} />
+                    <Route path="/book/:bookingId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                    <Route path="/booking/:bookingId/status" element={<ProtectedRoute><BookingStatusPage /></ProtectedRoute>} />
+                    <Route path="/pay/mock/:paymentId" element={<ProtectedRoute><MockPayPage /></ProtectedRoute>} />
                     {/* Admin */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                     <Route path="/operator" element={<AdminRoute><OperatorDashboard /></AdminRoute>} />

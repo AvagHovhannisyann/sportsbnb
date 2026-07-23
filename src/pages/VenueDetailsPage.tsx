@@ -1,13 +1,13 @@
 import { useParams, Link } from "react-router-dom";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useState } from "react";
-import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, MessageCircle, Loader2 } from "lucide-react";
+import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
-import BookingHandoffDialog from "@/components/booking/BookingHandoffDialog";
+import BookingPanel from "@/features/booking/BookingPanel";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import ReviewList from "@/components/reviews/ReviewList";
 import WeatherWidget from "@/components/venue/WeatherWidget";
@@ -18,10 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVenueById, getVenueImage } from "@/hooks/useVenues";
 import { useVenueReviews, useUserReviewForVenue, useDeleteReview } from "@/hooks/useReviews";
 import { useVenueHours, useBlockedDates, DAYS_OF_WEEK } from "@/hooks/useAvailability";
-import { timeSlots } from "@/data/constants";
 import { toast } from "sonner";
-import { format, addDays } from "date-fns";
-import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
@@ -35,9 +32,6 @@ const VenueDetailsPage = () => {
   const { data: blockedDates = [] } = useBlockedDates(id);
   const deleteReview = useDeleteReview();
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   if (venueLoading) {
@@ -69,49 +63,6 @@ const VenueDetailsPage = () => {
     Lockers: <CheckCircle className="h-5 w-5" />,
     Wifi: <Wifi className="h-5 w-5" />,
   };
-
-  // Generate next 5 days for date selection
-  const dates = Array.from({ length: 5 }, (_, i) => {
-    const date = addDays(new Date(), i);
-    const dayOfWeek = date.getDay();
-    const venueHour = venueHours.find(h => h.day_of_week === dayOfWeek);
-    const dateStr = format(date, "yyyy-MM-dd");
-    const isBlocked = blockedDates.some(b => b.blocked_date === dateStr);
-    const isClosed = venueHour?.is_closed || isBlocked;
-    
-    return {
-      label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : format(date, "EEE, MMM d"),
-      value: dateStr,
-      disabled: isClosed,
-      dayOfWeek,
-    };
-  });
-
-  // Get available time slots based on venue hours
-  const getAvailableSlots = () => {
-    if (!selectedDate) return [];
-    const selectedDateObj = dates.find(d => d.value === selectedDate);
-    if (!selectedDateObj) return [];
-    
-    const venueHour = venueHours.find(h => h.day_of_week === selectedDateObj.dayOfWeek);
-    if (!venueHour || venueHour.is_closed) return timeSlots.slice(6, 14); // Default hours if not set
-    
-    // Filter time slots based on venue hours
-    return timeSlots.filter(slot => {
-      const slotTime = slot.replace(" AM", "").replace(" PM", "");
-      const [slotHour] = slotTime.split(":");
-      let hour = parseInt(slotHour);
-      if (slot.includes("PM") && hour !== 12) hour += 12;
-      if (slot.includes("AM") && hour === 12) hour = 0;
-      
-      const openHour = parseInt(venueHour.open_time.split(":")[0]);
-      const closeHour = parseInt(venueHour.close_time.split(":")[0]);
-      
-      return hour >= openHour && hour < closeHour;
-    });
-  };
-
-  const availableSlots = getAvailableSlots();
 
   const handleDeleteReview = async (reviewId: string) => {
     if (!id) return;
@@ -261,58 +212,6 @@ const VenueDetailsPage = () => {
                 </>
               )}
 
-              {/* Availability */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">Availability</h2>
-                
-                {/* Date Selection */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-foreground mb-3">Select date</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {dates.map((date) => (
-                      <Button
-                        key={date.value}
-                        variant={selectedDate === date.value ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setSelectedDate(date.value);
-                          setSelectedTime(null);
-                        }}
-                        disabled={date.disabled}
-                      >
-                        {date.label}
-                        {date.disabled && " (Closed)"}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Time Selection */}
-                {selectedDate && (
-                  <div>
-                    <h3 className="text-sm font-medium text-foreground mb-3">Select time</h3>
-                    {availableSlots.length > 0 ? (
-                      <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                        {availableSlots.map((slot) => (
-                          <Button
-                            key={slot}
-                            variant={selectedTime === slot ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSelectedTime(slot)}
-                            className="text-sm"
-                          >
-                            {slot}
-                          </Button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">No available slots for this date</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <Separator />
 
               {/* Reviews Section */}
               <div>
@@ -376,86 +275,16 @@ const VenueDetailsPage = () => {
 
             {/* Booking Card */}
             <div className="lg:col-span-1">
-              <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-3xl font-bold text-foreground">{formatPrice(getCustomerPrice(venue.price_per_hour))}</span>
-                  <span className="text-muted-foreground">/ hour</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-6">
-                  Indicative price — final price is confirmed by the venue owner.
-                </p>
+              <div className="sticky top-24 space-y-4">
+                <BookingPanel venueId={venue.id} pricePerHour={venue.price_per_hour} />
 
-                {selectedDate && selectedTime ? (
-                  <div className="space-y-2 mb-6 p-3 rounded-lg bg-muted/50 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Preferred date</span>
-                      <span className="font-medium text-foreground">
-                        {dates.find((d) => d.value === selectedDate)?.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Preferred time</span>
-                      <span className="font-medium text-foreground">{selectedTime}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Optionally pick a preferred date and time below — or just message the owner directly.
-                  </p>
-                )}
-
-                {venue.phone ? (
-                  <>
-                    <Button
-                      className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white gap-2"
-                      size="lg"
-                      onClick={() => setIsBookingOpen(true)}
-                    >
-                      <MessageCircle className="h-5 w-5" />
-                      {venue.whatsapp_enabled ? "Book via WhatsApp" : "Contact owner to book"}
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center mt-3">
-                      Booking is confirmed directly with the venue owner.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <Button className="w-full" size="lg" disabled>
-                      Contact details coming soon
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center mt-3">
-                      This venue hasn't added contact details yet — check back shortly.
-                    </p>
-                  </>
-                )}
-
-                {/* Message Owner Button */}
-                <div className="mt-4 pt-4 border-t">
+                <div className="rounded-2xl border bg-card p-4">
                   <VenueChatButton
                     venueId={venue.id}
                     venueName={venue.name}
                     ownerId={venue.owner_id}
                   />
                 </div>
-
-                <BookingHandoffDialog
-                  isOpen={isBookingOpen}
-                  onClose={() => setIsBookingOpen(false)}
-                  venue={{
-                    id: venue.id,
-                    name: venue.name,
-                    location,
-                    phone: venue.phone ?? null,
-                    contactName: venue.contact_name ?? null,
-                    whatsappEnabled: venue.whatsapp_enabled ?? true,
-                    smsEnabled: venue.sms_enabled ?? true,
-                  }}
-                  preselected={{
-                    date: selectedDate,
-                    dateLabel: dates.find((d) => d.value === selectedDate)?.label ?? null,
-                    time: selectedTime,
-                  }}
-                />
               </div>
 
               {/* Weather Widget */}

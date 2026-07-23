@@ -36,6 +36,7 @@ const navigation = [
   { name: "Venues", href: "/owner/venues", icon: Building2 },
   { name: "Schedule", href: "/owner/schedule", icon: Calendar },
   { name: "Bookings", href: "/owner/bookings", icon: Clock },
+  { name: "Earnings", href: "/owner/earnings", icon: DollarSign },
   { name: "Opening Hours", href: "/owner/hours", icon: Clock },
   { name: "Pricing", href: "/owner/pricing", icon: DollarSign },
   { name: "Equipment", href: "/owner/equipment", icon: Package },

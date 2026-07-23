@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, User, Building, Eye, EyeOff, Check, X, Mail, Lock, UserCircle, Users, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,7 +25,7 @@ const signupSchema = z.object({
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, signUp, signInWithOAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [userType, setUserType] = useState<"player" | "owner">("player");
@@ -146,16 +144,11 @@ const SignupPage = () => {
     setIsLoading(true);
     setIsSigningUp(true);
     
-    const { error } = await supabase.auth.signUp({
+    const { error } = await signUp({
       email: formData.email.trim(),
       password: formData.password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: formData.name.trim(),
-          user_type: userType,
-        },
-      },
+      fullName: formData.name.trim(),
+      userType,
     });
 
     if (error) {
@@ -178,9 +171,7 @@ const SignupPage = () => {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const { error } = await signInWithOAuth("google");
 
     if (error) {
       toast.error(getGenericAuthError(error, 'signup'));
@@ -190,9 +181,7 @@ const SignupPage = () => {
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: window.location.origin,
-    });
+    const { error } = await signInWithOAuth("apple");
 
     if (error) {
       toast.error(getGenericAuthError(error, 'signup'));

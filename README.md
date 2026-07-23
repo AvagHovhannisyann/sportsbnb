@@ -1,73 +1,63 @@
-# Welcome to your Lovable project
+# SportsBnB
 
-## Project info
+A marketplace for booking sports venues in Armenia — players discover courts,
+book and pay in-app (Ameriabank vPOS cards or Idram), join pickup games, and
+build teams; owners manage schedules, earnings, and payouts.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+- **Frontend**: Vite + React 18 + TypeScript, Tailwind (custom "court at night"
+  design system), shadcn/ui primitives, TanStack Query, framer-motion
+- **Backend**: Supabase — Postgres (RLS everywhere), Deno edge functions,
+  Realtime for chat
+- **Payments**: provider-abstraction layer (`supabase/functions/_shared/providers/`)
+  with Ameriabank vPOS, Idram, and a mock adapter for development.
+  See [docs/payments.md](docs/payments.md) for architecture, ledger invariants,
+  and the payout runbook.
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+cp .env.example .env        # fill in Supabase project values
+npm run dev                 # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+Checks (all must pass; CI runs them on every PR):
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
 
-**Use GitHub Codespaces**
+Payments can be exercised end-to-end locally with the mock provider
+(`PAYMENTS_MOCK_ENABLED=true` on the functions side): reserve a slot →
+checkout → "Test payment" → mock bank page → confirmed booking + ledger entries.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Structure
 
-## What technologies are used for this project?
+```
+src/
+  features/booking/    booking flow (panel, checkout, status, payment hooks)
+  features/venues/     shared venue form
+  pages/               route pages (data access via hooks only — lint-enforced)
+  hooks/               data hooks (venues, games, teams, chat, admin, …)
+  components/          UI building blocks (shadcn primitives re-skinned via tokens)
+  index.css            design tokens — dark-first theme, glass, motion primitives
+supabase/
+  migrations/          schema (RLS-first; money tables + booking state machine)
+  functions/           Deno edge functions
+  functions/_shared/   auth, CORS allowlist, email, payment providers
+docs/payments.md       payments architecture + ops runbooks
+```
 
-This project is built with:
+## Security model (summary)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- Every table has RLS; PII and money tables are owner/admin-scoped.
+- Edge functions: `verify_jwt=true` by default; machine endpoints require a
+  cron secret or provider webhook signatures (`supabase/config.toml` documents
+  the posture).
+- Prices, commissions, XP, and referral codes are computed server-side —
+  clients only pick slots and pay.

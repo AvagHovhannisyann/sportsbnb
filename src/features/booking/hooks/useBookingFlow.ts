@@ -1,0 +1,130 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export type PaymentProviderKey = "ameria" | "idram" | "mock";
+
+export interface BookingHold {
+  booking_id: string;
+  amount_minor: number;
+  owner_amount_minor: number;
+  platform_fee_minor: number;
+  currency: string;
+  expires_at: string;
+}
+
+export interface AvailableSlot {
+  slot_start: string;
+  slot_end: string;
+  available: boolean;
+}
+
+export interface PaymentInitResult {
+  paymentId: string;
+  redirectUrl: string;
+  formAction: string | null;
+  formFields: Record<string, string> | null;
+  amountMinor: number;
+  currency: string;
+}
+
+export function formatAmd(amountMinor: number): string {
+  return `֏${(amountMinor / 100).toLocaleString()}`;
+}
+
+export function useAvailableSlots(venueId: string | undefined, date: string | undefined, courtId?: string) {
+  return useQuery({
+    queryKey: ["available-slots", venueId, date, courtId ?? null],
+    enabled: !!venueId && !!date,
+    queryFn: async (): Promise<AvailableSlot[]> => {
+      const { data, error } = await supabase.rpc("get_available_slots", {
+        p_venue_id: venueId!,
+        p_date: date!,
+        p_court_id: courtId ?? null,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useCreateBookingHold() {
+  return useMutation({
+    mutationFn: async (params: {
+      venueId: string;
+      startsAt: string;
+      endsAt: string;
+      courtId?: string;
+      notes?: string;
+    }): Promise<BookingHold> => {
+      const { data, error } = await supabase.rpc("create_booking_hold", {
+        p_venue_id: params.venueId,
+        p_starts_at: params.startsAt,
+        p_ends_at: params.endsAt,
+        p_court_id: params.courtId ?? null,
+        p_notes: params.notes ?? null,
+      });
+      if (error) {
+        if (error.message.includes("slot_taken")) {
+          throw new Error("That slot was just taken — please pick another time.");
+        }
+        throw error;
+      }
+      return data as unknown as BookingHold;
+    },
+  });
+}
+
+export function useInitPayment() {
+  return useMutation({
+    mutationFn: async (params: {
+      bookingId?: string;
+      gameId?: string;
+      provider: PaymentProviderKey;
+      lang?: string;
+    }): Promise<PaymentInitResult> => {
+      const { data, error } = await supabase.functions.invoke("payments-init", { body: params });
+      if (error) throw error;
+      return data as PaymentInitResult;
+    },
+  });
+}
+
+export function useVerifyPayment() {
+  return useMutation({
+    mutationFn: async (params: {
+      paymentId: string;
+      mockOutcome?: "paid" | "failed";
+    }): Promise<{ status: string; bookingId?: string; gameId?: string }> => {
+      const { data, error } = await supabase.functions.invoke("payments-verify", { body: params });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCancelBooking() {
+  return useMutation({
+    mutationFn: async (params: { bookingId: string; reason?: string }) => {
+      const { data, error } = await supabase.functions.invoke("payments-refund", { body: params });
+      if (error) throw error;
+      return data as { status: string; refundMinor: number; manual?: boolean };
+    },
+  });
+}
+
+/** Submits a provider form-post (Idram) by injecting a temporary form. */
+export function submitProviderForm(action: string, fields: Record<string, string>) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = action;
+  form.style.display = "none";
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
+}

@@ -39,10 +39,28 @@ Deno.serve(async (req) => {
   const text: string = (msg.text || '').trim();
   const cmd = text.split(/\s+/)[0].toLowerCase();
 
+  // Authorization: only allowlisted chats (env) or the currently-linked chat may
+  // issue commands. /start additionally accepts a linking code so the operator
+  // can bind a new chat without redeploying: "/start <TELEGRAM_LINK_CODE>".
+  const allowedChatIds = (Deno.env.get('TELEGRAM_ALLOWED_CHAT_IDS') ?? '')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const { data: currentCfg } = await admin.from('autopilot_config').select('telegram_chat_id').eq('id', 1).single();
+  const isAuthorized = allowedChatIds.includes(String(chatId)) || currentCfg?.telegram_chat_id === String(chatId);
+
   try {
     if (cmd === '/start') {
+      const linkCode = Deno.env.get('TELEGRAM_LINK_CODE');
+      const providedCode = text.split(/\s+/)[1] ?? '';
+      const canLink = isAuthorized || (!!linkCode && providedCode === linkCode);
+      if (!canLink) {
+        await reply(chatId, '🔒 This bot is private. Ask the operator for a linking code and send /start <code>.');
+        return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+      }
       await admin.from('autopilot_config').update({ telegram_chat_id: String(chatId) }).eq('id', 1);
       await reply(chatId, '👋 <b>Sportsbnb Autopilot</b> linked.\n\nYou will receive realtime updates here.\n\nCommands:\n/status — current stats\n/pause — stop autopilot\n/resume — start autopilot\n/digest — send today\'s summary');
+    } else if (!isAuthorized) {
+      if (text) await reply(chatId, '🔒 This bot is private.');
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
     } else if (cmd === '/pause') {
       await admin.from('autopilot_config').update({ is_paused: true }).eq('id', 1);
       await reply(chatId, '⏸ Autopilot <b>paused</b>. Use /resume to start again.');

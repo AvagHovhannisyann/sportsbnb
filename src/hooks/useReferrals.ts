@@ -61,15 +61,13 @@ export const useReferrals = () => {
     if (!user) return;
 
     try {
-      const code = `SPORT${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const { data, error } = await supabase
-        .from("referral_codes")
-        .insert({ user_id: user.id, code })
-        .select()
-        .single();
+      // Codes are generated server-side (unique, collision-checked)
+      const { data, error } = await supabase.rpc("get_or_create_referral_code");
 
       if (error) throw error;
-      setReferralCode(data);
+      const row = data?.[0];
+      if (!row) throw new Error("No code returned");
+      setReferralCode({ ...row, uses_count: 0 });
       toast.success("Referral code generated!");
     } catch (error) {
       console.error("Error generating referral code:", error);

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Layout from "@/components/layout/Layout";
 import { useVenues, getVenueImage } from "@/hooks/useVenues";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
+import { MapsReady } from "@/components/maps/GoogleMapsProvider";
 import { sportTypes } from "@/data/constants";
 import { formatPrice, getCustomerPrice } from "@/lib/pricing";
 import { useRegion } from "@/hooks/useRegion";
@@ -61,7 +62,7 @@ const VenueMapPage = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <GoogleMap
+            <MapsReady><GoogleMap
               mapContainerStyle={{ width: "100%", height: "100%" }}
               center={center}
               zoom={12}
@@ -103,7 +104,7 @@ const VenueMapPage = () => {
                   </div>
                 </InfoWindow>
               )}
-            </GoogleMap>
+            </GoogleMap></MapsReady>
           )}
         </div>
       </div>
