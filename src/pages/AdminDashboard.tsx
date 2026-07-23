@@ -76,6 +76,7 @@ const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissio
 const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
 const BlogPostsTab = lazy(() => import("@/components/admin/BlogPostsTab"));
 const BookingLeadsTab = lazy(() => import("@/components/admin/BookingLeadsTab"));
+const PayoutsTab = lazy(() => import("@/components/admin/PayoutsTab"));
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -205,6 +206,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="venues">Venues</TabsTrigger>
                 <TabsTrigger value="bookings">Bookings</TabsTrigger>
+                <TabsTrigger value="payouts">Payouts</TabsTrigger>
                 <TabsTrigger value="blog">Blog</TabsTrigger>
               </TabsList>
             </div>
@@ -511,6 +513,12 @@ const AdminDashboard = () => {
             {/* Games / Fields / Discovery tabs hidden for MVP */}
 
             {/* Blog Tab */}
+            <TabsContent value="payouts">
+              <Suspense fallback={<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                <PayoutsTab />
+              </Suspense>
+            </TabsContent>
+
             <TabsContent value="blog">
               <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                 <BlogPostsTab />

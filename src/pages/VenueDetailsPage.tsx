@@ -19,7 +19,6 @@ import { useVenueById, getVenueImage } from "@/hooks/useVenues";
 import { useVenueReviews, useUserReviewForVenue, useDeleteReview } from "@/hooks/useReviews";
 import { useVenueHours, useBlockedDates, DAYS_OF_WEEK } from "@/hooks/useAvailability";
 import { toast } from "sonner";
-import { getCustomerPrice } from "@/lib/pricing";
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
@@ -277,7 +276,7 @@ const VenueDetailsPage = () => {
             {/* Booking Card */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-4">
-                <BookingPanel venueId={venue.id} pricePerHour={getCustomerPrice(venue.price_per_hour)} />
+                <BookingPanel venueId={venue.id} pricePerHour={venue.price_per_hour} />
 
                 <div className="rounded-2xl border bg-card p-4">
                   <VenueChatButton
