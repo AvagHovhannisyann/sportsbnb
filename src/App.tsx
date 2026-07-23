@@ -11,6 +11,7 @@ import { RegionProvider } from "@/hooks/useRegion";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
+import { RequireRole } from "@/components/auth/RequireRole";
 import Layout from "./components/layout/Layout";
 
 // Eagerly load HomePage since it's the landing page
@@ -32,7 +33,6 @@ const BookingStatusPage = lazy(() => import("./features/booking/BookingStatusPag
 const MockPayPage = lazy(() => import("./features/booking/MockPayPage"));
 const VenueDetailsPage = lazy(() => import("./pages/VenueDetailsPage"));
 const PlayerDashboard = lazy(() => import("./pages/PlayerDashboard"));
-const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const OperatorDashboard = lazy(() => import("./pages/OperatorDashboard"));
 const OutreachConsole = lazy(() => import("./pages/operator/OutreachConsole"));
@@ -53,7 +53,6 @@ const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
 const MyVenuesPage = lazy(() => import("./pages/MyVenuesPage"));
-const OwnerSchedulePage = lazy(() => import("./pages/OwnerSchedulePage"));
 const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForOwnersPage = lazy(() => import("./pages/ForOwnersPage"));
@@ -142,20 +141,20 @@ const App = () => {
                     <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                     
                     {/* New Owner Dashboard Routes */}
-                    <Route path="/owner-dashboard" element={<ProtectedRoute><OwnerOverviewPage /></ProtectedRoute>} />
-                    <Route path="/owner/venues" element={<ProtectedRoute><OwnerVenuesPage /></ProtectedRoute>} />
-                    <Route path="/owner/schedule" element={<ProtectedRoute><OwnerSchedulePageNew /></ProtectedRoute>} />
-                    <Route path="/owner/bookings" element={<ProtectedRoute><OwnerBookingsPage /></ProtectedRoute>} />
-                    <Route path="/owner/hours" element={<ProtectedRoute><OwnerHoursPage /></ProtectedRoute>} />
-                    <Route path="/owner/pricing" element={<ProtectedRoute><OwnerPricingPage /></ProtectedRoute>} />
-                    <Route path="/owner/equipment" element={<ProtectedRoute><OwnerEquipmentPage /></ProtectedRoute>} />
-                    <Route path="/owner/integrations" element={<ProtectedRoute><OwnerIntegrationsPage /></ProtectedRoute>} />
-                    <Route path="/owner/integrations/callback" element={<ProtectedRoute><CalendarCallbackPage /></ProtectedRoute>} />
-                    <Route path="/owner/policies" element={<ProtectedRoute><OwnerPoliciesPage /></ProtectedRoute>} />
-                    <Route path="/owner/settings" element={<ProtectedRoute><OwnerSettingsPage /></ProtectedRoute>} />
-                    <Route path="/owner/widget" element={<ProtectedRoute><OwnerWidgetPage /></ProtectedRoute>} />
-                    <Route path="/owner/analytics" element={<ProtectedRoute><OwnerAnalyticsPage /></ProtectedRoute>} />
-                    <Route path="/owner/earnings" element={<ProtectedRoute><OwnerEarningsPage /></ProtectedRoute>} />
+                    <Route path="/owner-dashboard" element={<ProtectedRoute><RequireRole role="owner"><OwnerOverviewPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/venues" element={<ProtectedRoute><RequireRole role="owner"><OwnerVenuesPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/schedule" element={<ProtectedRoute><RequireRole role="owner"><OwnerSchedulePageNew /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/bookings" element={<ProtectedRoute><RequireRole role="owner"><OwnerBookingsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/hours" element={<ProtectedRoute><RequireRole role="owner"><OwnerHoursPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/pricing" element={<ProtectedRoute><RequireRole role="owner"><OwnerPricingPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/equipment" element={<ProtectedRoute><RequireRole role="owner"><OwnerEquipmentPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/integrations" element={<ProtectedRoute><RequireRole role="owner"><OwnerIntegrationsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/integrations/callback" element={<ProtectedRoute><RequireRole role="owner"><CalendarCallbackPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/policies" element={<ProtectedRoute><RequireRole role="owner"><OwnerPoliciesPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/settings" element={<ProtectedRoute><RequireRole role="owner"><OwnerSettingsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/widget" element={<ProtectedRoute><RequireRole role="owner"><OwnerWidgetPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/analytics" element={<ProtectedRoute><RequireRole role="owner"><OwnerAnalyticsPage /></RequireRole></ProtectedRoute>} />
+                    <Route path="/owner/earnings" element={<ProtectedRoute><RequireRole role="owner"><OwnerEarningsPage /></RequireRole></ProtectedRoute>} />
                     
                     {/* Embed booking widget (public) */}
                     <Route path="/embed/booking/:venueId" element={<EmbedBookingPage />} />
@@ -164,7 +163,6 @@ const App = () => {
                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
                     
                     {/* Legacy owner routes */}
-                    <Route path="/owner-schedule" element={<ProtectedRoute><OwnerSchedulePage /></ProtectedRoute>} />
                     
                     {/* Venue Management */}
                     <Route path="/add-venue" element={<ProtectedRoute><AddVenuePage /></ProtectedRoute>} />

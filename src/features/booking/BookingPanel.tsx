@@ -67,10 +67,10 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
   const selected = slots?.find((s) => s.slot_start === selectedSlot);
 
   return (
-    <div className="rounded-2xl border bg-card p-6 shadow-sm">
+    <div className="glass rounded-2xl p-6">
       <div className="flex items-baseline justify-between mb-4">
         <div>
-          <span className="text-2xl font-bold">֏{pricePerHour.toLocaleString()}</span>
+          <span className="stat-numeral text-2xl font-bold">֏{pricePerHour.toLocaleString()}</span>
           <span className="text-muted-foreground"> / hour</span>
         </div>
       </div>

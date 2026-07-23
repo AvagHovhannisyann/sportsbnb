@@ -2475,6 +2475,10 @@ export type Database = {
         Args: { p_role: string; p_room_id: string; p_user_id: string }
         Returns: undefined
       }
+      check_and_award_achievements: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Tables"]["achievements"]["Row"][]
+      }
       create_booking_hold: {
         Args: {
           p_venue_id: string

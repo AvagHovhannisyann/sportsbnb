@@ -21,31 +21,6 @@ interface AdminStats {
   pendingVenues: number;
 }
 
-export const useIsAdmin = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ["user-role", user?.id],
-    queryFn: async () => {
-      if (!user) return false;
-      
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error checking admin status:", error);
-        return false;
-      }
-      
-      return data?.role === "admin" || data?.role === "moderator";
-    },
-    enabled: !!user,
-  });
-};
-
 export const useUserRole = () => {
   const { user } = useAuth();
 
@@ -53,22 +28,28 @@ export const useUserRole = () => {
     queryKey: ["user-role", user?.id],
     queryFn: async (): Promise<AppRole | null> => {
       if (!user) return null;
-      
+
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
-      
+
       if (error) {
         console.error("Error fetching user role:", error);
         return null;
       }
-      
+
       return (data?.role as AppRole) || null;
     },
     enabled: !!user,
   });
+};
+
+// Derived from useUserRole — shares its cache entry, single return shape.
+export const useIsAdmin = () => {
+  const roleQuery = useUserRole();
+  return { ...roleQuery, data: roleQuery.data === "admin" || roleQuery.data === "moderator" };
 };
 
 export const useAdminStats = () => {
