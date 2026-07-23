@@ -1,55 +1,35 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "npm:stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { handlePreflight } from "../_shared/cors.ts";
+import { json, errorResponse, makeLogger } from "../_shared/http.ts";
+import { requireUser, HttpError } from "../_shared/auth.ts";
+import { adminClient } from "../_shared/supabase.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const log = makeLogger("verify-game-payment");
 
-const logStep = (step: string, details?: Record<string, unknown>) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[VERIFY-GAME-PAYMENT] ${step}${detailsStr}`);
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
+Deno.serve(async (req) => {
+  const preflight = handlePreflight(req);
+  if (preflight) return preflight;
 
   try {
-    logStep("Function started");
+    log("Function started");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    const { user } = await requireUser(req);
+    log("User authenticated", { userId: user.id });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    
-    const user = userData.user;
-    if (!user) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
+    const admin = adminClient();
 
     const { sessionId } = await req.json();
     if (!sessionId) throw new Error("Session ID is required");
-    logStep("Session ID received", { sessionId });
+    log("Session ID received", { sessionId });
 
-    // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Retrieve the checkout session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    logStep("Session retrieved", { 
-      status: session.payment_status, 
-      metadata: session.metadata 
+    log("Session retrieved", {
+      status: session.payment_status,
+      metadata: session.metadata,
     });
 
     if (session.payment_status !== "paid") {
@@ -69,7 +49,7 @@ serve(async (req) => {
     }
 
     // Check if already joined (prevent double joining)
-    const { data: existingParticipant } = await supabaseClient
+    const { data: existingParticipant } = await admin
       .from("game_participants")
       .select("id")
       .eq("game_id", gameId)
@@ -77,80 +57,61 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingParticipant) {
-      logStep("User already joined", { participantId: existingParticipant.id });
-      return new Response(JSON.stringify({ 
-        success: true, 
-        alreadyJoined: true,
-        gameId 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      log("User already joined", { participantId: existingParticipant.id });
+      return json(req, { success: true, alreadyJoined: true, gameId });
     }
 
-    // Add user to game participants
-    const { error: insertError } = await supabaseClient
-      .from("game_participants")
-      .insert({
-        game_id: gameId,
-        user_id: userId,
-        status: "confirmed",
-      });
+    const { error: insertError } = await admin.from("game_participants").insert({
+      game_id: gameId,
+      user_id: userId,
+      status: "confirmed",
+    });
 
     if (insertError) {
-      logStep("Failed to insert participant", { error: insertError.message });
+      log("Failed to insert participant", { error: insertError.message });
       throw new Error("Failed to join game");
     }
-    logStep("Participant added successfully");
+    log("Participant added successfully");
 
-    // Get game details and notify the host
-    const { data: game } = await supabaseClient
+    const { data: game } = await admin
       .from("games")
       .select("host_id, title")
       .eq("id", gameId)
       .single();
 
     if (game && game.host_id !== userId) {
-      const { data: joiner } = await supabaseClient
+      const { data: joiner } = await admin
         .from("profiles")
         .select("full_name")
         .eq("user_id", userId)
         .single();
 
-      await supabaseClient.from("notifications").insert({
+      await admin.from("notifications").insert({
         user_id: game.host_id,
         type: "game",
         title: "New Player Joined! 🎮💰",
         message: `${joiner?.full_name || "Someone"} has paid and joined your game "${game.title}".`,
         link: `/game/${gameId}`,
       });
-      logStep("Host notification sent");
+      log("Host notification sent");
     }
 
-    // Notify the user
-    await supabaseClient.from("notifications").insert({
+    await admin.from("notifications").insert({
       user_id: userId,
       type: "game",
       title: "Successfully Joined Game! 🎉",
       message: `Your payment was successful and you've joined "${game?.title}".`,
       link: `/game/${gameId}`,
     });
-    logStep("User notification sent");
+    log("User notification sent");
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      gameId,
-      gameTitle: game?.title 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json(req, { success: true, gameId, gameTitle: game?.title });
   } catch (error) {
+    if (error instanceof HttpError) {
+      return errorResponse(req, error.message, error.status);
+    }
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    log("ERROR", { message: errorMessage });
+    return errorResponse(req, errorMessage, 500);
   }
 });
