@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
+  const { getSession, updatePassword, signOut } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,13 +23,16 @@ const ResetPasswordPage = () => {
   // Check if we have a valid session from the reset link
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await getSession();
       if (!session) {
         toast.error("Invalid or expired reset link");
         navigate("/forgot-password");
       }
     };
     checkSession();
+    // getSession is intentionally omitted: this must run once on mount only.
+    // Re-running after the post-success signOut would bounce the user to /forgot-password.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // Password strength calculation
@@ -88,9 +92,7 @@ const ResetPasswordPage = () => {
     setErrors({});
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
+      const { error } = await updatePassword(password);
 
       if (error) {
         throw error;
@@ -101,7 +103,7 @@ const ResetPasswordPage = () => {
       
       // Sign out and redirect to login after a delay
       setTimeout(async () => {
-        await supabase.auth.signOut();
+        await signOut();
         navigate("/login");
       }, 3000);
     } catch (error: any) {

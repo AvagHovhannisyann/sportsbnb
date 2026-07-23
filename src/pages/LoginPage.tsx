@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Shield, Mail, Lock, Users, Loader2, CheckCircle, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +17,19 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-  const { user, isLoading: authLoading } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    signInWithPassword,
+    signInWithOtp,
+    signInWithOAuth,
+    signOut,
+    getUser,
+    listMfaFactors,
+    challengeMfa,
+    verifyMfa,
+    fetchOnboardingStatus,
+  } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("password");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -52,10 +62,7 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
+    const { data, error } = await signInWithPassword(formData.email, formData.password);
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
@@ -64,7 +71,7 @@ const LoginPage = () => {
     }
 
     // Check if MFA is required
-    const { data: factorsData } = await supabase.auth.mfa.listFactors();
+    const { data: factorsData } = await listMfaFactors();
     const verifiedFactors = factorsData?.totp?.filter(f => f.status === 'verified') || [];
     
     if (verifiedFactors.length > 0) {
@@ -89,12 +96,7 @@ const LoginPage = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: formData.email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { error } = await signInWithOtp(formData.email);
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
@@ -112,12 +114,7 @@ const LoginPage = () => {
     if (resendCooldown > 0) return;
     
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: formData.email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { error } = await signInWithOtp(formData.email);
 
     if (error) {
       toast.error("Failed to resend. Please try again.");
@@ -133,9 +130,7 @@ const LoginPage = () => {
     
     setIsVerifyingMfa(true);
     
-    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-      factorId: mfaFactorId,
-    });
+    const { data: challengeData, error: challengeError } = await challengeMfa(mfaFactorId);
 
     if (challengeError) {
       toast.error("Failed to create MFA challenge");
@@ -143,7 +138,7 @@ const LoginPage = () => {
       return;
     }
 
-    const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+    const { data: verifyData, error: verifyError } = await verifyMfa({
       factorId: mfaFactorId,
       challengeId: challengeData.id,
       code: totpCode,
@@ -157,8 +152,8 @@ const LoginPage = () => {
     }
 
     // MFA verified, proceed with login
-    const { data: { user } } = await supabase.auth.getUser();
-    await handleLoginSuccess(user?.id);
+    const { data: userData } = await getUser();
+    await handleLoginSuccess(userData.user?.id);
     setIsVerifyingMfa(false);
   };
 
@@ -166,11 +161,7 @@ const LoginPage = () => {
     toast.success("Welcome back!");
 
     if (userId) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed, user_type")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const profile = await fetchOnboardingStatus(userId);
 
       if (profile && !profile.onboarding_completed) {
         navigate(profile.user_type === "owner" ? "/onboarding/owner" : "/onboarding/player", { replace: true });
@@ -196,14 +187,12 @@ const LoginPage = () => {
     setMfaFactorId(null);
     setTotpCode("");
     setMagicLinkSent(false);
-    supabase.auth.signOut();
+    signOut();
   };
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    const { error } = await signInWithOAuth("google");
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
@@ -213,9 +202,7 @@ const LoginPage = () => {
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: window.location.origin,
-    });
+    const { error } = await signInWithOAuth("apple");
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
