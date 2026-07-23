@@ -16,8 +16,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      # Lint is advisory until the existing 143 errors are burned down (Phase 5 makes it blocking).
       - run: npm run lint
-        continue-on-error: true
       - run: npm test
       - run: npm run build

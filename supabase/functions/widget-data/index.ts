@@ -56,7 +56,7 @@ serve(async (req) => {
       .single();
 
     // If date provided, get availability for that date
-    let availability: any[] = [];
+    const availability: any[] = [];
     if (date) {
       const dayOfWeek = new Date(date).getDay();
       const venueHoursForDay = hours?.find(h => h.day_of_week === dayOfWeek);

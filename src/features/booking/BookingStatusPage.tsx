@@ -8,7 +8,19 @@ import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useVerifyPayment } from "./hooks/useBookingFlow";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useVerifyPayment, useCancelBooking, formatAmd } from "./hooks/useBookingFlow";
 
 /**
  * Landing page after returning from the payment provider.
@@ -21,6 +33,8 @@ export default function BookingStatusPage() {
   const verify = useVerifyPayment();
   const [finalStatus, setFinalStatus] = useState<string | null>(null);
   const attempts = useRef(0);
+
+  const cancelBooking = useCancelBooking();
 
   const { data: booking, refetch } = useQuery({
     queryKey: ["booking-status", bookingId],
@@ -117,6 +131,51 @@ export default function BookingStatusPage() {
               <Link to="/venues">Browse more venues</Link>
             </Button>
           </div>
+          {booking?.starts_at && new Date(booking.starts_at) > new Date() && (
+            <div className="mt-6 border-t pt-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                    Cancel booking
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your refund is calculated from the venue's cancellation policy that applied
+                      when you booked. Refunds to cards usually arrive within a few business days.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep booking</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        try {
+                          const result = await cancelBooking.mutateAsync({ bookingId: booking.id });
+                          setFinalStatus(result.status);
+                          refetch();
+                          if (result.refundMinor > 0) {
+                            toast.success(
+                              result.manual
+                                ? `Cancelled — ${formatAmd(result.refundMinor)} refund is being processed`
+                                : `Cancelled — ${formatAmd(result.refundMinor)} refunded`,
+                            );
+                          } else {
+                            toast.success("Booking cancelled");
+                          }
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : "Cancellation failed");
+                        }
+                      }}
+                    >
+                      Cancel booking
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </div>
       );
     }

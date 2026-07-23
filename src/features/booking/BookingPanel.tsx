@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCreateBookingHold, formatAmd } from "./hooks/useBookingFlow";
 
 interface BookingPanelProps {
@@ -40,6 +42,26 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
 
   const { data: slots, isLoading: slotsLoading } = useAvailableSlots(venueId, selectedDate);
   const createHold = useCreateBookingHold();
+
+  const { data: policy } = useQuery({
+    queryKey: ["venue-policy", venueId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("venue_policies")
+        .select("cancellation_policy, cancellation_hours, refund_type")
+        .eq("venue_id", venueId)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const policyText = (() => {
+    const hours = policy?.cancellation_hours ?? 24;
+    const refundType = policy?.refund_type ?? "full";
+    if (refundType === "none") return "Non-refundable after payment.";
+    if (refundType === "partial") return `Free cancellation until ${hours}h before start — 50% refund after that.`;
+    return `Free cancellation until ${hours}h before start.`;
+  })();
 
   const handleReserve = async () => {
     if (!user) {
@@ -160,10 +182,13 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
         {createHold.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
         Reserve
       </Button>
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5" />
-        Secure payment — you won't be charged until checkout
-      </p>
+      <div className="mt-3 space-y-1.5 text-center">
+        <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Secure payment via Ameriabank / Idram
+        </p>
+        <p className="text-xs text-muted-foreground">{policyText}</p>
+      </div>
     </div>
   );
 }

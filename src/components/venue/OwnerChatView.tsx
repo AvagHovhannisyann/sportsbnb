@@ -28,16 +28,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  useChatMessages, 
-  useSendMessage, 
-  useReportMessage, 
-  useUpdateLastRead, 
+import {
+  useChatMessages,
+  useSendMessage,
+  useReportMessage,
+  useUpdateLastRead,
   useBlockUser,
+} from "@/hooks/useChat";
+import {
   useOwnerReplyTemplates,
   useCreateReplyTemplate,
   useDeleteReplyTemplate,
-} from "@/hooks/useVenueChat";
+} from "@/hooks/useReplyTemplates";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

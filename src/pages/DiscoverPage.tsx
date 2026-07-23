@@ -90,7 +90,10 @@ const DiscoverPage = () => {
     const lat = searchParams.get("lat");
     const lng = searchParams.get("lng");
     const sport = searchParams.get("sport");
-    
+    const q = searchParams.get("q");
+    const city = searchParams.get("city");
+    const maxPrice = searchParams.get("maxPrice");
+
     if (lat && lng) {
       setSearchLocation({
         lat: parseFloat(lat),
@@ -101,7 +104,26 @@ const DiscoverPage = () => {
     if (sport) {
       setSelectedSport(sport);
     }
-  }, [searchParams]);
+    if (q) setSearchQuery(q);
+    if (city) setSelectedCity(city);
+    if (maxPrice && /^\d+$/.test(maxPrice)) setPriceRange([0, parseInt(maxPrice)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep filters shareable: reflect them in the URL as they change
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    const setOrDelete = (key: string, value: string | null) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    };
+    setOrDelete("sport", selectedSport || null);
+    setOrDelete("q", searchQuery || null);
+    setOrDelete("city", selectedCity || null);
+    setOrDelete("maxPrice", priceRange[1] < 200000 ? String(priceRange[1]) : null);
+    setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSport, searchQuery, selectedCity, priceRange]);
 
   // Auto-set city from user profile on first load
   useEffect(() => {

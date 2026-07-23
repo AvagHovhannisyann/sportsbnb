@@ -136,7 +136,7 @@ const BlogPostsTab = () => {
   const handleSave = async () => {
     if (!form.title.trim() || !form.content.trim()) return;
 
-    let formToSave = { ...form };
+    const formToSave = { ...form };
 
     // Auto-generate cover image if publishing and no cover image set
     if (form.is_published && !form.cover_image_url) {
