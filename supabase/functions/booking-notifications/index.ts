@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       ["Time", booking.booking_time],
       ["Duration", `${booking.duration_hours} hour${booking.duration_hours > 1 ? "s" : ""}`],
     ];
-    const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.lovable.app";
+    const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.org";
 
     const jobs: Promise<{ ok: boolean }>[] = [];
     const customerName = booking.customer_name ? escapeHtml(booking.customer_name) : "there";

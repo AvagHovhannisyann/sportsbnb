@@ -12,7 +12,7 @@ const log = makeLogger("payments-callback-ameria");
  */
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.lovable.app";
+  const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.org";
   const paymentIdParam = url.searchParams.get("paymentId") ?? url.searchParams.get("Opaque");
   const orderIdParam = url.searchParams.get("orderID") ?? url.searchParams.get("OrderID");
 

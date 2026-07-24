@@ -109,3 +109,42 @@ export async function sendEmail(params: {
   }
   return { ok: true };
 }
+
+/**
+ * Lower-level sender for callers that compose their own full HTML (cold
+ * outreach, digests) rather than the branded transactional template above.
+ * Returns Resend's raw response body so callers can capture the message id.
+ */
+export async function sendRawEmail(params: {
+  to: string | string[];
+  from: string;
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string;
+  tags?: Array<{ name: string; value: string }>;
+}): Promise<{ ok: boolean; id?: string; error?: string; status: number }> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) return { ok: false, error: "RESEND_API_KEY not configured", status: 500 };
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      from: params.from,
+      to: Array.isArray(params.to) ? params.to : [params.to],
+      subject: params.subject,
+      html: params.html,
+      ...(params.text ? { text: params.text } : {}),
+      ...(params.replyTo ? { reply_to: params.replyTo } : {}),
+      ...(params.tags ? { tags: params.tags } : {}),
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    console.error("sendRawEmail failed:", res.status, data);
+    return { ok: false, error: `Resend ${res.status}: ${JSON.stringify(data)}`, status: res.status };
+  }
+  return { ok: true, id: data.id, status: res.status };
+}

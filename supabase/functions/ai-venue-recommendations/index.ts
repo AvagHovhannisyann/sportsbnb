@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { AI_MODELS, chatCompletion } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,9 +11,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -50,25 +48,19 @@ serve(async (req) => {
       recent_bookings: bookings?.map(b => b.venue_name) || [],
     };
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are a sports venue recommendation engine. Given a user's profile and available venues, recommend the top 3-5 venues. Use tool calling to return structured results.`,
-          },
-          {
-            role: "user",
-            content: `User profile: ${JSON.stringify(userContext)}\n\nAvailable venues: ${JSON.stringify(venues?.map(v => ({ id: v.id, name: v.name, sports: v.sports, city: v.city, rating: v.rating, price: v.price_per_hour, indoor: v.is_indoor })))}\n\nRecommend the best venues for this user with personalized reasons.`,
-          },
-        ],
-        tools: [
+    const response = await chatCompletion({
+      model: AI_MODELS.chat,
+      messages: [
+        {
+          role: "system",
+          content: `You are a sports venue recommendation engine. Given a user's profile and available venues, recommend the top 3-5 venues. Use tool calling to return structured results.`,
+        },
+        {
+          role: "user",
+          content: `User profile: ${JSON.stringify(userContext)}\n\nAvailable venues: ${JSON.stringify(venues?.map(v => ({ id: v.id, name: v.name, sports: v.sports, city: v.city, rating: v.rating, price: v.price_per_hour, indoor: v.is_indoor })))}\n\nRecommend the best venues for this user with personalized reasons.`,
+        },
+      ],
+      tools: [
           {
             type: "function",
             function: {
@@ -97,8 +89,7 @@ serve(async (req) => {
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "recommend_venues" } },
-      }),
+      tool_choice: { type: "function", function: { name: "recommend_venues" } },
     });
 
     if (!response.ok) {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { AI_MODELS, chatCompletion } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,9 +12,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -87,23 +85,17 @@ serve(async (req) => {
       pending_count: total - responded,
     };
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a venue growth coach for SportsBnb (WhatsApp-first marketplace, no in-app payments). Given an owner's portfolio + 7-day lead stats, generate 2-4 highly specific, actionable nudges to grow leads, improve response rate, or strengthen listings. Each tip must reference real numbers from the data. Friendly tone. Use tool calling.",
-          },
-          { role: "user", content: `Owner context:\n${JSON.stringify(ctx, null, 2)}` },
-        ],
-        tools: [
+    const response = await chatCompletion({
+      model: AI_MODELS.chat,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a venue growth coach for SportsBnb, an in-app sports-venue booking marketplace. Given an owner's portfolio + 7-day lead stats, generate 2-4 highly specific, actionable nudges to grow bookings, improve response rate, or strengthen listings. Each tip must reference real numbers from the data. Friendly tone. Use tool calling.",
+        },
+        { role: "user", content: `Owner context:\n${JSON.stringify(ctx, null, 2)}` },
+      ],
+      tools: [
           {
             type: "function",
             function: {
@@ -136,8 +128,7 @@ serve(async (req) => {
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "owner_coach" } },
-      }),
+      tool_choice: { type: "function", function: { name: "owner_coach" } },
     });
 
     if (!response.ok) {

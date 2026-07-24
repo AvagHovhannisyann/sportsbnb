@@ -4,13 +4,12 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { requireCronSecret, HttpError } from '../_shared/auth.ts';
+import { searchPlacesText } from '../_shared/google-places.ts';
+import { sendRawEmail } from '../_shared/email.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY_1') || Deno.env.get('GOOGLE_MAPS_API_KEY')!;
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY')!;
-const TELEGRAM_API_KEY = Deno.env.get('TELEGRAM_API_KEY')!;
 const FROM_EMAIL = Deno.env.get('OUTREACH_FROM_EMAIL') || 'Sportsbnb <hello@sportsbnb.org>';
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -44,16 +43,11 @@ async function flushNotifications(chatId: string | null) {
   for (const n of pending ?? []) {
     try {
       const p = n.payload as { text: string; parse_mode?: string; reply_markup?: unknown };
-      const r = await fetch('https://connector-gateway.lovable.dev/telegram/sendMessage', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': TELEGRAM_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: p.text,
-          parse_mode: p.parse_mode || 'HTML',
-          disable_web_page_preview: true,
-          ...(p.reply_markup ? { reply_markup: p.reply_markup } : {}),
-        }),
+      const r = await sendTelegramMessage({
+        chatId,
+        text: p.text,
+        parseMode: (p.parse_mode as 'HTML' | 'MarkdownV2' | undefined) ?? 'HTML',
+        replyMarkup: p.reply_markup,
       });
       if (r.ok) {
         await admin.from('notifications_outbox').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', n.id);
@@ -73,19 +67,11 @@ async function discoverVenues(cities: Array<{ city: string; country: string; lat
   for (const c of cities) {
     for (const kw of SPORT_KEYWORDS) {
       try {
-        const r = await fetch('https://connector-gateway.lovable.dev/google_maps/places/v1/places:searchText', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.websiteUri,places.internationalPhoneNumber',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            textQuery: `${kw} in ${c.city}`,
-            locationBias: { circle: { center: { latitude: c.lat, longitude: c.lng }, radius: c.radius_m } },
-            maxResultCount: 10,
-          }),
+        const r = await searchPlacesText({
+          textQuery: `${kw} in ${c.city}`,
+          fieldMask: 'places.id,places.displayName,places.formattedAddress,places.location,places.websiteUri,places.internationalPhoneNumber',
+          locationBias: { circle: { center: { latitude: c.lat, longitude: c.lng }, radius: c.radius_m } },
+          maxResultCount: 10,
         });
         if (!r.ok) { console.error('places fail', r.status, await r.text().catch(() => '')); continue; }
         const data = await r.json();
@@ -145,25 +131,19 @@ async function sendOutreach(target: { id: string; name: string; contact_email: s
   const bodyText = `${greeting}\n\n${followupPrefix}${target.ai_body}\n\n— The Sportsbnb Team\nhttps://sportsbnb.org`;
   const html = bodyText.split('\n').map((l) => l ? `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>` : '').join('');
 
-  const r = await fetch('https://connector-gateway.lovable.dev/resend/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': RESEND_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: FROM_EMAIL,
-      to: [target.contact_email],
-      subject,
-      html,
-      text: bodyText,
-      reply_to: 'hello@sportsbnb.org',
-      tags: [{ name: 'autopilot', value: isFollowup ? `followup_${followupNum}` : 'initial' }, { name: 'target_id', value: target.id }],
-    }),
+  const result = await sendRawEmail({
+    from: FROM_EMAIL,
+    to: target.contact_email,
+    subject,
+    html,
+    text: bodyText,
+    replyTo: 'hello@sportsbnb.org',
+    tags: [{ name: 'autopilot', value: isFollowup ? `followup_${followupNum}` : 'initial' }, { name: 'target_id', value: target.id }],
   });
-  if (!r.ok) {
-    const err = await r.text();
-    await logEvent(target.id, 'send_failed', { error: err.slice(0, 500) });
+  if (!result.ok) {
+    await logEvent(target.id, 'send_failed', { error: (result.error ?? 'send failed').slice(0, 500) });
     return false;
   }
-  const sent = await r.json();
   if (isFollowup) {
     await admin.from('outreach_targets').update({
       status: `followup_${followupNum}`,
@@ -171,10 +151,10 @@ async function sendOutreach(target: { id: string; name: string; contact_email: s
       last_followup_at: new Date().toISOString(),
       followup_count: followupNum,
     }).eq('id', target.id);
-    await logEvent(target.id, `followup_${followupNum}`, { resend_id: sent.id });
+    await logEvent(target.id, `followup_${followupNum}`, { resend_id: result.id });
   } else {
     await admin.from('outreach_targets').update({ status: 'sent', last_contacted_at: new Date().toISOString() }).eq('id', target.id);
-    await logEvent(target.id, 'sent', { resend_id: sent.id, subject });
+    await logEvent(target.id, 'sent', { resend_id: result.id, subject });
   }
   return true;
 }

@@ -1,10 +1,10 @@
 // Telegram bot webhook — handles /start, /pause, /resume, /status, /digest commands.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const TELEGRAM_API_KEY = Deno.env.get('TELEGRAM_API_KEY')!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -16,11 +16,7 @@ async function deriveSecret(): Promise<string> {
 }
 
 async function reply(chatId: number, text: string) {
-  await fetch('https://connector-gateway.lovable.dev/telegram/sendMessage', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': TELEGRAM_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
-  });
+  await sendTelegramMessage({ chatId, text });
 }
 
 Deno.serve(async (req) => {

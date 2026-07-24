@@ -1,19 +1,9 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-
-const GW = 'https://connector-gateway.lovable.dev/google_maps';
+import { searchPlacesText } from '../_shared/google-places.ts';
 
 async function searchPlace(query: string) {
-  const r = await fetch(`${GW}/places/v1/places:searchText`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-      'X-Connection-Api-Key': Deno.env.get('GOOGLE_MAPS_API_KEY_1') ?? Deno.env.get('GOOGLE_MAPS_API_KEY')!,
-      'Content-Type': 'application/json',
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.googleMapsUri,places.regularOpeningHours.weekdayDescriptions,places.location,places.businessStatus',
-    },
-    body: JSON.stringify({ textQuery: query }),
-  });
+  const r = await searchPlacesText({ textQuery: query });
   const data = await r.json();
   if (!r.ok) throw new Error(`Maps error ${r.status}: ${JSON.stringify(data)}`);
   return data.places?.[0] || null;

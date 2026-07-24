@@ -16,8 +16,8 @@ security headers.
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
    - `VITE_SUPABASE_PROJECT_ID`
-   - `VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY`
-   - `VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID`
+   - `VITE_GOOGLE_MAPS_BROWSER_KEY`
+   - `VITE_GOOGLE_MAPS_TRACKING_ID`
    Copy them from your local `.env` (or your team's secret store). The Google
    Maps key must be **HTTP-referrer restricted** to the Vercel domain(s).
 4. Deploy. Every push to `main` ships to production; PRs get preview URLs.

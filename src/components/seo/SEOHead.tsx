@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = "https://sportsbnb.lovable.app";
+const SITE_URL = "https://sportsbnb.org";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 const SITE_NAME = "Sportsbnb";
 

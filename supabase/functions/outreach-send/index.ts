@@ -1,7 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { sendRawEmail } from '../_shared/email.ts';
 
-const GW = 'https://connector-gateway.lovable.dev/resend';
 const FROM = 'Sportsbnb <hello@sportsbnb.org>';
 const REPLY_TO = 'support@sportsbnb.org';
 
@@ -30,27 +30,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'invalid email' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const r = await fetch(`${GW}/emails`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'X-Connection-Api-Key': Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY')!,
-      },
-      body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, html: bodyToHtml(body), text: body }),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(`Resend ${r.status}: ${JSON.stringify(data)}`);
+    const result = await sendRawEmail({ from: FROM, to, replyTo: REPLY_TO, subject, html: bodyToHtml(body), text: body });
+    if (!result.ok) throw new Error(result.error ?? 'send failed');
 
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     await admin.from('outreach_messages').insert({
-      target_id, direction: 'outbound', subject, body, from_email: FROM, to_email: to, resend_id: data.id, sent_by: user.id,
+      target_id, direction: 'outbound', subject, body, from_email: FROM, to_email: to, resend_id: result.id, sent_by: user.id,
     });
     await admin.from('outreach_targets').update({
       status: 'contacted', last_contacted_at: new Date().toISOString(), contact_email: to,
     }).eq('id', target_id);
 
-    return new Response(JSON.stringify({ success: true, id: data.id }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ success: true, id: result.id }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('send error', e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'unknown' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

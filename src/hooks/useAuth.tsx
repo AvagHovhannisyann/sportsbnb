@@ -1,7 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { User, Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 interface Profile {
   id: string;
@@ -56,7 +55,7 @@ interface AuthContextType {
   signUp: (params: SignUpParams) => Promise<{ error: AuthError | null }>;
   signInWithOAuth: (
     provider: "google" | "apple"
-  ) => ReturnType<typeof lovable.auth.signInWithOAuth>;
+  ) => ReturnType<typeof supabase.auth.signInWithOAuth>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
   getSession: () => ReturnType<typeof supabase.auth.getSession>;
@@ -173,8 +172,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithOAuth = (provider: "google" | "apple") =>
-    lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+    supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
 
   const resetPassword = async (email: string) => {

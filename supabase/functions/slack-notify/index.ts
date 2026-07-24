@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { requireCronSecret, HttpError } from "../_shared/auth.ts";
-
-const GATEWAY_URL = 'https://connector-gateway.lovable.dev/slack/api';
+import { slackApiCall } from "../_shared/slack.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,13 +18,6 @@ serve(async (req) => {
     const status = e instanceof HttpError ? e.status : 401;
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY is not configured' }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -118,20 +110,12 @@ serve(async (req) => {
         text = data.message || 'SportsBnB notification';
     }
 
-    const response = await fetch(`${GATEWAY_URL}/chat.postMessage`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'X-Connection-Api-Key': SLACK_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        channel: channel || 'general',
-        text,
-        blocks: blocks.length > 0 ? blocks : undefined,
-        username: 'SportsBnB',
-        icon_emoji: ':stadium:',
-      }),
+    const response = await slackApiCall('chat.postMessage', {
+      channel: channel || 'general',
+      text,
+      blocks: blocks.length > 0 ? blocks : undefined,
+      username: 'SportsBnB',
+      icon_emoji: ':stadium:',
     });
 
     const result = await response.json();
