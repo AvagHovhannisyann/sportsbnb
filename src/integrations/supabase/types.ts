@@ -389,20 +389,28 @@ export type Database = {
       }
       bookings: {
         Row: {
+          amount_minor: number | null
           booking_date: string
           booking_time: string
+          cancellation_policy: Json | null
           court_id: string | null
           created_at: string
           created_by_owner_id: string | null
+          currency: string
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
           duration_hours: number
+          ends_at: string | null
+          expires_at: string | null
           id: string
           notes: string | null
+          owner_amount_minor: number | null
           payment_intent_id: string | null
+          platform_fee_minor: number | null
           recurring_booking_id: string | null
           source: string
+          starts_at: string | null
           status: string
           team_id: string | null
           total_price: number
@@ -410,22 +418,31 @@ export type Database = {
           user_id: string
           venue_id: string
           venue_name: string
+          venue_uuid: string | null
         }
         Insert: {
+          amount_minor?: number | null
           booking_date: string
           booking_time: string
+          cancellation_policy?: Json | null
           court_id?: string | null
           created_at?: string
           created_by_owner_id?: string | null
+          currency?: string
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           duration_hours?: number
+          ends_at?: string | null
+          expires_at?: string | null
           id?: string
           notes?: string | null
+          owner_amount_minor?: number | null
           payment_intent_id?: string | null
+          platform_fee_minor?: number | null
           recurring_booking_id?: string | null
           source?: string
+          starts_at?: string | null
           status?: string
           team_id?: string | null
           total_price: number
@@ -433,22 +450,31 @@ export type Database = {
           user_id: string
           venue_id: string
           venue_name: string
+          venue_uuid?: string | null
         }
         Update: {
+          amount_minor?: number | null
           booking_date?: string
           booking_time?: string
+          cancellation_policy?: Json | null
           court_id?: string | null
           created_at?: string
           created_by_owner_id?: string | null
+          currency?: string
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           duration_hours?: number
+          ends_at?: string | null
+          expires_at?: string | null
           id?: string
           notes?: string | null
+          owner_amount_minor?: number | null
           payment_intent_id?: string | null
+          platform_fee_minor?: number | null
           recurring_booking_id?: string | null
           source?: string
+          starts_at?: string | null
           status?: string
           team_id?: string | null
           total_price?: number
@@ -456,6 +482,7 @@ export type Database = {
           user_id?: string
           venue_id?: string
           venue_name?: string
+          venue_uuid?: string | null
         }
         Relationships: [
           {
@@ -477,6 +504,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_venue_uuid_fkey"
+            columns: ["venue_uuid"]
+            isOneToOne: false
+            referencedRelation: "venues"
             referencedColumns: ["id"]
           },
         ]
@@ -909,6 +943,67 @@ export type Database = {
           },
         ]
       }
+      ledger_entries: {
+        Row: {
+          amount_minor: number
+          booking_id: string | null
+          created_at: string
+          currency: string
+          entry_type: string
+          id: number
+          memo: string | null
+          owner_id: string | null
+          payment_id: string | null
+          payout_id: string | null
+        }
+        Insert: {
+          amount_minor: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          entry_type: string
+          id?: never
+          memo?: string | null
+          owner_id?: string | null
+          payment_id?: string | null
+          payout_id?: string | null
+        }
+        Update: {
+          amount_minor?: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          entry_type?: string
+          id?: never
+          memo?: string | null
+          owner_id?: string | null
+          payment_id?: string | null
+          payout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_payout_fk"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1144,6 +1239,33 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_payout_accounts: {
+        Row: {
+          created_at: string
+          details: Json
+          method: string
+          owner_id: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          details: Json
+          method: string
+          owner_id: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          method?: string
+          owner_id?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       owner_reply_templates: {
         Row: {
           created_at: string
@@ -1167,6 +1289,132 @@ export type Database = {
           message_text?: string
           owner_id?: string
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount_minor: number
+          booking_id: string | null
+          created_at: string
+          currency: string
+          error_code: string | null
+          game_id: string | null
+          id: string
+          idempotency_key: string | null
+          order_ref: number
+          paid_at: string | null
+          provider: string
+          provider_payload: Json | null
+          provider_payment_id: string | null
+          refunded_minor: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_minor: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          error_code?: string | null
+          game_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          order_ref?: number
+          paid_at?: string | null
+          provider: string
+          provider_payload?: Json | null
+          provider_payment_id?: string | null
+          refunded_minor?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_minor?: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          error_code?: string | null
+          game_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          order_ref?: number
+          paid_at?: string | null
+          provider?: string
+          provider_payload?: Json | null
+          provider_payment_id?: string | null
+          refunded_minor?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          destination_snapshot: Json | null
+          id: string
+          initiated_by: string | null
+          method: string | null
+          owner_id: string
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          reference: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency?: string
+          destination_snapshot?: Json | null
+          id?: string
+          initiated_by?: string | null
+          method?: string | null
+          owner_id: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency?: string
+          destination_snapshot?: Json | null
+          id?: string
+          initiated_by?: string | null
+          method?: string | null
+          owner_id?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          reference?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -2217,6 +2465,14 @@ export type Database = {
       }
     }
     Views: {
+      owner_balances: {
+        Row: {
+          balance_minor: number | null
+          currency: string | null
+          owner_id: string | null
+        }
+        Relationships: []
+      }
       profiles_public: {
         Row: {
           avatar_url: string | null
@@ -2265,9 +2521,58 @@ export type Database = {
         Args: { p_role: string; p_room_id: string; p_user_id: string }
         Returns: undefined
       }
-      get_or_create_chat_room:
-        | { Args: { p_reference_id: string; p_type: string }; Returns: string }
-        | { Args: { p_reference_id: string; p_type: string }; Returns: string }
+      check_and_award_achievements: {
+        Args: never
+        Returns: {
+          category: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          requirement_type: string
+          requirement_value: number
+          xp_reward: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "achievements"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      create_booking_hold: {
+        Args: {
+          p_court_id?: string
+          p_ends_at: string
+          p_notes?: string
+          p_starts_at: string
+          p_venue_id: string
+        }
+        Returns: Json
+      }
+      expire_stale_holds: { Args: never; Returns: number }
+      get_available_slots: {
+        Args: { p_court_id?: string; p_date: string; p_venue_id: string }
+        Returns: {
+          available: boolean
+          slot_end: string
+          slot_start: string
+        }[]
+      }
+      get_or_create_chat_room: {
+        Args: { p_reference_id: string; p_type: string }
+        Returns: string
+      }
+      get_or_create_referral_code: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }[]
+      }
       get_player_stats: { Args: { p_user_id: string }; Returns: Json }
       has_role: {
         Args: {
@@ -2291,6 +2596,21 @@ export type Database = {
       is_user_blocked: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
+      }
+      join_game: { Args: { p_game_id: string }; Returns: Json }
+      join_game_paid: {
+        Args: { p_game_id: string; p_user_id: string }
+        Returns: Json
+      }
+      notify_user: {
+        Args: {
+          p_link?: string
+          p_message: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
       send_system_message: {
         Args: { p_message: string; p_room_id: string }
