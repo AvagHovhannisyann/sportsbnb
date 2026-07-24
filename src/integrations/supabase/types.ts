@@ -410,15 +410,6 @@ export type Database = {
           user_id: string
           venue_id: string
           venue_name: string
-          venue_uuid: string | null
-          starts_at: string | null
-          ends_at: string | null
-          amount_minor: number | null
-          currency: string
-          platform_fee_minor: number | null
-          owner_amount_minor: number | null
-          cancellation_policy: Json | null
-          expires_at: string | null
         }
         Insert: {
           booking_date: string
@@ -442,15 +433,6 @@ export type Database = {
           user_id: string
           venue_id: string
           venue_name: string
-          venue_uuid?: string | null
-          starts_at?: string | null
-          ends_at?: string | null
-          amount_minor?: number | null
-          currency?: string
-          platform_fee_minor?: number | null
-          owner_amount_minor?: number | null
-          cancellation_policy?: Json | null
-          expires_at?: string | null
         }
         Update: {
           booking_date?: string
@@ -474,15 +456,6 @@ export type Database = {
           user_id?: string
           venue_id?: string
           venue_name?: string
-          venue_uuid?: string | null
-          starts_at?: string | null
-          ends_at?: string | null
-          amount_minor?: number | null
-          currency?: string
-          platform_fee_minor?: number | null
-          owner_amount_minor?: number | null
-          cancellation_policy?: Json | null
-          expires_at?: string | null
         }
         Relationships: [
           {
@@ -1242,181 +1215,6 @@ export type Database = {
           id?: string
           setting_key?: string
           setting_value?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      payments: {
-        Row: {
-          id: string
-          user_id: string
-          booking_id: string | null
-          game_id: string | null
-          provider: string
-          order_ref: number
-          provider_payment_id: string | null
-          amount_minor: number
-          currency: string
-          status: string
-          refunded_minor: number
-          idempotency_key: string | null
-          provider_payload: Json | null
-          error_code: string | null
-          paid_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          booking_id?: string | null
-          game_id?: string | null
-          provider: string
-          order_ref?: number
-          provider_payment_id?: string | null
-          amount_minor: number
-          currency?: string
-          status?: string
-          refunded_minor?: number
-          idempotency_key?: string | null
-          provider_payload?: Json | null
-          error_code?: string | null
-          paid_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          booking_id?: string | null
-          game_id?: string | null
-          provider?: string
-          order_ref?: number
-          provider_payment_id?: string | null
-          amount_minor?: number
-          currency?: string
-          status?: string
-          refunded_minor?: number
-          idempotency_key?: string | null
-          provider_payload?: Json | null
-          error_code?: string | null
-          paid_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      ledger_entries: {
-        Row: {
-          id: number
-          entry_type: string
-          payment_id: string | null
-          booking_id: string | null
-          payout_id: string | null
-          owner_id: string | null
-          amount_minor: number
-          currency: string
-          memo: string | null
-          created_at: string
-        }
-        Insert: {
-          entry_type: string
-          payment_id?: string | null
-          booking_id?: string | null
-          payout_id?: string | null
-          owner_id?: string | null
-          amount_minor: number
-          currency?: string
-          memo?: string | null
-          created_at?: string
-        }
-        Update: {
-          entry_type?: string
-          payment_id?: string | null
-          booking_id?: string | null
-          payout_id?: string | null
-          owner_id?: string | null
-          amount_minor?: number
-          currency?: string
-          memo?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      owner_payout_accounts: {
-        Row: {
-          owner_id: string
-          method: string
-          details: Json
-          verified: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          owner_id: string
-          method: string
-          details: Json
-          verified?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          owner_id?: string
-          method?: string
-          details?: Json
-          verified?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      payouts: {
-        Row: {
-          id: string
-          owner_id: string
-          amount_minor: number
-          currency: string
-          status: string
-          period_start: string | null
-          period_end: string | null
-          method: string | null
-          destination_snapshot: Json | null
-          reference: string | null
-          initiated_by: string | null
-          paid_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          owner_id: string
-          amount_minor: number
-          currency?: string
-          status?: string
-          period_start?: string | null
-          period_end?: string | null
-          method?: string | null
-          destination_snapshot?: Json | null
-          reference?: string | null
-          initiated_by?: string | null
-          paid_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          owner_id?: string
-          amount_minor?: number
-          currency?: string
-          status?: string
-          period_start?: string | null
-          period_end?: string | null
-          method?: string | null
-          destination_snapshot?: Json | null
-          reference?: string | null
-          initiated_by?: string | null
-          paid_at?: string | null
-          created_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -2419,14 +2217,6 @@ export type Database = {
       }
     }
     Views: {
-      owner_balances: {
-        Row: {
-          owner_id: string | null
-          currency: string | null
-          balance_minor: number | null
-        }
-        Relationships: []
-      }
       profiles_public: {
         Row: {
           avatar_url: string | null
@@ -2475,56 +2265,10 @@ export type Database = {
         Args: { p_role: string; p_room_id: string; p_user_id: string }
         Returns: undefined
       }
-      check_and_award_achievements: {
-        Args: Record<PropertyKey, never>
-        Returns: Database["public"]["Tables"]["achievements"]["Row"][]
-      }
-      create_booking_hold: {
-        Args: {
-          p_venue_id: string
-          p_starts_at: string
-          p_ends_at: string
-          p_court_id?: string | null
-          p_notes?: string | null
-        }
-        Returns: Json
-      }
-      get_available_slots: {
-        Args: { p_venue_id: string; p_date: string; p_court_id?: string | null }
-        Returns: {
-          slot_start: string
-          slot_end: string
-          available: boolean
-        }[]
-      }
-      get_or_create_chat_room: {
-        Args: { p_reference_id: string; p_type: string }
-        Returns: string
-      }
-      join_game: {
-        Args: { p_game_id: string }
-        Returns: Json
-      }
-      get_or_create_referral_code: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          id: string
-          user_id: string
-          code: string
-          created_at: string
-        }[]
-      }
+      get_or_create_chat_room:
+        | { Args: { p_reference_id: string; p_type: string }; Returns: string }
+        | { Args: { p_reference_id: string; p_type: string }; Returns: string }
       get_player_stats: { Args: { p_user_id: string }; Returns: Json }
-      notify_user: {
-        Args: {
-          p_user_id: string
-          p_type: string
-          p_title: string
-          p_message: string
-          p_link?: string
-        }
-        Returns: undefined
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
