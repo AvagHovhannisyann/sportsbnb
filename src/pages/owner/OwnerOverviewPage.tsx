@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/owner/EmptyState";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { WeekCalendar } from "@/components/owner/schedule/WeekCalendar";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,8 +19,20 @@ import { format, parseISO, isToday, isTomorrow } from "date-fns";
 const OwnerOverviewPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
-  const { data: analytics, isLoading: analyticsLoading } = useOwnerAnalytics();
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    refetch: refetchVenues,
+    isFetching: venuesFetching,
+  } = useOwnerVenues(user?.id);
+  const {
+    data: analytics,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+    refetch: refetchAnalytics,
+    isFetching: analyticsFetching,
+  } = useOwnerAnalytics();
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   useEffect(() => {
@@ -124,7 +137,19 @@ const OwnerOverviewPage = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content - Calendar */}
         <div className="lg:col-span-2 space-y-6">
-          {myVenues.length > 0 ? (
+          {/* An owner with venues must never be told they have none because a
+              request failed — the empty state's call to action is "add your
+              first venue", which invites a duplicate listing. */}
+          {venuesError ? (
+            <Card>
+              <ErrorPanel
+                what="your venues"
+                description="We couldn't reach our servers. Your listings are unaffected."
+                onRetry={() => refetchVenues()}
+                isRetrying={venuesFetching}
+              />
+            </Card>
+          ) : myVenues.length > 0 ? (
             <WeekCalendar
               bookings={demoBookings}
               resourceName={myVenues[0]?.name || "Your Venue"}
@@ -151,7 +176,17 @@ const OwnerOverviewPage = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              {upcomingReservations.length > 0 ? (
+              {/* "No bookings yet" on a failed fetch is the dangerous one: an
+                  owner who believes their day is clear does not turn up. */}
+              {analyticsError ? (
+                <ErrorPanel
+                  what="your bookings"
+                  description="We couldn't reach our servers. Don't assume your schedule is clear until this loads."
+                  onRetry={() => refetchAnalytics()}
+                  isRetrying={analyticsFetching}
+                  className="py-8"
+                />
+              ) : upcomingReservations.length > 0 ? (
                 <div className="space-y-4">
                   {upcomingReservations.map((booking: any, index: number) => {
                     const bookingDate = parseISO(booking.booking_date);

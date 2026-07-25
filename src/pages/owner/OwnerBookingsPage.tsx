@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/owner/EmptyState";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
@@ -32,7 +33,13 @@ const OwnerBookingsPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { data: myVenues = [] } = useOwnerVenues(user?.id);
-  const { data: analytics, isLoading: analyticsLoading } = useOwnerAnalytics();
+  const {
+    data: analytics,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+    refetch: refetchAnalytics,
+    isFetching: analyticsFetching,
+  } = useOwnerAnalytics();
 
   const [selectedVenueId, setSelectedVenueId] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -168,7 +175,18 @@ const OwnerBookingsPage = () => {
       </Card>
 
       {/* Bookings Table */}
-      {filteredBookings.length === 0 ? (
+      {/* Same hazard as the overview: an owner who reads "no bookings" from a
+          failed request may not turn up for one that exists. */}
+      {analyticsError ? (
+        <Card>
+          <ErrorPanel
+            what="your bookings"
+            description="We couldn't reach our servers. Don't assume your schedule is clear until this loads."
+            onRetry={() => refetchAnalytics()}
+            isRetrying={analyticsFetching}
+          />
+        </Card>
+      ) : filteredBookings.length === 0 ? (
         <Card>
           <EmptyState
             icon={Calendar}

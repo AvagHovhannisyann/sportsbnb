@@ -212,30 +212,36 @@ export const useUserGames = (userId: string | undefined) => {
     queryFn: async () => {
       if (!userId) return { hosted: [], joined: [] };
 
-      // Games user is hosting
-      const { data: hostedGames } = await supabase
+      // Rethrow rather than coalesce: dropping the error made this query
+      // succeed with an empty result, so the dashboard could not tell "no
+      // games" from "could not load games" and told players their schedule
+      // was clear when it was simply unknown.
+      const { data: hostedGames, error: hostedError } = await supabase
         .from("games")
         .select("*")
         .eq("host_id", userId)
         .order("game_date", { ascending: true });
+      if (hostedError) throw hostedError;
 
       // Games user has joined
-      const { data: participations } = await supabase
+      const { data: participations, error: participationsError } = await supabase
         .from("game_participants")
         .select("game_id")
         .eq("user_id", userId)
         .eq("status", "confirmed");
+      if (participationsError) throw participationsError;
 
       const joinedGameIds = participations?.map(p => p.game_id) || [];
       let joinedGames: Game[] = [];
 
       if (joinedGameIds.length > 0) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("games")
           .select("*")
           .in("id", joinedGameIds)
           .neq("host_id", userId)
           .order("game_date", { ascending: true });
+        if (error) throw error;
         joinedGames = data || [];
       }
 

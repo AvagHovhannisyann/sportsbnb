@@ -135,6 +135,44 @@ other `useQuery` consumers destructure `isLoading` without `isError`; most
 render lists where failure degrades to an empty list rather than a false
 claim, which is survivable, but the sweep is not finished.
 
+### The sweep, and a worse variant underneath it
+
+Continuing across the remaining `useQuery` consumers turned up a second layer.
+Three hooks did not merely fail to *handle* errors — they **discarded** them:
+
+```ts
+const { data } = await supabase.from("teams")...   // error never bound
+return { owned: (owned || []), member: memberTeams };
+```
+
+With the error dropped, the query *succeeds* with an empty result. `isError`
+can never fire, so the view is structurally incapable of telling "you have no
+teams" from "we could not load your teams" — adding an error branch to the
+page does nothing until the hook is fixed. Found in `useUserTeams` (3 calls),
+`useUserGames` (3 calls) and `BookingPanel`'s policy lookup. All now rethrow.
+
+The `BookingPanel` one is the most serious remaining find after the checkout
+bug. On a failed lookup, `policy` was null and the panel fell through to
+`?? 24` / `?? "full"`, printing **"Free cancellation until 24h before start"**
+directly above the pay button — for a venue that may be non-refundable. A
+refund promise the platform invented, on the screen where money is committed.
+A null row genuinely does mean "no custom policy, platform default applies", so
+that fallback is kept; a *failed* lookup now says the terms could not be loaded
+and warns before paying.
+
+Pages given error branches this pass: My Venues, Messages, Games, Teams (both
+tabs), Owner Overview, Owner Bookings. The owner-facing ones matter most —
+"No bookings yet" read from a failed request is how an owner concludes their
+day is clear and does not turn up.
+
+**Verification status, honestly:** My Venues, Messages, Games and Teams were
+confirmed by rendering with every REST call returning 500 and asserting no
+false claim plus a working retry. The two owner pages are typecheck-clean and
+structurally identical to the verified four, but **not** render-verified —
+their routes sit behind `RequireRole`, and a stub profile without
+`onboarding_completed` redirects to onboarding instead. Worth re-checking once
+seed data and a real owner account exist.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

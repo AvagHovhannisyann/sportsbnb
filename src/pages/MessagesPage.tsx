@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Layout from "@/components/layout/Layout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { OwnerChatView } from "@/components/venue/OwnerChatView";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +33,13 @@ const MessagesPage = () => {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomWithDetails | null>(null);
 
   // Get user's chat rooms with details
-  const { data: chatRoomsWithDetails, isLoading } = useQuery({
+  const {
+    data: chatRoomsWithDetails,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ["user-chat-rooms-details", user?.id],
     queryFn: async () => {
       // Get all rooms where user is a member
@@ -206,6 +213,17 @@ const MessagesPage = () => {
                 </Card>
               ))}
             </div>
+          ) : isError ? (
+            /* "No messages yet" on a failed fetch reads as "nobody has
+               contacted you", which is a claim about other people's behaviour
+               that we have no basis for. */
+            <Card className="max-w-md mx-auto">
+              <ErrorPanel
+                what="your messages"
+                onRetry={() => refetch()}
+                isRetrying={isFetching}
+              />
+            </Card>
           ) : (
             <Card className="max-w-md mx-auto">
               <CardContent className="py-16 text-center">

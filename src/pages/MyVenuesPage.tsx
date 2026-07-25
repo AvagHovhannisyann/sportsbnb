@@ -12,13 +12,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Layout from "@/components/layout/Layout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 
 const MyVenuesPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    refetch: refetchVenues,
+    isFetching: venuesFetching,
+  } = useOwnerVenues(user?.id);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -60,7 +67,19 @@ const MyVenuesPage = () => {
           </div>
 
           {/* Venues List */}
-          {myVenues.length === 0 ? (
+          {/* Never tell an owner they have no venues on the strength of a
+              request that failed — they may have several, and the empty state
+              invites them to list a duplicate. */}
+          {venuesError ? (
+            <Card>
+              <ErrorPanel
+                what="your venues"
+                description="We couldn't reach our servers. Your listings are unaffected."
+                onRetry={() => refetchVenues()}
+                isRetrying={venuesFetching}
+              />
+            </Card>
+          ) : myVenues.length === 0 ? (
             <Card className="p-12 text-center">
               <div className="max-w-md mx-auto">
                 <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -43,19 +43,30 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
   const { data: slots, isLoading: slotsLoading } = useAvailableSlots(venueId, selectedDate);
   const createHold = useCreateBookingHold();
 
-  const { data: policy } = useQuery({
+  const { data: policy, isError: policyError } = useQuery({
     queryKey: ["venue-policy", venueId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("venue_policies")
         .select("cancellation_policy, cancellation_hours, refund_type")
         .eq("venue_id", venueId)
         .maybeSingle();
+      // The error was previously dropped, which made a failed lookup
+      // indistinguishable from "this venue has no custom policy" — see below
+      // for why that distinction is not cosmetic.
+      if (error) throw error;
       return data;
     },
   });
 
+  // A null row genuinely means "no custom policy, platform default applies",
+  // so the ?? fallbacks are right in that case. A *failed* lookup is different:
+  // it used to land on the same fallbacks and print "Free cancellation until
+  // 24h before start" for a venue that may be non-refundable — a refund promise
+  // the platform invented, shown immediately above the pay button. When the
+  // terms are unknown, say so rather than guess.
   const policyText = (() => {
+    if (policyError) return "Cancellation terms couldn't be loaded — check before you pay.";
     const hours = policy?.cancellation_hours ?? 24;
     const refundType = policy?.refund_type ?? "full";
     if (refundType === "none") return "Non-refundable after payment.";
@@ -187,7 +198,9 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
           <ShieldCheck className="h-3.5 w-3.5" />
           Secure payment via Ameriabank / Idram
         </p>
-        <p className="text-xs text-muted-foreground">{policyText}</p>
+        <p className={policyError ? "text-xs font-medium text-warning" : "text-xs text-muted-foreground"}>
+          {policyText}
+        </p>
       </div>
     </div>
   );

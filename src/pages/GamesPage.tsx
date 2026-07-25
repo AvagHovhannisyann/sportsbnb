@@ -15,6 +15,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { sportTypes } from "@/data/constants";
 import Layout from "@/components/layout/Layout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useGames, type Game } from "@/hooks/useGames";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -108,7 +109,13 @@ const GamesPage = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  const { data: games = [], isLoading } = useGames({
+  const {
+    data: games = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useGames({
     sport: selectedSport || undefined,
     level: selectedLevel || undefined,
     search: searchQuery || undefined,
@@ -377,6 +384,8 @@ const GamesPage = () => {
                 ))}
               </div>
             )
+          ) : isError ? (
+            <ErrorPanel what="games" onRetry={() => refetch()} isRetrying={isFetching} />
           ) : (
             <div className="text-center py-16">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">

@@ -133,18 +133,24 @@ export const useUserTeams = () => {
     queryFn: async () => {
       if (!user) return { owned: [], member: [] };
 
-      // Teams user owns
-      const { data: owned } = await supabase
+      // Errors are rethrown rather than coalesced away. Swallowing them here
+      // made the query *succeed* with an empty result, so the Teams page could
+      // not tell "you have no teams" from "we could not load your teams" — it
+      // rendered "No teams yet. Create your first team." to someone who may
+      // already own several, inviting a duplicate.
+      const { data: owned, error: ownedError } = await supabase
         .from("teams")
         .select("*")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
+      if (ownedError) throw ownedError;
 
       // Teams user is a member of (not owner)
-      const { data: memberships } = await supabase
+      const { data: memberships, error: membershipsError } = await supabase
         .from("team_members")
         .select("team_id")
         .eq("user_id", user.id);
+      if (membershipsError) throw membershipsError;
 
       const memberTeamIds = memberships?.map(m => m.team_id).filter(
         id => !(owned || []).some(t => t.id === id)
@@ -152,10 +158,11 @@ export const useUserTeams = () => {
 
       let memberTeams: Team[] = [];
       if (memberTeamIds.length > 0) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("teams")
           .select("*")
           .in("id", memberTeamIds);
+        if (error) throw error;
         memberTeams = (data || []) as Team[];
       }
 

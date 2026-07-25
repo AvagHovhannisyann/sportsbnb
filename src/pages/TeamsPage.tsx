@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import TeamCard from "@/components/teams/TeamCard";
 import { useTeams, useUserTeams, useUserTeamInvites, useRespondToInvite } from "@/hooks/useTeams";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,8 +22,20 @@ const TeamsPage = () => {
   const [sportFilter, setSportFilter] = useState("");
   const [activeTab, setActiveTab] = useState(user ? "my-teams" : "browse");
 
-  const { data: publicTeams = [], isLoading: teamsLoading } = useTeams({ sport: sportFilter, search });
-  const { data: userTeams, isLoading: userTeamsLoading } = useUserTeams();
+  const {
+    data: publicTeams = [],
+    isLoading: teamsLoading,
+    isError: teamsError,
+    refetch: refetchTeams,
+    isFetching: teamsFetching,
+  } = useTeams({ sport: sportFilter, search });
+  const {
+    data: userTeams,
+    isLoading: userTeamsLoading,
+    isError: userTeamsError,
+    refetch: refetchUserTeams,
+    isFetching: userTeamsFetching,
+  } = useUserTeams();
   const { data: invites = [] } = useUserTeamInvites();
   const respondToInvite = useRespondToInvite();
 
@@ -134,7 +147,23 @@ const TeamsPage = () => {
                       </div>
                     )}
 
-                    {(userTeams?.owned?.length ?? 0) === 0 && (userTeams?.member?.length ?? 0) === 0 && (
+                    {/* The default tab. "No teams yet" on a failed fetch is a
+                        claim about the user's own memberships, and its call to
+                        action is "create your first team" — which invites a
+                        duplicate of one they already own. */}
+                    {userTeamsError && (
+                      <Card>
+                        <ErrorPanel
+                          what="your teams"
+                          onRetry={() => refetchUserTeams()}
+                          isRetrying={userTeamsFetching}
+                        />
+                      </Card>
+                    )}
+
+                    {!userTeamsError &&
+                      (userTeams?.owned?.length ?? 0) === 0 &&
+                      (userTeams?.member?.length ?? 0) === 0 && (
                       <Card>
                         <CardContent className="py-12 text-center">
                           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -203,6 +232,10 @@ const TeamsPage = () => {
                     <TeamCard key={team.id} team={team} />
                   ))}
                 </div>
+              ) : teamsError ? (
+                <Card>
+                  <ErrorPanel what="teams" onRetry={() => refetchTeams()} isRetrying={teamsFetching} />
+                </Card>
               ) : (
                 <Card>
                   <CardContent className="py-12 text-center">
