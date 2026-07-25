@@ -89,6 +89,20 @@ Same method — stub the endpoint, drive each state.
 Checked and found **correct**: the Reserve button is already disabled when no
 slot is selected, so "Closed on this day" does not sit above a live CTA.
 
+## Checkout — the money path
+
+Rendered by stubbing both a Supabase auth session (seeded into
+`localStorage` as `sb-<ref>-auth-token` via `addInitScript`) and the bookings
+endpoint. The worst finding of the whole audit is here.
+
+| Finding | Detail |
+|---|---|
+| **A network error told users their reservation had expired** | The booking query had no `isError` branch, so a failed fetch left `booking` undefined and fell straight through to `if (!booking \|\| status !== "pending_payment" \|\| remaining <= 0)` — rendering "**This reservation has expired. Holds last 20 minutes. Please pick your slot again.**" while the hold was still live in the database. Following that advice means colliding with your own hold via the exclusion constraint, or opening a second one and paying twice. Now a distinct error state that says the request failed, states the hold is intact, and explicitly says **not** to book again until it loads. |
+| Four states rendered as two | Expired, already-paid, not-found and errored all shared one branch whose heading only distinguished `confirmed` from everything else. Split, each with its own icon, copy and action. |
+| Countdown was off-token and never escalated | Hardcoded `text-amber-600` — outside the token system and muddy on a near-black surface — and identical at 19:00 and 0:20. Now `text-warning`, escalating to `text-destructive` under two minutes, in tabular mono. |
+| Payment choice was invisible to screen readers | Three plain `<button>`s conveying selection only through a border colour: all three announced identically with no selected state, on the control that decides how someone pays. Now a real `role="radiogroup"` with `aria-checked`, plus focus rings. |
+| Deadline was purely visual | The countdown carries `role="timer"` and `aria-live="polite"`. |
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
