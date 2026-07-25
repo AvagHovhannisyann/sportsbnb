@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import logoMark from "@/assets/logo-mark.png";
-import logoFull from "@/assets/logo-full.png";
 
 interface LogoProps {
   variant?: "full" | "mark";
-  /** Tailwind height class for the image. Width auto-scales. */
+  /** Tailwind height class for the mark. Wordmark scales with it. */
   className?: string;
   /** If true, wraps in a Link to "/". */
   asLink?: boolean;
@@ -13,10 +12,18 @@ interface LogoProps {
 }
 
 /**
- * Brand logo. Use `full` (mark + wordmark) for headers/auth/footer,
- * `mark` (symbol only) for compact spots, splash, empty states.
+ * Brand logo — symbol + wordmark.
  *
- * IMPORTANT: never recolor or distort — these are PNG brand assets.
+ * The symbol stays the original PNG (a green gradient mark, legible on both
+ * light and dark surfaces). The wordmark is set in type rather than shipped as
+ * a flat image: the original `logo-full.png` renders "Sports" in brand navy,
+ * which is invisible against the dark nav and footer. Setting it live lets
+ * "Sports" inherit `currentColor` — navy on light, near-white on dark — while
+ * "bnb" keeps the brand green in both. It also stays crisp at any size and
+ * drops a raster request from every page.
+ *
+ * Colour and proportion match the original asset; nothing is recoloured
+ * arbitrarily.
  */
 export const Logo = ({
   variant = "full",
@@ -24,23 +31,48 @@ export const Logo = ({
   asLink = false,
   label = "Sportsbnb",
 }: LogoProps) => {
-  const src = variant === "full" ? logoFull : logoMark;
-  const img = (
+  const mark = (
     <img
-      src={src}
-      alt={label}
+      src={logoMark}
+      alt={variant === "mark" ? label : ""}
+      aria-hidden={variant === "full" ? true : undefined}
       className={`${className} object-contain select-none`}
       draggable={false}
     />
   );
+
+  const content =
+    variant === "mark" ? (
+      mark
+    ) : (
+      <span className="inline-flex items-baseline gap-[0.4em]">
+        <span className="inline-flex shrink-0 items-center self-center">{mark}</span>
+        <span
+          className="font-display text-[1.35em] font-bold leading-none tracking-[-0.03em]"
+          style={{ fontSize: "1.35em" }}
+        >
+          <span className="text-foreground">Sports</span>
+          <span className="text-primary">bnb</span>
+        </span>
+      </span>
+    );
+
   if (asLink) {
     return (
-      <Link to="/" aria-label={label} className="inline-flex items-center">
-        {img}
+      <Link
+        to="/"
+        aria-label={label}
+        className="inline-flex items-center rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        {content}
       </Link>
     );
   }
-  return img;
+  return (
+    <span aria-label={variant === "full" ? label : undefined} className="inline-flex items-center">
+      {content}
+    </span>
+  );
 };
 
 export default Logo;

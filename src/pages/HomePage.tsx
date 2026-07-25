@@ -252,7 +252,7 @@ const HomePage = () => {
                     <span className="absolute bottom-1.5 left-0 right-0 h-3 md:h-4 bg-primary/15 -z-0 rounded-sm" />
                   </span>
                   <br />
-                  <span className="text-foreground-soft">No phone calls.</span>
+                  <span className="text-foreground/70">No phone calls.</span>
                 </motion.h1>
 
                 <motion.p
@@ -338,18 +338,18 @@ const HomePage = () => {
               </div>
 
               {/* Floating availability card */}
-              <div className="absolute top-6 -left-4 lg:-left-10 bg-card border border-border rounded-2xl shadow-xl p-3.5 pr-5 flex items-center gap-3 max-w-[260px]">
+              <div className="absolute top-6 -left-4 lg:-left-10 bg-card border border-border rounded-2xl shadow-xl p-3.5 pr-5 flex items-center gap-3 max-w-[280px]">
                 <div className="h-9 w-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
                   <Activity className="h-4 w-4" strokeWidth={2.25} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Real-time</p>
-                  <p className="text-sm font-semibold text-foreground truncate">Live availability, no calls</p>
+                  <p className="text-sm font-semibold text-foreground">Live availability, no calls</p>
                 </div>
               </div>
 
               {/* Floating booking-confirmed card */}
-              <div className="glass absolute bottom-8 -right-3 lg:-right-8 rounded-2xl p-3.5 pr-5 flex items-center gap-3 max-w-[280px]">
+              <div className="glass absolute bottom-8 -right-3 lg:-right-8 rounded-2xl p-3.5 pr-5 flex items-center gap-3 max-w-[330px]">
                 <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
                   <CheckCircle className="h-5 w-5" strokeWidth={2.25} />
                 </div>
