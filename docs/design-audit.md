@@ -267,6 +267,23 @@ Asked, and confirmed: placeholders.
 
 7744px → 6104px across both For Owners passes.
 
+## Nav density
+
+The open item from the first pass: four links in a 64px bar with a large void
+between the wordmark and the auth actions.
+
+| Finding | Detail |
+|---|---|
+| Links clustered left | They sat in the same flex group as the wordmark, so at 1440 they ended ~600px short of the auth actions. Moved to absolute centring — rather than a flex-1 spacer — so they hold the true centre line regardless of how wide the wordmark or action group are. That is the difference between reading as deliberate and reading as incidental. |
+| **Centring introduced a collision at 768** | Measured, not eyeballed: logo→nav **-15px** and nav→actions **-3px** at the `md` breakpoint where the desktop bar first appears, staying tight to roughly 900px. The desktop nav moved to `lg` (1024); 768–1023 uses the existing menu. Clearance is 113/125px at 1024 and grows from there. |
+
+Method note worth keeping: the first measurement after moving the breakpoint
+reported "-231px, cramped" at 768 — which was nonsense, because it was
+measuring a `display: none` element's degenerate rect. A layout assertion has
+to check visibility before it means anything. The corrected script reports
+which mode the bar is in and only measures gaps when the bar is actually
+shown.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
