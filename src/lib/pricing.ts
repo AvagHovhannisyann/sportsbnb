@@ -32,15 +32,28 @@ export const getOwnerPrice = (customerPrice: number): number => {
 };
 
 /**
- * Format price for display with appropriate currency symbol
- * Detects region from localStorage or defaults to USD
+ * Format price for display with the appropriate currency symbol.
+ *
+ * Denominated in Armenian dram unless the viewer is in the US region.
+ *
+ * This used to be the other way round — dram only for an exact "AM" region
+ * match, dollars for everything else, including the "OTHER" bucket that
+ * `useRegion` assigns to every unmapped timezone. Currency is a property of
+ * the listing, not of whoever is looking at it: a Yerevan pitch costs 13,000
+ * dram to everyone, but it rendered as "$13,000" to any visitor outside
+ * Armenia — roughly a 400x overstatement, on the number the entire booking
+ * decision turns on. There is no FX layer here to justify a viewer-dependent
+ * symbol, and the money rails behind it (Ameria vPOS, Idram) settle in AMD.
+ *
+ * US stays explicit because that inventory is genuinely dollar-priced.
+ *
  * @param price - The price to format
  * @returns Formatted price string
  */
 export const formatPrice = (price: number): string => {
   const region = typeof window !== "undefined" ? localStorage.getItem("sportsbnb_region") : null;
-  if (region === "AM") {
-    return `֏${price.toLocaleString()}`;
+  if (region === "US") {
+    return `$${price.toLocaleString()}`;
   }
-  return `$${price.toLocaleString()}`;
+  return `֏${price.toLocaleString()}`;
 };

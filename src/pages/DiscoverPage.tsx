@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
-import { useSearchParams } from "react-router-dom";
-import { Search, Filter, MapPin, X, Loader2, Navigation } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Search, Filter, MapPin, X, Loader2, Navigation, SearchX, WifiOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -56,7 +57,7 @@ const DiscoverPage = () => {
 
   const [promotedVenueIds, setPromotedVenueIds] = useState<Set<string>>(new Set());
 
-  const { data: venues = [], isLoading } = useVenues();
+  const { data: venues = [], isLoading, isError, refetch, isRefetching } = useVenues();
 
   // Fetch promoted venues
   useEffect(() => {
@@ -425,16 +426,77 @@ const DiscoverPage = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-foreground mb-1">Venues</h1>
-              <p className="text-muted-foreground">
-                {filteredVenues.length} {filteredVenues.length === 1 ? "venue" : "venues"} available
+              {/* Nothing is "available" until the query resolves. Rendering
+                  filteredVenues.length during load stated "0 venues available"
+                  as fact on every cold visit, then contradicted itself. */}
+              <p className="text-muted-foreground" aria-live="polite">
+                {isLoading
+                  ? "Finding venues near you…"
+                  : isError
+                    ? "Results unavailable"
+                    : `${filteredVenues.length} ${filteredVenues.length === 1 ? "venue" : "venues"} available`}
               </p>
             </div>
           </div>
 
           {isLoading ? (
-            <div className="text-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading venues...</p>
+            // Skeletons rather than a centred spinner: same grid, same card
+            // geometry, so the results land in place instead of shifting the
+            // page down when they arrive.
+            <div
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              role="status"
+              aria-label="Loading venues"
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-2xl border border-border bg-card"
+                >
+                  {/* aspect-[5/4] mirrors VenueCard's own image box — a
+                      skeleton whose geometry differs from the real card just
+                      relocates the layout shift instead of removing it. */}
+                  <Skeleton className="aspect-[5/4] w-full rounded-none bg-surface-3" />
+                  <div className="space-y-3 p-4">
+                    <Skeleton className="h-5 w-3/5 bg-surface-3" />
+                    <Skeleton className="h-4 w-2/5 bg-surface-2" />
+                    <div className="flex gap-2 pt-1">
+                      <Skeleton className="h-6 w-16 rounded-full bg-surface-2" />
+                      <Skeleton className="h-6 w-20 rounded-full bg-surface-2" />
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                      <Skeleton className="h-6 w-24 bg-surface-3" />
+                      <Skeleton className="h-4 w-12 bg-surface-2" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isError ? (
+            /* Without this branch a failed query left the skeletons pulsing
+               forever — the most misleading state available, since it promises
+               content that is never coming and offers no way to retry. */
+            <div className="rounded-2xl border border-destructive/25 bg-destructive/5 px-6 py-16 text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                <WifiOff className="h-7 w-7" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                Couldn't load venues
+              </h3>
+              <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
+                The connection dropped on the way to our servers. Your filters
+                are still set — retrying will keep them.
+              </p>
+              <Button className="mt-6" onClick={() => refetch()} disabled={isRefetching}>
+                {isRefetching ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                    Retrying…
+                  </>
+                ) : (
+                  "Try again"
+                )}
+              </Button>
             </div>
           ) : filteredVenues.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -455,16 +517,60 @@ const DiscoverPage = () => {
                 />
               ))}
             </div>
-          ) : (
-            <div className="text-center py-16">
-              <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No venues found</h3>
-              <p className="text-muted-foreground mb-4">
-                Try adjusting your filters or search query
+          ) : hasActiveFilters && venues.length > 0 ? (
+            <div className="rounded-2xl border border-border bg-surface-1 px-6 py-16 text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2 text-muted-foreground">
+                <SearchX className="h-7 w-7" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                Nothing matches those filters
+              </h3>
+              <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
+                {venues.length} {venues.length === 1 ? "venue is" : "venues are"} listed
+                overall — widening the search should bring some back.
               </p>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear filters
-              </Button>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button onClick={clearFilters}>Clear all filters</Button>
+                {selectedSport && (
+                  <Button variant="outline" onClick={() => setSelectedSport("")}>
+                    Any sport
+                  </Button>
+                )}
+                {selectedCity && (
+                  <Button variant="outline" onClick={() => setSelectedCity("")}>
+                    Any city
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* The catalogue itself is empty — which is the dominant fact even
+               if filters happen to be set, so this branch is guarded ahead of
+               the no-match one. Telling this visitor to "adjust your filters"
+               was advice they often could not act on (they have none), and
+               with an empty catalogue "widening the search" is simply false.
+               Until venues are listed this is the most-seen screen in the app,
+               so it gets a real next step instead. */
+            <div className="rounded-2xl border border-border bg-surface-1 px-6 py-16 text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <MapPin className="h-7 w-7" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                No venues listed yet
+              </h3>
+              <p className="mx-auto mt-2 max-w-[48ch] text-[15px] leading-relaxed text-foreground-soft">
+                We're onboarding venues across Yerevan now. If you run a pitch,
+                court or pool, listing takes about ten minutes and costs nothing
+                until you take a booking.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button asChild>
+                  <Link to="/for-owners">List your venue</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/games">Find a game instead</Link>
+                </Button>
+              </div>
             </div>
           )}
         </div>

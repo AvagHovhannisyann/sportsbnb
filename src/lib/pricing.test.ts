@@ -23,12 +23,23 @@ describe("pricing", () => {
     }
   });
 
-  it("formats AMD for the AM region and USD otherwise", () => {
-    localStorage.setItem("sportsbnb_region", "AM");
-    expect(formatPrice(15000)).toBe(`֏${(15000).toLocaleString()}`);
+  it("formats USD only for the US region, AMD otherwise", () => {
     localStorage.setItem("sportsbnb_region", "US");
     expect(formatPrice(42)).toBe("$42");
+
+    localStorage.setItem("sportsbnb_region", "AM");
+    expect(formatPrice(15000)).toBe(`֏${(15000).toLocaleString()}`);
+  });
+
+  // The previous default was USD, so every visitor whose timezone useRegion
+  // could not map — the "OTHER" bucket, and anyone arriving before detection
+  // has run — saw Armenian venues priced in dollars. Dram is the default the
+  // inventory and the payment rails are actually denominated in.
+  it("falls back to AMD when the region is unknown or unset", () => {
     localStorage.removeItem("sportsbnb_region");
-    expect(formatPrice(42)).toBe("$42");
+    expect(formatPrice(13000)).toBe(`֏${(13000).toLocaleString()}`);
+
+    localStorage.setItem("sportsbnb_region", "OTHER");
+    expect(formatPrice(13000)).toBe(`֏${(13000).toLocaleString()}`);
   });
 });

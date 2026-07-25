@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Star, Zap, Sparkles, ArrowUpRight } from "lucide-react";
+import { MapPin, Star, Zap, Sparkles, ArrowUpRight, ImageOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/pricing";
 
@@ -29,6 +30,8 @@ const VenueCard = ({
   distance,
   isPromoted,
 }: VenueCardProps) => {
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <Link to={`/venue/${id}`} className="group block focus-ring rounded-2xl">
       <article
@@ -38,12 +41,23 @@ const VenueCard = ({
       >
         {/* Image */}
         <div className="relative aspect-[5/4] overflow-hidden bg-surface-3">
-          <img
-            src={image}
-            alt={name}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          />
+          {imageFailed ? (
+            /* Venue images are remote (owner uploads, Unsplash fallbacks). When
+               one 404s or the network drops, the browser paints the alt text as
+               raw prose over the card — the venue name twice, in the wrong
+               place. A neutral placeholder degrades quietly instead. */
+            <div className="flex h-full w-full items-center justify-center bg-surface-3">
+              <ImageOff className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            </div>
+          ) : (
+            <img
+              src={image}
+              alt={name}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            />
+          )}
           {/* subtle gradient for label legibility */}
           <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 to-transparent" />
 
