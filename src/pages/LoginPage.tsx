@@ -8,6 +8,7 @@ import { ArrowLeft, Shield, Mail, Lock, Users, Loader2, CheckCircle, ArrowRight 
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthProviders } from "@/hooks/useAuthProviders";
 import { getGenericAuthError } from "@/lib/authErrors";
 import authHero from "@/assets/auth-hero.jpg";
 
@@ -32,6 +33,7 @@ const LoginPage = () => {
   } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("password");
+  const providers = useAuthProviders();
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [formData, setFormData] = useState({
@@ -269,7 +271,7 @@ const LoginPage = () => {
             <div className="flex items-center gap-6 mt-8">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-white/70 text-sm">Growing community</span>
+                <span className="text-white/70 text-sm">Free to join</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
@@ -411,7 +413,9 @@ const LoginPage = () => {
 
               {/* Form Card */}
               <div className="bg-card rounded-2xl border border-border/50 shadow-xl shadow-black/5 p-8">
-                {/* Google Sign In Button */}
+                {/* Third-party buttons render only when the project actually
+                    has that provider enabled — see useAuthProviders. */}
+                {providers.google && (
                 <Button
                   type="button"
                   variant="outline"
@@ -439,12 +443,13 @@ const LoginPage = () => {
                   </svg>
                   Continue with Google
                 </Button>
+                )}
 
-                {/* Apple Sign In Button */}
+                {providers.apple && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all mt-3"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.google ? "mt-3" : ""}`}
                   onClick={handleAppleSignIn}
                   disabled={isLoading}
                 >
@@ -453,13 +458,14 @@ const LoginPage = () => {
                   </svg>
                   Continue with Apple
                 </Button>
+                )}
 
-
-                {/* Magic Link Button */}
+                {/* Magic Link Button — signInWithOtp only needs the email
+                    provider, which is always on, so this is never gated. */}
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all mt-3"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.anyOAuth ? "mt-3" : ""}`}
                   onClick={() => setAuthMode("magic-link")}
                   disabled={isLoading}
                 >

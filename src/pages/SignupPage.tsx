@@ -10,6 +10,7 @@ import { ArrowLeft, User, Building, Eye, EyeOff, Check, X, Mail, Lock, UserCircl
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthProviders } from "@/hooks/useAuthProviders";
 import { getGenericAuthError } from "@/lib/authErrors";
 import authHero from "@/assets/auth-hero.jpg";
 
@@ -26,6 +27,7 @@ const signupSchema = z.object({
 const SignupPage = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading, signUp, signInWithOAuth } = useAuth();
+  const providers = useAuthProviders();
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [userType, setUserType] = useState<"player" | "owner">("player");
@@ -243,18 +245,18 @@ const SignupPage = () => {
               Your game is<br />waiting for you.
             </h1>
             <p className="text-lg text-white/80 leading-relaxed">
-              Join thousands of players discovering new venues, making friends, and staying active every day.
+              Find a court near you, join an open game, and pay for it in the app. No phone calls, no waiting on a reply.
             </p>
             
             {/* Trust Indicators */}
             <div className="flex items-center gap-6 mt-8">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-white/70 text-sm">Growing community</span>
+                <span className="text-white/70 text-sm">Free to join</span>
               </div>
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <span className="text-white/70 text-sm">Join the community</span>
+                <span className="text-white/70 text-sm">No card until you book</span>
               </div>
             </div>
           </div>
@@ -288,13 +290,15 @@ const SignupPage = () => {
           <div className="mb-6">
             <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Create your account</h2>
             <p className="text-muted-foreground">
-              Join the growing sports community
+              Free to join — no card needed until you book
             </p>
           </div>
 
           {/* Form Card */}
           <div className="bg-card rounded-2xl border border-border/50 shadow-xl shadow-black/5 p-6 lg:p-8">
-            {/* Google Sign Up Button */}
+            {/* Third-party buttons render only when the project actually has
+                that provider enabled — see useAuthProviders. */}
+            {providers.google && (
             <Button
               type="button"
               variant="outline"
@@ -322,12 +326,13 @@ const SignupPage = () => {
               </svg>
               Continue with Google
             </Button>
+            )}
 
-                {/* Apple Sign Up Button */}
+                {providers.apple && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all mt-3"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.google ? "mt-3" : ""}`}
                   onClick={handleAppleSignIn}
                   disabled={isLoading}
                 >
@@ -336,9 +341,10 @@ const SignupPage = () => {
                   </svg>
                   Continue with Apple
                 </Button>
+                )}
 
-
-            {/* Divider */}
+            {/* Divider only earns its place when something sits above it. */}
+            {providers.anyOAuth && (
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
@@ -349,6 +355,7 @@ const SignupPage = () => {
                 </span>
               </div>
             </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* User Type Selection */}

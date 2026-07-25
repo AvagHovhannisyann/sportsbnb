@@ -322,6 +322,32 @@ route was removed before commit.
 | An RPC result cast without checking | `usePlayerStats` did `data as unknown as PlayerStats` — an assertion, not a check. A set-returning RPC hands back an array, arrays are truthy, so it sailed past the consumer's `if (!stats)` guard and every field read as `undefined`. `{value}` renders nothing, so the card showed three icons and three labels with blank gaps where the numbers belong: broken-looking rather than empty. Narrowed to a plain object before trusting it, and the numerals default to 0. |
 | Errors swallowed, card vanished | The `catch` logged and moved on, leaving `stats` null so the card returned `null` — silently absent, indistinguishable from "no stats yet". The hook now exposes `isError` and the card renders a panel saying so. |
 
+## Auth pages — two dead buttons and a misleading error
+
+Checked the live project's own `/auth/v1/settings` rather than guessing from
+the markup. It reports `external` with **only `email` enabled** — `google` and
+`apple` are both `false`.
+
+| Finding | Detail |
+|---|---|
+| **Login offered two sign-in methods that cannot work** | "Continue with Google" and "Continue with Apple" were the first two controls on the page, above the password form, on both login and signup. Both call `signInWithOAuth`, which returns "Unsupported provider: provider is not enabled". |
+| **…and the failure blamed the user's credentials** | `getGenericAuthError` collapses every login-context failure to `"Invalid email or password"` — correct as account-enumeration defence for a password attempt, wrong for everything else. Clicking Google produced *"Invalid email or password"* for credentials the user had never typed, pointing them at a password reset that could not help. |
+| Unevidenced audience claims | Signup read "Join thousands of players discovering new venues" against an empty catalogue and a near-empty user table — same class as the For Owners stats. Replaced with what the product actually offers. "Growing community" (both pages) and "Join the community" likewise. |
+
+The fix is `useAuthProviders`, which reads that same public endpoint and gates
+the buttons on it. They stay hidden while a provider is off and appear on the
+next load once it is switched on in the dashboard — no code change, no
+redeploy. It fails closed: if the request errors, the buttons stay hidden,
+because a missing button is a smaller harm than one that cannot work. Magic
+Link is deliberately *not* gated — `signInWithOtp` needs only the email
+provider, which is always on.
+
+`getGenericAuthError` now separates disabled-provider, rate-limit and network
+failures from credential rejection before the generic branches. Naming those
+leaks nothing: they are properties of the server's configuration, not of
+whether any given account exists. Six tests cover it, including that a wrong
+password and an unknown email remain indistinguishable.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
