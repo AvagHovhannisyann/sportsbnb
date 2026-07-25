@@ -51,6 +51,28 @@ tones. Defects found by screenshotting the rebuild and fixed in place:
 | Static mock looked clickable | "Slot held until 20:00" was a solid primary bar inside an illustration, visually identical to the real CTAs. Restyled as a status strip. |
 | Mobile CTA indent | The ghost "List your venue" button's own padding pushed its label ~30px right of the primary button stacked above it. Padding drops on mobile so both share a left rail. |
 
+## Discover — states, and a pricing bug
+
+Rendering this page with a stubbed REST response — the first time venue cards
+have been visible in this environment — surfaced the worst defect found so far,
+which is not a design defect at all.
+
+| Finding | Detail |
+|---|---|
+| **Dram prices rendered as dollars** | `formatPrice` chose currency from the *viewer's* region and defaulted to USD, using dram only on an exact `"AM"` match. `useRegion` assigns `"OTHER"` to every timezone it cannot map, so a ֏13,000 Yerevan pitch read as **"$13,000"** to any visitor outside Armenia — a ~400× overstatement of the number the entire booking decision turns on. Currency belongs to the listing, not the viewer; there is no FX layer, and Ameria vPOS / Idram settle in AMD. Inverted to dram-unless-US. |
+| Count asserted before it was known | The header read "0 venues available" while the query was in flight. |
+| Spinner instead of skeletons | No space reserved, so results shoved the page down on arrival. Skeleton grid now mirrors `VenueCard`'s own `aspect-[5/4]` — matching geometry is the point; a mismatched skeleton just relocates the shift. |
+| No error branch | A failed query left the skeletons pulsing indefinitely — content promised and never delivered, with no retry. This got *worse* with skeletons than it was with a spinner, so the error state became mandatory. |
+| Empty state gave unfollowable advice | "Try adjusting your filters" was shown to everyone, including visitors with no filters set. Now branches on whether filters are active **and** whether the catalogue has anything in it — with zero venues, "widening the search should bring some back" is simply false, so catalogue-empty is checked first. |
+| Broken venue image showed alt text | Remote images (owner uploads, Unsplash fallbacks) painted the venue name as raw prose over the card on 404. Falls back to a neutral placeholder. |
+
+Method note: every branch was driven by stubbing `**/rest/v1/venues*` with
+Playwright `page.route` — populated, no-match against a real catalogue, empty
+catalogue, empty catalogue *with* filters set, and a 500. Four of the six
+findings above are invisible in the happy path, and the seed-data blocker
+below means the happy path is the one state this environment cannot reach.
+Stubbing is how the rest of the app should be evaluated until seeding lands.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
