@@ -398,6 +398,18 @@ Verified across the role matrix: owner mid-onboarding, owner complete, player
 denied `/owner-dashboard`, player mid-onboarding, player complete. All five
 land correctly in 2-3 navigations.
 
+**The same race was duplicated in all eight `/owner/*` sub-pages**, each
+re-running `profile?.user_type !== "owner"` in its own effect against
+`authLoading` alone. They are all mounted behind `RequireRole`, so the fix
+above already covers them in practice — but they carried the buggy form, which
+would resurface the moment one was mounted anywhere else. Each now waits on
+`isProfileLoading` too. Kept rather than deleted: redundant authorization is
+defence in depth, and the cost of keeping it is that it has to be correct.
+
+Re-verified with the profile response deliberately delayed 400ms to widen the
+race window: owners hold on `/owner/venues`, `/owner/widget` and
+`/owner-dashboard`; a player is still denied.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
