@@ -31,7 +31,7 @@ const Footer = () => {
     <footer className="border-t border-border bg-surface-1 mt-auto">
       <div className="container py-12 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-8">
-          <div className="md:col-span-5 max-w-sm">
+          <div className="md:col-span-4 max-w-sm">
             <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center mb-4 md:mb-5 opacity-90 hover:opacity-100 transition-opacity">
               <Logo variant="full" className="h-8 w-auto" />
             </Link>
@@ -40,7 +40,7 @@ const Footer = () => {
             </p>
           </div>
 
-          <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+          <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
             {linkSections.map((section) => (
               <div key={section.title}>
                 <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-3 md:mb-4 font-semibold">
