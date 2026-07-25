@@ -375,7 +375,7 @@ const HomePage = () => {
 
       {/* ── Stats strip — only when we have real data ── */}
       {stats.length > 0 && (
-        <section className="bg-surface-1 border-y border-border pt-20 md:pt-24 pb-10 md:pb-14">
+        <section className="bg-surface-1 border-y border-border pt-14 md:pt-16 pb-8 md:pb-10">
           <div className="container">
             <motion.div
               initial="hidden"
@@ -409,7 +409,7 @@ const HomePage = () => {
       )}
 
       {/* ── Categories — asymmetric bento ── */}
-      <section className="py-24 md:py-36 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -486,7 +486,7 @@ const HomePage = () => {
       </section>
 
       {/* ── How It Works — left-aligned editorial ── */}
-      <section className="py-24 md:py-36 section-tinted border-y border-border">
+      <section className="py-16 md:py-24 section-tinted border-y border-border">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -553,7 +553,7 @@ const HomePage = () => {
       </section>
 
       {/* ── Why Sportsbnb — asymmetric grid w/ feature spotlight ── */}
-      <section className="py-24 md:py-36 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -624,7 +624,7 @@ const HomePage = () => {
       </section>
 
       {/* ── For Venue Owners — dark editorial split ── */}
-      <section className="relative py-24 md:py-36 bg-secondary overflow-hidden">
+      <section className="relative py-16 md:py-24 bg-secondary overflow-hidden">
         <div className="absolute inset-0 bg-grid-soft opacity-[0.04] pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-[80%] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
@@ -721,7 +721,7 @@ const HomePage = () => {
 
       {/* ── Testimonials — magazine layout ── */}
       {testimonials.length > 0 && (
-      <section className="py-24 md:py-36 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -782,7 +782,7 @@ const HomePage = () => {
       )}
 
       {/* ── Platform Features — grouped use-case journey ── */}
-      <section className="py-20 md:py-32 section-tinted border-y border-border overflow-hidden">
+      <section className="py-14 md:py-20 section-tinted border-y border-border overflow-hidden">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -865,7 +865,7 @@ const HomePage = () => {
       </section>
 
       {/* ── Mission & Vision — quieter, pull-quote feel ── */}
-      <section className="py-24 md:py-36 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
           <motion.div
             initial="hidden"
@@ -907,7 +907,7 @@ const HomePage = () => {
       </section>
 
       {/* ── Final CTA — solid color, brand-forward ── */}
-      <section className="relative py-24 md:py-36 bg-secondary overflow-hidden">
+      <section className="relative py-16 md:py-24 bg-secondary overflow-hidden">
         <div className="absolute inset-0 bg-grid-soft opacity-[0.05] pointer-events-none" />
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-primary/15 blur-3xl pointer-events-none" />
 
