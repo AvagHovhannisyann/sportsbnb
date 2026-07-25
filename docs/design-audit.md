@@ -173,6 +173,17 @@ their routes sit behind `RequireRole`, and a stub profile without
 `onboarding_completed` redirects to onboarding instead. Worth re-checking once
 seed data and a real owner account exist.
 
+## 404 and auth
+
+| Finding | Detail |
+|---|---|
+| The 404 page was the generated default | No `Layout`, so anyone following a stale link — an expired venue URL, an old share, a typo — was stranded on a bare screen with a single "Return to Home" link and no nav to escape through. It used `bg-muted` rather than `bg-background`, so it did not match the app it belonged to, and a raw `<a href="/">` forced a full document reload inside an SPA. It also carried no `noIndex`, so dead URLs kept their ranking and kept sending people there. Rebuilt on `Layout` + `StatusPanel`. |
+| Auth split-panel photo read as flat brown | A single top-to-bottom veil at `from-black/80 via-black/50 to-black/30` covered the whole frame, including the middle where the photograph is most legible. All the copy on that panel is left-aligned, so the weight now runs horizontally — the left third stays dark and carries the text, the right third keeps the image — with a mild bottom pass for the copyright line. Applies to Login and Signup. |
+
+Checked and found **correct**: auth pages deliberately render without header or
+footer. That is right for a focused sign-in flow and was not changed — the
+missing chrome only mattered on the 404.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

@@ -229,8 +229,20 @@ const LoginPage = () => {
           alt="Athletes playing sports"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+        {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the
+            whole frame — including the middle, where the photo is most
+            legible — so a vivid sports shot read as flat brown. All the text
+            on this panel is left-aligned, so the weight moves horizontally:
+            the left third carries the copy and stays dark, the right third
+            keeps the image. The mild bottom pass is only for the copyright. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25"
+        />
         
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 w-full">
