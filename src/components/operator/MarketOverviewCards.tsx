@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, DollarSign, Users, Gamepad2, TrendingUp } from "lucide-react";
+import { Building2, Calendar, Banknote, Users, Gamepad2, TrendingUp } from "lucide-react";
 import { MarketMetrics, formatMoney } from "@/hooks/useOperatorMetrics";
 
 const flagFor = (market: string) => {
@@ -36,7 +36,7 @@ export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <Metric icon={DollarSign} label="GMV (30d)" value={formatMoney(m.gmv30d, m.currency)} />
+              <Metric icon={Banknote} label="GMV (30d)" value={formatMoney(m.gmv30d, m.currency)} />
               <Metric icon={Calendar} label="Bookings" value={m.bookings30d.toString()} />
               <Metric icon={Users} label="New users" value={m.newUsers30d.toString()} />
             </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Save, Building2, Mail, Phone, Globe, MapPin, DollarSign } from "lucide-react";
+import { Loader2, Save, Building2, Mail, Phone, Globe, MapPin, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -311,7 +311,7 @@ const OwnerSettingsPage = () => {
                 <div className="space-y-2">
                   <Label htmlFor="price">Price per Hour</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="price"
                       type="number"

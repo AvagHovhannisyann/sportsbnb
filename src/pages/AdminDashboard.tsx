@@ -5,7 +5,7 @@ import {
   Building2,
   Calendar,
   Gamepad2,
-  DollarSign,
+  Banknote,
   TrendingUp,
   Shield,
   AlertTriangle,

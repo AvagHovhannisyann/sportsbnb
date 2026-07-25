@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, DollarSign, Plus, Trash2, Edit } from "lucide-react";
+import { Loader2, Banknote, Plus, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -97,7 +97,7 @@ const OwnerPricingPage = () => {
       {myVenues.length === 0 ? (
         <Card>
           <EmptyState
-            icon={DollarSign}
+            icon={Banknote}
             title="No venues to price"
             description="Add a venue first to set up pricing."
             actionLabel="Add Your First Venue"
@@ -130,7 +130,7 @@ const OwnerPricingPage = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
+                <Banknote className="h-5 w-5 text-primary" />
                 Base Price
               </CardTitle>
               <CardDescription>
@@ -174,7 +174,7 @@ const OwnerPricingPage = () => {
             <CardContent>
               {priceRules.length === 0 ? (
                 <EmptyState
-                  icon={DollarSign}
+                  icon={Banknote}
                   title="No pricing rules"
                   description="Add rules to set different prices for weekends, evenings, or peak hours."
                   actionLabel="Add Pricing Rule"

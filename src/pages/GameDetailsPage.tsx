@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   MapPin, Calendar, Clock, Users, ArrowLeft, Loader2, 
-  Share2, DollarSign, AlertTriangle, CreditCard, Check, X, UserPlus, CalendarX
+  Share2, Banknote, AlertTriangle, CreditCard, Check, X, UserPlus, CalendarX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -338,7 +338,7 @@ const GameDetailsPage = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <DollarSign className="h-5 w-5 text-primary" />
+                        <Banknote className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cost</p>

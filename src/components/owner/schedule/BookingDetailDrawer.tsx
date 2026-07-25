@@ -2,7 +2,7 @@ import { format, parseISO } from "date-fns";
 import {
   Calendar,
   Clock,
-  DollarSign,
+  Banknote,
   User,
   MapPin,
   MessageCircle,
@@ -139,7 +139,7 @@ export function BookingDetailDrawer({
 
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <Banknote className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Amount</p>

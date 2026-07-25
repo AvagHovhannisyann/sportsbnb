@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Calendar, DollarSign, Users, TrendingUp, Building2 } from "lucide-react";
+import { Loader2, Plus, Calendar, Banknote, Users, TrendingUp, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +61,7 @@ const OwnerOverviewPage = () => {
       label: "Total Revenue",
       value: analytics ? `֏${analytics.totalRevenue.toLocaleString()}` : "֏0",
       change: analytics?.totalRevenue > 0 ? "+12%" : "—",
-      icon: DollarSign,
+      icon: Banknote,
       color: "text-emerald-600",
       bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
     },

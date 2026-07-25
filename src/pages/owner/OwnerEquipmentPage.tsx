@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Package, Plus, Trash2, Edit, Loader2, DollarSign } from "lucide-react";
+import { Package, Plus, Trash2, Edit, Loader2, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -394,7 +394,7 @@ const OwnerEquipmentPage = () => {
             <div className="space-y-2">
               <Label htmlFor="price">Rental Price (֏)</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="price"
                   type="number"

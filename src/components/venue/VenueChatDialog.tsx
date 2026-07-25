@@ -9,7 +9,7 @@ import {
   Flag, 
   Ban, 
   MoreVertical,
-  DollarSign,
+  Banknote,
   FileText,
   Dumbbell,
   Car,
@@ -38,7 +38,7 @@ interface VenueChatDialogProps {
 }
 
 const QUICK_QUESTIONS = [
-  { icon: DollarSign, label: "Price", message: "Hi! I have a question about pricing." },
+  { icon: Banknote, label: "Price", message: "Hi! I have a question about pricing." },
   { icon: FileText, label: "Rules", message: "Hi! Could you tell me about the venue rules?" },
   { icon: Dumbbell, label: "Equipment", message: "Hi! What equipment is available at the venue?" },
   { icon: Car, label: "Parking", message: "Hi! Is parking available at the venue?" },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Calendar, Clock, MapPin, DollarSign, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Banknote, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import { Card, CardContent } from "@/components/ui/card";
@@ -212,7 +212,7 @@ const EmbedBookingPage = () => {
           {/* Price */}
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
             <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
               Starting from
             </span>
             <span className="text-lg font-semibold" style={{ color: primaryColor }}>

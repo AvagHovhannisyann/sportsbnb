@@ -485,6 +485,31 @@ corrected to resolve dram unless the viewer is in the US; a dollar sign
 contradicted that on the one page whose entire subject is what the owner
 gets paid.
 
+## Authenticated surface — scanned, and mostly sound
+
+Ran the contrast scanner over the logged-in half of the app for the first
+time, stubbing a session and profile: `/dashboard`, `/profile`,
+`/onboarding/player`, `/bookings` as a player, and all nine `/owner/*` routes
+as an owner. **0 below-AA text nodes** on every one. The owner surface in
+particular is well built — real sidebar, accurate counts, and every empty
+state carries a specific action.
+
+Every owner route also landed without redirecting, which independently
+re-confirms the routing fix above.
+
+| Finding | Detail |
+|---|---|
+| Dollar-sign iconography throughout | `DollarSign` was used 26 times across 13 files — the Earnings and Pricing sidebar entries, owner pricing, admin dashboard, game pages, the embed widget. AMD is the only settlement currency, so a `$` glyph is as wrong here as the `$0` figures were on For Owners. Swapped to `Banknote`, which reads as money without asserting a currency. |
+
+### Deliberately not changed
+
+The owner dashboard shows "View all" beside empty Recent Bookings and My
+Venues panels. That looks like the Community defect fixed above, and is not:
+Community's links led to a public catalogue that was also empty, a dead end,
+whereas these lead to the owner's own management pages where the empty state
+offers "Add Your First Venue". Navigation to somewhere you can act is not the
+same as a link promising content that does not exist.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
