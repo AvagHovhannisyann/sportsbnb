@@ -33,6 +33,7 @@ disappeared, a punchline the colour of disabled text, strings clipped by stray
 | Section rhythm | Eight sections at `py-24 md:py-36` (144px per side). Tightened to `py-16 md:py-24`. |
 | Ten icon-only buttons unnamed | WCAG 4.1.2. `ChatButton`, `ChatInput`, `ChatBubble` ×2, `ReviewList`, `BlogPostsTab` ×2, `AIChatbot` ×3 announced as bare "button". |
 | Footer grid imbalance | Brand held `col-span-5` (~566px) but capped content at `max-w-sm` (384px), stranding ~180px. Shifted to 4/8. |
+| Dram sign had no webfont coverage | Neither Space Grotesk, DM Sans nor JetBrains Mono carries U+058F, so all ~20 price surfaces (every one via `formatPrice`) fell through to whatever the OS supplied. Added `Noto Sans Armenian` to all three stacks, subsetted by Google Fonts to that single codepoint — `unicode-range: U+58f`, so it is fetched only when a price renders and can never shadow Latin. Verified the request returns the one-glyph subset and that the import and all three stacks survive the production build; **not** verified visually, see the fonts caveat under Open. |
 | Headings pinned to one colour | `index.css` set `color: hsl(var(--foreground))` on `h1–h6` in the base layer. Any heading on a re-coloured surface ignored it — the light "for venue owners" panel rendered a near-white heading on near-white, so it read as a blank gap between the eyebrow and the body copy. Removed the declaration; headings inherit, which is both the browser default and correct. Verified no regression on Home, Discover, For Owners, About and Login. **Second-highest-leverage change: it is what makes tonal inversion usable at all.** |
 
 ## Landing page — rebuilt
@@ -335,12 +336,16 @@ Ordered by leverage, not by effort.
 1. **Section density on the remaining pages.** Home is now 4427px; For Owners is
    still 7744px. This is a content-per-screen problem, not a spacing one, and it
    is the main thing still making those pages feel empty.
-2. **`֏` depends on system font fallback.** Neither JetBrains Mono nor DM Sans
-   carries U+058F, so every price falls through to whatever the OS supplies —
-   in this headless container that renders as a wrong glyph. It affects the
-   whole app equally (`src/lib/pricing.ts` is the single source), so the fix is
-   one webfont subset with Armenian coverage, not per-page edits. Left alone
-   rather than diverging the landing page from `formatPrice`.
+2. **The screenshots in this audit were taken in fallback fonts.** Chromium in
+   this container cannot reach `fonts.googleapis.com` — every request fails
+   `ERR_CONNECTION_RESET`, including through the agent proxy, because the
+   browser does not trust the proxy's CA. `document.fonts` is empty on every
+   page. So the type in every screenshot above is the system fallback, not
+   Space Grotesk / DM Sans / JetBrains Mono. Layout, colour, contrast and
+   spacing findings stand — those do not depend on the face. Judgements about
+   *typography* do not, and the "Space Grotesk display, DM Sans body" line in
+   the Baseline section was read from the token file, not from a rendered
+   page. Worth re-running against a preview deploy, where the fonts load.
 3. **The AI launcher occludes content at 375px.** A fixed FAB over the booking
    mock's total. Standard FAB behaviour and it moves on scroll, but worth a
    safe-area inset on the pages where it lands on a number.

@@ -1,4 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap");
+/* Separate request because `text=` subsets the whole call: this one returns
+   only U+058F (֏). See the --font-* notes below for why it is needed. */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&text=%D6%8F&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -80,10 +83,18 @@
     --chart-4: 268 55% 50%;
     --chart-5: 220 15% 35%;
 
-    /* ── Fonts ── */
-    --font-display: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* ── Fonts ──
+       'Noto Sans Armenian' sits in every stack purely to carry U+058F, the
+       dram sign. None of Space Grotesk, DM Sans or JetBrains Mono includes it,
+       so every price in the app — ~20 surfaces, all of them going through
+       formatPrice — fell through to whatever the OS happened to supply, and
+       rendered as a wrong glyph where that guess was poor. CSS fallback is
+       per-glyph, so Latin still sets in the primary face; only the dram sign
+       resolves here. The @import subsets to that single codepoint, so the cost
+       is a ~1KB file rather than a whole Armenian family. */
+    --font-display: 'Space Grotesk', 'Noto Sans Armenian', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-sans: 'DM Sans', 'Noto Sans Armenian', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Noto Sans Armenian', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
     /* ── Refined shadow system (soft, layered) ── */
     --shadow-2xs: 0 1px 2px 0 hsl(220 30% 12% / 0.04);
