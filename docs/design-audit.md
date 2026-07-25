@@ -184,6 +184,23 @@ Checked and found **correct**: auth pages deliberately render without header or
 footer. That is right for a focused sign-in flow and was not changed — the
 missing chrome only mattered on the 404.
 
+## For Owners
+
+The owner-acquisition page, and the largest remaining page at 7744px. The
+density was the reason for opening it; the copy was the reason it mattered.
+
+| Finding | Detail |
+|---|---|
+| **The page promised Stripe payouts** | Three claims — a feature card ("Funds go directly to your Stripe account"), step 3 of the signup guide ("Link your Stripe account to receive payouts"), and a pricing bullet ("Payouts processed automatically via Stripe"). Stripe was removed from this codebase entirely, and it cannot serve Armenian entities in the first place. The page whose only job is signing venue owners up was telling them to do something impossible, and promising a payout route that does not exist. Replaced with the real rails: card or Idram in, weekly payout to an Armenian bank account or Idram wallet out. "Processed automatically" also went — payouts are manual bank transfers in v1, so that was a second overstatement inside the same bullet. |
+| Sections at `py-20 md:py-40` | 320px of vertical padding per section across six sections. The old home page was tightened to `py-16 md:py-24` early in this audit; For Owners never got that pass and sat looser than the home page ever had. Retuned to match, plus header margins and card padding. 7744px → 6812px. |
+| Hero headline split mid-phrase | At `lg:text-8xl` (96px) "Your venue. Our" filled line one and stranded "platform." on line two. Explicit break, and brought down to `lg:text-7xl` to match the scale the rebuilt home page settled on. |
+
+**Still open, and a content decision rather than a layout one:** twelve feature
+cards of equal visual weight, which is most of the remaining height. Nothing
+can land when everything is presented identically. Cutting or ranking them is
+the owner's call, not something to do unilaterally — but it is the next real
+improvement available on this page.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

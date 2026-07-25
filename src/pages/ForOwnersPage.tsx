@@ -51,7 +51,7 @@ const ForOwnersPage = () => {
     {
       icon: CreditCard,
       title: "Instant Booking & Payments",
-      description: "Players book and pay online instantly. Funds go directly to your Stripe account. No cash handling, no invoicing, no delays.",
+      description: "Players book and pay online instantly by card or Idram. We collect, then pay out to your account — no cash handling, no invoicing, no chasing.",
     },
     {
       icon: BarChart3,
@@ -115,7 +115,7 @@ const ForOwnersPage = () => {
   const onboardingSteps = [
     { step: "1", title: "Create your account", description: "Sign up as a venue owner in under 2 minutes. No credit card required." },
     { step: "2", title: "Add your venue", description: "Upload photos, set prices, define hours, and configure your policies." },
-    { step: "3", title: "Connect payments", description: "Link your Stripe account to receive payouts directly to your bank." },
+    { step: "3", title: "Add your payout details", description: "Your Armenian bank account or Idram wallet — that's where your earnings land." },
     { step: "4", title: "Go live", description: "Once approved, your venue is visible to thousands of active players." },
   ];
 
@@ -172,9 +172,14 @@ const ForOwnersPage = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease, delay: 0.35 }}
-              className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-[0.95] tracking-tighter mb-6 md:mb-8"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.95] tracking-tighter mb-6 md:mb-8"
             >
-              Your venue.{" "}
+              {/* Explicit break: left to flow, "Your venue. Our" filled line one
+                  and stranded "platform." on line two, splitting the phrase in
+                  the wrong place. Also brought down from text-8xl (96px) to
+                  match the scale the rebuilt home page settled on. */}
+              Your venue.
+              <br />
               <span className="text-primary">Our platform.</span>
             </motion.h1>
 
@@ -216,7 +221,7 @@ const ForOwnersPage = () => {
       {/* ── Stats ── */}
       <section className="py-16 md:py-24 bg-background border-b border-border/50">
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
               <motion.div key={stat.label} {...stagger(index * 0.1)} className="text-center">
                 <p className="text-3xl md:text-5xl lg:text-6xl font-bold text-primary tracking-tighter mb-2">{stat.value}</p>
@@ -228,9 +233,9 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── All Features ── */}
-      <section className="py-20 md:py-40 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Everything You Need
             </p>
@@ -249,7 +254,7 @@ const ForOwnersPage = () => {
                 <motion.div
                   key={feature.title}
                   {...stagger(index * 0.05)}
-                  className="group bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl md:rounded-3xl p-6 md:p-8"
+                  className="group bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl md:rounded-3xl p-5 md:p-6"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-5">
                     <Icon className="h-6 w-6" strokeWidth={1.5} />
@@ -264,7 +269,7 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Pricing Model ── */}
-      <section className="py-20 md:py-40 bg-secondary">
+      <section className="py-16 md:py-24 bg-secondary">
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center max-w-6xl mx-auto">
             <motion.div {...fadeUp}>
@@ -280,9 +285,9 @@ const ForOwnersPage = () => {
               <div className="space-y-4">
                 {[
                   "You set your own prices — we add 5% on top for the player",
-                  "You receive 100% of your listed price directly to your bank",
+                  "You receive 100% of your listed price — the 5% is what the player pays on top",
                   "Players see the final price upfront — no surprises",
-                  "Payouts processed automatically via Stripe",
+                  "Weekly payouts to your bank account or Idram wallet",
                   "No minimum commitment — cancel anytime",
                 ].map((item, i) => (
                   <motion.div key={i} {...stagger(i * 0.08)} className="flex items-start gap-3">
@@ -323,9 +328,9 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── How to Get Started ── */}
-      <section className="py-20 md:py-40 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Getting Started
             </p>
@@ -337,7 +342,7 @@ const ForOwnersPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-4 gap-6 md:gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-5 md:gap-6 max-w-5xl mx-auto">
             {onboardingSteps.map((item, index) => (
               <motion.div key={item.step} {...stagger(index * 0.12)} className="text-center">
                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary text-primary-foreground text-xl md:text-2xl font-bold flex items-center justify-center mx-auto mb-5 md:mb-6">
@@ -352,9 +357,9 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Showcase Image ── */}
-      <section className="py-20 md:py-40 bg-muted/20 overflow-hidden">
+      <section className="py-16 md:py-24 bg-muted/20 overflow-hidden">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
               Built for facilities<br className="hidden md:block" /> <span className="text-primary">of every size.</span>
             </h2>
@@ -379,9 +384,9 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="py-20 md:py-40 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Trusted by Venues
             </p>
@@ -416,7 +421,7 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Partnership CTA ── */}
-      <section className="py-20 md:py-40 bg-secondary">
+      <section className="py-16 md:py-24 bg-secondary">
         <div className="container">
           <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
