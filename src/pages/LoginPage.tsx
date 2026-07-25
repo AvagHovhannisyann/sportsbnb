@@ -166,7 +166,7 @@ const LoginPage = () => {
       const profile = await fetchOnboardingStatus(userId);
 
       if (profile && !profile.onboarding_completed) {
-        navigate(profile.user_type === "owner" ? "/onboarding/owner" : "/onboarding/player", { replace: true });
+        navigate(profile.user_type === "owner" ? "/owner-dashboard" : "/onboarding/player", { replace: true });
         return;
       }
       // Honor the page the user was trying to reach before login

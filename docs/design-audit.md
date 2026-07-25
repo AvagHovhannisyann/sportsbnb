@@ -361,6 +361,43 @@ articles yet / Check back soon" is correct and will populate once `seed.sql`
 runs. The ~300px gap under short pages is `min-h-screen` on the content
 wrapper holding the footer below the fold, which is deliberate, not a bug.
 
+## Owner routing — a redirect loop hidden behind a race
+
+The worst defect found on this branch, and the only one that took two fixes
+because the first bug was concealing the second.
+
+**Bug 1 — the guard decided before it had the data.** `useAuth`'s `isLoading`
+covers the *session*, not the profile. The `onAuthStateChange` path
+deliberately defers the profile fetch into a `setTimeout` (calling supabase
+inside that callback can deadlock) and then releases `isLoading` immediately,
+so there is a window where a user is authenticated and `profile` is still
+`null`. `RequireRole` authorizes owners on `profile.user_type`, evaluated that
+window, and sent legitimate owners to `/dashboard` — where `PlayerDashboard`
+forwarded them into *player* onboarding. Fixed with an explicit
+`isProfileLoading` flag the guard also waits on.
+
+**Bug 2 — an infinite redirect loop, only reachable once bug 1 was fixed.**
+`OwnerOverviewPage` sent any owner with `onboarding_completed = false` to
+`/onboarding/owner`. That route is a deprecated stub whose entire job is to
+send owners back to `/owner-dashboard`. The two bounced off each other
+forever: **6489 navigations in nine seconds** once the guard stopped
+intercepting first. Every newly created owner is in exactly that state.
+
+Fixing the race alone would have shipped the loop to every owner. Worth
+stating plainly, because it is the argument for reproducing a bug before
+fixing it rather than reasoning from the code: the first reproduction attempt
+showed `/owner-dashboard -> /dashboard -> /onboarding/player` and no loop at
+all, which looked like a clean result and was actually bug 1 masking bug 2.
+
+Resolution: `OwnerOverviewPage` no longer redirects to the deprecated stub —
+owners set their venue up from the dashboard, which is what the stub's own
+comment already said — and `LoginPage` / `AuthCallbackPage` route owners
+straight to `/owner-dashboard` instead of bouncing through it.
+
+Verified across the role matrix: owner mid-onboarding, owner complete, player
+denied `/owner-dashboard`, player mid-onboarding, player complete. All five
+land correctly in 2-3 navigations.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

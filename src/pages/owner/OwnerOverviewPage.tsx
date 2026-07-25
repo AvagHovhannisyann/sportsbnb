@@ -39,9 +39,11 @@ const OwnerOverviewPage = () => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile && !profile.onboarding_completed) {
-      navigate("/onboarding/owner");
-    }
+    // Deliberately no onboarding redirect. /onboarding/owner is a deprecated
+    // stub that immediately sends owners back to /owner-dashboard, so this
+    // pair looped forever for any owner with onboarding_completed = false —
+    // which is every newly created owner. Owners set their venue up from the
+    // dashboard itself, which is what the stub's own comment says.
   }, [user, profile, authLoading, navigate]);
 
   if (authLoading) {

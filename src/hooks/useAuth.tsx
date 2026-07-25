@@ -44,6 +44,18 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
+  /**
+   * True while the profile row for the current user is still in flight.
+   *
+   * Distinct from `isLoading`, which only covers the *session*. The
+   * onAuthStateChange path deliberately defers the profile fetch (calling
+   * supabase inside that callback can deadlock) and releases `isLoading`
+   * straight away, so there is a window where a user is authenticated and
+   * `profile` is still null. Anything that authorizes on a profile field —
+   * RequireRole reads `profile.user_type` — has to wait for this too, or it
+   * decides against a null and bounces a legitimate owner.
+   */
+  isProfileLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   // Auth actions (wrap the supabase client; return { error } like supabase does)
@@ -77,6 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -107,13 +120,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid blocking
+          // Defer profile fetch to avoid blocking: calling supabase from
+          // inside this callback can deadlock. isProfileLoading covers the
+          // gap this opens between "session known" and "profile known".
+          setIsProfileLoading(true);
           setTimeout(async () => {
             const profileData = await fetchProfile(session.user.id);
             setProfile(profileData);
+            setIsProfileLoading(false);
           }, 0);
         } else {
           setProfile(null);
+          setIsProfileLoading(false);
         }
         
         setIsLoading(false);
@@ -129,7 +147,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profileData = await fetchProfile(session.user.id);
         setProfile(profileData);
       }
-      
+      setIsProfileLoading(false);
+
       setIsLoading(false);
     });
 
@@ -216,6 +235,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session,
         profile,
         isLoading,
+        isProfileLoading,
         signOut,
         refreshProfile,
         signInWithPassword,

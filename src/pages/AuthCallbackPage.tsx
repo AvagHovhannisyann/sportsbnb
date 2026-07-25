@@ -79,7 +79,7 @@ const AuthCallbackPage = () => {
           // Redirect based on profile
           setTimeout(() => {
             if (!profile.onboarding_completed) {
-              navigate(profile.user_type === "owner" ? "/onboarding/owner" : "/onboarding/player");
+              navigate(profile.user_type === "owner" ? "/owner-dashboard" : "/onboarding/player");
             } else if (profile.user_type === "owner") {
               navigate("/owner-dashboard");
             } else {

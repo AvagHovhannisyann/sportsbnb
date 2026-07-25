@@ -15,10 +15,18 @@ interface RequireRoleProps {
  * - admin: user_roles must hold admin/moderator
  */
 export function RequireRole({ role, children }: RequireRoleProps) {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, isProfileLoading } = useAuth();
   const { data: isAdmin, isLoading: roleLoading } = useIsAdmin();
 
-  if (isLoading || (role === "admin" && roleLoading)) {
+  // Wait for the profile too, not just the session. The owner check below
+  // reads profile.user_type; deciding it against a not-yet-loaded profile
+  // redirected legitimate owners off their own dashboard to /dashboard, and
+  // from there PlayerDashboard forwarded them into player onboarding.
+  if (
+    isLoading ||
+    (user && isProfileLoading) ||
+    (role === "admin" && roleLoading)
+  ) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
