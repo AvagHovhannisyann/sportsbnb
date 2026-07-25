@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, HttpError } from "../_shared/auth.ts";
+import { AI_MODELS, chatCompletion } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,38 +22,24 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            {
-              role: "system",
-              content: `You are SportsBnB's friendly AI assistant. You help users with:
+    const response = await chatCompletion({
+      model: AI_MODELS.chat,
+      messages: [
+        {
+          role: "system",
+          content: `You are SportsBnB's friendly AI assistant. You help users with:
 - Finding and booking sports venues (football, basketball, tennis, swimming, etc.)
-- Understanding pricing and availability
+- Booking and paying in-app (card via Ameriabank vPOS, or Idram wallet)
 - Creating or joining pickup games
 - Managing teams and referrals
-- Subscription plans (Free, Pro at $14.99/mo, Enterprise at $39.99/mo)
 - General sports-related questions
 
 Keep answers concise, helpful, and friendly. Use emoji sparingly. If you don't know something specific about a user's booking or account, suggest they check the relevant page or contact support.`,
-            },
-            ...messages,
-          ],
-          stream: true,
-        }),
-      }
-    );
+        },
+        ...messages,
+      ],
+      stream: true,
+    });
 
     if (!response.ok) {
       if (response.status === 429) {

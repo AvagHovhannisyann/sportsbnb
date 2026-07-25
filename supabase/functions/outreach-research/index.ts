@@ -1,5 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { AI_MODELS, chatCompletion } from '../_shared/ai.ts';
 
 async function scrapeWithFirecrawl(url: string): Promise<string | null> {
   const key = Deno.env.get('FIRECRAWL_API_KEY');
@@ -30,17 +31,13 @@ function extractEmail(text: string): string | null {
 }
 
 async function summarize(text: string, venueName: string): Promise<Record<string, unknown>> {
-  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), contact_email (string or null), tone (formal|casual|professional). Only include contact_email if it appears in the website text.' },
-        { role: 'user', content: `Venue: ${venueName}\n\nWebsite text:\n${text.slice(0, 6000)}` },
-      ],
-      response_format: { type: 'json_object' },
-    }),
+  const r = await chatCompletion({
+    model: AI_MODELS.chat,
+    messages: [
+      { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), contact_email (string or null), tone (formal|casual|professional). Only include contact_email if it appears in the website text.' },
+      { role: 'user', content: `Venue: ${venueName}\n\nWebsite text:\n${text.slice(0, 6000)}` },
+    ],
+    response_format: { type: 'json_object' },
   });
   const d = await r.json();
   try { return JSON.parse(d.choices?.[0]?.message?.content || '{}'); } catch { return {}; }

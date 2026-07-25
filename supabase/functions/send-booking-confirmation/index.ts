@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       day: "numeric",
     });
 
-    const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.lovable.app";
+    const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.org";
 
     const result = await sendEmail({
       to: email,

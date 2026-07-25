@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_MODELS, chatCompletion } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,26 +76,18 @@ serve(async (req) => {
       .slice(0, 5);
 
     // Use AI to generate personalized reason
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     let aiReasons: Record<string, string> = {};
 
-    if (LOVABLE_API_KEY && scored.length > 0) {
+    if (Deno.env.get("OPENROUTER_API_KEY") && scored.length > 0) {
       try {
         const gameList = scored.map((g, i) => `${i + 1}. ${g.title} - ${g.sport} on ${g.game_date} at ${g.location} (${g.skill_level})`).join("\n");
-        
-        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
-            messages: [
-              { role: "system", content: "Generate a one-line personalized reason for each game match. Return JSON: {\"1\": \"reason\", \"2\": \"reason\", ...}. Be concise and friendly." },
-              { role: "user", content: `User likes: ${preferredSports.join(", ") || "various sports"}, skill: ${userSkill}, city: ${userCity}.\n\nGames:\n${gameList}` },
-            ],
-          }),
+
+        const aiResp = await chatCompletion({
+          model: AI_MODELS.chatLite,
+          messages: [
+            { role: "system", content: "Generate a one-line personalized reason for each game match. Return JSON: {\"1\": \"reason\", \"2\": \"reason\", ...}. Be concise and friendly." },
+            { role: "user", content: `User likes: ${preferredSports.join(", ") || "various sports"}, skill: ${userSkill}, city: ${userCity}.\n\nGames:\n${gameList}` },
+          ],
         });
 
         if (aiResp.ok) {

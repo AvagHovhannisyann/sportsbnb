@@ -1,5 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { AI_MODELS, chatCompletion } from '../_shared/ai.ts';
 
 const SYSTEM_EN = `You write warm, concise B2B outreach emails on behalf of the Sportsbnb team, a booking platform for sports venues. Founding offer: 0% commission for the first 3 months, then only 3% — Sportsbnb helps fill empty slots, brings new customers, and gives owners a free smart calendar and online booking widget. Write in a personal, direct tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\\n).`;
 
@@ -36,20 +37,16 @@ Deno.serve(async (req) => {
       contact_name: target.contact_name,
     };
 
-    const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify(ctx, null, 2)}` },
-        ],
-        response_format: { type: 'json_object' },
-      }),
+    const r = await chatCompletion({
+      model: AI_MODELS.chat,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify(ctx, null, 2)}` },
+      ],
+      response_format: { type: 'json_object' },
     });
     if (r.status === 429) return new Response(JSON.stringify({ error: 'Rate limit. Try again in a moment.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    if (r.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted. Add funds in Settings.' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (r.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     const d = await r.json();
     if (!r.ok) throw new Error(`AI ${r.status}: ${JSON.stringify(d)}`);
 

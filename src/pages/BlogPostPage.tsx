@@ -73,7 +73,7 @@ const BlogPostPage = () => {
     publisher: {
       "@type": "Organization",
       name: "SportsBnb",
-      url: "https://sportsbnb.lovable.app",
+      url: "https://sportsbnb.org",
     },
     ...(post.cover_image_url ? { image: post.cover_image_url } : {}),
   };

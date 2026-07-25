@@ -1,7 +1,8 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { searchPlacesText } from '../_shared/google-places.ts';
+import { AI_MODELS, chatCompletion } from '../_shared/ai.ts';
 
-const MAPS_GW = 'https://connector-gateway.lovable.dev/google_maps';
 const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
 
 const PITCH_EN = `Sportsbnb is a booking platform for sports venues. Founding offer: 0% commission for the first 3 months, then only 3% — we help fill empty slots, bring new customers, and give owners a free smart calendar and online booking widget.`;
@@ -79,21 +80,7 @@ function bestEmail(emails: string[], website?: string): string | null {
 }
 
 async function searchPlace(query: string) {
-  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
-  const mapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY_1') ?? Deno.env.get('GOOGLE_MAPS_API_KEY');
-  if (!lovableKey) throw new Error('LOVABLE_API_KEY is not configured');
-  if (!mapsKey) throw new Error('Google Maps connection is not configured');
-
-  const r = await fetch(`${MAPS_GW}/places/v1/places:searchText`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${lovableKey}`,
-      'X-Connection-Api-Key': mapsKey,
-      'Content-Type': 'application/json',
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.googleMapsUri,places.regularOpeningHours.weekdayDescriptions,places.location,places.businessStatus',
-    },
-    body: JSON.stringify({ textQuery: query }),
-  });
+  const r = await searchPlacesText({ textQuery: query });
   const data = await r.json();
   if (!r.ok) throw new Error(`Maps error ${r.status}: ${JSON.stringify(data)}`);
   return data.places?.[0] || null;
@@ -232,18 +219,14 @@ async function firecrawlSearchEmails(query: string): Promise<{ text: string; ema
 }
 
 async function summarize(text: string, venueName: string, emails: string[]): Promise<Record<string, unknown>> {
-  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website/contact-page text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), contact_email (string or null), tone (formal|casual|professional). Choose contact_email from the provided candidate emails if one looks like the best public venue/business contact. Do not invent emails or names.' },
-        { role: 'user', content: `Venue: ${venueName}\nCandidate emails found: ${emails.join(', ') || 'none'}\n\nWebsite/contact text:\n${text}` },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 2048,
-    }),
+  const r = await chatCompletion({
+    model: AI_MODELS.chat,
+    messages: [
+      { role: 'system', content: 'Extract a concise JSON profile of a sports venue from raw website/contact-page text. Return ONLY JSON with keys: summary (1-2 sentences), sports (array), unique_angle (1 sentence on what makes them special), owner_or_contact_name (string or null), contact_email (string or null), tone (formal|casual|professional). Choose contact_email from the provided candidate emails if one looks like the best public venue/business contact. Do not invent emails or names.' },
+      { role: 'user', content: `Venue: ${venueName}\nCandidate emails found: ${emails.join(', ') || 'none'}\n\nWebsite/contact text:\n${text}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 2048,
   });
   const d = await r.json();
   if (!r.ok) throw new Error(`AI research ${r.status}: ${JSON.stringify(d)}`);
@@ -252,18 +235,14 @@ async function summarize(text: string, venueName: string, emails: string[]): Pro
 
 async function draftEmail(target: Record<string, unknown>, enriched: Record<string, unknown>, research: Record<string, unknown>) {
   const lang = target.language === 'hy' ? 'hy' : 'en';
-  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: lang === 'hy' ? SYSTEM_HY : SYSTEM_EN },
-        { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify({ venue: target.name, city: target.city, enriched, research, contact_name: target.contact_name }, null, 2)}` },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 2048,
-    }),
+  const r = await chatCompletion({
+    model: AI_MODELS.chat,
+    messages: [
+      { role: 'system', content: lang === 'hy' ? SYSTEM_HY : SYSTEM_EN },
+      { role: 'user', content: `Write the outreach email. Venue context:\n${JSON.stringify({ venue: target.name, city: target.city, enriched, research, contact_name: target.contact_name }, null, 2)}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 2048,
   });
   const d = await r.json();
   if (!r.ok) throw new Error(`AI draft ${r.status}: ${JSON.stringify(d)}`);

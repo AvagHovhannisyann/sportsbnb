@@ -4,7 +4,6 @@
  */
 
 const DEFAULT_ALLOWED_ORIGINS = [
-  "https://sportsbnb.lovable.app",
   "https://sportsbnb.org",
   "https://www.sportsbnb.org",
   "http://localhost:8080",

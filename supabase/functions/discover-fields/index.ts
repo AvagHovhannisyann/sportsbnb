@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { AI_MODELS, chatCompletion } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -229,7 +230,6 @@ async function aiVerifyCandidate(
   place: any,
   detectedSport: string,
   searchQuery: string,
-  lovableApiKey: string
 ): Promise<{ isReal: boolean; isSuspicious: boolean; suggestedName: string; sportType: string; reason: string }> {
   try {
     const placeName = place.displayName?.text || "Unknown";
@@ -259,17 +259,10 @@ Respond in EXACTLY this JSON format (no extra text):
   "reason": "Brief explanation of your verdict"
 }`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${lovableApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-      }),
+    const aiResponse = await chatCompletion({
+      model: AI_MODELS.chatLite,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1,
     });
 
     if (!aiResponse.ok) {
@@ -335,7 +328,6 @@ serve(async (req) => {
     const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!GOOGLE_MAPS_API_KEY) throw new Error("GOOGLE_MAPS_API_KEY not configured");
 
@@ -366,7 +358,7 @@ serve(async (req) => {
         label: "Custom Area",
       };
       
-      const result = await scanTiles([virtualTile], searchQueries, supabase, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY, force);
+      const result = await scanTiles([virtualTile], searchQueries, supabase, GOOGLE_MAPS_API_KEY, force);
       return new Response(JSON.stringify({ success: true, ...result, tiles_scanned: 1 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -391,7 +383,7 @@ serve(async (req) => {
     const tilesToScan = tiles.slice(tileOffset, tileOffset + maxTiles);
     const remainingTiles = Math.max(0, tiles.length - tileOffset - tilesToScan.length);
 
-    const result = await scanTiles(tilesToScan, searchQueries, supabase, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY, force);
+    const result = await scanTiles(tilesToScan, searchQueries, supabase, GOOGLE_MAPS_API_KEY, force);
 
     return new Response(
       JSON.stringify({
@@ -417,7 +409,6 @@ async function scanTiles(
   searchQueries: string[],
   supabase: any,
   googleApiKey: string,
-  lovableApiKey: string | undefined,
   force: boolean
 ) {
   let totalCandidates = 0;
@@ -514,9 +505,7 @@ async function scanTiles(
             reason: "No AI verification available",
           };
 
-          if (lovableApiKey) {
-            aiResult = await aiVerifyCandidate(place, detectedSport, query, lovableApiKey);
-          }
+          aiResult = await aiVerifyCandidate(place, detectedSport, query);
 
           if (!aiResult.isReal) {
             console.log(`AI rejected: "${place.displayName?.text}" - ${aiResult.reason}`);

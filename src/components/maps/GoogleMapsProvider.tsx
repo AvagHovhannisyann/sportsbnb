@@ -3,7 +3,7 @@ import { useJsApiLoader } from "@react-google-maps/api";
 
 // Client-exposed browser key (restrict by HTTP referrer in Google Cloud).
 const GOOGLE_MAPS_API_KEY =
-  import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY ?? "";
+  import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY ?? "";
 
 const libraries: ("places" | "geocoding")[] = ["places", "geocoding"];
 
