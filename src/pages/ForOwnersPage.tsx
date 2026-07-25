@@ -263,7 +263,7 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Pricing Model ── */}
-      <section className="py-16 md:py-24 bg-secondary">
+      <section className="surface-invert py-16 md:py-24 bg-secondary">
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center max-w-6xl mx-auto">
             <motion.div {...fadeUp}>
@@ -299,15 +299,15 @@ const ForOwnersPage = () => {
               <div className="border-t border-secondary-foreground/10 pt-6 space-y-3">
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Monthly fee</span>
-                  <span className="text-secondary-foreground font-semibold">$0</span>
+                  <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Setup fee</span>
-                  <span className="text-secondary-foreground font-semibold">$0</span>
+                  <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Hidden costs</span>
-                  <span className="text-secondary-foreground font-semibold">$0</span>
+                  <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
               </div>
               <Link to="/list-venue" className="block mt-8">
@@ -377,7 +377,7 @@ const ForOwnersPage = () => {
         </div>
       </section>
 
-      <section className="py-16 md:py-24 bg-secondary">
+      <section className="surface-invert py-16 md:py-24 bg-secondary">
         <div className="container">
           <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">

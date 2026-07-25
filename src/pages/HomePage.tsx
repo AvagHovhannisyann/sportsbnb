@@ -55,7 +55,7 @@ const Section = ({
   const tones = {
     base: "bg-background",
     raised: "bg-surface-1 border-y border-border",
-    invert: "bg-secondary text-secondary-foreground",
+    invert: "surface-invert bg-secondary text-secondary-foreground",
   };
   return (
     <section className={`${tones[tone]} py-20 md:py-28 ${className}`} {...rest}>
@@ -520,7 +520,7 @@ const HomePage = () => {
             <Button
               asChild
               size="lg"
-              className="mt-8 h-12 rounded-xl bg-background px-6 text-[15px] font-semibold text-foreground hover:bg-background/90"
+              className="mt-8 h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
             >
               <Link to="/for-owners">
                 List your venue

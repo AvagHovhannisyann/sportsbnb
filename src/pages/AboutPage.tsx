@@ -114,7 +114,7 @@ const AboutPage = () => {
         </section>
 
         {/* CTA */}
-        <section className="py-16 md:py-24 bg-secondary">
+        <section className="surface-invert py-16 md:py-24 bg-secondary">
           <div className="container">
             <div className="max-w-2xl mx-auto text-center">
               <h2 className="text-3xl font-bold text-secondary-foreground mb-4">
@@ -130,7 +130,7 @@ const AboutPage = () => {
                   </Button>
                 </Link>
                 <Link to="/contact">
-                  <Button size="lg" variant="hero" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-secondary">
+                  <Button size="lg" variant="hero" className="border-2 border-foreground/30 bg-transparent text-foreground hover:bg-foreground hover:text-background">
                     Contact us
                   </Button>
                 </Link>

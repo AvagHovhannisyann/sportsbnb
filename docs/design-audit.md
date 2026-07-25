@@ -437,6 +437,54 @@ length is twelve genuine feature cards in a 3x4 grid, which is ordinary for a
 B2B landing page and is not a density defect. Recorded so it is not "fixed"
 later on the strength of a stale number.
 
+## Inverted surfaces — fixing the class, not the instances
+
+Three separate defects on this branch traced to one cause: a light
+`bg-secondary` panel inside the dark theme, with everything on it inheriting
+*dark-theme* tokens tuned for a near-black background. Headings pinned to
+`--foreground`, the `secondaryOutline` button, and — found by scanning rather
+than looking — three eyebrow labels plus a CTA.
+
+Rather than keep patching call sites, `.surface-invert` re-declares the token
+set to its light-theme values for that subtree. Ordinary utilities
+(`text-primary`, `text-foreground`, `border-border`) then simply work inside
+it. Applied to the six real inverted panels: Home's owners band, both For
+Owners panels, About's closing CTA, and the Forgot/Reset password side panels.
+
+### Found by an automated sweep
+
+A contrast scanner (walks every text node, composites against the first opaque
+ancestor background, checks against WCAG AA for its computed size) over ten
+public routes:
+
+| Route | Finding | Ratio |
+|---|---|---|
+| `/about` | "Contact us" button, hardcoded `text-white` on the light panel | **1.08** |
+| `/for-owners` | "Simple & Transparent" eyebrow | 1.57 |
+| `/for-owners` | **"5%"** — the commission figure, the single number an owner cares most about | 1.57 |
+| `/for-owners` | "Partnership" eyebrow | 1.57 |
+
+After the fix: **0 below-AA text nodes** across all ten routes.
+
+### What the scanner could not catch
+
+Flipping the tokens silently downgraded Home's "List your venue" CTA. It was
+`bg-background text-foreground` — deliberately near-black on the light panel.
+Inside `.surface-invert` those resolve to *light* background and dark text, so
+it still passed contrast comfortably while reading as a weak secondary button.
+Caught by looking at the screenshot, not by the checker. Now
+`bg-secondary-foreground text-secondary`, which `.surface-invert` does not
+remap, restoring the original intent.
+
+The lesson worth keeping: a contrast checker verifies legibility, not
+hierarchy. A button can be perfectly readable and still be wrong.
+
+Also replaced three hardcoded `$0` figures on the For Owners pricing panel
+with `֏0`. AMD is the only settlement currency and `formatPrice` was already
+corrected to resolve dram unless the viewer is in the US; a dollar sign
+contradicted that on the one page whose entire subject is what the owner
+gets paid.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

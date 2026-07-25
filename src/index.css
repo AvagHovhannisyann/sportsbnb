@@ -213,6 +213,46 @@
     font-feature-settings: "ss01", "cv11";
   }
 
+
+  /* ── Inverted surface ────────────────────────────────────────────────
+     A light panel inside the dark theme (`bg-secondary`). Everything
+     rendered on it inherits the *dark* theme's tokens, which are tuned for
+     a near-black background — so a --primary eyebrow lands at 1.57:1 on it
+     and a --foreground button at 1.08:1, i.e. invisible. Three separate
+     bugs on this branch traced back to exactly that.
+
+     Re-declaring the tokens here fixes the whole class at once: anything
+     inside a .surface-invert resolves --foreground, --primary and friends
+     to their light-theme values, so ordinary utilities (text-primary,
+     text-foreground, border-border) simply work. Values mirror the :root
+     block above; keep them in sync.
+     ------------------------------------------------------------------- */
+  .dark .surface-invert,
+  .surface-invert.dark-inverted {
+    --background: 40 22% 97%;
+    --foreground: 220 28% 10%;
+    --foreground-soft: 220 15% 28%;
+    --surface-1: 36 16% 95%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 36 14% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 28% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 28% 10%;
+    --primary: 158 72% 22%;
+    --primary-foreground: 40 30% 98%;
+    --primary-soft: 158 40% 94%;
+    --muted: 36 14% 92%;
+    --muted-foreground: 220 12% 42%;
+    --accent: 36 16% 93%;
+    --accent-foreground: 220 28% 10%;
+    --success: 158 64% 32%;
+    --border: 30 12% 88%;
+    --border-strong: 30 10% 78%;
+    --input: 30 12% 88%;
+    --ring: 158 72% 22%;
+  }
+
   /* Strong, confident headings.
      Deliberately no `color` here. Pinning headings to --foreground made them
      invisible on any inverted surface (the light "for owners" panel sets

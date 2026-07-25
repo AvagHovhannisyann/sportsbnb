@@ -52,7 +52,7 @@ const ForgotPasswordPage = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
+      <div className="surface-invert hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
         <div>
           <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
             <Logo variant="full" className="h-8 w-auto" />
