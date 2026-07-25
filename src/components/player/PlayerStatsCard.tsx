@@ -2,10 +2,11 @@ import { Trophy, Target, Calendar, Dumbbell, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
+import { StatusPanel } from "@/components/common/StatusPanel";
 import { format } from "date-fns";
 
 const PlayerStatsCard = () => {
-  const { stats, isLoading } = usePlayerStats();
+  const { stats, isLoading, isError } = usePlayerStats();
 
   if (isLoading) {
     return (
@@ -17,12 +18,35 @@ const PlayerStatsCard = () => {
     );
   }
 
+  // Failure used to be indistinguishable from "no stats yet": the hook
+  // swallowed the error and the card returned null, so it simply vanished off
+  // the dashboard with nothing to say it had tried.
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="p-0">
+          <StatusPanel
+            icon={Dumbbell}
+            title="Stats unavailable"
+            description="We couldn't load your player stats just now. Everything else on this page is unaffected."
+            className="py-10"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!stats) return null;
 
+  // `{value}` renders nothing when a field is undefined, so an unexpected
+  // response shape produced three icons and three labels with blank gaps where
+  // the numbers belong — a card that looks broken rather than empty. The RPC
+  // result is cast straight to PlayerStats with `as unknown as`, which means
+  // nothing checks it; defaulting here is the cheap half of that fix.
   const statItems = [
-    { icon: Trophy, label: "Games Played", value: stats.games_played, color: "text-amber-500" },
-    { icon: Target, label: "Games Hosted", value: stats.games_hosted, color: "text-primary" },
-    { icon: Calendar, label: "Total Bookings", value: stats.total_bookings, color: "text-emerald-500" },
+    { icon: Trophy, label: "Games Played", value: stats.games_played ?? 0, color: "text-amber-500" },
+    { icon: Target, label: "Games Hosted", value: stats.games_hosted ?? 0, color: "text-primary" },
+    { icon: Calendar, label: "Total Bookings", value: stats.total_bookings ?? 0, color: "text-emerald-500" },
   ];
 
   return (

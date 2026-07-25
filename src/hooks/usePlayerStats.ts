@@ -14,6 +14,7 @@ interface PlayerStats {
 export const usePlayerStats = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<PlayerStats | null>(null);
+  const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -26,9 +27,20 @@ export const usePlayerStats = () => {
         });
 
         if (error) throw error;
-        setStats(data as unknown as PlayerStats);
+        // The result used to be cast straight through with `as unknown as
+        // PlayerStats`, which asserts a shape without checking one. A
+        // set-returning RPC hands back an array, and an array is truthy — so
+        // it sailed past the consumer's `if (!stats)` guard and every field
+        // read as undefined, rendering a card of blank numbers. Narrow to a
+        // plain object before trusting it.
+        const isRecord = data !== null && typeof data === "object" && !Array.isArray(data);
+        setStats(isRecord ? (data as unknown as PlayerStats) : null);
+        setIsError(!isRecord);
       } catch (error) {
+        // Was swallowed entirely, so a failed call left stats null and the
+        // card silently returned null — indistinguishable from "no stats yet".
         console.error("Error fetching player stats:", error);
+        setIsError(true);
       } finally {
         setIsLoading(false);
       }
@@ -37,5 +49,5 @@ export const usePlayerStats = () => {
     fetchStats();
   }, [user]);
 
-  return { stats, isLoading };
+  return { stats, isLoading, isError };
 };

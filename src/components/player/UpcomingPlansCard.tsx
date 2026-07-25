@@ -24,16 +24,24 @@ export const UpcomingPlansCard = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          Your Inquiries
+          Earlier inquiries
         </CardTitle>
-        <CardDescription>Bookings you've reached out about via WhatsApp.</CardDescription>
+        {/* booking_intents is read-only history now: the WhatsApp handoff was
+            removed when in-app payment landed. Past tense, because these rows
+            can only ever get older. */}
+        <CardDescription>
+          Venues you contacted before in-app booking — kept for your records.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : active.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
-            <p className="mb-3">No inquiries yet — find a venue and tap WhatsApp to start.</p>
+            {/* Was "find a venue and tap WhatsApp to start" — an instruction
+                pointing at a flow that no longer exists. Booking and payment
+                happen in the app now. */}
+            <p className="mb-3">Nothing here — you can book and pay in the app directly.</p>
             <Link to="/venues"><Button size="sm">Browse venues</Button></Link>
           </div>
         ) : (

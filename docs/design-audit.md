@@ -313,6 +313,14 @@ caught it (height 1000 rather than 0, header and footer both present), then
 confirming "Back to home" both navigated and cleared the error state. The test
 route was removed before commit.
 
+## Player dashboard
+
+| Finding | Detail |
+|---|---|
+| **Told players to use a removed flow** | "Your Inquiries — bookings you've reached out about via WhatsApp", with an empty state reading "find a venue and **tap WhatsApp to start**". The WhatsApp handoff was removed when in-app payment landed — `src/components/booking/` no longer exists — so the instruction pointed at nothing. `booking_intents` is read-only history now, and the card says so: "Earlier inquiries · venues you contacted before in-app booking". `SportsDNACard` carried the same stale "send an inquiry" phrasing. Player-side twin of the Stripe finding on For Owners. |
+| An RPC result cast without checking | `usePlayerStats` did `data as unknown as PlayerStats` — an assertion, not a check. A set-returning RPC hands back an array, arrays are truthy, so it sailed past the consumer's `if (!stats)` guard and every field read as `undefined`. `{value}` renders nothing, so the card showed three icons and three labels with blank gaps where the numbers belong: broken-looking rather than empty. Narrowed to a plain object before trusting it, and the numerals default to 0. |
+| Errors swallowed, card vanished | The `catch` logged and moved on, leaving `stats` null so the card returned `null` — silently absent, indistinguishable from "no stats yet". The hook now exposes `isError` and the card renders a panel saying so. |
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

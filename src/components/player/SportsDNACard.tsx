@@ -80,7 +80,7 @@ export function SportsDNACard() {
           </div>
         ) : !dna || (dna.totalSports === 0 && dna.totalTime === 0) ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Play a game or send an inquiry — your sports identity will appear here.
+            Book a court or join a game — your sports identity will appear here.
           </p>
         ) : (
           <>
