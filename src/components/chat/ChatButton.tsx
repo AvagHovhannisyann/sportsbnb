@@ -38,8 +38,12 @@ export const ChatButton = ({
         size={size}
         className={cn("gap-2", className)}
         onClick={() => setOpen(true)}
+        // Always labelled: with showLabel={false} or size="icon" the button is
+        // icon-only, and the visible "Chat" text is the sole accessible name.
+        // Naming the thread makes it useful when several appear in one list.
+        aria-label={`Open chat — ${title}`}
       >
-        <MessageCircle className="h-4 w-4" />
+        <MessageCircle className="h-4 w-4" aria-hidden="true" />
         {showLabel && "Chat"}
       </Button>
 
