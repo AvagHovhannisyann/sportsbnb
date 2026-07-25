@@ -1,25 +1,17 @@
--- SportsBnB — seed data (public/config tables only).
--- Run AFTER schema.sql on the new project. ON CONFLICT DO NOTHING = safe to re-run.
--- Contains only non-PII catalog/config data readable via the public (anon) API:
--- the achievements catalog, the platform cancellation-policy config, and
--- published blog posts. No user, booking, payment, or PII data.
-
--- achievements (12 rows)
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('8960d7e8-9682-479f-969b-1c5fc879f2ff', 'First Steps', 'Complete your first booking', '🎯', 'booking', 10, 'bookings_made', 1, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('8f724e39-fa0d-4891-bae6-0d7017cf5348', 'Regular Player', 'Make 5 bookings', '⭐', 'booking', 25, 'bookings_made', 5, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('413ea264-fd2c-464b-a823-38e03b460f96', 'Venue Explorer', 'Make 10 bookings', '🗺️', 'booking', 50, 'bookings_made', 10, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('a98e7a30-4840-42d1-a4ff-cf9f58d595d8', 'Game On', 'Play your first game', '🏀', 'games', 10, 'games_played', 1, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('6fc69ebe-905c-42ce-b051-e6c1340b19be', 'Team Player', 'Play 5 games', '🤝', 'games', 25, 'games_played', 5, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('fd83535b-82ed-48cf-b0ad-9a46fab35d5f', 'MVP', 'Play 25 games', '🏆', 'games', 100, 'games_played', 25, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('89611e48-194f-4973-beb2-d843960bdd03', 'Game Master', 'Host your first game', '🎮', 'hosting', 15, 'games_hosted', 1, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('a59c656b-62bd-4e84-8854-76dfc6b446a1', 'Event Organizer', 'Host 5 games', '📋', 'hosting', 40, 'games_hosted', 5, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('9aff69ef-0f2f-4b25-b94c-d50f0176e367', 'Community Leader', 'Host 10 games', '👑', 'hosting', 75, 'games_hosted', 10, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('a0997576-dc61-4671-bedc-36bed90542d5', 'Critic', 'Write your first review', '✍️', 'social', 10, 'reviews_written', 1, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('d235660d-830e-4c12-9b26-66f7b0686665', 'Reviewer', 'Write 5 reviews', '📝', 'social', 25, 'reviews_written', 5, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.achievements (id, name, description, icon, category, xp_reward, requirement_type, requirement_value, created_at) VALUES ('9369f6b8-5bb1-435a-bb32-4d33df963d3d', 'Ambassador', 'Refer a friend', '🤗', 'social', 30, 'referrals_made', 1, '2026-02-21T20:41:54.432426+00:00') ON CONFLICT (id) DO NOTHING;
-
--- platform_policies (1 rows)
-INSERT INTO public.platform_policies (id, policy_type, policy_data, created_at, updated_at) VALUES ('8e4ddcbd-81df-4bea-99f3-7c6eaad70cf8', 'cancellation', '{"tiers":[{"description":"Free cancellation","hours_before":48,"fee_percentage":0},{"description":"10% cancellation fee","hours_before":24,"fee_percentage":10},{"description":"20% cancellation fee (max)","hours_before":0,"fee_percentage":20}],"max_fee_percentage":20}'::jsonb, '2026-01-19T11:48:48.855568+00:00', '2026-01-19T11:48:48.855568+00:00') ON CONFLICT (id) DO NOTHING;
+-- SportsBnB — seed data for a freshly migrated project.
+--
+-- Run AFTER schema.sql. Safe to re-run (ON CONFLICT DO NOTHING).
+--
+-- NOTE: this file deliberately does NOT seed `achievements` or
+-- `platform_policies`. Those two are already populated by schema.sql itself
+-- (migrations 20260221204155 and 20260119114849 respectively), which generates
+-- fresh UUIDs on the target project. Re-inserting them here with the source
+-- project's UUIDs would duplicate all 12 achievements — ON CONFLICT (id) never
+-- fires because the ids differ — and would hard-fail on the unique constraint
+-- on platform_policies.policy_type.
+--
+-- What remains is the published blog content, which no migration creates.
+-- No user, booking, payment, or PII data.
 
 -- blog_posts (5 rows)
 INSERT INTO public.blog_posts (id, title, slug, excerpt, content, cover_image_url, target_keyword, author_name, is_published, published_at, created_at, updated_at, created_by) VALUES ('56c84100-adaf-47f5-ac20-4f174859a2ff', 'How to Find and Book Sports Facilities Near You', 'how-to-find-and-book-sports-facilities-near-you', 'Finding the perfect court, pitch, or gym to play at shouldn''t be a hassle. Learn how modern booking platforms have changed the game for athletes and fitness enthusiasts.', 'Finding the perfect court, pitch, or gym to play at shouldn''t be a hassle. Yet for most people, the process of discovering available sports facilities near them remains frustratingly fragmented. You might call local gyms, check outdated websites, or rely on word-of-mouth recommendations that don''t always pan out. What if there was a better way?

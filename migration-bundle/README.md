@@ -39,6 +39,13 @@ linked to the new project: `supabase db push` using this repo's
 
 Then run `seed.sql` the same way.
 
+> `seed.sql` contains **only the blog posts**. The achievements catalog and the
+> platform cancellation policy are already inserted by `schema.sql` itself, with
+> UUIDs generated on the target project. Do not re-add them here: their ids
+> differ from the source project's, so `ON CONFLICT (id)` would not fire and
+> you'd end up with 12 duplicate achievements plus a unique-constraint failure
+> on `platform_policies.policy_type`.
+
 > If the SQL editor errors on `cron.schedule`/`pg_net` calls, those come from
 > the autopilot cron migration; enable the `pg_cron` and `pg_net` extensions
 > (Database → Extensions) first, or comment out the `cron.schedule(...)` lines
