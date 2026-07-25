@@ -201,6 +201,31 @@ can land when everything is presented identically. Cutting or ranking them is
 the owner's call, not something to do unilaterally — but it is the next real
 improvement available on this page.
 
+## FAQ — promises the product does not keep
+
+Opened because the Stripe finding suggested marketing copy had drifted from
+the build. It had, and an FAQ is where drift does the most damage: it reads as
+policy.
+
+| Finding | Detail |
+|---|---|
+| **A platform-wide refund promise that contradicts the refund engine** | "Cancel up to 24 hours before the scheduled time for a full refund." Cancellation terms are per venue — `venue_policies.cancellation_hours` and `refund_type`, where `refund_type: "none"` returns a refund fraction of **0** for a player even 100 hours out (`refund-policy.test.ts` asserts exactly this). So the FAQ promised a full refund to someone booking a non-refundable venue. Same defect class as the `BookingPanel` fallback fixed earlier — a default stated as if universal — but in language that reads as policy. Rewritten to say terms are venue-set and shown before payment. |
+| A feature that does not exist | "Can I modify my booking? Yes, through your dashboard." There is no reschedule flow anywhere in the codebase — grep for modify/reschedule returns nothing. Replaced with the honest answer and the actual workaround. |
+| Payment methods omitted the local rail | "We accept all major credit cards and debit cards" — no mention of Idram, which is a primary rail for this market, and vague about the card set. Now names Visa / Mastercard / ArCa via Ameriabank, and Idram. |
+| Fees vague where the rest of the app is specific | "A small service fee... you'll see the exact structure during setup", while For Owners says 5% plainly. Vagueness about fees is a trust cost with no upside; aligned to 5%. |
+| Payout answer omitted Idram | Aligned with the For Owners correction — weekly, to an Armenian bank account or Idram wallet, itemised. |
+
+Checked and found **correct**, so left alone: "if a game host cancels,
+payments are refunded in full". `refundFraction(..., "owner")` returns 1 even
+under a `none` policy, so host-initiated cancellation genuinely does refund
+fully.
+
+Method note: FAQ answers sit in a collapsed accordion, so `innerText` does not
+contain them. A first verification pass reported "no stale claims" purely
+because nothing was expanded — the check only became meaningful after clicking
+every `[data-state="closed"]` trigger. Worth remembering for any page whose
+content is behind disclosure.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
