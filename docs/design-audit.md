@@ -284,6 +284,35 @@ to check visibility before it means anything. The corrected script reports
 which mode the bar is in and only measures gaps when the bar is actually
 shown.
 
+## No error boundary anywhere in the app
+
+Found while opening the player dashboard: `document.body` rendered **empty** —
+height 0, no nav, no message, nothing to click.
+
+`grep` for `ErrorBoundary|componentDidCatch|getDerivedStateFromError` across
+all of `src/` returned nothing. React's default for an uncaught render error is
+to unmount the entire tree, which is right for correctness and the worst
+available outcome for the person looking at the screen. Any runtime error
+anywhere in this app produced a blank document.
+
+`RouteErrorBoundary` now wraps the router — inside `BrowserRouter` so it can
+read the pathname, outside `Suspense` so it also catches lazy-chunk load
+failures. The failing page is replaced, header and footer survive, and there
+are two ways out. It resets on navigation, so one bad route cannot strand a
+session.
+
+**Honest caveat on how it was found:** the specific throw
+(`leaderboard.map is not a function`) came from *my own stub* returning a
+single object where `useLeaderboard` expects an array from `.select()`. The
+hook is fine; there is no production bug in `AchievementsSection`. What the
+induced crash demonstrated — that nothing catches it — is real and independent
+of the trigger.
+
+Verified by adding a deliberately throwing route, confirming the boundary
+caught it (height 1000 rather than 0, header and footer both present), then
+confirming "Back to home" both navigated and cleared the error state. The test
+route was removed before commit.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

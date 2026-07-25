@@ -1,4 +1,5 @@
 import { useState, useCallback, lazy, Suspense } from "react";
+import RouteErrorBoundary from "@/components/common/RouteErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -113,6 +114,10 @@ const App = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                {/* Sits inside BrowserRouter — it reads the pathname to reset
+                    on navigation — and outside Suspense, so it catches
+                    lazy-chunk load failures as well as render errors. */}
+                <RouteErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Layout showMobileNav={false}><HomePage /></Layout>} />
@@ -202,6 +207,7 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
+                </RouteErrorBoundary>
               </BrowserRouter>
             </TooltipProvider>
           </CurrencyProvider>
