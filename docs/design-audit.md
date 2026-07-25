@@ -348,6 +348,19 @@ leaks nothing: they are properties of the server's configuration, not of
 whether any given account exists. Six tests cover it, including that a wrong
 password and an unknown email remain indistinguishable.
 
+## Community — sections that argued with themselves
+
+| Finding | Detail |
+|---|---|
+| Subtitles contradicted the state below them | "Popular games filling up fast" sat directly above "No trending games yet"; "New places to play" above "No venues added yet". A subtitle describes the list, so it now renders only when there is one. |
+| "View all" led somewhere equally empty | Both section headers linked out to `/games` and `/venues` regardless of content. With an empty catalogue that is a link to a second empty page. Gated on the section having something to show. |
+| One empty state was a dead end | Games offered "Create a game"; venues offered nothing at all. Added "List your venue" so both sections give the reader a way to change the state they are looking at. |
+
+Blog and FAQ were checked at the same time and are sound — the blog's "No
+articles yet / Check back soon" is correct and will populate once `seed.sql`
+runs. The ~300px gap under short pages is `min-h-screen` on the content
+wrapper holding the footer below the fold, which is deliberate, not a bug.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

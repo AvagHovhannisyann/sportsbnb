@@ -323,13 +323,21 @@ const CommunityPage = () => {
                           <TrendingUp className="h-5 w-5 text-primary" />
                           Trending Games
                         </h2>
-                        <p className="text-sm text-muted-foreground">Popular games filling up fast</p>
+                        {/* Subtitle describes the list, so it only holds while
+                            there is one. "Popular games filling up fast" above
+                            "No trending games yet" contradicted itself. */}
+                        {trendingGames.length > 0 && (
+                          <p className="text-sm text-muted-foreground">Popular games filling up fast</p>
+                        )}
                       </div>
-                      <Link to="/games">
-                        <Button variant="ghost" size="sm">
-                          View all <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </Link>
+                      {/* "View all" led to an equally empty list. */}
+                      {trendingGames.length > 0 && (
+                        <Link to="/games">
+                          <Button variant="ghost" size="sm">
+                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                     {trendingGames.length > 0 ? (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -394,13 +402,17 @@ const CommunityPage = () => {
                           <Star className="h-5 w-5 text-primary" />
                           Recently Added Venues
                         </h2>
-                        <p className="text-sm text-muted-foreground">New places to play</p>
+                        {recentVenues.length > 0 && (
+                          <p className="text-sm text-muted-foreground">New places to play</p>
+                        )}
                       </div>
-                      <Link to="/venues">
-                        <Button variant="ghost" size="sm">
-                          View all <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </Link>
+                      {recentVenues.length > 0 && (
+                        <Link to="/venues">
+                          <Button variant="ghost" size="sm">
+                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                     {recentVenues.length > 0 ? (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -447,6 +459,11 @@ const CommunityPage = () => {
                     ) : (
                       <Card className="p-8 text-center">
                         <p className="text-muted-foreground">No venues added yet</p>
+                        {/* The games empty state offers a way out; this one
+                            was a dead end. Owners can seed the catalogue. */}
+                        <Link to="/for-owners" className="mt-4 inline-block">
+                          <Button variant="outline">List your venue</Button>
+                        </Link>
                       </Card>
                     )}
                   </section>
