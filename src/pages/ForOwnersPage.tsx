@@ -105,11 +105,16 @@ const ForOwnersPage = () => {
     },
   ];
 
+  // Every figure here has to be traceable to the build. "40% more bookings on
+  // average" and "24/7 customer support" were placeholder claims with no
+  // customers and no support rota behind them; they are replaced with the
+  // payout cadence (payouts-run cron) and the settlement currency, both of
+  // which are facts about the system rather than promises about outcomes.
   const stats = [
-    { value: "40%", label: "More bookings on average" },
-    { value: "5%", label: "Simple platform commission" },
+    { value: "5%", label: "Platform commission — the only fee" },
     { value: "0", label: "Monthly fees or hidden costs" },
-    { value: "24/7", label: "Customer support" },
+    { value: "Weekly", label: "Payouts, every booking itemised" },
+    { value: "AMD", label: "Settled in dram — card or Idram" },
   ];
 
   const onboardingSteps = [
@@ -117,24 +122,6 @@ const ForOwnersPage = () => {
     { step: "2", title: "Add your venue", description: "Upload photos, set prices, define hours, and configure your policies." },
     { step: "3", title: "Add your payout details", description: "Your Armenian bank account or Idram wallet — that's where your earnings land." },
     { step: "4", title: "Go live", description: "Once approved, your venue is visible to thousands of active players." },
-  ];
-
-  const testimonials = [
-    {
-      quote: "We went from managing bookings on paper to a fully automated system. Revenue is up 35% in three months.",
-      name: "Arena Sports Complex",
-      role: "Football & Basketball Venue",
-    },
-    {
-      quote: "The calendar sync alone saves us hours every week. Our staff can focus on the facility instead of phone calls.",
-      name: "City Tennis Club",
-      role: "Tennis & Padel Venue",
-    },
-    {
-      quote: "The booking widget on our website has been a game-changer. Players book directly without any friction.",
-      name: "Olympic Swimming Center",
-      role: "Aquatics Facility",
-    },
   ];
 
   return (
@@ -224,7 +211,14 @@ const ForOwnersPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
               <motion.div key={stat.label} {...stagger(index * 0.1)} className="text-center">
-                <p className="text-3xl md:text-5xl lg:text-6xl font-bold text-primary tracking-tighter mb-2">{stat.value}</p>
+                {/* Sized down from lg:text-6xl: the band was built for short
+                    numerals, and a word-length value ("Weekly") ran straight
+                    into its neighbour at 60px. The dram sign also left the
+                    value slot — U+058F has no coverage in either bundled font,
+                    so it is not a glyph to hang a headline number on. */}
+                <p className="mb-2 text-3xl font-bold tracking-tighter text-primary md:text-4xl lg:text-5xl">
+                  {stat.value}
+                </p>
                 <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
               </motion.div>
             ))}
@@ -383,44 +377,6 @@ const ForOwnersPage = () => {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
-            <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-              Trusted by Venues
-            </p>
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
-              What owners say.
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-            {testimonials.map((t, index) => (
-              <motion.div
-                key={t.name}
-                {...stagger(index * 0.12)}
-                className="bg-muted/20 rounded-2xl md:rounded-3xl p-6 md:p-10 flex flex-col"
-              >
-                <div className="flex gap-1 mb-4 md:mb-6">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 md:h-5 md:w-5 fill-primary text-primary" />
-                  ))}
-                </div>
-                <p className="text-foreground text-sm md:text-lg leading-relaxed mb-6 md:mb-8 flex-1">
-                  "{t.quote}"
-                </p>
-                <div>
-                  <p className="font-semibold text-foreground text-sm md:text-base">{t.name}</p>
-                  <p className="text-muted-foreground text-xs md:text-sm">{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Partnership CTA ── */}
       <section className="py-16 md:py-24 bg-secondary">
         <div className="container">
           <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">

@@ -246,6 +246,27 @@ drift from the build as old copy, and being the author is not a reason to skip
 the check. Every claim about money, timing or capability should be traced to
 the code that implements it before it ships.
 
+## Fabricated social proof (confirmed with the owner, then removed)
+
+The most serious copy finding, and the one that was not mine to decide.
+
+For Owners carried three named venue testimonials with attributed quotes —
+"Arena Sports Complex: Revenue is up 35% in three months", "City Tennis Club",
+"Olympic Swimming Center" — alongside stats reading "40% More bookings on
+average" and "24/7 Customer support". The database has zero venues, so none of
+it was verifiable from here; but the owner might have had offline pilots, so
+deleting a business's social proof unilaterally would have been the wrong call.
+Asked, and confirmed: placeholders.
+
+| Finding | Detail |
+|---|---|
+| Three fabricated customer testimonials | Attributed quotes with a specific revenue figure, shown to prospective venue owners making a commercial decision. Section removed entirely rather than reworded — with no customers there is nothing truthful to put in its place, and inventing softer filler repeats the problem. Also removes ~848px from a page already flagged as too long. |
+| Two unevidenced stats | "40% more bookings on average" (no bookings exist to average) and "24/7 customer support" (no support rota). Replaced with facts about the system rather than promises about outcomes: weekly payouts (the `payouts-run` cron) and AMD settlement. The 5% commission and zero monthly fees stayed — both traceable in code. |
+| Stats band broke on word-length values | Built for short numerals at `lg:text-6xl`; "Weekly" at 60px ran straight into its neighbour. Sized to `lg:text-5xl`. |
+| `֏` in a headline number | The dram sign has no coverage in JetBrains Mono or DM Sans, so it falls to whatever the OS supplies — not a glyph to hang a 60px figure on. The value slot says "AMD"; the label carries the word "dram". |
+
+7744px → 6104px across both For Owners passes.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
