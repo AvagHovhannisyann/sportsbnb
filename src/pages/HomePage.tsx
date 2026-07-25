@@ -1,969 +1,593 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowRight, Search, Calendar, Users, Building, CheckCircle, Shield, Star,
-  Zap, Target, Eye, Heart, Sparkles, Globe, MapPin, Trophy, Bell, Clock,
-  BarChart3, Image, Gamepad2, MessageCircle, CreditCard, Repeat, Layers,
-  Bot, Wifi, Map, UserPlus, Award, TrendingUp, Split, Flame, CloudSun,
-  GitCompare, UserCircle, BrainCircuit, Swords, Activity, Lock, Play,
+  ArrowRight, Check, MapPin, ShieldCheck, Zap, CalendarCheck,
+  CreditCard, Building2, Star, Activity,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useRegion } from "@/hooks/useRegion";
-import { supabase } from "@/integrations/supabase/client";
 import HeroSearch from "@/components/home/HeroSearch";
-import NearbyPlayers from "@/components/home/NearbyPlayers";
 import SEOHead, { createWebsiteJsonLd } from "@/components/seo/SEOHead";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-landing.jpg";
 import venueFootball from "@/assets/venue-football.jpg";
 import venueTennis from "@/assets/venue-tennis.jpg";
 import venueBasketball from "@/assets/venue-basketball.jpg";
 import venueSwimming from "@/assets/venue-swimming.jpg";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0 },
+/* ------------------------------------------------------------------
+   Motion: one reveal, reused everywhere, and switched off wholesale
+   when the visitor asks for reduced motion. A single consistent
+   entrance reads as intent; a different animation per section reads
+   as decoration.
+------------------------------------------------------------------ */
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const reveal = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
 };
 
-const staggerContainer = {
+const stagger = {
   hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
 };
 
-const sectionTransition = { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const };
+const viewportOnce = { once: true, margin: "-80px" };
+
+/* ------------------------------------------------------------------
+   Section shell. Every band shares one rhythm and one tonal step, so
+   the page has a spine instead of eight independently-invented
+   layouts. `invert` is used exactly once — that scarcity is what
+   makes it land.
+------------------------------------------------------------------ */
+const Section = ({
+  children,
+  tone = "base",
+  className = "",
+  ...rest
+}: {
+  children: React.ReactNode;
+  tone?: "base" | "raised" | "invert";
+  className?: string;
+} & React.HTMLAttributes<HTMLElement>) => {
+  const tones = {
+    base: "bg-background",
+    raised: "bg-surface-1 border-y border-border",
+    invert: "bg-secondary text-secondary-foreground",
+  };
+  return (
+    <section className={`${tones[tone]} py-20 md:py-28 ${className}`} {...rest}>
+      <div className="container px-5 md:px-6">{children}</div>
+    </section>
+  );
+};
+
+const Eyebrow = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <p
+    className={`mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary ${className}`}
+  >
+    {children}
+  </p>
+);
 
 const HomePage = () => {
-  const { user, isLoading } = useAuth();
-  const { isArmenia, isUS, regionLabel } = useRegion();
-
-  const [stats, setStats] = useState<{ value: string; label: string }[]>([]);
-  const [statsLoaded, setStatsLoaded] = useState(false);
+  const { user } = useAuth();
+  const prefersReduced = useReducedMotion();
+  const [venueCount, setVenueCount] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      const [venuesRes, gamesRes, teamsRes, ratingsRes] = await Promise.all([
-        supabase.from("venues").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("games").select("id", { count: "exact", head: true }),
-        supabase.from("teams").select("id", { count: "exact", head: true }),
-        supabase.from("venues").select("rating").eq("is_active", true).gt("rating", 0),
-      ]);
-      const venueCount = venuesRes.count ?? 0;
-      const gameCount = gamesRes.count ?? 0;
-      const teamCount = teamsRes.count ?? 0;
-      const ratings = ratingsRes.data ?? [];
-      const avgRating = ratings.length > 0
-        ? (ratings.reduce((sum, v) => sum + Number(v.rating), 0) / ratings.length).toFixed(1)
-        : null;
-      const next: { value: string; label: string }[] = [];
-      if (venueCount > 0) next.push({ value: venueCount.toString(), label: "Venues Listed" });
-      if (gameCount > 0) next.push({ value: gameCount.toString(), label: "Games Created" });
-      if (teamCount > 0) next.push({ value: teamCount.toString(), label: "Teams Formed" });
-      if (avgRating) next.push({ value: `${avgRating}★`, label: "Average Rating" });
-      setStats(next);
-      setStatsLoaded(true);
+    let cancelled = false;
+    supabase
+      .from("venues")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .then(({ count }) => {
+        if (!cancelled) setVenueCount(count ?? 0);
+      });
+    return () => {
+      cancelled = true;
     };
-    fetchStats();
   }, []);
 
-  const howItWorks = [
-    { icon: Search, title: "Find Your Venue", description: "Browse verified facilities with real-time availability and transparent pricing.", step: "01" },
-    { icon: Calendar, title: "Book Instantly", description: "Reserve your slot in seconds with secure payment — no phone calls needed.", step: "02" },
-    { icon: Users, title: "Play Together", description: "Join open games, create teams, and grow your sports network effortlessly.", step: "03" },
+  // Under reduced motion we render the final state outright rather than
+  // animating into it, so no content depends on an animation that never runs.
+  const revealProps = prefersReduced
+    ? {}
+    : { initial: "hidden", whileInView: "visible", viewport: viewportOnce, variants: stagger };
+
+  const sports = [
+    { name: "Football", image: venueFootball, detail: "Pitches & futsal" },
+    { name: "Tennis", image: venueTennis, detail: "Clay, hard & padel" },
+    { name: "Basketball", image: venueBasketball, detail: "Indoor & street" },
+    { name: "Swimming", image: venueSwimming, detail: "Lanes by the hour" },
   ];
 
-  const forOwners = [
-    { icon: Building, title: "List Your Venue", description: "Reach active players searching for facilities in your area." },
-    { icon: BarChart3, title: "Smart Dashboard", description: "One place for schedule, pricing, analytics, and customer management." },
-    { icon: TrendingUp, title: "Grow Revenue", description: "Fill empty time slots automatically and increase your bookings." },
-  ];
-
-  const benefits = [
-    { icon: Zap, title: "Instant Booking", desc: "Pick a slot, pay in-app, and your court is locked in seconds." },
-    { icon: Shield, title: "Verified Owners", desc: "Every venue listing is reviewed before going live." },
-    { icon: Star, title: "Real Reviews", desc: "Ratings come from players who actually booked and played." },
-    { icon: Users, title: "Find Teammates", desc: "Join open games and connect with players near you." },
-    { icon: Calendar, title: "Live Availability", desc: "See up-to-date open slots from venue owners." },
-    { icon: Bot, title: "Smart Recommendations", desc: "Suggestions based on your sport and location." },
-  ];
-
-  const [featuredVenues, setFeaturedVenues] = useState([
-    { name: "Football", image: venueFootball, count: "—" },
-    { name: "Tennis", image: venueTennis, count: "—" },
-    { name: "Basketball", image: venueBasketball, count: "—" },
-    { name: "Swimming", image: venueSwimming, count: "—" },
-  ]);
-
-  useEffect(() => {
-    const fetchCategoryCounts = async () => {
-      const sports = ["Football", "Tennis", "Basketball", "Swimming"];
-      const images = [venueFootball, venueTennis, venueBasketball, venueSwimming];
-      const results = await Promise.all(
-        sports.map((sport) =>
-          supabase.from("venues").select("id", { count: "exact", head: true }).eq("is_active", true).contains("sports", [sport])
-        )
-      );
-      setFeaturedVenues(
-        sports.map((sport, i) => ({
-          name: sport,
-          image: images[i],
-          count: (results[i].count ?? 0) > 0 ? `${results[i].count} venues` : "",
-        }))
-      );
-    };
-    fetchCategoryCounts();
-  }, []);
-
-  const [testimonials, setTestimonials] = useState<{name: string; text: string; rating: number}[]>([]);
-
-  useEffect(() => {
-    const fetchReviews = async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("comment, rating, user_id")
-        .gte("rating", 4)
-        .not("comment", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(3);
-      if (data && data.length > 0) {
-        const profileIds = data.map((r) => r.user_id);
-        const { data: profiles } = await supabase
-          .from("profiles_public")
-          .select("user_id, full_name")
-          .in("user_id", profileIds);
-        const profileMap: Record<string, string> = {};
-        (profiles ?? []).forEach((p) => { if (p.user_id) profileMap[p.user_id] = p.full_name || "Player"; });
-        setTestimonials(
-          data.map((r) => ({
-            name: profileMap[r.user_id] || "Player",
-            text: r.comment!,
-            rating: r.rating,
-          }))
-        );
-      }
-    };
-    fetchReviews();
-  }, []);
-
-  const featureGroups = [
+  const steps = [
     {
-      eyebrow: "Find & Book",
-      title: "Discover venues in seconds",
-      description: "Search verified venues and reach the owner instantly — no calls, no friction.",
-      items: [
-        { icon: Search, label: "Smart Search" },
-        { icon: CreditCard, label: "Secure In-App Payment" },
-        { icon: Shield, label: "Verified Venues" },
-        { icon: Map, label: "Interactive Map" },
-      ],
+      icon: MapPin,
+      title: "Find your court",
+      body: "Filter by sport, neighbourhood and time. Every venue is verified, with real photos and the actual price.",
     },
     {
-      eyebrow: "Play & Connect",
-      title: "Find your team, join a game",
-      description: "Open games, teams, and chat — built so you spend more time playing.",
-      items: [
-        { icon: Gamepad2, label: "Open Games" },
-        { icon: Users, label: "Teams" },
-        { icon: MessageCircle, label: "Chat" },
-        { icon: UserCircle, label: "Player Profiles" },
-      ],
+      icon: CalendarCheck,
+      title: "Pick a real slot",
+      body: "Availability is live, not a guess. The slot you tap is the slot you get — held for twenty minutes while you pay.",
     },
     {
-      eyebrow: "For Owners",
-      title: "Run your venue like a pro",
-      description: "One cockpit for leads, listing health, and growth — zero commissions.",
-      items: [
-        { icon: Building, label: "Owner Dashboard" },
-        { icon: Bell, label: "Lead Inbox" },
-        { icon: BarChart3, label: "Analytics" },
-        { icon: Activity, label: "Listing Health" },
-      ],
-    },
-    {
-      eyebrow: "Smart Features",
-      title: "Powered by AI",
-      description: "Recommendations, matchmaking, and coaching that actually understand the game.",
-      items: [
-        { icon: Sparkles, label: "AI Recommendations" },
-        { icon: Bot, label: "Matchmaking" },
-        { icon: CloudSun, label: "Weather" },
-        { icon: BrainCircuit, label: "AI Coach" },
-      ],
+      icon: CreditCard,
+      title: "Pay and play",
+      body: "Card or Idram, inside the app. Confirmed instantly, and the venue knows you're coming.",
     },
   ];
 
   return (
-    <div className="flex flex-col">
+    <>
       <SEOHead
-        canonical="/"
-        jsonLd={[
-          createWebsiteJsonLd(),
-          {
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: "Sportsbnb",
-            url: "https://www.sportsbnb.org",
-            logo: "https://www.sportsbnb.org/favicon.png",
-            sameAs: [],
-          },
-        ]}
+        title="Book sports venues in Armenia"
+        description="Find and book verified sports venues near you. Live availability, instant confirmation, and secure in-app payment by card or Idram."
+        jsonLd={createWebsiteJsonLd()}
       />
-      <Helmet>
-        <link rel="preload" as="image" href={heroImage} />
-      </Helmet>
 
-      {/* ── Hero — asymmetric split, editorial ── */}
-      <section className="relative overflow-hidden bg-background pt-8 md:pt-10">
-        {/* radial accent */}
-        <div className="absolute inset-x-0 top-0 h-[60%] bg-radial-fade pointer-events-none" />
+      {/* ============================================================
+          HERO — one sentence, one action. The product is shown, not
+          described: the card underneath is a real booking state.
+      ============================================================ */}
+      <section className="relative overflow-hidden bg-background">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-40 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"
+        />
 
-        <div className="container relative">
-          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end pt-10 md:pt-16 pb-10 md:pb-14">
-            {/* LEFT — Headline + meta */}
-            <div className="lg:col-span-7 relative">
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={staggerContainer}
-                transition={{ staggerChildren: 0.1, delayChildren: 0.1 }}
-              >
-                <motion.div variants={fadeUp} transition={sectionTransition} className="mb-7 md:mb-9 flex items-center gap-3">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground-soft shadow-xs">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    Instant booking · Pay in-app
-                  </span>
-                  <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                    Loved by local players
-                  </span>
-                </motion.div>
-
-                <motion.h1
-                  variants={fadeUp}
-                  transition={sectionTransition}
-                  className="font-display text-[2.25rem] xs:text-[2.5rem] sm:text-6xl md:text-7xl lg:text-[5.75rem] leading-[0.95] sm:leading-[0.92] font-bold text-foreground tracking-tightest text-balance mb-5 md:mb-8"
-                >
-                  Find a court.{" "}
-                  <span className="relative inline-block">
-                    <span className="relative z-10 italic font-medium text-primary">Play today.</span>
-                    <span className="absolute bottom-1.5 left-0 right-0 h-3 md:h-4 bg-primary/15 -z-0 rounded-sm" />
-                  </span>
-                  <br />
-                  <span className="text-foreground/70">No phone calls.</span>
-                </motion.h1>
-
-                <motion.p
-                  variants={fadeUp}
-                  transition={sectionTransition}
-                  className="text-base md:text-lg text-foreground-soft leading-relaxed max-w-xl mb-9 md:mb-11"
-                >
-                  Browse verified sports venues, see live availability, and lock in your slot with
-                  secure in-app payment — card or Idram. Built for players who'd rather play than schedule.
-                </motion.p>
-
-                <motion.div
-                  variants={fadeUp}
-                  transition={sectionTransition}
-                  className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-10 md:mb-14"
-                >
-                  <Link to="/venues" className="w-full sm:w-auto">
-                    <Button size="xl" className="w-full sm:w-auto gap-2 shadow-lg hover:shadow-xl">
-                      Browse venues
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link to="/for-owners" className="w-full sm:w-auto">
-                    <Button size="xl" variant="ghost" className="w-full sm:w-auto text-foreground-soft hover:text-foreground sm:variant-outline">
-                      <Building className="h-5 w-5" />
-                      I'm a venue owner
-                    </Button>
-                  </Link>
-                </motion.div>
-
-                {/* Inline social proof */}
-                <motion.div
-                  variants={fadeUp}
-                  transition={sectionTransition}
-                  className="flex items-center gap-5"
-                >
-                  <div className="flex -space-x-2.5">
-                    {[venueFootball, venueTennis, venueBasketball].map((src, i) => (
-                      <div
-                        key={i}
-                        className="h-9 w-9 rounded-full border-2 border-background overflow-hidden bg-surface-3"
-                      >
-                        <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 mb-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 fill-warning text-warning" />
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Built for players in your city — message owners directly.
-                    </p>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </div>
-
-            {/* RIGHT — Photo collage with floating cards (desktop/tablet only — saves mobile fold) */}
+        <div className="container relative px-5 pb-16 pt-14 md:px-6 md:pb-24 md:pt-20">
+          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
             <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-              className="hidden lg:block lg:col-span-5 relative h-[640px]"
+              initial={prefersReduced ? undefined : "hidden"}
+              animate={prefersReduced ? undefined : "visible"}
+              variants={stagger}
             >
-              {/* main photo */}
-              <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl border border-border">
+              <motion.div variants={reveal}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-foreground-soft">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                  </span>
+                  Live availability
+                </span>
+              </motion.div>
+
+              <motion.h1
+                variants={reveal}
+                className="mt-6 text-balance font-display text-[clamp(2.5rem,5.2vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-foreground"
+              >
+                Book the court.
+                <br />
+                <span className="text-primary">Skip the call.</span>
+              </motion.h1>
+
+              <motion.p
+                variants={reveal}
+                className="mt-6 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
+              >
+                Verified sports venues across Armenia, with live availability and
+                instant confirmation. Pay by card or Idram — your slot is locked
+                the moment you do.
+              </motion.p>
+
+              <motion.div variants={reveal} className="mt-9 flex flex-wrap items-center gap-3">
+                <Button asChild size="lg" className="h-12 rounded-xl px-6 text-[15px] font-semibold">
+                  <Link to="/venues">
+                    Browse venues
+                    <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+                {/* No inset on mobile: stacked under the primary button, the
+                    ghost's own padding pushed its label ~30px right of the one
+                    above it and read as an accidental indent. */}
+                {!user && (
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="ghost"
+                    className="h-12 rounded-xl px-0 text-[15px] font-semibold md:px-5"
+                  >
+                    <Link to="/for-owners">
+                      <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                      List your venue
+                    </Link>
+                  </Button>
+                )}
+              </motion.div>
+
+              <motion.p
+                variants={reveal}
+                className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Every venue verified
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Confirmed in seconds
+                </span>
+              </motion.p>
+            </motion.div>
+
+            <motion.div
+              initial={prefersReduced ? undefined : { opacity: 0, scale: 0.97 }}
+              animate={prefersReduced ? undefined : { opacity: 1, scale: 1 }}
+              transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}
+              className="relative"
+            >
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-border shadow-2xl">
                 <img
                   src={heroImage}
-                  alt="Athletes playing on a modern sports court at golden hour"
-                  className="w-full h-full object-cover"
+                  alt="Floodlit five-a-side pitch at dusk with players mid-game"
+                  className="aspect-[4/3] w-full object-cover"
                   loading="eager"
-                  fetchPriority="high"
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-secondary/40 via-transparent to-transparent" />
-              </div>
-
-              {/* secondary tile (asymmetric overlap) */}
-              <div className="hidden sm:block absolute -left-8 lg:-left-14 bottom-10 w-44 lg:w-52 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl border-4 border-background rotate-[-4deg]">
-                <img src={venueTennis} alt="Tennis court" className="w-full h-full object-cover" loading="lazy" />
-              </div>
-
-              {/* Floating availability card */}
-              <div className="absolute top-6 -left-4 lg:-left-10 bg-card border border-border rounded-2xl shadow-xl p-3.5 pr-5 flex items-center gap-3 max-w-[280px]">
-                <div className="h-9 w-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
-                  <Activity className="h-4 w-4" strokeWidth={2.25} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Real-time</p>
-                  <p className="text-sm font-semibold text-foreground">Live availability, no calls</p>
-                </div>
-              </div>
-
-              {/* Floating booking-confirmed card */}
-              <div className="glass absolute bottom-8 -right-3 lg:-right-8 rounded-2xl p-3.5 pr-5 flex items-center gap-3 max-w-[330px]">
-                <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
-                  <CheckCircle className="h-5 w-5" strokeWidth={2.25} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">Booking confirmed — 19:00</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Paid <span className="stat-numeral">֏8,400</span> · just now</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Search bar — overlaps tonal switch */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="relative mt-2 mb-8 md:mb-0 md:-mb-16 z-20"
-          >
-            <HeroSearch />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Stats strip — only when we have real data ── */}
-      {stats.length > 0 && (
-        <section className="bg-surface-1 border-y border-border pt-14 md:pt-16 pb-8 md:pb-10">
-          <div className="container">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              transition={sectionTransition}
-              className={`grid gap-y-8 md:divide-x md:divide-border ${
-                stats.length === 1 ? "grid-cols-1" :
-                stats.length === 2 ? "grid-cols-2" :
-                stats.length === 3 ? "grid-cols-2 md:grid-cols-3" :
-                "grid-cols-2 md:grid-cols-4"
-              }`}
-            >
-              {stats.map((stat, i) => (
                 <div
-                  key={stat.label}
-                  className={`md:px-8 ${i === 0 ? "md:pl-0" : ""} ${i === stats.length - 1 ? "md:pr-0" : ""}`}
-                >
-                  <p className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-none">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground mt-2 font-medium uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Categories — asymmetric bento ── */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 md:mb-14"
-            >
-              <div className="max-w-2xl">
-                <p className="text-eyebrow mb-3">Browse by sport</p>
-                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
-                  Every sport has a court.{" "}
-                  <span className="text-foreground-soft italic font-medium">Pick yours.</span>
-                </h2>
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent"
+                />
               </div>
-              <Link
-                to="/venues"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors group self-start md:self-end shrink-0"
-              >
-                See all venues
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </motion.div>
 
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="grid grid-cols-2 md:grid-cols-6 md:grid-rows-2 gap-3 md:gap-4 md:h-[520px]"
-            >
-              {featuredVenues.map((venue, i) => {
-                // Bento sizing: tile 0 = wide+tall, 1 = tall, 2 = wide, 3 = small
-                const span = [
-                  "md:col-span-3 md:row-span-2",
-                  "md:col-span-3 md:row-span-1",
-                  "md:col-span-2 md:row-span-1",
-                  "md:col-span-1 md:row-span-1",
-                ][i];
-                return (
-                  <Link
-                    key={venue.name}
-                    to="/venues"
-                    className={`group relative overflow-hidden rounded-2xl block ${span} ${i > 1 ? "aspect-[3/4] md:aspect-auto" : "aspect-[4/5] md:aspect-auto"}`}
-                  >
-                    <img
-                      src={venue.image}
-                      alt={`${venue.name} venues on Sportsbnb`}
-                      className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 flex items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="font-display font-semibold text-white text-lg md:text-2xl tracking-extra-tight leading-tight">
-                          {venue.name}
-                        </h3>
-                        {venue.count && <p className="text-white/65 text-xs md:text-sm mt-1 font-medium">{venue.count}</p>}
-                      </div>
-                      <span className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-foreground translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
-                        <ArrowRight className="h-4 w-4" />
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── How It Works — left-aligned editorial ── */}
-      <section className="py-16 md:py-24 section-tinted border-y border-border">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="grid lg:grid-cols-12 gap-10 lg:gap-16"
-          >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
-              <p className="text-eyebrow mb-3">How it works</p>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] mb-5 md:mb-6 text-balance">
-                Three taps,<br />
-                <span className="text-foreground-soft italic font-medium">one game.</span>
-              </h2>
-              <p className="text-base md:text-lg text-foreground-soft leading-relaxed mb-8 max-w-md">
-                Skip the calls, the screenshots, and the group-chat back-and-forth. Sportsbnb is built for the way players actually book.
-              </p>
-              <Link to="/venues">
-                <Button size="lg" className="gap-2">
-                  Start exploring
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </motion.div>
-
-            <div className="lg:col-span-7 space-y-3 md:space-y-4">
-              {howItWorks.map((step, i) => {
-                const Icon = step.icon;
-                return (
-                  <motion.div
-                    key={step.title}
-                    variants={fadeUp}
-                    transition={sectionTransition}
-                    className="group relative bg-card border border-border rounded-2xl p-6 md:p-7 hover:shadow-md hover:border-border-strong transition-all"
-                  >
-                    <div className="flex items-start gap-5 md:gap-6">
-                      <div className="shrink-0 flex flex-col items-center gap-2">
-                        <span className="font-display text-xs font-bold text-primary tracking-wider">
-                          {step.step}
-                        </span>
-                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-primary-soft text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                          <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2} />
-                        </div>
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight mb-2">
-                          {step.title}
-                        </h3>
-                        <p className="text-sm md:text-base text-foreground-soft leading-relaxed">
-                          {step.description}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-
-          <div className="mt-12 md:mt-16 flex justify-center">
-            <NearbyPlayers />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Why Sportsbnb — asymmetric grid w/ feature spotlight ── */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="max-w-3xl mb-12 md:mb-16"
-            >
-              <p className="text-eyebrow mb-3">Why Sportsbnb</p>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
-                Built for players who<br className="hidden md:block" />{" "}
-                <span className="italic font-medium text-foreground-soft">just want to play.</span>
-              </h2>
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="grid md:grid-cols-6 gap-4 md:gap-5"
-            >
-              {benefits.map((benefit, i) => {
-                const Icon = benefit.icon;
-                // First card spans 2 cols + 2 rows (visual spotlight); rest = 2 cols
-                const isSpotlight = i === 0;
-                return (
-                  <div
-                    key={benefit.title}
-                    className={`group relative overflow-hidden rounded-2xl border border-border bg-card p-6 md:p-7 transition-all hover:border-border-strong hover:shadow-md ${
-                      isSpotlight
-                        ? "md:col-span-3 md:row-span-2 md:p-9 bg-gradient-to-br from-primary-soft via-card to-card"
-                        : "md:col-span-3 lg:col-span-2"
-                    }`}
-                  >
-                    {isSpotlight && (
-                      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
-                    )}
-                    <div
-                      className={`relative inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground mb-5 ${
-                        isSpotlight ? "h-14 w-14" : "h-11 w-11"
-                      }`}
-                    >
-                      <Icon className={isSpotlight ? "h-6 w-6" : "h-5 w-5"} strokeWidth={2} />
-                    </div>
-                    <h3
-                      className={`font-display font-semibold text-foreground tracking-extra-tight mb-2 ${
-                        isSpotlight ? "text-2xl md:text-3xl leading-tight" : "text-lg"
-                      }`}
-                    >
-                      {benefit.title}
-                    </h3>
-                    <p
-                      className={`text-foreground-soft leading-relaxed ${
-                        isSpotlight ? "text-base md:text-lg max-w-md" : "text-sm"
-                      }`}
-                    >
-                      {benefit.desc}
+              <div className="glass absolute -bottom-5 left-4 right-4 rounded-2xl p-4 md:left-8 md:right-8">
+                <div className="flex items-center gap-3.5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                    <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-[15px] font-semibold leading-tight text-foreground">
+                      Confirmed — Thursday, 19:00
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      Ararat Arena · 90 min ·{" "}
+                      <span className="font-mono tabular-nums">֏12,000</span>
                     </p>
                   </div>
-                );
-              })}
+                </div>
+              </div>
+
+              {venueCount !== null && venueCount > 0 && (
+                <div className="glass absolute -top-4 right-2 hidden items-center gap-2.5 rounded-xl px-3.5 py-2.5 sm:flex md:right-6">
+                  <Activity className="h-4 w-4 text-primary" aria-hidden="true" />
+                  <span className="font-mono text-xs tabular-nums text-foreground">
+                    {venueCount} venues live
+                  </span>
+                </div>
+              )}
             </motion.div>
-          </motion.div>
+          </div>
+        </div>
+
+        {/* Search at the seam: the first thing you can actually do,
+            rather than something buried below the fold. */}
+        <div className="container relative px-5 pb-14 md:px-6 md:pb-20">
+          <HeroSearch />
         </div>
       </section>
 
-      {/* ── For Venue Owners — dark editorial split ── */}
-      <section className="relative py-16 md:py-24 bg-secondary overflow-hidden">
-        <div className="absolute inset-0 bg-grid-soft opacity-[0.04] pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-[80%] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      {/* ============================================================
+          HOW IT WORKS
+      ============================================================ */}
+      <Section tone="raised" aria-labelledby="how-heading">
+        <motion.div {...revealProps}>
+          <motion.div variants={reveal} className="max-w-2xl">
+            <Eyebrow>How it works</Eyebrow>
+            <h2
+              id="how-heading"
+              className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
+            >
+              Three taps between you and the game.
+            </h2>
+          </motion.div>
 
-        <div className="container relative">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center"
-          >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="lg:col-span-6">
-              <span className="inline-flex items-center gap-2 rounded-full border border-secondary-foreground/15 bg-secondary-foreground/[0.06] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground/80 mb-6">
-                For venue owners
-              </span>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-secondary-foreground tracking-tightest leading-[1.02] mb-6 md:mb-7 text-balance">
-                Fill empty courts.<br />
-                <span className="italic font-medium text-secondary-foreground/80">Keep every booking.</span>
-              </h2>
-              <p className="text-base md:text-lg text-secondary-foreground/65 mb-10 leading-relaxed max-w-lg">
-                Get discovered by local players, manage availability in one place, and get paid automatically for every booking — payouts straight to your bank or Idram.
+          <ol className="mt-12 grid gap-10 md:mt-14 md:grid-cols-3 md:gap-8">
+            {steps.map((step, i) => (
+              <motion.li key={step.title} variants={reveal}>
+                <div className="mb-5 flex items-center gap-3">
+                  <span className="font-mono text-sm tabular-nums text-primary">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                </div>
+                <step.icon
+                  className="mb-4 h-6 w-6 text-primary"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+                <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
+                  {step.title}
+                </h3>
+                <p className="mt-2.5 text-[15px] leading-relaxed text-foreground-soft">
+                  {step.body}
+                </p>
+              </motion.li>
+            ))}
+          </ol>
+        </motion.div>
+      </Section>
+
+      {/* ============================================================
+          SPORTS — image-led, not a row of text chips.
+      ============================================================ */}
+      <Section aria-labelledby="sports-heading">
+        <motion.div {...revealProps}>
+          {/* The "see all" link rides the eyebrow row rather than bottom-aligning
+              against the heading: with a two-line heading the latter left it
+              floating in the middle of the block with no edge to relate to. */}
+          <motion.div variants={reveal}>
+            <div className="flex items-center justify-between gap-4">
+              <Eyebrow className="mb-0">What you can book</Eyebrow>
+              <Link
+                to="/venues"
+                className="group inline-flex shrink-0 items-center gap-1.5 rounded-md text-[15px] font-semibold text-primary outline-none transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                See all venues
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+            </div>
+            <h2
+              id="sports-heading"
+              className="mt-4 max-w-xl text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
+            >
+              Every sport has a court. Pick yours.
+            </h2>
+          </motion.div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {sports.map((sport) => (
+              <motion.div key={sport.name} variants={reveal}>
+                <Link
+                  to={`/venues?sport=${encodeURIComponent(sport.name)}`}
+                  className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-border outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <img
+                    src={sport.image}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                  />
+                  {/* Scrim weighted to the bottom third: the caption has to stay
+                      legible over a bright basketball floor as well as a dark
+                      pitch, and a linear scrim reaching high enough to do that
+                      leaves every image looking veiled. */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 via-45% to-transparent"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <h3 className="font-display text-lg font-semibold text-white">{sport.name}</h3>
+                    <p className="mt-0.5 text-[13px] text-white/70">{sport.detail}</p>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </Section>
+
+      {/* ============================================================
+          THE DIFFERENCE — the one claim worth a whole section, shown
+          as the actual booking UI rather than asserted in bullets.
+      ============================================================ */}
+      <Section tone="raised" aria-labelledby="lock-heading">
+        <motion.div {...revealProps} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+          <motion.div variants={reveal}>
+            <Eyebrow>Why it's different</Eyebrow>
+            <h2
+              id="lock-heading"
+              className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
+            >
+              The slot is yours the moment you pay.
+            </h2>
+            <p className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
+              No messaging an owner and hoping. No turning up to find someone
+              else on the pitch. Payment and reservation happen together, so a
+              confirmed booking means exactly that.
+            </p>
+
+            <ul className="mt-8 space-y-3.5">
+              {[
+                "Double-booking is impossible — enforced by the database, not by trust",
+                "Cancellation terms shown before you pay, refunds applied automatically",
+                "Card or Idram, both settled in Armenian dram",
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex gap-3 text-[15px] leading-relaxed text-foreground-soft"
+                >
+                  <Check
+                    className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                    strokeWidth={2.25}
+                    aria-hidden="true"
+                  />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          <motion.div variants={reveal}>
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-xl md:p-6">
+              <div className="flex items-baseline justify-between">
+                <h3 className="font-display text-base font-semibold text-foreground">
+                  Thursday, 24 July
+                </h3>
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">90 min</span>
+              </div>
+
+              <ul className="mt-5 grid grid-cols-3 gap-2">
+                {[
+                  { t: "17:00", s: "taken" },
+                  { t: "18:30", s: "open" },
+                  { t: "19:00", s: "picked" },
+                  { t: "20:30", s: "open" },
+                  { t: "21:00", s: "taken" },
+                  { t: "22:00", s: "open" },
+                ].map(({ t, s }) => (
+                  <li
+                    key={t}
+                    className={[
+                      "rounded-lg border px-2 py-2.5 text-center font-mono text-[13px] tabular-nums",
+                      s === "picked"
+                        ? "border-primary bg-primary font-semibold text-primary-foreground"
+                        : s === "taken"
+                          ? "border-border bg-surface-3 text-muted-foreground line-through"
+                          : "border-border bg-surface-2 text-foreground",
+                    ].join(" ")}
+                  >
+                    {t}
+                    <span className="sr-only">
+                      {s === "picked"
+                        ? " — selected"
+                        : s === "taken"
+                          ? " — unavailable"
+                          : " — available"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <dl className="mt-6 space-y-2.5 border-t border-border pt-5 text-[15px]">
+                <div className="flex justify-between">
+                  <dt className="text-foreground-soft">90 minutes</dt>
+                  <dd className="font-mono tabular-nums text-foreground">֏12,000</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-foreground-soft">Service fee</dt>
+                  <dd className="font-mono tabular-nums text-foreground">֏600</dd>
+                </div>
+                <div className="flex justify-between border-t border-border pt-3">
+                  <dt className="font-display font-semibold text-foreground">Total</dt>
+                  <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                    ֏12,600
+                  </dd>
+                </div>
+              </dl>
+
+              {/* Status, not an action. Styled as a solid primary bar it was
+                  indistinguishable from the real CTAs elsewhere on the page,
+                  inviting a click on a static illustration. */}
+              <p className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 py-3 text-[15px] font-semibold text-primary">
+                <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+                Slot held until 20:00
               </p>
-
-              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6 mb-10 md:mb-12">
-                {forOwners.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="flex gap-4">
-                      <div className="shrink-0 w-11 h-11 rounded-xl bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center text-primary">
-                        <Icon className="h-5 w-5" strokeWidth={2} />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-display font-semibold text-secondary-foreground text-base mb-1">{item.title}</h3>
-                        <p className="text-sm text-secondary-foreground/60 leading-relaxed">{item.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link to="/add-venue">
-                  <Button size="lg" className="gap-2">
-                    List your venue free
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="/for-owners">
-                  <Button size="lg" variant="heroOutline">
-                    Learn more
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Visual side — image with metric overlays */}
-            <motion.div
-              variants={fadeUp}
-              transition={{ ...sectionTransition, duration: 0.8 } as any}
-              className="lg:col-span-6 relative hidden lg:block"
-            >
-              <div className="relative aspect-[5/6] rounded-[1.75rem] overflow-hidden shadow-2xl border border-secondary-foreground/10">
-                <img src={venueBasketball} alt="Venue interior at golden hour" className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-tr from-secondary/60 via-transparent to-transparent" />
-              </div>
-
-              {/* Floating value card — owner benefit */}
-              <div className="absolute -left-6 top-12 bg-card border border-border rounded-2xl shadow-xl p-4 w-60">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-8 w-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4" strokeWidth={2.25} />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">Zero commission</p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">You keep 100% of your listed price — the small service fee is paid by the player.</p>
-              </div>
-
-              {/* Floating payout card */}
-              <div className="glass absolute -right-4 bottom-10 rounded-2xl p-4 w-64">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-7 w-7 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-                    <CreditCard className="h-4 w-4" strokeWidth={2.25} />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">Automatic payouts</p>
-                </div>
-                <p className="text-xs text-muted-foreground">Earnings land in your bank or Idram — <span className="stat-numeral">֏42,000</span> this week.</p>
-              </div>
-
-              <div className="absolute -inset-8 -z-10 bg-primary/15 rounded-[2.5rem] blur-3xl" />
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Testimonials — magazine layout ── */}
-      {testimonials.length > 0 && (
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 md:mb-16"
-            >
-              <div>
-                <p className="text-eyebrow mb-3">Voices from the community</p>
-                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
-                  Real players.<br />
-                  <span className="italic font-medium text-foreground-soft">Real reviews.</span>
-                </h2>
-              </div>
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="grid md:grid-cols-3 gap-4 md:gap-6"
-            >
-              {testimonials.map((t, i) => (
-                <figure
-                  key={t.name}
-                  className={`group relative bg-card border border-border rounded-2xl p-7 md:p-8 hover:shadow-md transition-all ${
-                    i === 1 ? "md:translate-y-6" : ""
-                  }`}
-                >
-                  <span className="absolute -top-4 left-7 font-display text-6xl text-primary/30 leading-none select-none">"</span>
-                  <div className="flex gap-0.5 mb-5">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} className="h-4 w-4 text-warning fill-warning" />
-                    ))}
-                  </div>
-                  <blockquote className="text-base md:text-[17px] text-foreground leading-relaxed mb-6 font-medium">
-                    {t.text}
-                  </blockquote>
-                  <figcaption className="flex items-center gap-3 pt-5 border-t border-border">
-                    <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                      {t.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">Verified player</p>
-                    </div>
-                  </figcaption>
-                </figure>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-      )}
-
-      {/* ── Platform Features — grouped use-case journey ── */}
-      <section className="py-14 md:py-20 section-tinted border-y border-border overflow-hidden">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="max-w-3xl mb-10 md:mb-14"
-            >
-              <p className="text-eyebrow mb-3">Everything you need</p>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tightest leading-[1.02] text-balance">
-                Discover. Book. Play.{" "}
-                <span className="italic font-medium text-foreground-soft">All in one place.</span>
-              </h2>
-            </motion.div>
-
-            {/* Secure payment spotlight banner */}
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="mb-8 md:mb-10 relative overflow-hidden rounded-2xl border border-border bg-card p-5 md:p-7"
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-                <div className="shrink-0 h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-primary-soft text-primary flex items-center justify-center">
-                  <Lock className="h-6 w-6 md:h-7 md:w-7" strokeWidth={2.25} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.16em] text-primary mb-1">
-                    Book &amp; pay in the app
-                  </p>
-                  <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight leading-tight mb-1">
-                    Your slot is locked the moment you pay
-                  </h3>
-                  <p className="text-sm md:text-[15px] text-foreground-soft leading-relaxed">
-                    No phone calls. No double bookings. Pay securely with your card or Idram — refunds follow the venue's cancellation policy automatically.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
-              {featureGroups.map((group) => (
-                <motion.div
-                  key={group.title}
-                  variants={fadeUp}
-                  transition={sectionTransition}
-                  className="group relative bg-card border border-border rounded-2xl p-6 md:p-7 hover:border-border-strong hover:shadow-md transition-all"
-                >
-                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.16em] text-primary mb-3">
-                    {group.eyebrow}
-                  </p>
-                  <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground tracking-extra-tight leading-tight mb-2">
-                    {group.title}
-                  </h3>
-                  <p className="text-sm text-foreground-soft leading-relaxed mb-5 md:mb-6">
-                    {group.description}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 md:gap-2.5">
-                    {group.items.map((f) => {
-                      const Icon = f.icon;
-                      return (
-                        <div
-                          key={f.label}
-                          className="flex items-center gap-2 rounded-xl border border-border bg-surface-1 px-3 py-2.5"
-                        >
-                          <Icon className="h-3.5 w-3.5 text-primary shrink-0" strokeWidth={2.25} />
-                          <span className="text-xs md:text-[13px] font-semibold text-foreground truncate">{f.label}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              ))}
             </div>
           </motion.div>
-        </div>
-      </section>
+        </motion.div>
+      </Section>
 
-      {/* ── Mission & Vision — quieter, pull-quote feel ── */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="max-w-5xl mx-auto"
-          >
-            <motion.div variants={fadeUp} transition={sectionTransition} className="grid md:grid-cols-12 gap-10 md:gap-14 items-start">
-              <div className="md:col-span-5">
-                <p className="text-eyebrow mb-3">What drives us</p>
-                <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tightest leading-[1.05]">
-                  Sport should be a tap away — not a hassle.
-                </h2>
-              </div>
-              <div className="md:col-span-7 space-y-8">
-                <div className="border-l-2 border-primary pl-6">
-                  <h3 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary" />
-                    Mission
-                  </h3>
-                  <p className="text-base md:text-lg text-foreground-soft leading-relaxed">
-                    Make it effortless for anyone to find, organize, and join sport — removing every barrier between people and play.
-                  </p>
-                </div>
-                <div className="border-l-2 border-border pl-6">
-                  <h3 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-primary" />
-                    Vision
-                  </h3>
-                  <p className="text-base md:text-lg text-foreground-soft leading-relaxed">
-                    A world where finding a game is as easy as opening an app — one trusted place to discover, connect, and stay active.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Final CTA — solid color, brand-forward ── */}
-      <section className="relative py-16 md:py-24 bg-secondary overflow-hidden">
-        <div className="absolute inset-0 bg-grid-soft opacity-[0.05] pointer-events-none" />
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-
-        <div className="container relative z-10">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <motion.h2
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="font-display text-display-xl text-secondary-foreground mb-6 md:mb-8 text-balance"
+      {/* ============================================================
+          OWNERS — the single tonal inversion on the page. Used once,
+          which is what makes it register as a different audience.
+      ============================================================ */}
+      <Section tone="invert" aria-labelledby="owners-heading">
+        <motion.div {...revealProps} className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <motion.div variants={reveal}>
+            <p className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.2em] opacity-60">
+              For venue owners
+            </p>
+            <h2
+              id="owners-heading"
+              className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-secondary-foreground"
             >
-              Your next game is{" "}
-              <span className="italic font-medium text-primary">one tap away.</span>
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="text-base md:text-xl text-secondary-foreground/65 mb-10 md:mb-12 max-w-md mx-auto leading-relaxed"
+              Fill the empty hours. Keep the paperwork out of it.
+            </h2>
+            <p className="mt-5 max-w-[50ch] text-[1.0625rem] leading-relaxed opacity-75">
+              List once, set your hours and price, then take bookings around the
+              clock. We collect payment; you get a weekly payout with every
+              booking itemised.
+            </p>
+            <Button
+              asChild
+              size="lg"
+              className="mt-8 h-12 rounded-xl bg-background px-6 text-[15px] font-semibold text-foreground hover:bg-background/90"
             >
-              Free to start. No card required. Just play more.
-            </motion.p>
-            <motion.div
-              variants={fadeUp}
-              transition={sectionTransition}
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-20 md:mb-0"
-            >
-              {!isLoading && !user ? (
-                <Link to="/signup">
-                  <Button size="xl" className="w-full sm:w-auto gap-2 shadow-2xl">
-                    Create free account
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/dashboard">
-                  <Button size="xl" className="w-full sm:w-auto gap-2 shadow-2xl">
-                    Go to dashboard
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
-              )}
-              <Link to="/venues">
-                <Button variant="heroOutline" size="xl" className="w-full sm:w-auto bg-secondary-foreground/[0.06] border-secondary-foreground/20 text-secondary-foreground hover:bg-secondary-foreground/10 hover:border-secondary-foreground/30">
-                  Explore venues
-                </Button>
+              <Link to="/for-owners">
+                List your venue
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
               </Link>
-            </motion.div>
+            </Button>
           </motion.div>
-        </div>
+
+          <motion.dl variants={reveal} className="grid grid-cols-2 gap-4">
+            {[
+              { k: "Commission", v: "5%", note: "No listing fee, no monthly cost" },
+              { k: "Payouts", v: "Weekly", note: "Itemised, straight to your account" },
+              { k: "Setup", v: "10 min", note: "Photos, hours, price — that's it" },
+              { k: "Support", v: "Direct", note: "Message players inside the app" },
+            ].map(({ k, v, note }) => (
+              <div key={k} className="rounded-2xl bg-secondary-foreground/5 p-5">
+                <dt className="font-mono text-[11px] uppercase tracking-[0.14em] opacity-60">{k}</dt>
+                <dd className="mt-2 font-display text-2xl font-bold tabular-nums">{v}</dd>
+                <p className="mt-1.5 text-[13px] leading-snug opacity-65">{note}</p>
+              </div>
+            ))}
+          </motion.dl>
+        </motion.div>
+      </Section>
+
+      {/* ============================================================
+          CLOSE — one action, nothing competing with it.
+      ============================================================ */}
+      <section className="relative overflow-hidden bg-background py-24 md:py-32">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[-30%] left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"
+        />
+        <motion.div {...revealProps} className="container relative px-5 text-center md:px-6">
+          <motion.h2
+            variants={reveal}
+            className="mx-auto max-w-3xl text-balance font-display text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.02] tracking-[-0.035em] text-foreground"
+          >
+            Your next game is one tap away.
+          </motion.h2>
+          <motion.p
+            variants={reveal}
+            className="mx-auto mt-5 max-w-[44ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
+          >
+            Free to join. No card needed until you book.
+          </motion.p>
+          <motion.div variants={reveal} className="mt-9 flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg" className="h-12 rounded-xl px-7 text-[15px] font-semibold">
+              <Link to={user ? "/venues" : "/signup"}>
+                {user ? "Find a court" : "Get started"}
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-12 rounded-xl px-6 text-[15px] font-semibold"
+            >
+              <Link to="/venues">Browse first</Link>
+            </Button>
+          </motion.div>
+
+          <motion.p
+            variants={reveal}
+            className="mt-8 inline-flex items-center gap-2 text-sm text-muted-foreground"
+          >
+            <Star className="h-4 w-4 fill-primary text-primary" aria-hidden="true" />
+            Built for players in Yerevan — message venue owners directly
+          </motion.p>
+        </motion.div>
       </section>
-    </div>
+    </>
   );
 };
 

@@ -202,11 +202,17 @@
     font-feature-settings: "ss01", "cv11";
   }
 
-  /* Strong, confident headings */
+  /* Strong, confident headings.
+     Deliberately no `color` here. Pinning headings to --foreground made them
+     invisible on any inverted surface (the light "for owners" panel sets
+     text-secondary-foreground on its container; the heading ignored it and
+     stayed near-white on near-white). Inheriting is both the browser default
+     and the correct behaviour: body already sets --foreground, so headings on
+     normal surfaces are unchanged, and headings on a re-coloured surface now
+     follow it. */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: var(--tracking-tight);
-    color: hsl(var(--foreground));
     font-weight: 600;
   }
 
