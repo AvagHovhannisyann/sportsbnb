@@ -224,12 +224,12 @@ const BlogPostsTab = () => {
                           </Link>
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(post)}>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(post)} aria-label="Edit post">
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label="Delete post">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>

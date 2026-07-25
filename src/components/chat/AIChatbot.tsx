@@ -163,11 +163,11 @@ export const AIChatbot = () => {
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={handleReset} title="New conversation">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={handleReset} title="New conversation" aria-label="New conversation">
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setOpen(false)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setOpen(false)} aria-label="Close assistant">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -266,7 +266,7 @@ export const AIChatbot = () => {
             className="flex-1 h-10 rounded-full border border-input bg-background px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-shadow"
             disabled={isLoading}
           />
-          <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-10 w-10 rounded-full flex-shrink-0 shadow-sm">
+          <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-10 w-10 rounded-full flex-shrink-0 shadow-sm" aria-label="Send message">
             <Send className="h-4 w-4" />
           </Button>
         </div>
