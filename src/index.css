@@ -115,18 +115,18 @@
 
   /* "Court at night" — the default look */
   .dark {
-    --background: 160 22% 5%;          /* near-black, green-tinted */
-    --surface-1: 160 18% 7%;
-    --surface-2: 160 15% 10%;
-    --surface-3: 158 13% 13%;
+    --background: 160 22% 5%;          /* near-black, green-tinted — deepest step */
+    --surface-1: 160 18% 10%;          /* tinted section band — must read as a step, not a shade */
+    --surface-2: 160 15% 14%;          /* elevated card */
+    --surface-3: 158 13% 18%;          /* inset / muted block */
 
     --foreground: 100 20% 96%;         /* chalk white, warm-green cast */
     --foreground-soft: 130 8% 72%;
 
-    --card: 160 15% 9%;
+    --card: 160 15% 13%;
     --card-foreground: 100 20% 96%;
 
-    --popover: 160 16% 8%;
+    --popover: 160 16% 12%;
     --popover-foreground: 100 20% 96%;
 
     /* Electric court-green — actions, live states */
@@ -149,7 +149,7 @@
     --success: 151 80% 44%;
     --warning: 42 95% 55%;
 
-    --border: 157 12% 17%;
+    --border: 157 12% 22%;
     --border-strong: 155 10% 26%;
     --input: 157 12% 17%;
     --ring: 151 90% 47%;
