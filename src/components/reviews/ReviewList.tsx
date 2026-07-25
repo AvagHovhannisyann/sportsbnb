@@ -64,6 +64,7 @@ const ReviewList = ({ reviews, currentUserId, onDelete }: ReviewListProps) => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Delete your review"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
                   onClick={() => onDelete(review.id)}
                 >
