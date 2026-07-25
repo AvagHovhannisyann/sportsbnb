@@ -1,17 +1,24 @@
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useBlogPostBySlug } from "@/hooks/useBlogPosts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, ArrowLeft, User } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, User, FileQuestion } from "lucide-react";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { data: post, isLoading, error } = useBlogPostBySlug(slug || "");
+  const {
+    data: post,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useBlogPostBySlug(slug || "");
 
   const estimateReadTime = (content: string) => {
     const words = content.split(/\s+/).length;
@@ -35,19 +42,40 @@ const BlogPostPage = () => {
     );
   }
 
-  if (error || !post) {
+  // `error || !post` used to collapse into a single "Article not found" — and
+  // noIndex'd it, telling crawlers the article was gone on the strength of a
+  // transient 500. A failed fetch says nothing about whether the post exists.
+  if (error) {
+    return (
+      <Layout>
+        <div className="container max-w-3xl">
+          <ErrorPanel what="this article" onRetry={() => refetch()} isRetrying={isFetching}>
+            <Button variant="outline" asChild>
+              <Link to="/blog">Back to blog</Link>
+            </Button>
+          </ErrorPanel>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!post) {
     return (
       <Layout>
         <SEOHead title="Post Not Found" noIndex />
-        <div className="container max-w-3xl py-20 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Article not found</h1>
-          <p className="text-muted-foreground mb-6">The article you're looking for doesn't exist or has been removed.</p>
-          <Button asChild>
-            <Link to="/blog">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Blog
-            </Link>
-          </Button>
+        <div className="container max-w-3xl">
+          <StatusPanel
+            icon={FileQuestion}
+            title="Article not found"
+            description="The article you're looking for doesn't exist or has been removed."
+          >
+            <Button asChild>
+              <Link to="/blog">
+                <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                Back to blog
+              </Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );

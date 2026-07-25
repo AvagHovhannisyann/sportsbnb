@@ -103,6 +103,38 @@ endpoint. The worst finding of the whole audit is here.
 | Payment choice was invisible to screen readers | Three plain `<button>`s conveying selection only through a border colour: all three announced identically with no selected state, on the control that decides how someone pays. Now a real `role="radiogroup"` with `aria-checked`, plus focus rings. |
 | Deadline was purely visual | The countdown carries `role="timer"` and `aria-live="polite"`. |
 
+## The systemic bug: failed requests rendered as facts
+
+The same shape turned up on six pages, so it is worth naming rather than
+listing. Consumers destructured `isLoading` from a query and never `isError`.
+A failed request therefore fell through to whichever branch handled *absence*,
+and the page stated something confident and false:
+
+| Page | What a dropped connection said | What was true |
+|---|---|---|
+| Discover | "0 venues available" | Unknown — the query had not returned |
+| Venue details | "Venue not found" | The venue was fine |
+| **Checkout** | **"This reservation has expired. Please pick your slot again."** | **The hold was still live; rebooking collides with it or double-pays** |
+| Game details | "Game not found" | The game was fine |
+| Blog post | "Article not found" — and `noIndex`, on a transient 500 | The post was fine |
+| Team details | "Team not found", with no way out at all | The team was fine |
+
+Absence and failure are different facts. Absence is something the server told
+us; failure means the server told us nothing. Rendering them the same way is
+what turned a network blip into instructions that could cost a user money.
+
+Fixed by extracting `src/components/common/StatusPanel.tsx` — `StatusPanel`
+for "nothing here, go somewhere useful" and `ErrorPanel` for "we did not hear
+back, retry" — and routing all six pages through it. One implementation, six
+call sites, and the distinction is now structural rather than something each
+page has to remember. The rule for call sites is in the file's doc comment: if
+the query errored, never assert anything about the record.
+
+Still open: this was found by inspection of six pages, not exhaustively. ~30
+other `useQuery` consumers destructure `isLoading` without `isError`; most
+render lists where failure degrades to an empty list rather than a false
+claim, which is survivable, but the sweep is not finished.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

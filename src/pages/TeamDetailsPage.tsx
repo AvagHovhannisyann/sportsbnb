@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Users, Shield, Copy, UserPlus, Crown, Star, LogOut,
-  Trash2, Settings, Calendar, Clock, MapPin, Loader2, MessageCircle, Sparkles,
+  Trash2, Settings, Calendar, Clock, MapPin, Loader2, MessageCircle, Sparkles, UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useTeamById, useTeamMembers, useInviteToTeam,
@@ -142,8 +143,17 @@ const TeamDetailsPage = () => {
   if (!team) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h2 className="text-xl font-semibold text-foreground">Team not found</h2>
+        <div className="container">
+          {/* Previously a bare heading with no way out — a dead end. */}
+          <StatusPanel
+            icon={UsersRound}
+            title="Team not found"
+            description="This team may have been disbanded, or the link is out of date."
+          >
+            <Button asChild>
+              <Link to="/teams">Browse teams</Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );

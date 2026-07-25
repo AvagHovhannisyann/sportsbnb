@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   MapPin, Calendar, Clock, Users, ArrowLeft, Loader2, 
-  Share2, DollarSign, AlertTriangle, CreditCard, Check, X, UserPlus
+  Share2, DollarSign, AlertTriangle, CreditCard, Check, X, UserPlus, CalendarX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   useGameById, 
@@ -42,7 +43,13 @@ const GameDetailsPage = () => {
   const { user } = useAuth();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
-  const { data: game, isLoading } = useGameById(id);
+  const {
+    data: game,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useGameById(id);
   const requestToJoin = useRequestToJoinGame();
   const leaveGame = useLeaveGame();
   const cancelGame = useCancelGame();
@@ -59,14 +66,34 @@ const GameDetailsPage = () => {
     );
   }
 
+  // A failed request is not evidence that the game is gone.
+  if (isError) {
+    return (
+      <Layout>
+        <div className="container">
+          <ErrorPanel what="this game" onRetry={() => refetch()} isRetrying={isFetching}>
+            <Button variant="outline" asChild>
+              <Link to="/games">Back to games</Link>
+            </Button>
+          </ErrorPanel>
+        </div>
+      </Layout>
+    );
+  }
+
   if (!game) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Game not found</h1>
-          <Link to="/games">
-            <Button>Back to Games</Button>
-          </Link>
+        <div className="container">
+          <StatusPanel
+            icon={CalendarX}
+            title="Game not found"
+            description="This game may have been cancelled by its host, or the link is out of date."
+          >
+            <Button asChild>
+              <Link to="/games">Browse games</Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );

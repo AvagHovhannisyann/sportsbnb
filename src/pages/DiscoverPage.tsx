@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -476,28 +477,13 @@ const DiscoverPage = () => {
             /* Without this branch a failed query left the skeletons pulsing
                forever — the most misleading state available, since it promises
                content that is never coming and offers no way to retry. */
-            <div className="rounded-2xl border border-destructive/25 bg-destructive/5 px-6 py-16 text-center">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                <WifiOff className="h-7 w-7" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-xl font-semibold text-foreground">
-                Couldn't load venues
-              </h3>
-              <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
-                The connection dropped on the way to our servers. Your filters
-                are still set — retrying will keep them.
-              </p>
-              <Button className="mt-6" onClick={() => refetch()} disabled={isRefetching}>
-                {isRefetching ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                    Retrying…
-                  </>
-                ) : (
-                  "Try again"
-                )}
-              </Button>
-            </div>
+            <ErrorPanel
+              what="venues"
+              description="The connection dropped on the way to our servers. Your filters are still set — retrying will keep them."
+              onRetry={() => refetch()}
+              isRetrying={isRefetching}
+              className="rounded-2xl border border-destructive/25 bg-destructive/5"
+            />
           ) : filteredVenues.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVenues.map((venue: any) => (
@@ -518,31 +504,24 @@ const DiscoverPage = () => {
               ))}
             </div>
           ) : hasActiveFilters && venues.length > 0 ? (
-            <div className="rounded-2xl border border-border bg-surface-1 px-6 py-16 text-center">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2 text-muted-foreground">
-                <SearchX className="h-7 w-7" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-xl font-semibold text-foreground">
-                Nothing matches those filters
-              </h3>
-              <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
-                {venues.length} {venues.length === 1 ? "venue is" : "venues are"} listed
-                overall — widening the search should bring some back.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Button onClick={clearFilters}>Clear all filters</Button>
-                {selectedSport && (
-                  <Button variant="outline" onClick={() => setSelectedSport("")}>
-                    Any sport
-                  </Button>
-                )}
-                {selectedCity && (
-                  <Button variant="outline" onClick={() => setSelectedCity("")}>
-                    Any city
-                  </Button>
-                )}
-              </div>
-            </div>
+            <StatusPanel
+              icon={SearchX}
+              title="Nothing matches those filters"
+              description={`${venues.length} ${venues.length === 1 ? "venue is" : "venues are"} listed overall — widening the search should bring some back.`}
+              className="rounded-2xl border border-border bg-surface-1"
+            >
+              <Button onClick={clearFilters}>Clear all filters</Button>
+              {selectedSport && (
+                <Button variant="outline" onClick={() => setSelectedSport("")}>
+                  Any sport
+                </Button>
+              )}
+              {selectedCity && (
+                <Button variant="outline" onClick={() => setSelectedCity("")}>
+                  Any city
+                </Button>
+              )}
+            </StatusPanel>
           ) : (
             /* The catalogue itself is empty — which is the dominant fact even
                if filters happen to be set, so this branch is guarded ahead of
@@ -551,27 +530,20 @@ const DiscoverPage = () => {
                with an empty catalogue "widening the search" is simply false.
                Until venues are listed this is the most-seen screen in the app,
                so it gets a real next step instead. */
-            <div className="rounded-2xl border border-border bg-surface-1 px-6 py-16 text-center">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <MapPin className="h-7 w-7" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-xl font-semibold text-foreground">
-                No venues listed yet
-              </h3>
-              <p className="mx-auto mt-2 max-w-[48ch] text-[15px] leading-relaxed text-foreground-soft">
-                We're onboarding venues across Yerevan now. If you run a pitch,
-                court or pool, listing takes about ten minutes and costs nothing
-                until you take a booking.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Button asChild>
-                  <Link to="/for-owners">List your venue</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/games">Find a game instead</Link>
-                </Button>
-              </div>
-            </div>
+            <StatusPanel
+              icon={MapPin}
+              tone="positive"
+              title="No venues listed yet"
+              description="We're onboarding venues across Yerevan now. If you run a pitch, court or pool, listing takes about ten minutes and costs nothing until you take a booking."
+              className="rounded-2xl border border-border bg-surface-1"
+            >
+              <Button asChild>
+                <Link to="/for-owners">List your venue</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/games">Find a game instead</Link>
+              </Button>
+            </StatusPanel>
           )}
         </div>
       </div>

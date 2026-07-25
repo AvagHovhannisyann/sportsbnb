@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
 import BookingPanel from "@/features/booking/BookingPanel";
@@ -73,32 +74,17 @@ const VenueDetailsPage = () => {
   if (venueError) {
     return (
       <Layout>
-        <div className="container py-24 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-            <WifiOff className="h-7 w-7" aria-hidden="true" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Couldn't load this venue
-          </h1>
-          <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
-            The connection dropped on the way to our servers. The venue is
-            probably fine — this is on us.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button onClick={() => refetchVenue()} disabled={venueFetching}>
-              {venueFetching ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                  Retrying…
-                </>
-              ) : (
-                "Try again"
-              )}
-            </Button>
+        <div className="container py-12">
+          <ErrorPanel
+            what="this venue"
+            description="The connection dropped on the way to our servers. The venue is probably fine — this is on us."
+            onRetry={() => refetchVenue()}
+            isRetrying={venueFetching}
+          >
             <Button variant="outline" asChild>
               <Link to="/venues">Back to venues</Link>
             </Button>
-          </div>
+          </ErrorPanel>
         </div>
       </Layout>
     );
@@ -107,18 +93,16 @@ const VenueDetailsPage = () => {
   if (!venue) {
     return (
       <Layout>
-        <div className="container py-24 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2 text-muted-foreground">
-            <MapPin className="h-7 w-7" aria-hidden="true" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Venue not found</h1>
-          <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
-            This listing may have been removed by its owner, or the link is out
-            of date.
-          </p>
-          <Button className="mt-6" asChild>
-            <Link to="/venues">Browse all venues</Link>
-          </Button>
+        <div className="container py-12">
+          <StatusPanel
+            icon={MapPin}
+            title="Venue not found"
+            description="This listing may have been removed by its owner, or the link is out of date."
+          >
+            <Button asChild>
+              <Link to="/venues">Browse all venues</Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );

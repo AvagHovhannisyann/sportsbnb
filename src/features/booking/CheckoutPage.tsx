@@ -5,6 +5,7 @@ import { CreditCard, Loader2, ShieldCheck, Timer, Wallet, WifiOff } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -128,30 +129,17 @@ export default function CheckoutPage() {
   if (isError) {
     return (
       <Layout>
-        <div className="container max-w-lg py-24 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-            <WifiOff className="h-7 w-7" aria-hidden="true" />
-          </div>
-          <h1 className="font-display text-2xl font-bold">Couldn't load this reservation</h1>
-          <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
-            We couldn't reach our servers. Your hold has not been cancelled —
-            don't book again until this loads.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button onClick={() => refetch()} disabled={isFetching}>
-              {isFetching ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                  Retrying…
-                </>
-              ) : (
-                "Try again"
-              )}
-            </Button>
+        <div className="container max-w-lg py-12">
+          <ErrorPanel
+            what="this reservation"
+            description="We couldn't reach our servers. Your hold has not been cancelled — don't book again until this loads."
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
+          >
             <Button variant="outline" onClick={() => navigate("/my-activity")}>
               View my bookings
             </Button>
-          </div>
+          </ErrorPanel>
         </div>
       </Layout>
     );
@@ -163,34 +151,25 @@ export default function CheckoutPage() {
 
     return (
       <Layout>
-        <div className="container max-w-lg py-24 text-center">
-          <div
-            className={cn(
-              "mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
-              isPaid ? "bg-primary/10 text-primary" : "bg-surface-2 text-muted-foreground",
-            )}
+        <div className="container max-w-lg py-12">
+          <StatusPanel
+            icon={isPaid ? ShieldCheck : Timer}
+            tone={isPaid ? "positive" : "neutral"}
+            title={
+              isPaid
+                ? "Already paid"
+                : isMissing
+                  ? "Reservation not found"
+                  : "This reservation has expired"
+            }
+            description={
+              isPaid
+                ? "This booking is confirmed — nothing further to pay."
+                : isMissing
+                  ? "The link may be out of date, or the reservation was cancelled."
+                  : "Holds last 20 minutes so slots don't sit locked. Pick your slot again to start a new one."
+            }
           >
-            {isPaid ? (
-              <ShieldCheck className="h-7 w-7" aria-hidden="true" />
-            ) : (
-              <Timer className="h-7 w-7" aria-hidden="true" />
-            )}
-          </div>
-          <h1 className="font-display text-2xl font-bold">
-            {isPaid
-              ? "Already paid"
-              : isMissing
-                ? "Reservation not found"
-                : "This reservation has expired"}
-          </h1>
-          <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
-            {isPaid
-              ? "This booking is confirmed — nothing further to pay."
-              : isMissing
-                ? "The link may be out of date, or the reservation was cancelled."
-                : "Holds last 20 minutes so slots don't sit locked. Pick your slot again to start a new one."}
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
             {isPaid ? (
               <Button onClick={() => navigate(`/booking/${booking!.id}/status`)}>
                 View booking
@@ -198,15 +177,13 @@ export default function CheckoutPage() {
             ) : (
               <Button
                 onClick={() =>
-                  navigate(
-                    booking ? `/venue/${booking.venue_uuid ?? booking.venue_id}` : "/venues",
-                  )
+                  navigate(booking ? `/venue/${booking.venue_uuid ?? booking.venue_id}` : "/venues")
                 }
               >
                 {booking ? "Back to venue" : "Browse venues"}
               </Button>
             )}
-          </div>
+          </StatusPanel>
         </div>
       </Layout>
     );
