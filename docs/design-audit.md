@@ -73,6 +73,22 @@ findings above are invisible in the happy path, and the seed-data blocker
 below means the happy path is the one state this environment cannot reach.
 Stubbing is how the rest of the app should be evaluated until seeding lands.
 
+## Venue details + gallery
+
+Same method — stub the endpoint, drive each state.
+
+| Finding | Detail |
+|---|---|
+| A failed request claimed the venue didn't exist | `useVenueById` rethrows on error and returns `null` only for a genuine 404, but both landed in `if (!venue)`. A dropped connection told people "Venue not found" — false, unrecoverable (no retry), and the only offered action was to leave the page. Split into distinct error and not-found states. |
+| Gallery padded empty slots with grey boxes | With one image — the common case — the thumbnail grid rendered four `bg-muted` tiles: ~500px of nothing dressed up as a gallery. The main image now takes the full width when there is nothing to sit beside it, capped at `max-h-[24rem]` so it doesn't push the price and booking panel below the fold. |
+| Gallery unreachable by keyboard | Tiles were `div`s with `onClick` — no tab stop, no focus ring, announced as nothing. Now real `<button>`s with labels. |
+| Lightbox backdrop was near-white | `bg-foreground/95` resolves to near-white in this dark-first theme, so opening a photo flashed the screen. Fixed to `bg-black/95`, with chrome colours pinned light-on-dark since what sits behind them is always the dimmed photo. |
+| Broken images again | Same defect as `VenueCard`, unfixed here. Extracted a shared `GalleryImage` with per-tile `onError`. |
+| Spinner instead of a skeleton | Replaced with a skeleton in the page's own shape. |
+
+Checked and found **correct**: the Reserve button is already disabled when no
+slot is selected, so "Closed on this day" does not sit above a live CTA.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

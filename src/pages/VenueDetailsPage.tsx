@@ -1,10 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useState } from "react";
-import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
 import BookingPanel from "@/features/booking/BookingPanel";
@@ -24,7 +25,13 @@ const VenueDetailsPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
   
-  const { data: venue, isLoading: venueLoading } = useVenueById(id);
+  const {
+    data: venue,
+    isLoading: venueLoading,
+    isError: venueError,
+    refetch: refetchVenue,
+    isFetching: venueFetching,
+  } = useVenueById(id);
   const { data: reviews = [], isLoading: reviewsLoading } = useVenueReviews(id);
   const { data: venueImages = [] } = useVenueImages(id);
   const { data: userReview } = useUserReviewForVenue(id, user?.id);
@@ -37,8 +44,61 @@ const VenueDetailsPage = () => {
   if (venueLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+        {/* Skeleton in the page's own shape rather than a centred spinner, so
+            the gallery, heading and booking panel land where they were
+            already reserved. */}
+        <div className="container py-6" role="status" aria-label="Loading venue">
+          <Skeleton className="aspect-[21/9] w-full rounded-xl bg-surface-3 md:aspect-[3/1]" />
+          <div className="mt-8 grid gap-8 lg:grid-cols-3">
+            <div className="space-y-4 lg:col-span-2">
+              <Skeleton className="h-6 w-40 bg-surface-2" />
+              <Skeleton className="h-10 w-3/5 bg-surface-3" />
+              <Skeleton className="h-5 w-2/5 bg-surface-2" />
+              <Skeleton className="mt-8 h-4 w-full bg-surface-2" />
+              <Skeleton className="h-4 w-11/12 bg-surface-2" />
+              <Skeleton className="h-4 w-4/5 bg-surface-2" />
+            </div>
+            <Skeleton className="h-[22rem] w-full rounded-2xl bg-surface-2" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // A failed request and a genuinely missing venue are not the same thing.
+  // useVenueById rethrows on error and returns null only for a real 404, but
+  // both landed in `!venue` — so a dropped connection told people the venue
+  // did not exist, which is both false and unrecoverable (no retry, and the
+  // suggested action is to leave the page).
+  if (venueError) {
+    return (
+      <Layout>
+        <div className="container py-24 text-center">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+            <WifiOff className="h-7 w-7" aria-hidden="true" />
+          </div>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Couldn't load this venue
+          </h1>
+          <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
+            The connection dropped on the way to our servers. The venue is
+            probably fine — this is on us.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Button onClick={() => refetchVenue()} disabled={venueFetching}>
+              {venueFetching ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  Retrying…
+                </>
+              ) : (
+                "Try again"
+              )}
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/venues">Back to venues</Link>
+            </Button>
+          </div>
         </div>
       </Layout>
     );
@@ -47,11 +107,18 @@ const VenueDetailsPage = () => {
   if (!venue) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Venue not found</h1>
-          <Link to="/venues">
-            <Button>Back to Venues</Button>
-          </Link>
+        <div className="container py-24 text-center">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2 text-muted-foreground">
+            <MapPin className="h-7 w-7" aria-hidden="true" />
+          </div>
+          <h1 className="font-display text-2xl font-bold text-foreground">Venue not found</h1>
+          <p className="mx-auto mt-2 max-w-[46ch] text-[15px] leading-relaxed text-foreground-soft">
+            This listing may have been removed by its owner, or the link is out
+            of date.
+          </p>
+          <Button className="mt-6" asChild>
+            <Link to="/venues">Browse all venues</Link>
+          </Button>
         </div>
       </Layout>
     );
