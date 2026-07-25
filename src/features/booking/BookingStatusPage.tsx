@@ -144,7 +144,8 @@ export default function BookingStatusPage() {
                     <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
                     <AlertDialogDescription>
                       Your refund is calculated from the venue's cancellation policy that applied
-                      when you booked. Refunds to cards usually arrive within a few business days.
+                      when you booked. Card refunds usually arrive within a few business days;
+                      Idram has no refund API, so those are processed by hand and can take longer.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

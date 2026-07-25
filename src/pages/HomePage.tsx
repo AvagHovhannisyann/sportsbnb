@@ -402,7 +402,13 @@ const HomePage = () => {
             <ul className="mt-8 space-y-3.5">
               {[
                 "Double-booking is impossible — enforced by the database, not by trust",
-                "Cancellation terms shown before you pay, refunds applied automatically",
+                // "refunds applied automatically" was my own overstatement,
+                // written into this rebuild. It holds for card payments —
+                // Ameria exposes RefundPayment — but idram.ts returns
+                // { ok: false, manual: true }: Idram has no refund API, so
+                // those are processed by hand in the merchant cabinet. The
+                // claim that survives both rails is the one about disclosure.
+                "Cancellation terms shown before you pay, never discovered afterwards",
                 "Card or Idram, both settled in Armenian dram",
               ].map((line) => (
                 <li

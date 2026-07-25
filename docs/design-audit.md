@@ -226,6 +226,26 @@ because nothing was expanded — the check only became meaningful after clicking
 every `[data-state="closed"]` trigger. Worth remembering for any page whose
 content is behind disclosure.
 
+## Auditing my own copy
+
+Having found four pages making claims the build does not support, the obvious
+next check was the copy written during this audit. One failed.
+
+| Finding | Detail |
+|---|---|
+| **"Refunds applied automatically" — my own overstatement** | Written into the rebuilt home page's "why it's different" list. True for cards, where Ameria exposes `RefundPayment`; false for Idram, whose adapter returns `{ ok: false, manual: true }` because Idram has no refund API at all — those are processed by hand in the merchant cabinet. Replaced with the claim that survives both rails: terms are shown before you pay, not discovered afterwards. |
+| Refund timing was card-only | `BookingStatusPage`'s cancel dialog said "Refunds to cards usually arrive within a few business days" — accurate, but the only guidance an Idram payer got. Now covers both rails and says plainly that Idram refunds are manual and slower. |
+
+Checked and found **correct**, so left alone: `BookingStatusPage` already
+branches its success toast on `result.manual`, so the manual-refund path was
+being disclosed at the moment it mattered. The gap was only in the
+pre-cancellation dialog.
+
+The lesson generalises past this codebase: new copy is exactly as likely to
+drift from the build as old copy, and being the author is not a reason to skip
+the check. Every claim about money, timing or capability should be traced to
+the code that implements it before it ships.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
