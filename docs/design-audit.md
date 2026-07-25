@@ -410,6 +410,33 @@ Re-verified with the profile response deliberately delayed 400ms to widen the
 race window: owners hold on `/owner/venues`, `/owner/widget` and
 `/owner-dashboard`; a player is still denied.
 
+## For Owners — an invisible button, and twelve claims that held up
+
+| Finding | Detail |
+|---|---|
+| **A CTA rendered invisible** | The `secondaryOutline` button variant resolved to `text-foreground` / `border-foreground/20`. Its only call site is the closing "Partnership" section, which sits on `bg-secondary` — light in the dark theme. Measured: button colour `rgb(244,247,243)`, section background `rgb(244,247,243)`. Identical. "Contact partnerships" rendered at full 257×56px, took its place in the flex row, and was completely unreadable — which is why the adjacent primary CTA looked ~136px off-centre. The variant now uses `secondary-foreground`, which is what its name always implied. Contrast after: ~18:1. |
+
+Same root cause as the heading bug above: a component styled for the default
+surface, used on an inverted one. Worth assuming there are more — the tell is
+any token named `foreground` appearing inside something rendered on
+`bg-secondary`.
+
+### Checked and left alone
+
+The twelve owner feature cards were audited against the codebase rather than
+trusted, since fabricated claims had already been found on this page. All
+twelve are backed by real implementation: `calendar-auth` / `calendar-sync`
+edge functions reference Google *and* Microsoft/Outlook, `verified_fields`
+exists as a table with `verification_status` / `verified_by` / `verified_at`,
+`useVenueEquipment` backs equipment rentals, and the Idram adapter and
+`payments-callback-idram` function both exist. Nothing to remove.
+
+Page height is **6104px**, not the 7744px quoted earlier in this document —
+that figure predated the removal of the fabricated testimonials. The remaining
+length is twelve genuine feature cards in a 3x4 grid, which is ordinary for a
+B2B landing page and is not a density defect. Recorded so it is not "fixed"
+later on the strength of a stale number.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
@@ -421,8 +448,8 @@ race window: owners hold on `/owner/venues`, `/owner/widget` and
 
 Ordered by leverage, not by effort.
 
-1. **Section density on the remaining pages.** Home is now 4427px; For Owners is
-   still 7744px. This is a content-per-screen problem, not a spacing one, and it
+1. **Section density on the remaining pages.** Home is now 4427px; For Owners is 6104px
+   after the fabricated testimonials came out. This is a content-per-screen problem, not a spacing one, and it
    is the main thing still making those pages feel empty.
 2. **The screenshots in this audit were taken in fallback fonts.** Chromium in
    this container cannot reach `fonts.googleapis.com` — every request fails
