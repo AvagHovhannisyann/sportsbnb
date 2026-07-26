@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
-import { MapsReady } from "@/components/maps/GoogleMapsProvider";
+import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
 import { MapPin, Users, Sun, Zap, List, Map as MapIcon, Filter, ChevronRight, Plus, Check, Star, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,12 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => 
 
 const NearbyFieldsPage: React.FC = () => {
   const navigate = useNavigate();
+  // Read directly rather than relying on <MapsReady> to wrap the map: that
+  // component cannot protect its own children, because JSX evaluates them —
+  // including `new google.maps.Size(...)` — before the wrapper decides whether
+  // to render. On CI, where no Maps key is set, that threw
+  // "ReferenceError: google is not defined" and took the page down.
+  const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMaps();
   const { fields, isLoading, checkIn, fetchFields } = useVerifiedFields();
   const { data: venues } = useVenues();
   const { defaultCenter, regionLabel } = useRegion();
@@ -162,7 +168,12 @@ const NearbyFieldsPage: React.FC = () => {
 
         {view === "map" ? (
           <div className="h-[calc(100vh-180px)]">
-            <MapsReady><GoogleMap
+            {!mapsLoaded ? (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {mapsError ? "Map unavailable" : "Loading map…"}
+              </div>
+            ) : (
+            <GoogleMap
               mapContainerStyle={{ width: "100%", height: "100%" }}
               center={mapCenter}
               zoom={13}
@@ -262,7 +273,8 @@ const NearbyFieldsPage: React.FC = () => {
                   </div>
                 </InfoWindow>
               )}
-            </GoogleMap></MapsReady>
+            </GoogleMap>
+            )}
           </div>
         ) : (
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">

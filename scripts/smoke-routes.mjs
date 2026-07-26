@@ -53,7 +53,17 @@ const ROUTES = process.argv.slice(3);
 const b = await chromium.launch(EXEC ? { executablePath: EXEC } : {});
 let bad = 0;
 for (const route of ROUTES) {
-  const p = await b.newPage({ viewport:{ width:1440, height:900 } });
+  // Geolocation is granted deliberately. /nearby only evaluates its map
+  // markers once a user location exists, and that path is where a
+  // "ReferenceError: google is not defined" crash hid — reachable on CI,
+  // invisible locally, purely because the runner happened to resolve a
+  // position. Granting it makes the branch deterministic instead of lucky.
+  const ctx = await b.newContext({
+    viewport: { width: 1440, height: 900 },
+    permissions: ['geolocation'],
+    geolocation: { latitude: 40.1792, longitude: 44.4991 }, // Yerevan
+  });
+  const p = await ctx.newPage();
   const errs = [];
   p.on('pageerror', e => errs.push(String(e).split('\n')[0].slice(0,100)));
   await p.addInitScript((authKey)=>{const exp=Math.floor(Date.now()/1000)+3600;
