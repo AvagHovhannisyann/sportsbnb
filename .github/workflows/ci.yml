@@ -18,6 +18,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # Static, so it runs here rather than in `smoke` with the browser-based
+      # token audit. It covers what that one structurally cannot see: colours
+      # written straight into a class string, past the token layer.
+      - run: node scripts/palette-contrast.mjs
       - run: npm run build
 
   # Loads every route in a real browser and fails on a thrown error, a tripped

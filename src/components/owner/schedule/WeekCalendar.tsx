@@ -214,7 +214,12 @@ export function WeekCalendar({
                                look settled on the owner's own calendar. */
                             {
                               positive: "bg-primary text-primary-foreground",
-                              warning: "bg-amber-500 text-white",
+                              /* Was `bg-amber-500 text-white` — 2.15:1, and
+                                 this block carries the customer's name and
+                                 time. Tinted like `danger` rather than filled,
+                                 which also keeps an unpaid hold visually
+                                 lighter than a confirmed booking. */
+                              warning: "bg-warning/20 text-warning",
                               danger: "bg-destructive/20 text-destructive",
                               neutral: "bg-muted text-muted-foreground",
                             }[bookingStatusDescriptor(booking.status).tone]
@@ -253,7 +258,9 @@ export function WeekCalendar({
           <span className="text-xs text-muted-foreground">Confirmed</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-amber-500" />
+          {/* Follows the block above: a legend swatch that does not match the
+              thing it labels is worse than no legend. */}
+          <div className="w-3 h-3 rounded bg-warning/20 ring-1 ring-warning/50" />
           <span className="text-xs text-muted-foreground">Pending</span>
         </div>
         <div className="flex items-center gap-2">

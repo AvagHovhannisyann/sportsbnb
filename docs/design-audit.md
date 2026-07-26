@@ -2194,3 +2194,102 @@ Third time the technique has been the limiting factor rather than the code —
 after the too-narrow `{x.skill_level}` pattern and the fixtures. A filter
 written to reduce noise is a filter that can hide signal, and the only way to
 know is to take it off and look.
+
+---
+
+## /community — invented people, and the colours the audit could not see
+
+`/community` was the last main-nav surface never rendered with data. Four
+things came out of one screenshot.
+
+### The avatar stack was drawing people who do not exist
+
+```jsx
+{[...Array(Math.min(participantCount, 4))].map((_, i) => (
+  <Avatar><AvatarFallback>{String.fromCharCode(65 + i)}</AvatarFallback></Avatar>
+))}
+```
+
+Every game card drew its joined players as **A, B, C, D** — initials generated
+from the loop index, not from anyone. A game with four real people showed four
+strangers' initials, and the "+N" chip beside them was computed as
+`participantCount - 4`, which is only right when all four circles resolved.
+
+This is the same class of defect as the hardcoded pricing rules and the `"+12%"`
+growth badges: the interface asserting something it has no basis for. It is
+worse here in one respect — it is a claim about *who*, on a page whose whole
+purpose is telling you which of your acquaintances are playing.
+
+Fixed by resolving the ids for real. The counts query already ran; it now
+selects `user_id` alongside `game_id`, keeps the first four ids per game
+(nobody draws the fifth circle, so nobody should fetch the fifth profile) and
+resolves them through `profiles_public` — which is the view that exists for
+looking other people up, and the one the four social-lookup fixes earlier on
+this branch also moved to. Real avatars when a profile has one, real initials
+when it does not, and the overflow chip is now `count - resolved`, so a profile
+that comes back empty falls into "+N" rather than being invented.
+
+Verified with a fixture of seven confirmed players, two of whom have profiles:
+the card renders **A · D · +5**, and 2 + 5 = the 7/10 it reports.
+
+### Two more of the same defects already fixed on /games
+
+- `{spotsLeft} spots left` — "1 spots left". Same bug, different file, one
+  round later. Now singular.
+- Cards in a row ended at different heights, because a card with participants
+  is a few pixels taller than one without. `h-full` on the link and card,
+  `mt-auto` on the footer, so the join row sits on the floor of both.
+
+### The contrast audit had a hole in it, and this is what fell through
+
+The "N spots left" badge was `bg-amber-500 text-white`. White on amber-500 is
+**2.15:1**, against 4.5:1 for text that size. It sat on a page the token
+contrast audit passes cleanly in both themes — because `amber-500` is not a
+token. `scripts/contrast-audit.mjs` renders and measures the token layer, so
+anything written straight into a class string is structurally invisible to it.
+
+Two more were hiding in the same blind spot:
+
+| pair | ratio | where |
+|---|---|---|
+| `text-white` on `bg-amber-500` | 2.15:1 | "N spots left" badge, /community |
+| `text-white` on `bg-amber-500` | 2.15:1 | pending booking block, owner week calendar |
+| `text-white` on `bg-emerald-500` | 2.54:1 | "Active" badge, /owner/venues |
+
+All three fixed — the first two to the `bg-warning/10 text-warning` tint the
+rest of the app already uses for this meaning, the third to
+`bg-primary text-primary-foreground`, because it sits over a photograph where a
+tint has nothing to sit on. The calendar's legend swatch moved with its block:
+a legend that no longer matches the thing it labels is worse than no legend.
+
+`animate-pulse` came off the badge too. Scarcity is the message; a throbbing
+badge is pressure, and it was the only unguarded animation on the page.
+
+### `scripts/palette-contrast.mjs`
+
+The three above are fixed, but nothing stopped a fourth. So the blind spot is
+now covered: a static check over every string literal in `src` that pairs a
+solid palette background with `text-white` or `text-black`, resolved against
+Tailwind's own palette and measured. No browser, no server — it runs in the
+fast `ci` job. Opacity-modified backgrounds are deliberately out of scope;
+what a `/10` tint composites to depends on what is behind it, which is the
+browser audit's job.
+
+It took two corrections to be worth keeping:
+
+1. **It failed on its own fix notes.** The first run reported three failures,
+   two of which were the comments documenting those very failures — I had
+   written ``Was `bg-amber-500 text-white`…`` and backticks read as template
+   literals. Replaced the regex with a scanner that skips comments.
+2. **It could not see new files.** A `git ls-files` glob lists *tracked* files,
+   so a self-test probe written to a fresh file was silently ignored — and a
+   file that does not exist yet is exactly when a new hardcoded colour gets
+   introduced. Now a plain directory walk.
+
+The second one is the one that matters, and I only found it because I checked
+that the check fails when it should. Both audits now have a self-test: the
+smoke junk-assertion has `SMOKE_SELFTEST=1`, and this one was verified by
+dropping `bg-yellow-400 text-white` into a file and confirming a red exit at
+1.53:1.
+
+A passing check is only evidence if you have watched it fail.

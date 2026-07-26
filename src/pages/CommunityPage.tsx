@@ -33,22 +33,38 @@ const formatGameDate = (dateStr: string): string => {
   return format(date, "EEE, MMM d");
 };
 
+interface PlayerFace {
+  user_id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+}
+
 interface GameCardProps {
   game: any;
   participantCount: number;
+  /** The first few people actually confirmed for this game. */
+  faces?: PlayerFace[];
   distance?: number;
   showParticipants?: boolean;
 }
 
-const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, showParticipants = true }) => {
+const faceInitial = (p: PlayerFace) =>
+  (p.full_name || p.username || "P").charAt(0).toUpperCase();
+
+const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [], distance, showParticipants = true }) => {
   const spotsLeft = game.max_players - participantCount;
   const isFilling = spotsLeft <= 3 && spotsLeft > 0;
   const isFull = spotsLeft <= 0;
+  // Anyone joined but not drawn — either past the four we show, or a profile
+  // that came back empty. Counted from the real total, never assumed to be
+  // `count - 4`.
+  const hiddenPlayers = participantCount - faces.length;
 
   return (
-    <Link to={`/game/${game.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] group">
-        <CardContent className="p-4">
+    <Link to={`/game/${game.id}`} className="block h-full">
+      <Card className="h-full overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] group">
+        <CardContent className="flex h-full flex-col p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-medium">
@@ -61,8 +77,13 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
               )}
             </div>
             {isFilling && !isFull && (
-              <Badge className="bg-amber-500 text-white animate-pulse">
-                {spotsLeft} spots left
+              // Was `bg-amber-500 text-white`: white on amber-500 measures
+              // 2.15:1, against 4.5:1 for text this size. The tinted-chip
+              // pattern the rest of the app already uses keeps the urgency
+              // without the hardcoded fill. `animate-pulse` went with it —
+              // scarcity is the message, a throbbing badge is pressure.
+              <Badge className="border-warning/20 bg-warning/10 text-warning">
+                {spotsLeft === 1 ? "1 spot left" : `${spotsLeft} spots left`}
               </Badge>
             )}
             {isFull && (
@@ -95,24 +116,25 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
           </div>
 
           {showParticipants && (
-            <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="mt-auto flex min-h-7 items-center justify-between border-t border-border pt-3">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  {participantCount}/{game.max_players} joined
+                  <span className="tabular-nums">{participantCount}/{game.max_players}</span> joined
                 </span>
               </div>
               <div className="flex -space-x-2">
-                {[...Array(Math.min(participantCount, 4))].map((_, i) => (
-                  <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                {faces.map((person) => (
+                  <Avatar key={person.user_id} className="h-6 w-6 border-2 border-background">
+                    <AvatarImage src={person.avatar_url ?? undefined} alt="" />
                     <AvatarFallback className="text-xs bg-primary/10">
-                      {String.fromCharCode(65 + i)}
+                      {faceInitial(person)}
                     </AvatarFallback>
                   </Avatar>
                 ))}
-                {participantCount > 4 && (
-                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
-                    +{participantCount - 4}
+                {hiddenPlayers > 0 && (
+                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium tabular-nums">
+                    +{hiddenPlayers}
                   </div>
                 )}
               </div>
@@ -131,6 +153,7 @@ const CommunityPage = () => {
   const { data: userGamesData, isLoading: userGamesLoading } = useUserGames(user?.id);
   const { data: venues = [], isLoading: venuesLoading } = useVenues();
   const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
+  const [participantFaces, setParticipantFaces] = useState<Record<string, PlayerFace[]>>({});
   const [playedWith, setPlayedWith] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("discover");
 
@@ -152,17 +175,41 @@ const CommunityPage = () => {
 
       const { data } = await supabase
         .from('game_participants')
-        .select('game_id')
+        .select('game_id, user_id')
         .in('game_id', gameIds)
         .eq('status', 'confirmed');
 
-      if (data) {
-        const counts: Record<string, number> = {};
-        data.forEach(p => {
-          counts[p.game_id] = (counts[p.game_id] || 0) + 1;
-        });
-        setParticipantCounts(counts);
-      }
+      if (!data) return;
+
+      const counts: Record<string, number> = {};
+      // Only four circles are ever drawn, so only four ids per game are worth
+      // resolving — a fifty-player game should not fetch fifty profiles to
+      // render four letters.
+      const idsPerGame: Record<string, string[]> = {};
+      data.forEach(p => {
+        counts[p.game_id] = (counts[p.game_id] || 0) + 1;
+        const shown = idsPerGame[p.game_id] || (idsPerGame[p.game_id] = []);
+        if (shown.length < 4) shown.push(p.user_id);
+      });
+      setParticipantCounts(counts);
+
+      const wanted = [...new Set(Object.values(idsPerGame).flat())];
+      if (wanted.length === 0) return;
+
+      const { data: profiles } = await supabase
+        .from('profiles_public')
+        .select('user_id, full_name, username, avatar_url')
+        .in('user_id', wanted);
+
+      const byUser = new Map((profiles || []).map(p => [p.user_id, p as PlayerFace]));
+      setParticipantFaces(
+        Object.fromEntries(
+          Object.entries(idsPerGame).map(([gameId, ids]) => [
+            gameId,
+            ids.map(id => byUser.get(id)).filter((p): p is PlayerFace => Boolean(p)),
+          ])
+        )
+      );
     };
 
     fetchParticipantCounts();
@@ -301,6 +348,7 @@ const CommunityPage = () => {
                             key={game.id}
                             game={game}
                             participantCount={participantCounts[game.id] || 0}
+                            faces={participantFaces[game.id] || []}
                             distance={game.distance}
                           />
                         ))}
@@ -339,6 +387,7 @@ const CommunityPage = () => {
                             key={game.id}
                             game={game}
                             participantCount={participantCounts[game.id] || 0}
+                          faces={participantFaces[game.id] || []}
                           />
                         ))}
                       </div>
@@ -505,6 +554,7 @@ const CommunityPage = () => {
                             key={game.id}
                             game={game}
                             participantCount={participantCounts[game.id] || 0}
+                          faces={participantFaces[game.id] || []}
                           />
                         ))}
                       </div>

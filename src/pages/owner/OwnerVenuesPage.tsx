@@ -89,7 +89,12 @@ const OwnerVenuesPage = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <Badge className="absolute top-3 left-3 bg-emerald-500 text-white border-0">
+                      {/* Was bg-emerald-500 with white text: 2.54:1, and it
+                          sits over a photo where there is no help from the
+                          surface. The app already has an audited solid-fill
+                          pair that means exactly this, and using it makes the
+                          badge match the confirmed tone elsewhere. */}
+                      <Badge className="absolute top-3 left-3 border-0 bg-primary text-primary-foreground">
                         Active
                       </Badge>
                       <DropdownMenu>
