@@ -67,7 +67,14 @@ let measured = 0;
 for (const route of routes) {
   const url = resolveRoute(route);
   const page = await newStubbedPage(browser, { userType, width: WIDTH, height: HEIGHT });
-  await page.goto(`${BASE}${url}`, { waitUntil: 'networkidle' });
+  // `domcontentloaded`, not `networkidle`.
+  //
+  // networkidle never settles on a page that mounts a map — the SDK keeps
+  // fetching tiles — so the navigation sat until the 30s timeout and failed
+  // the whole smoke job. That is exactly what happened on /list-venue once
+  // this ran over the full owner route list. Every other audit here already
+  // uses domcontentloaded plus a fixed settle for the same reason.
+  await page.goto(`${BASE}${url}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
   if (LIGHT) {
     await page.evaluate(() => document.documentElement.classList.remove('dark'));
   }
