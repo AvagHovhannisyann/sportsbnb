@@ -2877,3 +2877,61 @@ Yerevan and `+374 XX XXXXXX`.
 The eighteenth hit was `customer@example.com` on `/owner/bookings`, which is
 how a search for placeholder text turned into the biggest data-invention
 finding since the fabricated avatars.
+
+---
+
+## I had not been previewing anything for four hours
+
+Checking the checkout page, a "Test payment · Development only" provider was
+sitting under Bank card and Idram. On a production preview that would be a
+serious finding: a mock payment path offered to real customers.
+
+Before writing it up I grepped the built bundle for the string. **Not there.**
+Not in `CheckoutPage-*.js`, not anywhere in `dist/`. And `.env` carries no
+`VITE_PAYMENTS_MOCK`. So the gate works and Vite strips the branch — yet the
+browser was rendering it.
+
+The contradiction was the finding:
+
+```
+$ ps -eo pid,etimes,cmd | grep vite
+29631  15809  npm exec vite --host 127.0.0.1 --port 4173
+```
+
+**15,809 seconds. A `vite` dev server had held port 4173 since the start of the
+session.** Every `npx vite preview --port 4173` I launched after it failed to
+bind and died — and I had sent their output to `/dev/null`, so not one of those
+failures was ever visible. The `npm run build && vite preview` ritual I
+performed perhaps twenty times built the app correctly and then served
+something else entirely.
+
+### What this does and does not invalidate
+
+It does **not** invalidate the browser findings. The dev server serves current
+source, and — this is the part that makes it survivable — **CI does the same
+thing**: the `smoke` job runs `npx vite --host 127.0.0.1 --port 4173`, not
+`vite preview`. My local setup matched CI by accident for the whole session, so
+every smoke, contrast, tap-target and accessible-name result stands as what it
+always claimed to be: a test of current source.
+
+It does invalidate one belief: that I had been looking at production output. I
+had not, once.
+
+### The gap that leaves, which is real
+
+`import.meta.env.DEV` is `true` for every browser check in this repo, local and
+CI alike. So **any DEV-gated branch is only ever observed in its development
+form, and its production shape is checked by nothing.** The mock provider is
+correctly stripped — but nothing was verifying that, and "nothing was verifying
+it" is worth more than the non-finding that led here.
+
+`scripts/prod-bundle-check.mjs` now asserts that development-only strings are
+absent from `dist`, runs in the fast `ci` job right after the build, and
+refuses to report a pass on an empty `dist` — an empty directory satisfies
+every "string not found" assertion for the wrong reason. Self-tested three
+ways: clean, with a planted leak, and against an empty directory.
+
+The habit this corrects is narrower than "check your assumptions". It is:
+**never send a server's output to `/dev/null`.** A backgrounded process whose
+failure is invisible is a process you are entitled to believe is working, for
+as long as you like.

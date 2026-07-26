@@ -23,6 +23,11 @@ jobs:
       # written straight into a class string, past the token layer.
       - run: node scripts/palette-contrast.mjs
       - run: npm run build
+      # Every browser check in this repo runs against `npx vite` — the dev
+      # server — so import.meta.env.DEV is true for all of them and DEV-gated
+      # code is only ever seen in its development form. This is the only thing
+      # that looks at the production shape of those branches.
+      - run: node scripts/prod-bundle-check.mjs
 
   # Loads every route in a real browser and fails on a thrown error, a tripped
   # error boundary, a blank render, or horizontal overflow.
