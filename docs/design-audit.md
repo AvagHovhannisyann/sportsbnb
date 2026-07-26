@@ -763,6 +763,28 @@ the boundary working. And "Failed to load Google Maps script, retrying in 2
 ms" comes from `@react-google-maps/api`'s own backoff, not from any retry code
 in this repo.
 
+## Full-app smoke sweep — 47 routes, all three roles
+
+After 42 commits, a regression check on my own work: load every route with a
+stubbed session, and fail it if it throws, trips the error boundary, renders
+blank, or scrolls horizontally.
+
+| Role | Routes | Result |
+|---|---|---|
+| player | 23 | 23 clean |
+| owner | 16 | 16 clean |
+| admin | 8 | 8 clean |
+
+The four routes that timed out on the first run — `/community`, `/contact`,
+`/nearby`, `/privacy` — pass now. They were failing because the Maps script
+was being fetched on every page and never resolving; that fix closed them out.
+
+The harness is now `scripts/smoke-routes.mjs` rather than a throwaway. It had
+been rewritten from scratch several times across this branch, which is how the
+stub-shape mistake behind the phantom "leaderboard.map is not a function"
+crash kept recurring. It exits non-zero on failure, so it can be wired into
+the `e2e` CI job whenever that is enabled.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
