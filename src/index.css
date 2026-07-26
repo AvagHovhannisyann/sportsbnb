@@ -484,6 +484,23 @@
     @apply mb-4 text-xl font-semibold text-foreground;
   }
 
+  /*
+   * The eyebrow — small mono caps above a heading.
+   *
+   * This is the landing page's typographic signature, and it stopped at the
+   * landing page. /discover, /games, /teams and the rest open with a bare h1
+   * on a flat background, so the app one click past the hero reads as a
+   * different product from the hero.
+   *
+   * It was also drifting where it did exist: four sites on HomePage at
+   * tracking 0.2em, 0.16em and 0.14em, in text-primary, text-foreground-soft
+   * and plain opacity-60. Letter-spacing is the whole effect at 11px; three
+   * values is three different marks.
+   */
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary;
+  }
+
   /* Scoreboard numerals — prices, times, counts */
   .stat-numeral {
     font-family: var(--font-mono);

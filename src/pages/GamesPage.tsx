@@ -418,6 +418,7 @@ const GamesPage = () => {
         <div className="container py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
+              <p className="eyebrow mb-2">Find a match</p>
               <h1 className="page-title">Open Games</h1>
               <p className="text-muted-foreground">
                 {games.length} {games.length === 1 ? "game" : "games"} looking for players

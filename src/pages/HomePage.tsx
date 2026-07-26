@@ -72,7 +72,7 @@ const Eyebrow = ({
   className?: string;
 }) => (
   <p
-    className={`mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary ${className}`}
+    className={`eyebrow mb-4 ${className}`}
   >
     {children}
   </p>
@@ -154,7 +154,7 @@ const HomePage = () => {
               variants={stagger}
             >
               <motion.div variants={reveal}>
-                <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-foreground-soft">
+                <span className="eyebrow inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-1.5 text-foreground-soft">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
@@ -503,7 +503,7 @@ const HomePage = () => {
       <Section tone="invert" aria-labelledby="owners-heading">
         <motion.div {...revealProps} className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <motion.div variants={reveal}>
-            <p className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.2em] opacity-60">
+            <p className="eyebrow mb-4 text-current opacity-60">
               For venue owners
             </p>
             <h2
@@ -537,7 +537,7 @@ const HomePage = () => {
               { k: "Support", v: "Direct", note: "Message players inside the app" },
             ].map(({ k, v, note }) => (
               <div key={k} className="rounded-2xl bg-secondary-foreground/5 p-5">
-                <dt className="font-mono text-[11px] uppercase tracking-[0.14em] opacity-60">{k}</dt>
+                <dt className="eyebrow text-current opacity-60">{k}</dt>
                 <dd className="mt-2 font-display text-2xl font-bold tabular-nums">{v}</dd>
                 <p className="mt-1.5 text-[13px] leading-snug opacity-65">{note}</p>
               </div>

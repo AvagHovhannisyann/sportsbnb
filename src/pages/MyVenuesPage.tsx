@@ -53,6 +53,7 @@ const MyVenuesPage = () => {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
+              <p className="eyebrow mb-2">Your listings</p>
               <h1 className="page-title">My Venues</h1>
               <p className="text-muted-foreground">
                 Manage all your listed venues in one place.

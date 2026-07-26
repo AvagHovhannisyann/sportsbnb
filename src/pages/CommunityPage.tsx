@@ -300,6 +300,7 @@ const CommunityPage = () => {
         <div className="container py-8">
           {/* Header */}
           <div className="mb-8">
+            <p className="eyebrow mb-2">Who is playing</p>
             <h1 className="page-title">Community</h1>
             <p className="text-muted-foreground">
               Discover games, connect with players, and join the action near you.

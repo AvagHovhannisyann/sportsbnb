@@ -60,6 +60,7 @@ const TeamsPage = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
+              <p className="eyebrow mb-2">Play together</p>
               <h1 className="page-title">Teams</h1>
               <p className="text-muted-foreground">Create and manage your sports teams</p>
             </div>
