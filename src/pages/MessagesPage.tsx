@@ -270,7 +270,17 @@ const MessagesPage = () => {
             /* "No messages yet" on a failed fetch reads as "nobody has
                contacted you", which is a claim about other people's behaviour
                that we have no basis for. */
-            <Card className="max-w-md mx-auto">
+            /* `max-w-2xl`, left, like the list it stands in for. Measured at
+               1440: the list sits at x=40 and so does the page heading, while
+               these two states were centred at x=496 — so emptying your inbox
+               shifted the page content 344px sideways under a heading that had
+               not moved.
+
+               Note the comment form: inside a ternary branch this must be a
+               plain block comment, not `{...}`. A JSX comment container here is
+               a second expression and does not parse — as the line above it
+               already demonstrated, correctly, before I broke it. */
+            <Card className="max-w-2xl">
               <ErrorPanel
                 what="your messages"
                 onRetry={() => refetch()}
@@ -293,7 +303,7 @@ const MessagesPage = () => {
               actionHref="/games"
               secondaryLabel="Browse venues"
               secondaryHref="/venues"
-              className="mx-auto max-w-md"
+              className="max-w-2xl"
             />
           )}
         </div>
