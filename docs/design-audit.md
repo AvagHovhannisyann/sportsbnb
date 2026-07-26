@@ -2595,3 +2595,47 @@ Which also settled a question about the card's own fallback: both hooks always
 set `member_count` to a number, so the `—/N` branch is a guard against the
 type's optionality and not a state reachable today. The comment now says that
 instead of implying it renders.
+
+---
+
+## /messages — a conversation list that showed addresses instead of messages
+
+Every row's second line was the venue's street address:
+
+> **Smoke Arena**
+> 📍 1 Test Street
+
+A conversation list exists to tell you what was said. This one told you where
+the place is — which is on the venue page, two clicks away, and is not why
+anyone opens their inbox. The last message was never fetched at all, despite
+the same loop already querying `chat_messages` once per room for the unread
+count.
+
+Rows now read the newest message, prefixed "You: " when you sent it, and fall
+back to the context line (and then to "No messages yet") for a room nobody has
+written in. Both paths verified by rendering: with messages, and with
+`chat_messages` stubbed empty.
+
+That is one more round trip per room, in a loop that already makes two or
+three. The N+1 is pre-existing in kind and worth one more call to stop the list
+being about the wrong subject; noted in the code rather than left for someone
+to discover.
+
+**Emoji standing in for icons.** The avatar showed 🎮 / 📍 / 📅 by room type,
+and the venue subtitle carried a 📍 too. Emoji set in whatever face the OS
+supplies, at a size and weight nothing else on the page shares — the same class
+of problem as the dram sign, arrived at deliberately. Every other icon in this
+app is lucide; these are now `Gamepad2`, `MapPin` and `CalendarDays`.
+
+### The fixture had invented a column name
+
+Typecheck rejected `chat_messages.content` the moment the page read it for
+real: the column is `message_text`. The shared harness had been stubbing
+`content` since it was written, and nothing noticed, because until now no code
+path read that column — the fixture only ever had to satisfy the *shape* of a
+request, never its contents.
+
+Corrected in `scripts/lib/stub-page.mjs`, with the reason next to it. It is a
+small instance of the recurring one: a stub that is never read against is a
+stub that can be wrong indefinitely. This one was caught by the type system
+only because the feature finally used the data.

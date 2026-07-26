@@ -121,7 +121,10 @@ const ROWS = {
   chat_messages: {
     id: '99999999-9999-9999-9999-999999999999',
     room_id: '77777777-7777-7777-7777-777777777777',
-    sender_id: UID, content: 'Is the pitch free on Thursday?',
+    // `message_text`, not `content` — the column name this fixture used to
+    // invent. Typecheck caught it when the messages list started reading
+    // the real column, which is the kind of thing a stub quietly hides.
+    sender_id: UID, message_text: 'Is the pitch free on Thursday?',
     message_type: 'text', created_at: NOW,
   },
   // Rows for the tables the detail and list pages join against. Without

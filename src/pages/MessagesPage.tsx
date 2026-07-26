@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MessageCircle, Loader2, ArrowLeft } from "lucide-react";
+import { MessageCircle, Loader2, ArrowLeft, Gamepad2, MapPin, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ interface ChatRoomWithDetails {
   updated_at: string;
   unread_count: number;
   other_user_id?: string;
+  /** Newest message in the room, for the list preview. */
+  last_message?: { content: string; fromMe: boolean };
 }
 
 const MessagesPage = () => {
@@ -98,7 +100,9 @@ const MessagesPage = () => {
             .single();
           
           title = venue?.name || "Venue Chat";
-          subtitle = venue ? `📍 ${venue.address || venue.city}` : "Question about venue";
+          // No emoji pin: this is now the fallback line for a room with
+          // no messages, and it reads as prose rather than a fake icon.
+          subtitle = venue ? `${venue.address || venue.city}` : "Question about venue";
         }
 
         // Get the other user in venue chats
@@ -122,6 +126,20 @@ const MessagesPage = () => {
           .eq("room_id", room.id)
           .gt("created_at", membership.last_read_at || "1970-01-01");
 
+        // The newest message, for the list preview. A conversation list whose
+        // second line is the venue's street address tells you where the place
+        // is, not what was said — which is the one thing the list exists to
+        // show. This is one more round trip inside a loop that already makes
+        // two or three per room; the N+1 is pre-existing in kind, and worth
+        // one more call to stop the list being about the wrong subject.
+        const { data: newest } = await supabase
+          .from("chat_messages")
+          .select("message_text, sender_id")
+          .eq("room_id", room.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
         roomsWithDetails.push({
           room_id: room.id,
           last_read_at: membership.last_read_at,
@@ -133,6 +151,9 @@ const MessagesPage = () => {
           updated_at: room.updated_at,
           unread_count: count || 0,
           other_user_id: otherUserId,
+          last_message: newest
+            ? { content: newest.message_text, fromMe: newest.sender_id === user!.id }
+            : undefined,
         });
       }
 
@@ -187,9 +208,19 @@ const MessagesPage = () => {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
+                      {/* Was 🎮 / 📍 / 📅. Emoji as an icon sets in whatever
+                          face the OS supplies, at a size and weight nothing
+                          else on the page shares; every other icon in the app
+                          is lucide. */}
                       <Avatar className="h-12 w-12">
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {room.type === "game" ? "🎮" : room.type === "venue" ? "📍" : "📅"}
+                          {room.type === "game" ? (
+                            <Gamepad2 className="h-5 w-5" aria-hidden="true" />
+                          ) : room.type === "venue" ? (
+                            <MapPin className="h-5 w-5" aria-hidden="true" />
+                          ) : (
+                            <CalendarDays className="h-5 w-5" aria-hidden="true" />
+                          )}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -199,8 +230,22 @@ const MessagesPage = () => {
                             {formatDistanceToNow(new Date(room.updated_at), { addSuffix: true })}
                           </span>
                         </div>
+                        {/* The last message, not the venue's street address.
+                            `subtitle` still carries the context line and is
+                            the fallback for a room nobody has written in yet. */}
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-muted-foreground truncate">{room.subtitle}</p>
+                          <p className="truncate text-sm text-muted-foreground">
+                            {room.last_message ? (
+                              <>
+                                {room.last_message.fromMe && (
+                                  <span className="text-muted-foreground/70">You: </span>
+                                )}
+                                {room.last_message.content}
+                              </>
+                            ) : (
+                              room.subtitle || "No messages yet"
+                            )}
+                          </p>
                           {room.unread_count > 0 && (
                             <Badge variant="default" className="shrink-0">
                               {room.unread_count}
