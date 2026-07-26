@@ -214,6 +214,19 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs admin  $ADMIN
 
+          # The contrast of the text the app renders, on the backdrop it lands
+          # on. The other two contrast checks both pass things this catches:
+          # contrast-audit scores hand-listed (token, surface) pairs, and
+          # palette-contrast scores a raw palette colour against its *best*
+          # surface. On the owner's earnings ledger, `text-emerald-600` on the
+          # card is 4.13:1 — under AA on the one screen where a number is
+          # money — and palette-contrast passed it correctly by its own rule,
+          # because emerald-600 does reach AA on the darkest surface in the
+          # theme. It was not sitting on that one.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/text-contrast.mjs player $PLAYER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/text-contrast.mjs owner  $OWNER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/text-contrast.mjs admin  $ADMIN
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

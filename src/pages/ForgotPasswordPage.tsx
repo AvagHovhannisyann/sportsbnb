@@ -68,7 +68,11 @@ const ForgotPasswordPage = () => {
           </p>
         </div>
         
-        <div className="text-sm text-secondary-foreground/50">
+        {/* /50 composited to #808582 on this near-white panel: 3.48:1,
+            under the 4.5:1 body copy needs. /60 measures 4.80:1 and is
+            still quieter than the /70 lede above it, so the hierarchy the
+            alpha was drawing survives. */}
+        <div className="text-sm text-secondary-foreground/60">
           © {new Date().getFullYear()} Sportsbnb
         </div>
       </div>

@@ -4,6 +4,7 @@ import { format, addDays } from "date-fns";
 import { Calendar, Clock, MapPin, Banknote, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
+import { parseHexColor, hslTriplet, readableForeground } from "@/lib/color";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +30,26 @@ const EmbedBookingPage = () => {
   const [searchParams] = useSearchParams();
   
   const theme = searchParams.get("theme") || "light";
-  const primaryColor = searchParams.get("color") || "#10b981";
+  /**
+   * The owner's brand colour, resolved into the two tokens the rest of the app
+   * is built on rather than pushed in as a hex.
+   *
+   * `--primary` was being set to `#10b981` directly. Every token in this app
+   * is a bare HSL channel triplet consumed as `hsl(var(--primary))`, so that
+   * became `hsl(#10b981)` — invalid, dropped. Measured in the widget:
+   * `bg-primary` computed to `rgba(0, 0, 0, 0)`. The brand colour was not
+   * being applied, it was deleting the token, and the only colour on screen
+   * came from the handful of places that also set an inline `backgroundColor`.
+   *
+   * `--primary-foreground` has to move with it. Those inline fills were paired
+   * with a hardcoded `text-white`, which measures 2.54:1 on the default
+   * emerald — a colour the owner chooses, so the text on it has to be derived.
+   */
+  const brand = parseHexColor(searchParams.get("color")) ?? parseHexColor("#10b981")!;
+  const brandVars = {
+    "--primary": hslTriplet(brand),
+    "--primary-foreground": hslTriplet(readableForeground(brand)),
+  } as React.CSSProperties;
 
   const [venue, setVenue] = useState<VenueData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +206,7 @@ const EmbedBookingPage = () => {
   return (
     <div 
       className={`min-h-screen p-4 ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}
-      style={{ "--primary": primaryColor } as React.CSSProperties}
+      style={brandVars}
     >
       <Card className="max-w-md mx-auto overflow-hidden">
         {/* Header */}
@@ -222,7 +242,7 @@ const EmbedBookingPage = () => {
               <Banknote className="h-4 w-4" />
               Starting from
             </span>
-            <span className="text-lg font-semibold" style={{ color: primaryColor }}>
+            <span className="text-lg font-semibold text-primary">
               {formatPrice(getCustomerPrice(venue.pricePerHour))}/hr
             </span>
           </div>
@@ -240,14 +260,9 @@ const EmbedBookingPage = () => {
                   onClick={() => setSelectedDate(date)}
                   className={`flex-shrink-0 p-2 rounded-lg text-center min-w-[60px] transition-colors ${
                     format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-                      ? "text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted hover:bg-muted/80"
                   }`}
-                  style={{
-                    backgroundColor: format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd") 
-                      ? primaryColor 
-                      : undefined
-                  }}
                 >
                   <div className="text-xs">{format(date, "EEE")}</div>
                   <div className="text-lg font-semibold">{format(date, "d")}</div>
@@ -281,14 +296,9 @@ const EmbedBookingPage = () => {
                       !slot.available
                         ? "bg-muted text-muted-foreground cursor-not-allowed line-through"
                         : selectedTime === slot.time
-                        ? "text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-muted hover:bg-muted/80"
                     }`}
-                    style={{
-                      backgroundColor: selectedTime === slot.time && slot.available
-                        ? primaryColor 
-                        : undefined
-                    }}
                   >
                     {slot.time}
                   </button>
@@ -302,7 +312,6 @@ const EmbedBookingPage = () => {
             className="w-full" 
             disabled={!selectedTime}
             onClick={handleBookNow}
-            style={{ backgroundColor: primaryColor }}
           >
             {selectedTime 
               ? `Book for ${format(selectedDate, "MMM d")} at ${selectedTime}`

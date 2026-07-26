@@ -100,7 +100,12 @@ const PlayerDashboard = () => {
                   <s.icon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
                   {/* A zero is a prompt, not a score. Dimming it stops four
                       empty counters from reading as the loudest thing on a new
-                      player's dashboard. */}
+                      player's dashboard — but it was dimmed with
+                      `text-muted-foreground/50`, which measures 2.68:1 on the
+                      card against the 3:1 that 30px bold text needs. The
+                      intent survives without the alpha: `text-muted-foreground`
+                      is still visibly quieter than `text-foreground`, which is
+                      the whole distinction being drawn. */}
                   {s.value > 0 && (
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
                   )}
@@ -108,7 +113,7 @@ const PlayerDashboard = () => {
                 <div
                   className={cn(
                     "stat-numeral text-3xl font-bold leading-none tabular-nums",
-                    s.value > 0 ? "text-foreground" : "text-muted-foreground/50",
+                    s.value > 0 ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
                   {s.value}

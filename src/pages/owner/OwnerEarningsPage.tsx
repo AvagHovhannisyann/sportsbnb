@@ -209,8 +209,18 @@ export default function OwnerEarningsPage() {
                         {format(new Date(entry.created_at), LEDGER_DATE)}
                       </TableCell>
                       <TableCell>{ledgerEntryLabel(entry.entry_type)}</TableCell>
+                      {/* The debit half was already a token and the credit
+                          half was not, which is how `text-emerald-600` stayed
+                          here: it looks like the green that pairs with
+                          `text-destructive`, and it is not. Measured on the
+                          table's card surface it is 4.13:1, under the 4.5:1
+                          this 14px row needs — on the one screen in the app
+                          where a number is money. `palette-contrast.mjs`
+                          passed it, correctly by its own rule, because
+                          emerald-600 does reach AA on the darkest surface in
+                          the theme; it just is not sitting on that one. */}
                       <TableCell
-                        className={`text-right tabular-nums ${entry.amount_minor < 0 ? "text-destructive" : "text-emerald-600"}`}
+                        className={`text-right tabular-nums ${entry.amount_minor < 0 ? "text-destructive" : "text-success"}`}
                       >
                         {entry.amount_minor < 0 ? "−" : "+"}
                         {formatAmd(Math.abs(entry.amount_minor))}
