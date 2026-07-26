@@ -245,7 +245,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                     <RadioGroupItem value={level.value} id={`skill-${level.value}`} className="peer sr-only" />
                     <Label
                       htmlFor={`skill-${level.value}`}
-                      className="flex items-center justify-center rounded-lg border-2 border-input bg-card p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                      className="flex items-center justify-center rounded-lg border-2 border-border-interactive bg-card p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
                     >
                       <span className="font-medium">{level.label}</span>
                     </Label>

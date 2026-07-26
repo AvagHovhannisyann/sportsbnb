@@ -379,7 +379,7 @@ const PlayerOnboarding = () => {
                     <RadioGroupItem value={level.value} id={level.value} className="peer sr-only" />
                     <Label
                       htmlFor={level.value}
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-input bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer text-center"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer text-center"
                     >
                       <span className="font-medium">{level.label}</span>
                       <span className="text-xs text-muted-foreground mt-1">{level.desc}</span>

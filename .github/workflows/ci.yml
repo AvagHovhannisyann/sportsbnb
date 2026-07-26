@@ -104,6 +104,14 @@ jobs:
           node scripts/smoke-routes.mjs owner  $OWNER
           node scripts/smoke-routes.mjs admin  $ADMIN
 
+          # Contrast of every design token against every surface it lands on,
+          # both themes. Cheap — one page load — and it is the only thing that
+          # catches a colour that looks fine and is not: --destructive read as
+          # an ordinary error red while failing AA in both of its roles at
+          # once, and light-theme --warning was 2.18:1 on white.
+          node scripts/contrast-audit.mjs
+          node scripts/contrast-audit.mjs --light
+
           # Same routes at phone width. Horizontal overflow is already checked
           # per route, so this costs one extra pass and covers a surface that
           # had only ever been spot-checked by hand — it found sideways scroll

@@ -374,7 +374,7 @@ const SignupPage = () => {
                     />
                     <Label
                       htmlFor="player"
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-input bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
                     >
                       <User className="h-6 w-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-primary" />
                       <span className="font-medium text-sm">Play Sports</span>
@@ -388,7 +388,7 @@ const SignupPage = () => {
                     />
                     <Label
                       htmlFor="owner"
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-input bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
                     >
                       <Building className="h-6 w-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-primary" />
                       <span className="font-medium text-sm">List Venues</span>

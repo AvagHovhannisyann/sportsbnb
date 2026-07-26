@@ -1638,3 +1638,53 @@ This is the first change of the session that is design-system level rather than
 local, and it is worth noting why it took a measurement to find: the red *looks*
 fine. It reads as a normal error red on a dark card. Nothing about it invites
 suspicion until you put a number on it.
+
+---
+
+## Round: measuring the colours that look fine
+
+`--destructive` was found by putting a number on a red that looked entirely
+normal. That is not a repeatable way to find the next one, so this round turned
+it into a script: `scripts/contrast-audit.mjs` resolves every design token
+against the real stylesheet in a real browser and reports the WCAG ratio for
+every (foreground, surface) pair the app actually uses, plus every fill against
+its own foreground. 71 pairs, both themes, one page load. It runs in CI.
+
+### What it found
+
+**Light-theme `--warning` was 2.18:1 on the page background.** Not marginal —
+less than half of what body copy requires, and unreadable rather than merely
+awkward. `--success` was 4.27:1, just under. Both are text-only tokens
+(`text-warning` twice, `text-success` never, no fills anywhere), so darkening
+them to `35 92% 32%` and `158 64% 28%` costs nothing and fixes them outright.
+The dark theme's values already passed at 8.81 and 7.20 and are untouched.
+
+**Every control edge in the app was invisible.** `Input` drew its boundary with
+`border-border` on `bg-card` — **1.41:1**, against the 3:1 WCAG 1.4.11 requires
+for anything that identifies a UI component. `border-input` was worse at
+1.15:1, and it was on the textarea, the select trigger, the OTP cells, the chat
+composer, the profile role picker and the signup role picker — the last of
+which is on the page this round started with, and whose unselected option you
+simply could not see the edge of.
+
+A new `--border-interactive` token now draws all of them: `157 12% 42%` dark
+(3.14–4.01 across the surfaces it lands on), `30 12% 50%` light. Decorative
+`--border` and `--border-strong` are left alone deliberately — WCAG exempts
+purely decorative boundaries, nothing about a card's outline identifies a
+control, and raising them would repaint every card and table in the app, which
+is a design decision rather than an accessibility requirement.
+
+### On not moving the goalposts
+
+The audit prints those decorative borders at 1.2–1.7:1 every run and does not
+fail on them. That distinction is a judgement, and a convenient one, so it is
+worth being explicit: the test is whether the boundary tells you *what a
+control is or what state it is in*. A field's edge does; a divider between two
+sections does not. The classification lives in the script with that reasoning
+next to it, so the next person can disagree with it on the merits rather than
+discovering it as an unexplained exemption.
+
+I also had to fix the script's own output: it printed `FAIL` on decorative
+tokens the summary correctly excluded, so the per-line marker and the exit code
+disagreed. A measurement tool that says two different things is worse than no
+tool.

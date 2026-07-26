@@ -64,12 +64,25 @@
     --destructive-solid: 358 68% 44%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 158 64% 32%;
-    --warning: 35 92% 50%;
+    /* Both measured on white: the old --warning was 2.18:1 and the old
+       --success 4.27:1, against the 4.5:1 body copy needs. Neither is used as
+       a fill anywhere — `text-warning` twice, `text-success` never — so
+       darkening them costs nothing and makes them readable. The dark theme's
+       values already passed (8.81 and 7.20 on card) and are unchanged. */
+    --success: 158 64% 28%;
+    --warning: 35 92% 32%;
 
     /* ── Borders / inputs / focus ── */
     --border: 30 12% 88%;
     --border-strong: 30 10% 78%;
+    /* The edge of a control, not a divider.
+       WCAG 1.4.11 wants 3:1 for anything that identifies a UI component, and
+       a text input's boundary is exactly that. `--border` is 1.41:1 against a
+       card — fine for a decorative rule between sections, not fine as the only
+       thing telling you where a field begins. Kept separate so raising it does
+       not repaint every card and table in the app, which is a design decision
+       rather than an accessibility requirement. */
+    --border-interactive: 30 12% 50%;
     --input: 30 12% 88%;
     --ring: 158 72% 22%;
 
@@ -175,6 +188,8 @@
 
     --border: 157 12% 22%;
     --border-strong: 155 10% 26%;
+    /* 42% clears 3:1 on background, card, surface-1 and surface-2. */
+    --border-interactive: 157 12% 42%;
     --input: 157 12% 17%;
     --ring: 151 90% 47%;
 

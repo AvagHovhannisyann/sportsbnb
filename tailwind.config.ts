@@ -22,6 +22,8 @@ export default {
       colors: {
         border: "hsl(var(--border))",
         "border-strong": "hsl(var(--border-strong))",
+        // Control edges. See the note in index.css.
+        "border-interactive": "hsl(var(--border-interactive))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
