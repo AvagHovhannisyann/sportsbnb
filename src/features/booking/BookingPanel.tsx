@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCreateBookingHold, formatAmd } from "./hooks/useBookingFlow";
+import { useVenueHours } from "@/hooks/useAvailability";
 
 interface BookingPanelProps {
   venueId: string;
@@ -40,8 +41,24 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
     [],
   );
 
-  const { data: slots, isLoading: slotsLoading } = useAvailableSlots(venueId, selectedDate);
+  const {
+    data: slots,
+    isLoading: slotsLoading,
+    isError: slotsError,
+    refetch: refetchSlots,
+    isFetching: slotsFetching,
+  } = useAvailableSlots(venueId, selectedDate);
   const createHold = useCreateBookingHold();
+
+  // The venue's weekly opening hours, so an empty slot list can be read
+  // correctly. Same query key the page already uses, so React Query serves it
+  // from cache rather than fetching twice.
+  const { data: venueHours = [] } = useVenueHours(venueId);
+  const closedToday = useMemo(() => {
+    const dow = new Date(`${selectedDate}T00:00:00`).getDay();
+    const row = venueHours.find((h) => h.day_of_week === dow);
+    return row ? row.is_closed : null;
+  }, [venueHours, selectedDate]);
 
   const { data: policy, isError: policyError } = useQuery({
     queryKey: ["venue-policy", venueId],
@@ -144,8 +161,38 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
           <div className="flex items-center justify-center py-6 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
+        ) : slotsError ? (
+          /* Three different things used to print "Closed on this day.": the
+             venue being shut that weekday, every hour already taken, and the
+             availability lookup failing outright. Only the first is true, and
+             the third told a paying customer the place was closed because a
+             request errored — the page even contradicted itself, listing
+             08:00-23:00 under Operating Hours directly beside it. */
+          <div className="py-2 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Couldn&apos;t load available times.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchSlots()}
+              disabled={slotsFetching}
+            >
+              {slotsFetching ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Retrying
+                </>
+              ) : (
+                "Try again"
+              )}
+            </Button>
+          </div>
         ) : !slots || slots.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">Closed on this day.</p>
+          <p className="text-sm text-muted-foreground py-2">
+            {closedToday === false
+              ? "Fully booked on this date — try another day."
+              : "Closed on this day."}
+          </p>
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {slots.map((slot) => {

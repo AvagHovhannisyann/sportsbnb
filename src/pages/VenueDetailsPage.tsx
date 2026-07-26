@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import { useVenueById, getVenueImage } from "@/hooks/useVenues";
 import { useVenueReviews, useUserReviewForVenue, useDeleteReview } from "@/hooks/useReviews";
 import { useVenueHours, useBlockedDates, DAYS_OF_WEEK } from "@/hooks/useAvailability";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
@@ -41,6 +42,13 @@ const VenueDetailsPage = () => {
   const deleteReview = useDeleteReview();
 
   const [showReviewForm, setShowReviewForm] = useState(false);
+
+  // Declares the sticky mobile booking bar to the rest of the app, so the
+  // floating AI launcher lifts clear of the Reserve button. See index.css.
+  useEffect(() => {
+    document.body.classList.add("has-mobile-action-bar");
+    return () => document.body.classList.remove("has-mobile-action-bar");
+  }, []);
 
   if (venueLoading) {
     return (
@@ -176,7 +184,7 @@ const VenueDetailsPage = () => {
           />
         </div>
 
-        <div className="container pb-16">
+        <div className="container pb-28 lg:pb-16">
           {/* min-w-0 on both columns, not decoration. A grid item defaults to
               `min-width: auto`, which resolves to its min-content — so at
               375px the booking column's intrinsic width sized the single
@@ -246,14 +254,53 @@ const VenueDetailsPage = () => {
                 <>
                   <div>
                     <h2 className="text-xl font-semibold text-foreground mb-4">Operating Hours</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {/* Each day sits on its own tinted row. As a bare
+                        `justify-between` inside a three-column grid, every
+                        time was pushed hard right against the *next* day's
+                        label, so the block read as "08:00 - 23:00 Monday"
+                        across the columns instead of down them. Two columns
+                        with a bound background pairs the label to its value.
+                        Today is marked, since that is the question anyone
+                        reading opening hours is actually asking. */}
+                    <div className="grid gap-2 sm:grid-cols-2">
                       {DAYS_OF_WEEK.map((day, index) => {
                         const hour = venueHours.find(h => h.day_of_week === index);
+                        const isToday = index === new Date().getDay();
+                        const closed = hour?.is_closed ?? !hour;
                         return (
-                          <div key={day} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{day}</span>
-                            <span className="font-medium text-foreground">
-                              {hour?.is_closed ? "Closed" : hour ? `${hour.open_time} - ${hour.close_time}` : "—"}
+                          <div
+                            key={day}
+                            className={cn(
+                              "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm",
+                              isToday
+                                ? "bg-primary/10 ring-1 ring-primary/25"
+                                : "bg-surface-1",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "flex items-center gap-2",
+                                isToday ? "font-medium text-foreground" : "text-muted-foreground",
+                              )}
+                            >
+                              {day}
+                              {isToday && (
+                                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                  Today
+                                </span>
+                              )}
+                            </span>
+                            <span
+                              className={cn(
+                                "stat-numeral font-medium tabular-nums",
+                                closed ? "text-muted-foreground" : "text-foreground",
+                              )}
+                            >
+                              {hour?.is_closed
+                                ? "Closed"
+                                : hour
+                                  ? `${hour.open_time} – ${hour.close_time}`
+                                  : "—"}
                             </span>
                           </div>
                         );
@@ -347,7 +394,7 @@ const VenueDetailsPage = () => {
             </div>
 
             {/* Booking Card */}
-            <div className="min-w-0 lg:col-span-1">
+            <div id="booking" className="min-w-0 scroll-mt-24 lg:col-span-1">
               {/* Above the AI launcher (z-50). The launcher is fixed to the
                   bottom-right and overlapped the Reserve button by 7px at
                   1440 and 27px at 1024 — and being fixed with a higher stack
@@ -356,13 +403,11 @@ const VenueDetailsPage = () => {
               <div className="sticky top-24 z-[60] space-y-4">
                 <BookingPanel venueId={venue.id} pricePerHour={venue.price_per_hour} />
 
-                <div className="rounded-2xl border bg-card p-4">
-                  <VenueChatButton
-                    venueId={venue.id}
-                    venueName={venue.name}
-                    ownerId={venue.owner_id}
-                  />
-                </div>
+                <VenueChatButton
+                  venueId={venue.id}
+                  venueName={venue.name}
+                  ownerId={venue.owner_id}
+                />
               </div>
 
               {/* Weather Widget */}
@@ -374,6 +419,42 @@ const VenueDetailsPage = () => {
                 />
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Mobile booking bar.
+            On a phone the booking panel is the last thing on the page — below
+            the description, the opening hours, the amenities and every review.
+            Measured on a 375px screen it started 1,190px down a 3,342px page,
+            so the price and the only Reserve button on the venue's own listing
+            were four screens below the fold. This keeps both in reach without
+            reordering the content, which is what every marketplace does on
+            mobile for the same reason.
+
+            bottom-14 clears the fixed mobile nav (h-14, md:hidden); at md the
+            nav is gone so the bar sits on the edge, and at lg the sticky
+            sidebar takes over and this disappears entirely. */}
+        <div className="fixed inset-x-0 bottom-14 z-40 border-t border-border bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/85 md:bottom-0 lg:hidden">
+          <div className="container flex items-center justify-between gap-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate">
+                <span className="stat-numeral text-lg font-bold text-foreground">
+                  ֏{venue.price_per_hour.toLocaleString()}
+                </span>
+                <span className="text-sm text-muted-foreground"> / hour</span>
+              </p>
+              {/* Deliberately not a cancellation promise. Terms vary per
+                  venue and the panel below computes the real one from
+                  venue_policies — inventing "free cancellation" here would be
+                  the same fabricated refund guarantee that comment warns
+                  about, just in a place with less room to qualify it. */}
+              <p className="truncate text-xs text-muted-foreground">
+                Secure in-app payment
+              </p>
+            </div>
+            <Button asChild size="lg" className="shrink-0">
+              <a href="#booking">Reserve</a>
+            </Button>
           </div>
         </div>
       </div>

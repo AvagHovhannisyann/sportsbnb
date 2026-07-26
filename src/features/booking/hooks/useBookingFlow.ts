@@ -44,6 +44,11 @@ export function useAvailableSlots(venueId: string | undefined, date: string | un
       if (error) throw error;
       return data ?? [];
     },
+    // One retry, then surface it. Callers must distinguish "no slots" from
+    // "the lookup failed" — an empty array reads as "closed" to a customer,
+    // and saying a venue is shut when the RPC errored costs the owner a
+    // booking they never hear about.
+    retry: 1,
   });
 }
 

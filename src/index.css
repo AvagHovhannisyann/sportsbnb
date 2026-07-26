@@ -279,6 +279,18 @@
     }
   }
 
+  /* Pages with a sticky mobile action bar lift the floating AI launcher clear
+     of it. The launcher is fixed bottom-right at z-50 and was landing exactly
+     on top of the venue page's Reserve button — clipping the label and taking
+     the taps, the same collision the desktop sidebar already had to solve.
+     Scoped by media query rather than toggled from JS, so the lift simply does
+     not exist at lg, where the bar is hidden and the sticky sidebar takes over. */
+  @media (max-width: 1023px) {
+    body.has-mobile-action-bar {
+      --fab-lift: 4.75rem;
+    }
+  }
+
   /* Selection */
   ::selection {
     background-color: hsl(var(--primary) / 0.18);

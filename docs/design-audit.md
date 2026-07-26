@@ -1210,3 +1210,71 @@ Verified: 62 routes × 3 roles × 2 widths, all clean. Both widths now run in CI
 It does not unblock *design* review. The stub rows are one venue named "Smoke
 Arena" with three amenities — enough to prove a layout holds, not enough to
 judge whether it is any good. The seed-data blocker below still stands.
+
+---
+
+## Round: the venue page, finally seen with something on it
+
+The seed-data blocker below is about *judging* design. It turned out not to
+block *looking*: the smoke harness already renders populated pages, so pointing
+a camera at the same stubs gives a venue page with a name, a description, seven
+days of opening hours, five amenities and three reviews. Not enough to say
+whether the design is good. More than enough to see what is broken.
+
+Five findings at 1440px and 375px. One was mine and I nearly shipped it as a
+defect report.
+
+**An empty card under the booking panel.** `VenueChatButton` returns `null`
+when the viewer owns the venue — but the `rounded-2xl border bg-card p-4`
+wrapper was at the call site and rendered regardless, so an owner looking at
+their own listing got a bordered grey box with nothing in it. The chrome now
+lives inside the component, where the early return takes it with it.
+
+**"Closed on this day." for a venue that is open.** The panel printed that
+sentence whenever the slot list came back empty, which collapses three
+different situations into one wrong one: shut that weekday, open but fully
+booked, and the availability lookup failing outright. The third is the same
+class of bug as `OwnerVenuesPage` telling an owner they have no venues because
+a request errored. The page even contradicted itself on screen — "Closed on
+this day" in the panel, `08:00 – 23:00` under Operating Hours an inch to the
+left. Now: an error state with a retry, "Fully booked on this date" when the
+hours say the venue is open, and "Closed on this day" only when it actually is.
+
+**Operating Hours read across the columns instead of down them.** Seven
+`flex justify-between` cells in a three-column grid push every time hard right,
+against the *next* day's label, so the block scanned as "08:00 – 23:00 Monday".
+Two columns, each row on its own tinted background to bind label to value, and
+today marked — which is the question anyone reading opening hours is asking.
+
+**The Reserve button was 1,190px down a 3,342px page on a phone**, below the
+description, the hours, the amenities and every review. The only call to action
+on the venue's own listing, four screens below the fold. There is now a sticky
+bottom bar with the price and a Reserve link, `lg:hidden` because the sticky
+sidebar covers desktop.
+
+That bar immediately re-created a collision this file already documents: the
+floating AI launcher is `fixed` bottom-right at `z-50` and landed on top of the
+new Reserve button, clipping the label to "Rese…" and taking the taps — exactly
+what the desktop sidebar's `z-[60]` was added to prevent. Rather than another
+one-off z-index, the launcher now reads a `--fab-lift` variable that a page
+opts into with `body.has-mobile-action-bar`, scoped by media query so the lift
+does not exist at `lg` where there is no bar.
+
+### The one I nearly got wrong
+
+The header showed "4.3 (3 reviews)" while the stub venue row said `rating: 4.8`
+and `review_count: 37`, and I started writing it up as the venue page
+disagreeing with the venue card. It is not. The page derives the headline from
+the reviews it renders, deliberately, and the reason is in a comment directly
+above the code. The mismatch was my *stub* being internally inconsistent — I
+had written a venue row and a review list that did not agree with each other.
+Fifth false positive of this kind; the pattern is always the same, which is
+that a discrepancy on screen is evidence of a discrepancy somewhere, not
+evidence of which side is wrong.
+
+### Left alone on purpose
+
+The right rail is empty below the sticky booking card — roughly 1,100px of
+nothing on a 2,256px page. That is a real weakness and a real opportunity
+(location map, owner card, similar venues), but it is a design decision about
+what belongs there rather than a defect, and it wants the seed data.

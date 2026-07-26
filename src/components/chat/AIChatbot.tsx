@@ -137,7 +137,7 @@ export const AIChatbot = () => {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 md:bottom-6 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center group"
+        className="fixed bottom-[calc(5rem+var(--fab-lift,0px))] md:bottom-[calc(1.5rem+var(--fab-lift,0px))] right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center group"
         aria-label="Open AI assistant"
       >
         <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
@@ -147,7 +147,7 @@ export const AIChatbot = () => {
   }
 
   return (
-    <Card className="fixed bottom-20 md:bottom-6 right-4 z-50 w-[380px] h-[520px] flex flex-col shadow-2xl border overflow-hidden">
+    <Card className="fixed bottom-[calc(5rem+var(--fab-lift,0px))] md:bottom-[calc(1.5rem+var(--fab-lift,0px))] right-4 z-50 w-[380px] h-[520px] flex flex-col shadow-2xl border overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
         <div className="flex items-center gap-2.5">
