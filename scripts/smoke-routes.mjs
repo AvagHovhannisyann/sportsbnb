@@ -11,6 +11,10 @@
  * Google Maps being fetched on every route (including /privacy and /terms),
  * which showed up as four routes never firing `load`.
  *
+ * Browser: Playwright resolves its own Chromium, which is what CI gets from
+ * `npx playwright install chromium`. Set CHROMIUM_PATH to point at a specific
+ * binary when the local Playwright build and the installed browser disagree.
+ *
  * Usage — needs `npx vite --host 127.0.0.1 --port 4173` running first:
  *
  *   node scripts/smoke-routes.mjs player /  /about /discover
@@ -27,7 +31,11 @@
  */
 import { chromium } from '@playwright/test';
 
-const EXEC = process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+// Let Playwright resolve its own browser by default — hardcoding a path made
+// this work only inside one container and fail on a CI runner, where
+// `playwright install` puts Chromium under ~/.cache/ms-playwright. Set
+// CHROMIUM_PATH only to override a specific binary.
+const EXEC = process.env.CHROMIUM_PATH || undefined;
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
 
 // Supabase namespaces its session in localStorage by project ref, so the key
@@ -42,7 +50,7 @@ const AUTH_KEY = `sb-${PROJECT_REF}-auth-token`;
 const UID='00000000-0000-0000-0000-000000000001';
 const userType = process.argv[2];
 const ROUTES = process.argv.slice(3);
-const b = await chromium.launch({ executablePath: EXEC });
+const b = await chromium.launch(EXEC ? { executablePath: EXEC } : {});
 let bad = 0;
 for (const route of ROUTES) {
   const p = await b.newPage({ viewport:{ width:1440, height:900 } });
