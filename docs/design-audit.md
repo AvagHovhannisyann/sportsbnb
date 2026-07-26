@@ -579,6 +579,51 @@ The decorative `⭐` in two `NearbyFieldsPage` headings and one SVG map marker
 are also untouched: the SVG cannot host a React icon, and the headings are
 ornament, not data.
 
+## Chat authorization — the last known security gap, plus a dead feature
+
+`add_chat_member` and `send_system_message` were `SECURITY DEFINER`,
+`EXECUTE`-able by `authenticated`, called straight from the browser, and
+checked nothing. Documented in PR #3 and left unfixed at the time because
+rewriting authorization mid-migration is how chat quietly breaks. The
+migration is done, so it is fixed now.
+
+| Was possible | Now |
+|---|---|
+| Add any user to any room with any role, given a room UUID | Only yourself, or the counterparty the room is inherently about |
+| Insert `sender_id NULL, message_type 'system'` into any room — forged messages that render as coming from Sportsbnb | Only members of that room; `service_role` still exempt for platform flows |
+| Any string as the member role | Constrained to the same four values as the table's CHECK |
+
+The entitlement rule is not new. `can_access_chat_room` mirrors the existing
+`Authenticated users can create chat rooms` policy, so a user may join exactly
+the rooms they could have created.
+
+### A dead feature found while writing the regression test
+
+`chat_rooms_type_check` allowed only `('game','booking')`. Migration
+`20260118103406` added an RLS branch for `type = 'venue'`, `useChat` types the
+union as `"game" | "booking" | "venue"`, and `initializeVenueChat` creates
+venue rooms — **every one of which failed on the constraint.** Venue chat has
+been dead since it was written. Widened to include `venue`.
+
+This only surfaced because the regression test tried to create a venue room
+rather than assume one could exist. The security fix would have passed its
+tests either way.
+
+### An interaction the first draft got wrong
+
+The first version of the guard said "you may only add yourself", which matched
+`ChatDialog`'s single call site. But `initializeVenueChat` adds *two* members —
+the customer and the venue owner — so that rule would have broken venue chat
+the moment the constraint fix made it reachable. `belongs_to_chat_room` now
+allows adding a by-reference participant, which covers the owner without
+letting arbitrary accounts in.
+
+Verified on the live project across six paths: venue room creation, add-self,
+add-owner, add-stranger (blocked), system message as a member, and system
+message as a non-member (blocked). The probe dropped a foreign key to insert
+test rows and rolled the whole transaction back; `venues_owner_id_fkey` was
+confirmed restored and zero probe rows remained.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
