@@ -91,32 +91,104 @@ function* stringLiterals(src) {
   }
 }
 
+/**
+ * The other half of the same blind spot: a palette colour used as *text*.
+ *
+ * The check above pairs a solid palette background with text-white/black, so
+ * both sides are known and the maths is closed. `text-green-600` on its own
+ * gives you only one side — but the surfaces it can land on are not unknown,
+ * they are the handful of tokens declared in index.css. So read those, and
+ * fail a colour only when it fails against *every* surface it could sit on.
+ * That is a claim that holds regardless of where the class is used.
+ *
+ * This was added after the busyness chips on /nearby measured 4.34, 4.49 and
+ * 3.07:1 in the browser while this script reported a clean run. The pattern —
+ * `text-red-600` inside `bg-red-500/5` — is a palette text colour on a tint,
+ * and neither half of the original check could see it.
+ */
+const readSurfaces = () => {
+  const css = readFileSync('src/index.css', 'utf8');
+  // The dark block, which is the theme the app actually ships (`<html
+  // class="dark">`, no toggle). Bounded to the first `.dark {` body so the
+  // light values above it cannot leak in.
+  const darkStart = css.indexOf('.dark {');
+  const block = css.slice(darkStart, css.indexOf('\n  }', darkStart));
+  const out = {};
+  // Container surfaces only. `--secondary` and `--accent` are component fills
+  // — in the dark theme --secondary is 100 20% 96%, near-white — and including
+  // them let almost any dark text "pass" against a backdrop it will never
+  // actually sit on. The first run of this check reported 113 passes on that
+  // basis; restricting to real backdrops is what makes a pass mean something.
+  for (const [, name, h, s, l] of block.matchAll(
+    /--(background|card|popover|muted|surface-[123]):\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/g,
+  )) {
+    out[name] = hslToHex(+h, +s, +l);
+  }
+  return out;
+};
+
+function hslToHex(h, s, l) {
+  s /= 100;
+  l /= 100;
+  const k = (n) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const to = (v) =>
+    Math.round(255 * v)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${to(f(0))}${to(f(8))}${to(f(4))}`;
+}
+
+const SURFACES = readSurfaces();
+const TEXT = new RegExp(`\\btext-(${Object.keys(palette).join('|')})-(\\d{2,3})\\b(?!\\/)`, 'g');
+
 const findings = [];
+const textFindings = [];
 for (const file of files) {
   const src = readFileSync(file, 'utf8');
   for (const { text, index } of stringLiterals(src)) {
+    const line = () => src.slice(0, index).split('\n').length;
+
     const fgMatch = text.match(FG);
-    if (!fgMatch) continue;
-    for (const [, name, shade] of text.matchAll(BG)) {
+    if (fgMatch) {
+      for (const [, name, shade] of text.matchAll(BG)) {
+        const hex = palette[name]?.[shade];
+        if (!hex) continue;
+        const fg = fgMatch[1] === 'white' ? '#ffffff' : '#000000';
+        findings.push({
+          file,
+          line: line(),
+          pair: `text-${fgMatch[1]} on bg-${name}-${shade}`,
+          hex,
+          ratio: ratio(hex, fg),
+        });
+      }
+    }
+
+    for (const [, name, shade] of text.matchAll(TEXT)) {
       const hex = palette[name]?.[shade];
-      if (!hex) continue;
-      const fg = fgMatch[1] === 'white' ? '#ffffff' : '#000000';
-      findings.push({
-        file,
-        line: src.slice(0, index).split('\n').length,
-        pair: `text-${fgMatch[1]} on bg-${name}-${shade}`,
-        hex,
-        ratio: ratio(hex, fg),
-      });
+      if (typeof hex !== 'string') continue;
+      // Best case across every surface. A colour that cannot reach AA on any
+      // of them is wrong wherever it is; one that reaches AA somewhere may
+      // still be wrong in a specific spot, which is the browser audit's job.
+      let best = { surface: null, ratio: 0 };
+      for (const [surface, bg] of Object.entries(SURFACES)) {
+        const r = ratio(hex, bg);
+        if (r > best.ratio) best = { surface, ratio: r };
+      }
+      textFindings.push({ file, line: line(), cls: `text-${name}-${shade}`, ...best });
     }
   }
 }
 
 findings.sort((a, b) => a.ratio - b.ratio);
+textFindings.sort((a, b) => a.ratio - b.ratio);
 const failures = findings.filter((f) => f.ratio < AA_NORMAL);
+const textFailures = textFindings.filter((f) => f.ratio < AA_NORMAL);
 
 if (JSON_OUT) {
-  console.log(JSON.stringify({ findings, failures }, null, 2));
+  console.log(JSON.stringify({ findings, failures, textFindings, textFailures }, null, 2));
 } else {
   console.log('\nHardcoded palette contrast\n');
   for (const f of findings) {
@@ -125,10 +197,25 @@ if (JSON_OUT) {
       `${mark}  ${String(f.ratio).padStart(6)} / ${AA_NORMAL}   ${f.pair}   ${f.file}:${f.line}`,
     );
   }
+
   console.log(
-    `\n${failures.length === 0 ? 'No AA failures' : `${failures.length} AA failure(s)`} ` +
-      `(${findings.length} hardcoded pair(s) found)\n`,
+    `\nPalette text colours — best case across ${Object.keys(SURFACES).length} dark surfaces\n`,
+  );
+  for (const f of textFailures) {
+    console.log(
+      `FAIL  ${String(f.ratio).padStart(6)} / ${AA_NORMAL}   ${f.cls} ` +
+        `(best: --${f.surface})   ${f.file}:${f.line}`,
+    );
+  }
+  const passing = textFindings.length - textFailures.length;
+  console.log(
+    `      ${passing} palette text colour(s) reach AA on at least one surface\n`,
+  );
+
+  console.log(
+    `${failures.length + textFailures.length === 0 ? 'No AA failures' : `${failures.length + textFailures.length} AA failure(s)`} ` +
+      `(${findings.length} pair(s), ${textFindings.length} text colour(s) checked)\n`,
   );
 }
 
-process.exit(failures.length === 0 ? 0 : 1);
+process.exit(failures.length + textFailures.length === 0 ? 0 : 1);

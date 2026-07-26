@@ -101,8 +101,8 @@ const OwnerOverviewPage = () => {
       value: analytics?.uniqueCustomers?.toString() || "0",
       change: null,
       icon: Users,
-      color: "text-violet-600",
-      bgColor: "bg-violet-100 dark:bg-violet-900/30",
+      color: "text-chart-4",
+      bgColor: "bg-chart-4/10",
     },
     {
       label: "Occupancy Rate",

@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { TONE_CHIP } from "@/lib/chips";
+import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { Activity, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -138,7 +140,7 @@ export function SupplyDemandHeatmap() {
                   <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.supply}</div>
                   <div className="col-span-2 text-right">
                     {c.gap > 0 ? (
-                      <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 text-xs">+{c.gap} desert</Badge>
+                      <Badge className={cn(TONE_CHIP.danger, "text-xs")}>+{c.gap} desert</Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs">balanced</Badge>
                     )}

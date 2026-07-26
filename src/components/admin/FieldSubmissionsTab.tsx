@@ -1,4 +1,5 @@
 import React from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, MapPin } from "lucide-react";
@@ -72,11 +73,11 @@ const FieldSubmissionsTab: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Approved</Badge>;
+        return <Badge className={TONE_CHIP.positive}>Approved</Badge>;
       case "rejected":
-        return <Badge className="bg-red-500/10 text-red-600 border-red-500/20">Rejected</Badge>;
+        return <Badge className={TONE_CHIP.danger}>Rejected</Badge>;
       default:
-        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Pending</Badge>;
+        return <Badge className={TONE_CHIP.warning}>Pending</Badge>;
     }
   };
 

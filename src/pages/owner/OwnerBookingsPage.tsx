@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { TONE_CHIP } from "@/lib/chips";
 import { Loader2, Calendar, Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,10 +100,10 @@ const OwnerBookingsPage = () => {
   // payment cannot fall through to grey the way they did when this map listed
   // only the four legacy values.
   const toneClasses: Record<BookingStatusTone, string> = {
-    positive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    danger: "bg-destructive/10 text-destructive",
-    neutral: "bg-muted text-muted-foreground",
+    positive: TONE_CHIP.positive,
+    warning: TONE_CHIP.warning,
+    danger: TONE_CHIP.danger,
+    neutral: TONE_CHIP.neutral,
   };
 
   return (

@@ -92,8 +92,8 @@ export function ListingHealthCard() {
 
 function scoreColor(score: number) {
   if (score >= 80) return "text-emerald-600";
-  if (score >= 50) return "text-amber-600";
-  return "text-rose-600";
+  if (score >= 50) return "text-warning";
+  return "text-destructive";
 }
 
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -186,7 +187,7 @@ const OwnerIntegrationsPage = () => {
                           </div>
                         ) : integration.connected ? (
                           <div className="flex items-center justify-between">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <Badge variant="secondary" className={TONE_CHIP.positive}>
                               <Check className="h-3 w-3 mr-1" />
                               Connected
                             </Badge>
@@ -295,7 +296,7 @@ const OwnerIntegrationsPage = () => {
           <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10">
             <CardContent className="pt-6">
               <div className="flex gap-4">
-                <AlertCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-medium text-foreground mb-1">Two-way calendar sync</h4>
                   <p className="text-sm text-muted-foreground">

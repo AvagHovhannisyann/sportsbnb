@@ -246,7 +246,7 @@ const DiscoveryControls: React.FC = () => {
         {/* Completed summary */}
         {!progress.isRunning && progress.batchesCompleted > 0 && (
           <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20 text-sm">
-            <span className="font-medium text-green-700">✅ Last scan complete:</span>{" "}
+            <span className="font-medium text-success">Last scan complete:</span>{" "}
             {progress.totalFound} fields found, {progress.autoApproved} auto-approved
             across {progress.batchesCompleted} batches ({progress.tilesScanned} tiles)
           </div>

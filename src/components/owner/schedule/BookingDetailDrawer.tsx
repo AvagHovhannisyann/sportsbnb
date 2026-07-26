@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import { TONE_CHIP } from "@/lib/chips";
 import {
   Calendar,
   Clock,
@@ -65,8 +66,8 @@ export function BookingDetailDrawer({
   // fell through to grey — and the label beside it printed the raw column,
   // giving an owner "Pending_payment" in a drawer they open on every booking.
   const toneClasses: Record<BookingStatusTone, string> = {
-    positive: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    positive: TONE_CHIP.positive,
+    warning: TONE_CHIP.warning,
     danger: "bg-destructive/10 text-destructive",
     neutral: "bg-muted text-muted-foreground",
   };

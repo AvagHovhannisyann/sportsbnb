@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatTimeRange } from "@/lib/time";
+import { skillLevelChip, skillLevelLabel } from "@/lib/chips";
 
 const GameDetailsPage = () => {
   const { id } = useParams();
@@ -108,13 +109,6 @@ const GameDetailsPage = () => {
   const isFull = spotsLeft <= 0;
   const isCancelled = game.status === "cancelled";
   const isPaidGame = game.price_per_player > 0;
-
-  const levelColors: Record<string, string> = {
-    beginner: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    intermediate: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    advanced: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    all: "bg-primary/10 text-primary",
-  };
 
   const handleRequestToJoin = async () => {
     if (!user) {
@@ -260,8 +254,8 @@ const GameDetailsPage = () => {
                 
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <Badge variant="secondary">{game.sport}</Badge>
-                  <Badge className={`capitalize ${levelColors[game.skill_level] || levelColors.all}`}>
-                    {game.skill_level === "all" ? "All levels" : game.skill_level}
+                  <Badge className={`capitalize ${skillLevelChip(game.skill_level)}`}>
+                    {skillLevelLabel(game.skill_level)}
                   </Badge>
                   {isFull && !isCancelled && (
                     <Badge variant="outline">Full</Badge>

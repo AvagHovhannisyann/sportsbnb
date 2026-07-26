@@ -25,6 +25,7 @@ import GamesMapView from "@/components/games/GamesMapView";
 import { toast } from "sonner";
 import { formatTimeOfDay } from "@/lib/time";
 import { formatPrice } from "@/lib/pricing";
+import { skillLevelChip, skillLevelLabel } from "@/lib/chips";
 
 type GameWithDistance = Game & { distance?: number | null };
 
@@ -32,30 +33,14 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
   const spotsLeft = game.max_players - (game.participant_count || 0);
   const isFull = spotsLeft <= 0;
 
-  // The last hardcoded-palette chips in the app. Every other status chip is a
-  // token tint — `border-X/20 bg-X/10 text-X` — and these were raw Tailwind
-  // greens, yellows and reds with light/dark pairs, half of which never render
-  // because the app ships dark-only.
-  //
-  // Advanced also moves off red. Red means one thing everywhere else here —
-  // destructive buttons, error panels, failed payments — so an advanced game
-  // was styled to look like a broken one. Purple keeps the three levels
-  // distinguishable without borrowing the error colour.
-  const levelColors: Record<string, string> = {
-    beginner: "border-success/20 bg-success/10 text-success",
-    intermediate: "border-warning/20 bg-warning/10 text-warning",
-    advanced: "border-chart-4/20 bg-chart-4/10 text-chart-4",
-    all: "border-primary/20 bg-primary/10 text-primary",
-  };
-
   return (
     <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all duration-200">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary">{game.sport}</Badge>
-            <Badge className={`capitalize ${levelColors[game.skill_level] || levelColors.all}`}>
-              {game.skill_level === "all" ? "All levels" : game.skill_level}
+            <Badge className={`capitalize ${skillLevelChip(game.skill_level)}`}>
+              {skillLevelLabel(game.skill_level)}
             </Badge>
           </div>
           <h3 className="font-semibold text-foreground text-lg">{game.title}</h3>
