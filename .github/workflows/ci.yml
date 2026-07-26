@@ -44,7 +44,23 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Playwright re-downloads ~291MB (Chromium + headless shell + ffmpeg) on
+      # every run, which was most of this job's wall time. Keyed on the
+      # installed Playwright version so a version bump invalidates it.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # System deps are not cached, so they are installed either way; the
+      # browser download itself is skipped on a cache hit.
       - run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
       # Server and smokes share one step so the dev server's lifetime plainly
       # covers every run, rather than depending on a backgrounded process
       # surviving between steps.
