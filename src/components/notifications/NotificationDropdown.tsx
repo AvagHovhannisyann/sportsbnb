@@ -45,7 +45,8 @@ const NotificationItem = ({
   onDelete,
   onNavigate,
 }: NotificationItemProps) => {
-  const handleClick = (e: React.MouseEvent) => {
+  // Widened from React.MouseEvent so the keyboard path can share it.
+  const handleClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!notification.is_read) {
@@ -60,8 +61,20 @@ const NotificationItem = ({
   };
 
   return (
+    // Not a <button>: this row already contains its own mark-read and delete
+    // buttons, and a button inside a button is invalid. role + tabIndex +
+    // keydown is the shape VenueForm's option picker already uses here, and it
+    // is what makes a notification openable without a mouse at all.
     <div
-      className={`p-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors ${
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick(e);
+        }
+      }}
+      className={`p-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         !notification.is_read ? "bg-primary/5" : ""
       }`}
       onClick={handleClick}
@@ -85,6 +98,7 @@ const NotificationItem = ({
               variant="ghost"
               size="icon"
               className="h-6 w-6"
+              aria-label={`Mark "${notification.title}" as read`}
               onClick={(e) => {
                 e.stopPropagation();
                 onMarkAsRead(notification.id);
@@ -97,6 +111,7 @@ const NotificationItem = ({
             variant="ghost"
             size="icon"
             className="h-6 w-6 text-destructive hover:text-destructive"
+            aria-label={`Delete "${notification.title}"`}
             onClick={(e) => {
               e.stopPropagation();
               onDelete(notification.id);
@@ -127,8 +142,15 @@ const NotificationDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label={
+            unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
+          }
+        >
+          <Bell className="h-5 w-5" aria-hidden="true" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
               {unreadCount > 9 ? "9+" : unreadCount}

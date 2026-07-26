@@ -174,8 +174,12 @@ export const OwnerChatView = ({ roomId, venueName, customerId }: OwnerChatViewPr
                         key={template.id} 
                         className="flex items-start justify-between p-3 rounded-lg border bg-muted/50"
                       >
-                        <div 
-                          className="flex-1 cursor-pointer"
+                        {/* Sibling of the delete button rather than its
+                            parent, so this can be a real button — picking a
+                            saved reply was mouse-only. */}
+                        <button
+                          type="button"
+                          className="flex-1 cursor-pointer text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() => {
                             handleQuickReply(template.message_text);
                             setShowTemplateDialog(false);
@@ -185,11 +189,15 @@ export const OwnerChatView = ({ roomId, venueName, customerId }: OwnerChatViewPr
                           <p className="text-xs text-muted-foreground line-clamp-2">
                             {template.message_text}
                           </p>
-                        </div>
+                        </button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 shrink-0"
+                          /* Icon-only, so it had no name at all: screen
+                             readers announced "button" beside each saved
+                             reply, with nothing to say it deletes one. */
+                          aria-label={`Delete template ${template.title}`}
                           onClick={() => handleDeleteTemplate(template.id)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />

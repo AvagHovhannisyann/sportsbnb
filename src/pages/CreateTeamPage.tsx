@@ -112,8 +112,8 @@ const CreateTeamPage = () => {
       <div className="bg-background min-h-screen">
         <div className="container py-8 max-w-2xl">
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Create a Team</h1>
@@ -151,7 +151,7 @@ const CreateTeamPage = () => {
                   <div className="space-y-2">
                     <Label>Sport *</Label>
                     <Select value={formData.sport} onValueChange={(v) => setFormData({ ...formData, sport: v })}>
-                      <SelectTrigger><SelectValue placeholder="Select sport" /></SelectTrigger>
+                      <SelectTrigger aria-label="Sport"><SelectValue placeholder="Select sport" /></SelectTrigger>
                       <SelectContent>
                         {sportTypes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                       </SelectContent>
@@ -160,7 +160,7 @@ const CreateTeamPage = () => {
                   <div className="space-y-2">
                     <Label>Team Size</Label>
                     <Select value={formData.team_size} onValueChange={(v) => setFormData({ ...formData, team_size: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Team size"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {[2, 4, 5, 6, 7, 8, 10, 11, 12, 15, 20].map(n => (
                           <SelectItem key={n} value={String(n)}>{n} players</SelectItem>

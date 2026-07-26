@@ -160,7 +160,7 @@ const OwnerBookingsPage = () => {
               />
             </div>
             <Select value={selectedVenueId} onValueChange={setSelectedVenueId}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger aria-label="Filter by venue" className="w-full md:w-48">
                 <SelectValue placeholder="All Venues" />
               </SelectTrigger>
               <SelectContent>
@@ -173,7 +173,7 @@ const OwnerBookingsPage = () => {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-40">
+              <SelectTrigger aria-label="Filter by status" className="w-full md:w-40">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>

@@ -93,12 +93,21 @@ const Header = () => {
         <div className="hidden lg:flex items-center gap-2">
           {!isLoading && user ? (
             <>
-              <Link to="/messages" className="relative">
-                <Button variant="ghost" size="icon" className="relative rounded-full text-foreground-soft hover:text-foreground">
-                  <MessageCircle className="h-[18px] w-[18px]" />
+              {/* Was a <Link> wrapping a <Button>: a link containing a
+                  button is invalid nesting, and neither carried a name, so
+                  both announced as unlabelled on every page. `asChild`
+                  collapses them into one anchor with the button's styling. */}
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full text-foreground-soft hover:text-foreground"
+              >
+                <Link to="/messages" aria-label="Messages">
+                  <MessageCircle className="h-[18px] w-[18px]" aria-hidden="true" />
                   <ChatBadge />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
 
               <NotificationDropdown />
 
@@ -115,7 +124,14 @@ const Header = () => {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full ml-1 h-10 w-10">
+                  {/* An avatar image with no alt and no label: the account
+                      menu was an anonymous button on every page. */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full ml-1 h-10 w-10"
+                    aria-label="Account menu"
+                  >
                     <Avatar className="h-9 w-9 ring-1 ring-border">
                       <AvatarImage src={user.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">

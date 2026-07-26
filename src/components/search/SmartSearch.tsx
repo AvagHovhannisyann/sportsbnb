@@ -287,6 +287,7 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
         )}
         {!isLoading && inputValue && (
           <button
+            aria-label="Clear search"
             type="button"
             onClick={() => { setInputValue(""); setSuggestions([]); setIsOpen(false); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

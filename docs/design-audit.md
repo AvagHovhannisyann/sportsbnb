@@ -2388,3 +2388,79 @@ argument. Every route failed to measure and the script called it a pass. A
 route that could not be measured is not a route that passed, and that is the
 precise failure this entire approach exists to avoid. Unmeasurable routes now
 fail the run.
+
+---
+
+## Every control needs a name — 47 of them had none
+
+The tap-target sweep kept reporting an unnamed 40×40 button on *every* route.
+Chasing it turned into the largest single accessibility finding on this branch.
+
+### Asking Chrome instead of reimplementing the algorithm
+
+`scripts/a11y-names.mjs` gets each control's accessible name over CDP
+(`Accessibility.getFullAXTree`) rather than computing it. Reimplementing the
+accname algorithm — aria-labelledby, then aria-label, then a native label, then
+contents, then title, with the recursion and the input special cases — is a
+good way to write a checker that is confidently wrong. Chrome already computes
+the string a screen reader reads; the audit asks for that.
+
+It also skips ignored nodes, which removes the Radix mirror inputs that made my
+earlier hand-probe report every switch twice.
+
+### What it found
+
+**47 unnamed controls**, across all three roles. The ones that matter most:
+
+| where | what a screen reader heard |
+|---|---|
+| every page, header | "button" — the notifications bell |
+| every page, header | "link" — messages, which was also a `<Link>` wrapping a `<Button>`, invalid nesting |
+| every page, header | "button" — the account menu |
+| `/discover`, `/venues` | "link" for **every venue card** |
+| `/venue/:id` | "button button button button button" — the star rating on a review |
+| every owner page | "button" — **sign out** |
+| `/owner/schedule` | the previous/next week arrows |
+| `/owner/pricing` | an unnamed spinbutton — the hourly rate |
+| `/owner/venues` | the ⋯ menu on each venue card |
+| `/create-game`, `/create-team` | ten selects, each with a visible `<Label>` above it that pointed at nothing |
+| `/reset-password`, `/profile` | five password show/hide toggles |
+
+The venue-card link is the one I would not have predicted. The card contains
+the venue's name as plain text, so name-from-content should cover it — but the
+text sits inside an `<article>`, and `article` does not allow name from
+content, so Chrome computes the link's name as **empty**. The entire Discover
+grid announced as "link, link, link". Worth stating that I did not deduce this;
+I read Chrome's computed name and then went looking for why.
+
+Where a visible label already existed — the two hero-search selects, the ten
+create-form selects — it was associated rather than replaced with an
+`aria-label`, so the name read aloud matches the word on screen.
+
+### Everything clickable, actually clickable
+
+A companion sweep for `<div onClick>` found eight non-interactive elements
+carrying click handlers, five of them genuinely mouse-only: notification rows,
+booking blocks on the owner's week calendar, saved-reply rows, the venue rows
+on the owner overview, and the sports grid in player onboarding. All now real
+buttons, links, or labels — with the sidebar scrim marked `aria-hidden`, since
+it is decoration and was an extra tab stop.
+
+### The scanner took two rewrites, and that is the lesson again
+
+1. `<(div|span|…)\b[^>]*?onClick` found **one** hit. It only matches when
+   `onClick` sits inside the first line of the tag.
+2. Widened to multiline: **ten** hits — but one was a *comment of mine*
+   containing the words `<div onClick>`, the same trap the palette checker fell
+   into. Comments stripped: nine.
+3. The `role`/`tabIndex`/`onKeyDown` columns were all wrong, because
+   `[^>]*?>` stops at the `>` inside `onClick={(e) => …}`. Every "missing key
+   handler" was unverified. Rewritten as a brace-aware tag scanner — and
+   `VenueForm`'s option picker, which the broken version flagged, turned out to
+   be fully accessible already.
+
+That is the fifth time on this branch that the limiting factor was the
+technique rather than the code, and the third time a scanner flagged my own
+prose. The pattern is consistent enough to state plainly: **a regex over a
+structured language is a guess, and a checker that has never been shown a true
+positive and a true negative is not evidence.**

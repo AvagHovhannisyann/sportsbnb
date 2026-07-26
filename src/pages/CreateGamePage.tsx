@@ -148,8 +148,8 @@ const CreateGamePage = () => {
         <div className="container py-8 max-w-2xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Create a Game</h1>
@@ -194,7 +194,7 @@ const CreateGamePage = () => {
                       value={formData.sport}
                       onValueChange={(value) => setFormData({ ...formData, sport: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Sport">
                         <SelectValue placeholder="Select sport" />
                       </SelectTrigger>
                       <SelectContent>
@@ -213,7 +213,7 @@ const CreateGamePage = () => {
                       value={formData.skillLevel}
                       onValueChange={(value) => setFormData({ ...formData, skillLevel: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Skill level">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -271,7 +271,7 @@ const CreateGamePage = () => {
                         value={formData.teamId}
                         onValueChange={(value) => setFormData({ ...formData, teamId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Team">
                           <SelectValue placeholder="Choose your team" />
                         </SelectTrigger>
                         <SelectContent>
@@ -301,7 +301,7 @@ const CreateGamePage = () => {
                   <div className="space-y-2">
                     <Label>Select a Venue (optional)</Label>
                     <Select value={formData.venueId} onValueChange={handleVenueSelect}>
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Venue">
                         <SelectValue placeholder="Choose from listed venues" />
                       </SelectTrigger>
                       <SelectContent>
@@ -351,7 +351,7 @@ const CreateGamePage = () => {
                       value={formData.gameDate}
                       onValueChange={(value) => setFormData({ ...formData, gameDate: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Date">
                         <SelectValue placeholder="Select date" />
                       </SelectTrigger>
                       <SelectContent>
@@ -370,7 +370,7 @@ const CreateGamePage = () => {
                       value={formData.gameTime}
                       onValueChange={(value) => setFormData({ ...formData, gameTime: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Time">
                         <SelectValue placeholder="Select time" />
                       </SelectTrigger>
                       <SelectContent>
@@ -390,7 +390,7 @@ const CreateGamePage = () => {
                     value={formData.durationHours}
                     onValueChange={(value) => setFormData({ ...formData, durationHours: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Duration">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -419,7 +419,7 @@ const CreateGamePage = () => {
                       value={formData.maxPlayers}
                       onValueChange={(value) => setFormData({ ...formData, maxPlayers: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Max players">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

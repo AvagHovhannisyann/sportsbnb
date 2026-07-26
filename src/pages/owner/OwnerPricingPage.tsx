@@ -121,7 +121,7 @@ const OwnerPricingPage = () => {
               value={selectedVenueId || ""}
               onValueChange={setSelectedVenueId}
             >
-              <SelectTrigger className="w-full max-w-xs">
+              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a venue" />
               </SelectTrigger>
               <SelectContent>
@@ -152,8 +152,11 @@ const OwnerPricingPage = () => {
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <div className="relative min-w-0 flex-1 max-w-xs">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">֏</span>
+                  {/* The ֏ prefix is decorative text, not a label, so this
+                      field announced as an unnamed spinbutton. */}
                   <Input
                     type="number"
+                    aria-label="Hourly rate in Armenian dram"
                     value={selectedVenue?.price_per_hour || 0}
                     className="pl-8"
                     readOnly

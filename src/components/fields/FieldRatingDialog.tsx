@@ -79,6 +79,8 @@ const FieldRatingDialog: React.FC<FieldRatingDialogProps> = ({
                 onMouseEnter={() => setHoveredRating(value)}
                 onMouseLeave={() => setHoveredRating(0)}
                 onClick={() => setRating(value)}
+                                aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                aria-pressed={rating === value}
                 className="p-1 transition-transform hover:scale-110"
               >
                 <Star

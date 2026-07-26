@@ -103,8 +103,9 @@ const OwnerVenuesPage = () => {
                             variant="ghost"
                             size="icon"
                             className="absolute top-2 right-2 h-8 w-8 bg-white/90 hover:bg-white text-foreground"
+                            aria-label={`Actions for ${venue.name}`}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

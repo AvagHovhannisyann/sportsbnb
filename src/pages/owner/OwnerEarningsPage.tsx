@@ -129,7 +129,7 @@ export default function OwnerEarningsPage() {
             <div className="space-y-1.5">
               <Label>Method</Label>
               <Select value={method} onValueChange={(v) => setMethod(v as "bank_transfer" | "idram")}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Payout method">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

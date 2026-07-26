@@ -269,7 +269,7 @@ const DiscoverPage = () => {
                 </Button>
 
                 <Select value={selectedCity} onValueChange={setSelectedCity}>
-                  <SelectTrigger className="w-[160px] h-12">
+                  <SelectTrigger aria-label="City" className="w-[160px] h-12">
                     <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                     <SelectValue placeholder="City" />
                   </SelectTrigger>
@@ -283,7 +283,7 @@ const DiscoverPage = () => {
                 </Select>
 
                 <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger className="w-[160px] h-12">
+                  <SelectTrigger aria-label="Sport type" className="w-[160px] h-12">
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>

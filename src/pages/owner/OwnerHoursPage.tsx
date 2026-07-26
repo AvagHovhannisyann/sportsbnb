@@ -170,7 +170,7 @@ const OwnerHoursPage = () => {
               value={selectedVenueId || ""}
               onValueChange={setSelectedVenueId}
             >
-              <SelectTrigger className="w-full max-w-xs">
+              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a venue" />
               </SelectTrigger>
               <SelectContent>

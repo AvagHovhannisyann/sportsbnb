@@ -117,9 +117,10 @@ export function WeekCalendar({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Previous week"
               onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"
@@ -133,9 +134,10 @@ export function WeekCalendar({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Next week"
               onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -202,11 +204,16 @@ export function WeekCalendar({
                       )}
                     >
                       {dayBookings.map((booking) => (
-                        <div
+                        <button
                           key={booking.id}
+                          type="button"
+                          /* Was a div: every booking on the owner's week was
+                             mouse-only, and the calendar is the page they run
+                             their day from. A real button also names itself
+                             from its contents. */
                           onClick={() => onBookingClick?.(booking)}
                           className={cn(
-                            "absolute left-1 right-1 rounded-md p-2 cursor-pointer transition-all hover:ring-2 hover:ring-primary/50",
+                            "absolute left-1 right-1 rounded-md p-2 text-left cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             /* Tone-driven, so `pending_payment` reads as
                                awaiting rather than falling through to the grey
                                used for cancelled and expired. It matched only
@@ -235,7 +242,7 @@ export function WeekCalendar({
                           <div className="text-xs opacity-80 truncate">
                             {booking.booking_time} • {booking.venue_name}
                           </div>
-                        </div>
+                        </button>
                       ))}
                       {isBlocked && !isClosed && (
                         <div className="absolute inset-0 flex items-center justify-center">

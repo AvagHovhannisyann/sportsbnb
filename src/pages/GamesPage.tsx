@@ -259,7 +259,7 @@ const GamesPage = () => {
                 )}
                 
                 <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger className="w-[160px] h-12">
+                  <SelectTrigger aria-label="Sport type" className="w-[160px] h-12">
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -272,7 +272,7 @@ const GamesPage = () => {
                 </Select>
                 
                 <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                  <SelectTrigger className="w-[160px] h-12">
+                  <SelectTrigger aria-label="Skill level" className="w-[160px] h-12">
                     <SelectValue placeholder="Skill level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -340,7 +340,7 @@ const GamesPage = () => {
                 )}
                 
                 <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger aria-label="Sport type" className="h-12">
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -353,7 +353,7 @@ const GamesPage = () => {
                 </Select>
                 
                 <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger aria-label="Skill level" className="h-12">
                     <SelectValue placeholder="Skill level" />
                   </SelectTrigger>
                   <SelectContent>

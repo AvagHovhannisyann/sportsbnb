@@ -231,6 +231,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         )}
         {!isLoading && inputValue && (
           <button
+            aria-label="Clear location"
             type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

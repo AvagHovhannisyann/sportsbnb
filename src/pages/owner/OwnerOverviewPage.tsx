@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2, Plus, Calendar, Banknote, Users, TrendingUp, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -325,10 +325,13 @@ const OwnerOverviewPage = () => {
               ) : myVenues.length > 0 ? (
                 <div className="space-y-3">
                   {myVenues.slice(0, 3).map((venue) => (
-                    <div
+                    // A Link rather than a div with navigate(): this is
+                    // navigation, so it should be focusable, openable in a new
+                    // tab, and announced as a link. It was none of those.
+                    <Link
                       key={venue.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/venue/${venue.id}/edit`)}
+                      to={`/venue/${venue.id}/edit`}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
                         <img
@@ -344,7 +347,7 @@ const OwnerOverviewPage = () => {
                       <Badge variant={venue.is_active ? "default" : "secondary"} className="text-xs">
                         {venue.is_active ? "Active" : "Draft"}
                       </Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (

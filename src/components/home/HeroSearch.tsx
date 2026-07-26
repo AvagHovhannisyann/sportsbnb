@@ -84,11 +84,18 @@ const HeroSearch = () => {
       <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
         <Search className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
-          <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block">
+          {/* The visible label had no htmlFor, so it labelled nothing and
+              the control announced only its current value. Associating it is
+              better than an aria-label: the name a screen reader reads then
+              matches the word on screen. */}
+          <label
+            htmlFor="hero-sport"
+            className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block"
+          >
             Sport
           </label>
           <Select value={sport} onValueChange={setSport}>
-            <SelectTrigger className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
+            <SelectTrigger id="hero-sport" className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
               <SelectValue placeholder="Any sport" />
             </SelectTrigger>
             <SelectContent>
@@ -107,11 +114,18 @@ const HeroSearch = () => {
       <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
-          <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block">
+          {/* The visible label had no htmlFor, so it labelled nothing and
+              the control announced only its current value. Associating it is
+              better than an aria-label: the name a screen reader reads then
+              matches the word on screen. */}
+          <label
+            htmlFor="hero-when"
+            className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block"
+          >
             When
           </label>
           <Select value={when} onValueChange={setWhen}>
-            <SelectTrigger className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
+            <SelectTrigger id="hero-when" className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
               <SelectValue placeholder="Any time" />
             </SelectTrigger>
             <SelectContent>

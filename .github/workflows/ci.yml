@@ -135,6 +135,15 @@ jobs:
           node scripts/tap-targets.mjs owner  $OWNER
           node scripts/tap-targets.mjs admin  $ADMIN
 
+          # Every control needs a name. Asks Chrome for the accessible name it
+          # actually computes rather than reimplementing the algorithm — 47
+          # controls had none, including the notifications bell on every page,
+          # the venue links on the whole Discover grid, and the five stars a
+          # review is left with.
+          node scripts/a11y-names.mjs player $PLAYER
+          node scripts/a11y-names.mjs owner  $OWNER
+          node scripts/a11y-names.mjs admin  $ADMIN
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

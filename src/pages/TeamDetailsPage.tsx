@@ -160,7 +160,7 @@ const TeamDetailsPage = () => {
         <div className="container py-8 max-w-4xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" aria-label="Back" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </div>
@@ -216,7 +216,7 @@ const TeamDetailsPage = () => {
                   {isCaptain && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><Settings className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" aria-label="Team settings"><Settings className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => navigate(`/team/${team.id}/edit`)}>
@@ -352,7 +352,7 @@ const TeamDetailsPage = () => {
                   value={`${window.location.origin}/join-team/${team?.invite_code}`}
                   className="text-xs"
                 />
-                <Button variant="outline" size="icon" onClick={handleCopyInviteLink}>
+                <Button variant="outline" size="icon" aria-label="Copy invite link" onClick={handleCopyInviteLink}>
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>

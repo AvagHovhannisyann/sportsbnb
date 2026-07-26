@@ -67,7 +67,11 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
     <div className="min-h-screen bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
+        // Decorative scrim. Keyboard users close the sidebar with its own
+        // close button, so this should not be an extra stop in the tab order —
+        // it should be invisible to assistive tech, which it was not.
         <div
+          aria-hidden="true"
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -91,9 +95,10 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
               variant="ghost"
               size="icon"
               className="lg:hidden"
+              aria-label="Close menu"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </Button>
           </div>
 
@@ -154,9 +159,12 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive"
+                /* Icon-only sign-out, on every owner page, with no name at
+                   all — a destructive action announced as just "button". */
+                aria-label="Sign out"
                 onClick={handleSignOut}
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -175,9 +183,11 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
             variant="ghost"
             size="icon"
             className="lg:hidden"
+            aria-label="Open menu"
+            aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
 
           {/* min-w-0 lets the subtitle clamp instead of forcing the row wider

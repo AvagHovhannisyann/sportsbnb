@@ -40,7 +40,7 @@ const VenueMapPage = () => {
         <div className="bg-card border-b p-3 flex items-center gap-3 z-10">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <Select value={selectedSport} onValueChange={setSelectedSport}>
-            <SelectTrigger className="w-[160px] h-9">
+            <SelectTrigger aria-label="Sport" className="w-[160px] h-9">
               <SelectValue placeholder="All sports" />
             </SelectTrigger>
             <SelectContent>

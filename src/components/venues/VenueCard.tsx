@@ -44,7 +44,16 @@ const VenueCard = ({
   }, [hasImage, image]);
 
   return (
-    <Link to={`/venue/${id}`} className="group block focus-ring rounded-2xl">
+    // The name is spelled out because the card's text sits inside an
+    // <article>, and `article` does not allow name-from-content — so Chrome
+    // computes this link's accessible name as empty, and a screen reader
+    // reads the whole venues list as "link, link, link". Verified against
+    // Chrome's own computed name rather than assumed.
+    <Link
+      to={`/venue/${id}`}
+      aria-label={`${name}, ${location}`}
+      className="group block focus-ring rounded-2xl"
+    >
       <article
         className={`relative overflow-hidden rounded-2xl bg-card border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
           isPromoted ? "border-primary/40 ring-1 ring-primary/15" : "border-border hover:border-border-strong"

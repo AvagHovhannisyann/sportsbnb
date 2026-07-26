@@ -128,7 +128,7 @@ const NearbyFieldsPage: React.FC = () => {
 
               <div className="flex flex-wrap items-center gap-2">
                 <Select value={sportFilter} onValueChange={setSportFilter}>
-                  <SelectTrigger className="w-32 h-9">
+                  <SelectTrigger aria-label="Sport" className="w-32 h-9">
                     <Filter className="h-3.5 w-3.5 mr-1" />
                     <SelectValue placeholder="Sport" />
                   </SelectTrigger>
@@ -142,6 +142,9 @@ const NearbyFieldsPage: React.FC = () => {
 
                 <div className="flex rounded-lg border border-border overflow-hidden">
                   <button
+                    type="button"
+                    aria-label="Map view"
+                    aria-pressed={view === "map"}
                     onClick={() => setView("map")}
                     className={cn(
                       "p-2 transition-colors",
@@ -151,6 +154,9 @@ const NearbyFieldsPage: React.FC = () => {
                     <MapIcon className="h-4 w-4" />
                   </button>
                   <button
+                    type="button"
+                    aria-label="List view"
+                    aria-pressed={view === "list"}
                     onClick={() => setView("list")}
                     className={cn(
                       "p-2 transition-colors",
