@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Inbox, MessageCircle, Phone, MessageSquare, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,8 @@ const channelIcon = {
 } as const;
 
 const outcomeBadge: Record<LeadOutcome, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
-  confirmed: { label: "Confirmed", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
+  pending: { label: "Pending", className: TONE_CHIP.warning },
+  confirmed: { label: "Confirmed", className: TONE_CHIP.positive },
   no_show: { label: "No-show", className: "bg-muted text-muted-foreground" },
   lost: { label: "Lost", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };

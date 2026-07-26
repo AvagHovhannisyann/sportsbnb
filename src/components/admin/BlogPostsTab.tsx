@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import {
   useAllBlogPosts,
   useCreateBlogPost,
@@ -203,7 +204,7 @@ const BlogPostsTab = () => {
                   </TableCell>
                   <TableCell>
                     {post.is_published ? (
-                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                      <Badge className={TONE_CHIP.positive}>
                         Published
                       </Badge>
                     ) : (

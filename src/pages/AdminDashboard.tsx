@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Link } from "react-router-dom";
 import {
   Users,
@@ -124,9 +125,9 @@ const AdminDashboard = () => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "admin":
-        return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Admin</Badge>;
+        return <Badge className={TONE_CHIP.danger}>Admin</Badge>;
       case "moderator":
-        return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Moderator</Badge>;
+        return <Badge className={TONE_CHIP.warning}>Moderator</Badge>;
       default:
         return <Badge variant="secondary">User</Badge>;
     }
@@ -404,9 +405,9 @@ const AdminDashboard = () => {
                             <TableCell>{formatCurrency(venue.price_per_hour)}/hr</TableCell>
                             <TableCell>
                               {venue.is_active ? (
-                                <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
+                                <Badge className={TONE_CHIP.positive}>Active</Badge>
                               ) : (
-                                <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">Pending</Badge>
+                                <Badge className={TONE_CHIP.warning}>Pending</Badge>
                               )}
                             </TableCell>
                             <TableCell className="text-right">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Loader2, MessageCircle, Phone, MessageSquare, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,10 +40,10 @@ import {
 import { formatTimeOfDay } from "@/lib/time";
 
 const STATUS_LABELS: Record<IntentStatus, { label: string; className: string }> = {
-  clicked: { label: "Clicked", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
-  owner_contacted: { label: "Owner Contacted", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  confirmed_booking: { label: "Confirmed", className: "bg-green-500/10 text-green-500 border-green-500/20" },
-  no_booking: { label: "No Booking", className: "bg-red-500/10 text-red-500 border-red-500/20" },
+  clicked: { label: "Clicked", className: TONE_CHIP.info },
+  owner_contacted: { label: "Owner Contacted", className: TONE_CHIP.warning },
+  confirmed_booking: { label: "Confirmed", className: TONE_CHIP.positive },
+  no_booking: { label: "No Booking", className: TONE_CHIP.danger },
   no_response: { label: "No Response", className: "bg-muted text-muted-foreground" },
 };
 

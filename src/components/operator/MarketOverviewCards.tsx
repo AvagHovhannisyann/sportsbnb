@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { TONE_CHIP } from "@/lib/chips";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Calendar, Banknote, Users, Gamepad2, TrendingUp } from "lucide-react";
 import { MarketMetrics, formatMoney } from "@/hooks/useOperatorMetrics";
@@ -27,8 +28,8 @@ export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
               <Badge
                 className={
                   m.liquidityHealthy
-                    ? "bg-green-500/10 text-green-500 border-green-500/20"
-                    : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                    ? TONE_CHIP.positive
+                    : TONE_CHIP.warning
                 }
               >
                 {m.liquidityHealthy ? "Healthy liquidity" : "Below target"}

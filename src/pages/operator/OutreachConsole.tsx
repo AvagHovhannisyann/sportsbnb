@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { NEUTRAL_CHIP, TONE_CHIP } from "@/lib/chips";
 import { useOutreachTargets, usePrepareTarget, useDeleteTarget, type OutreachTarget } from "@/hooks/useOutreach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +15,14 @@ import { format, formatDistanceToNow } from "date-fns";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-muted text-muted-foreground",
-  enriched: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  researched: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  drafted: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  contacted: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  replied: "bg-green-500/20 text-green-400 border-green-500/30",
+  enriched: TONE_CHIP.info,
+  researched: "border-chart-4/20 bg-chart-4/10 text-chart-4",
+  drafted: TONE_CHIP.warning,
+  contacted: TONE_CHIP.positive,
+  replied: TONE_CHIP.positive,
   onboarded: "bg-primary/20 text-primary border-primary/30",
-  passed: "bg-red-500/15 text-red-400 border-red-500/30",
-  unreachable: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  passed: TONE_CHIP.danger,
+  unreachable: NEUTRAL_CHIP,
 };
 
 export default function OutreachConsole() {

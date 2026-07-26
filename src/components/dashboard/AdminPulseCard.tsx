@@ -1,11 +1,12 @@
 import { Sparkles, Loader2, TrendingUp, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAdminPulse } from "@/hooks/useAIInsights";
 
 const healthStyles = {
-  healthy: { icon: CheckCircle2, chip: "bg-emerald-500/15 text-emerald-600 border-emerald-500/20", label: "Healthy" },
-  watch: { icon: Activity, chip: "bg-amber-500/15 text-amber-600 border-amber-500/20", label: "Watch" },
+  healthy: { icon: CheckCircle2, chip: TONE_CHIP.positive, label: "Healthy" },
+  watch: { icon: Activity, chip: TONE_CHIP.warning, label: "Watch" },
   concern: { icon: AlertTriangle, chip: "bg-destructive/15 text-destructive border-destructive/20", label: "Concern" },
 } as const;
 

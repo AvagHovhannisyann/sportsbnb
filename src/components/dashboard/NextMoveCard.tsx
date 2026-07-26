@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { TONE_CHIP } from "@/lib/chips";
 import { Sparkles, ArrowRight, Zap, Compass, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePlayerNextMove } from "@/hooks/useAIInsights";
 
 const vibeStyles = {
-  urgent: { icon: Zap, color: "text-amber-500", bg: "from-amber-500/15 via-amber-500/5 to-transparent", chip: "bg-amber-500/15 text-amber-600 border-amber-500/20", label: "Action needed" },
-  positive: { icon: CheckCircle2, color: "text-emerald-500", bg: "from-emerald-500/15 via-emerald-500/5 to-transparent", chip: "bg-emerald-500/15 text-emerald-600 border-emerald-500/20", label: "On track" },
+  urgent: { icon: Zap, color: "text-amber-500", bg: "from-amber-500/15 via-amber-500/5 to-transparent", chip: TONE_CHIP.warning, label: "Action needed" },
+  positive: { icon: CheckCircle2, color: "text-emerald-500", bg: "from-emerald-500/15 via-emerald-500/5 to-transparent", chip: TONE_CHIP.positive, label: "On track" },
   discovery: { icon: Compass, color: "text-primary", bg: "from-primary/15 via-primary/5 to-transparent", chip: "bg-primary/15 text-primary border-primary/20", label: "Discover" },
   neutral: { icon: Sparkles, color: "text-foreground", bg: "from-muted/40 via-muted/20 to-transparent", chip: "bg-muted text-muted-foreground border-border", label: "Suggestion" },
 } as const;

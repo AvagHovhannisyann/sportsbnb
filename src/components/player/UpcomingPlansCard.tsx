@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { TONE_CHIP } from "@/lib/chips";
 import { formatTimeOfDay } from "@/lib/time";
 import { Sparkles, MessageCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,10 +10,10 @@ import { formatDistanceToNow } from "date-fns";
 
 const labelFor = (outcome: string) => {
   switch (outcome) {
-    case "confirmed": return { text: "Confirmed", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" };
+    case "confirmed": return { text: "Confirmed", cls: TONE_CHIP.positive };
     case "no_show": return { text: "Missed", cls: "bg-muted text-muted-foreground" };
     case "lost": return { text: "No response", cls: "bg-destructive/10 text-destructive border-destructive/20" };
-    default: return { text: "Awaiting reply", cls: "bg-amber-500/10 text-amber-600 border-amber-500/20" };
+    default: return { text: "Awaiting reply", cls: TONE_CHIP.warning };
   }
 };
 
