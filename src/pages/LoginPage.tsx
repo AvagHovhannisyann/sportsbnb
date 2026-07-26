@@ -260,7 +260,7 @@ const LoginPage = () => {
           
           {/* Hero Text */}
           <div className="max-w-lg">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5 leading-tight tracking-tight">
+            <h1 className="auth-hero-title text-white">
               Find your game.<br />Join your people.
             </h1>
             <p className="text-lg text-white/80 leading-relaxed">
@@ -305,7 +305,7 @@ const LoginPage = () => {
                 <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle className="h-8 w-8 text-emerald-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Check your email</h2>
+                <h2 className="auth-form-title">Check your email</h2>
                 <p className="text-muted-foreground mb-6">
                   We sent a login link to<br />
                   <span className="font-medium text-foreground">{formData.email}</span>
@@ -349,7 +349,7 @@ const LoginPage = () => {
                   <Shield className="h-7 w-7 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Two-factor authentication</h2>
+                  <h2 className="auth-form-title">Two-factor authentication</h2>
                   <p className="text-muted-foreground">Enter the code from your authenticator app</p>
                 </div>
               </div>
@@ -405,7 +405,7 @@ const LoginPage = () => {
 
               {/* Welcome Header */}
               <div className="mb-8">
-                <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Welcome back</h2>
+                <h2 className="auth-form-title">Welcome back</h2>
                 <p className="text-muted-foreground">
                   Sign in to continue your sports journey
                 </p>

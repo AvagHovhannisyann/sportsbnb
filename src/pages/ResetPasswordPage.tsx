@@ -125,7 +125,7 @@ const ResetPasswordPage = () => {
         </div>
         
         <div className="max-w-md">
-          <h1 className="text-4xl font-bold text-secondary-foreground mb-4">
+          <h1 className="auth-hero-title text-secondary-foreground">
             Create new password
           </h1>
           <p className="text-lg text-secondary-foreground/70">
@@ -146,7 +146,7 @@ const ResetPasswordPage = () => {
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto mb-6">
                 <CheckCircle className="h-8 w-8" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Password updated!</h2>
+              <h2 className="auth-form-title">Password updated!</h2>
               <p className="text-muted-foreground mb-6">
                 Your password has been successfully reset. You'll be redirected to login shortly.
               </p>
@@ -171,7 +171,7 @@ const ResetPasswordPage = () => {
                   <Lock className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Set new password</h2>
+                  <h2 className="auth-form-title">Set new password</h2>
                   <p className="text-muted-foreground">Must be at least 8 characters</p>
                 </div>
               </div>

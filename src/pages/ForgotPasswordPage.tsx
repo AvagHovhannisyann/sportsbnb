@@ -60,7 +60,7 @@ const ForgotPasswordPage = () => {
         </div>
         
         <div className="max-w-md">
-          <h1 className="text-4xl font-bold text-secondary-foreground mb-4">
+          <h1 className="auth-hero-title text-secondary-foreground">
             Reset your password
           </h1>
           <p className="text-lg text-secondary-foreground/70">
@@ -89,7 +89,7 @@ const ForgotPasswordPage = () => {
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto mb-6">
                 <CheckCircle className="h-8 w-8" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Check your email</h2>
+              <h2 className="auth-form-title">Check your email</h2>
               <p className="text-muted-foreground mb-6">
                 If an account exists with <strong>{email}</strong>, you'll receive a password reset link shortly.
               </p>
@@ -115,7 +115,7 @@ const ForgotPasswordPage = () => {
                   <Mail className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Forgot password?</h2>
+                  <h2 className="auth-form-title">Forgot password?</h2>
                   <p className="text-muted-foreground">No worries, we'll send you reset instructions.</p>
                 </div>
               </div>

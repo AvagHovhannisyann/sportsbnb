@@ -241,7 +241,7 @@ const SignupPage = () => {
           
           {/* Hero Text */}
           <div className="max-w-lg">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5 leading-tight tracking-tight">
+            <h1 className="auth-hero-title text-white">
               Your game is<br />waiting for you.
             </h1>
             <p className="text-lg text-white/80 leading-relaxed">
@@ -288,7 +288,7 @@ const SignupPage = () => {
 
           {/* Welcome Header */}
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Create your account</h2>
+            <h2 className="auth-form-title">Create your account</h2>
             <p className="text-muted-foreground">
               Free to join — no card needed until you book
             </p>
