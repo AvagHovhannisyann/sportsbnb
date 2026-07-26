@@ -260,7 +260,7 @@ const GameDetailsPage = () => {
                 
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <Badge variant="secondary">{game.sport}</Badge>
-                  <Badge className={levelColors[game.skill_level] || levelColors.all}>
+                  <Badge className={`capitalize ${levelColors[game.skill_level] || levelColors.all}`}>
                     {game.skill_level === "all" ? "All levels" : game.skill_level}
                   </Badge>
                   {isFull && !isCancelled && (
@@ -470,7 +470,11 @@ const GameDetailsPage = () => {
               <Card className="sticky top-24">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Join Game</span>
+                    {/* The panel is headed by what it does *now*. It said
+                        "Join Game" unconditionally, so a player already in the
+                        game read "Join Game" above a "Leave Game" button, and
+                        the host read it above their own management actions. */}
+                    <span>{isHost ? "Your game" : isParticipant ? "You're in" : "Join Game"}</span>
                     <Badge variant={isFull ? "secondary" : "default"}>
                       {spotsLeft} spots left
                     </Badge>

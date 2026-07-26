@@ -2115,3 +2115,43 @@ The remaining columns — `provider`, `play_mode`, `refund_type`,
 `cancellation_policy`, `lead_outcome` — are never rendered raw; each already
 goes through a label map or is used only in logic. That is the useful half of
 the result: the sweep is complete, and the answer is mostly "already fine".
+
+---
+
+## Round: game details, and a grep that was too narrow
+
+`GameDetailsPage` is the largest page never rendered with data — 616 lines,
+and the screen where a player decides to join.
+
+**The join panel was headed "Join Game" regardless of state.** Rendered as a
+participant, it read "Join Game" directly above a "Leave Game" button; as the
+host it sat above their own management actions. Now "Your game" / "You're in" /
+"Join Game" depending on who is looking.
+
+**The skill badge was lowercase — in a place last round's grep missed.** I had
+searched for `{x.skill_level}`, and this one is
+`{game.skill_level === "all" ? "All levels" : game.skill_level}`, a ternary. So
+"intermediate" sat beside "Football" on the very page the earlier fix was meant
+to make consistent. `NearbyPlayers` on the home page had the same shape —
+`{player.sport} · {player.level}` — and was missed for the same reason.
+
+That is worth recording as a limit of the technique rather than a one-off: the
+symptom-grep is only as good as the shape you guess the symptom takes. Widening
+it to match the *column name anywhere in a JSX file* and filtering out the
+known-good uses found both, and confirmed the rest are genuinely fine —
+`ProfilePage` and `PlayerOnboarding` are form state, `BookingLeadsTab` is an
+aggregation key, `CommunityPage` was already capitalised.
+
+### Fourteenth false positive
+
+"Hosted by Anonymous" again, and again the fixture. `useGameById` looks the
+host up with `.eq("user_id", host_id).single()`, and my stub route answered
+every `profiles_public` request with the full array — so `.single()` received a
+list and `.full_name` was undefined. Teaching the stub to honour a single
+lookup renders "Hosted by Davit Sargsyan".
+
+Same for "Anonymous (You)" in the players list: the signed-in user simply had
+no row in my `profiles_public` fixture.
+
+Two rounds ago I wrote the rule "when a populated page looks broken, suspect
+the fixture first". This is the third consecutive round where it was right.

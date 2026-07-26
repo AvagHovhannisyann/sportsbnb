@@ -163,7 +163,7 @@ const NearbyPlayers = () => {
                     </Avatar>
                     <div className="text-left min-w-0">
                       <p className="font-semibold text-foreground truncate">{player.name}</p>
-                      <p className="text-sm text-muted-foreground">{player.sport} · {player.level}</p>
+                      <p className="text-sm text-muted-foreground">{player.sport} · <span className="capitalize">{player.level}</span></p>
                       {player.city && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                           <MapPin className="h-3 w-3" />
