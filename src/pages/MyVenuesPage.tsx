@@ -58,12 +58,12 @@ const MyVenuesPage = () => {
                 Manage all your listed venues in one place.
               </p>
             </div>
-            <Link to="/add-venue">
-              <Button>
+            <Button asChild>
+              <Link to="/add-venue">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Venue
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
           {/* Venues List */}
@@ -93,7 +93,7 @@ const MyVenuesPage = () => {
               {/* Active Venues */}
               {activeVenues.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
+                  <h2 className="section-title">
                     Active Venues ({activeVenues.length})
                   </h2>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -165,11 +165,9 @@ const MyVenuesPage = () => {
                                   <Calendar className="h-4 w-4" aria-hidden="true" />
                                 </Link>
                               </Button>
-                              <Link to={`/venue/${venue.id}/edit`}>
-                                <Button variant="outline" size="sm">
-                                  Edit
-                                </Button>
-                              </Link>
+                              <Button asChild variant="outline" size="sm">
+                                <Link to={`/venue/${venue.id}/edit`}>Edit</Link>
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
@@ -182,7 +180,7 @@ const MyVenuesPage = () => {
               {/* Inactive/Draft Venues */}
               {inactiveVenues.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
+                  <h2 className="section-title">
                     Draft/Inactive Venues ({inactiveVenues.length})
                   </h2>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -231,11 +229,9 @@ const MyVenuesPage = () => {
                               </span>
                               <span className="text-muted-foreground">/hr</span>
                             </div>
-                            <Link to={`/venue/${venue.id}/edit`}>
-                              <Button size="sm">
-                                Complete Listing
-                              </Button>
-                            </Link>
+                            <Button asChild size="sm">
+                              <Link to={`/venue/${venue.id}/edit`}>Complete Listing</Link>
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>

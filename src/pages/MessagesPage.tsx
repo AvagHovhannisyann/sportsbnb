@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Link } from "react-router-dom";
 import { MessageCircle, Loader2, ArrowLeft, Gamepad2, MapPin, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -166,11 +167,17 @@ const MessagesPage = () => {
   if (!user) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Please sign in to view messages</h1>
-          <Link to="/login">
-            <button className="text-primary hover:underline">Sign in</button>
-          </Link>
+        {/* Same `<Link><button>` nesting as the empty state below, and the
+            same job as the sign-in gate on /community — which is already an
+            EmptyState. */}
+        <div className="container">
+          <EmptyState
+            icon={MessageCircle}
+            title="Sign in to view messages"
+            description="Your conversations with game hosts and venue owners live here."
+            actionLabel="Sign in"
+            actionHref="/login"
+          />
         </div>
       </Layout>
     );
@@ -270,24 +277,23 @@ const MessagesPage = () => {
               />
             </Card>
           ) : (
-            <Card className="max-w-md mx-auto">
-              <CardContent className="py-16 text-center">
-                <MessageCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <h2 className="text-lg font-semibold text-foreground mb-2">No messages yet</h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Join a game or make a booking to start chatting
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <Link to="/games">
-                    <button className="text-primary hover:underline text-sm">Find games</button>
-                  </Link>
-                  <span className="text-muted-foreground hidden sm:inline">•</span>
-                  <Link to="/venues">
-                    <button className="text-primary hover:underline text-sm">Browse venues</button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+            // The ninth hand-rolled empty state, missed when the other eight
+            // were unified because its heading is an h2 rather than an h3.
+            // Its two actions were `<Link><button>` — a link wrapping a
+            // button, which is the same invalid nesting already fixed on
+            // /my-venues — styled as underlined text and separated by a
+            // bullet that vanished below sm.
+            <EmptyState
+              bordered
+              icon={MessageCircle}
+              title="No messages yet"
+              description="Join a game or make a booking to start chatting."
+              actionLabel="Find games"
+              actionHref="/games"
+              secondaryLabel="Browse venues"
+              secondaryHref="/venues"
+              className="mx-auto max-w-md"
+            />
           )}
         </div>
       </div>

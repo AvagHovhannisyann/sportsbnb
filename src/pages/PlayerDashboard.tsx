@@ -166,8 +166,12 @@ const PlayerDashboard = () => {
                   <div className="py-8 text-center text-muted-foreground">
                     <p className="mb-3">No upcoming games</p>
                     <div className="flex gap-2 justify-center">
-                      <Link to="/games"><Button size="sm" variant="outline">Find games</Button></Link>
-                      <Link to="/create-game"><Button size="sm"><Plus className="h-4 w-4 mr-1" />Create</Button></Link>
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/games">Find games</Link>
+                      </Button>
+                      <Button asChild size="sm">
+                        <Link to="/create-game"><Plus className="h-4 w-4 mr-1" />Create</Link>
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -181,21 +181,19 @@ const ForOwnersPage = () => {
               transition={{ duration: 0.7, ease, delay: 0.7 }}
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
             >
-              <Link to="/list-venue">
-                <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold shadow-2xl">
+              <Button asChild size="xl" className="w-full sm:w-auto rounded-full font-semibold shadow-2xl">
+                <Link to="/list-venue">
                   List your venue free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button
+                </Link>
+              </Button>
+              <Button asChild
                   variant="ghost"
                   size="xl"
                   className="w-full sm:w-auto rounded-full font-semibold text-white/90 hover:text-white hover:bg-white/10 border border-white/20"
                 >
-                  Talk to our team
-                </Button>
-              </Link>
+                <Link to="/contact">Talk to our team</Link>
+              </Button>
             </motion.div>
           </div>
         </div>
@@ -306,12 +304,12 @@ const ForOwnersPage = () => {
                   <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
               </div>
-              <Link to="/list-venue" className="block mt-8">
-                <Button size="lg" className="w-full rounded-full font-semibold">
+              <Button asChild size="lg" className="mt-8 w-full rounded-full font-semibold">
+                <Link to="/list-venue">
                   Get started free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </motion.div>
           </div>
         </div>
@@ -386,21 +384,19 @@ const ForOwnersPage = () => {
               We're not just a booking platform — we're your growth partner. More visibility, more players, more revenue. No risk, no commitment.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Link to="/list-venue">
-                <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold">
+              <Button asChild size="xl" className="w-full sm:w-auto rounded-full font-semibold">
+                <Link to="/list-venue">
                   List your venue free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button
+                </Link>
+              </Button>
+              <Button asChild
                   variant="secondaryOutline"
                   size="xl"
                   className="w-full sm:w-auto rounded-full font-semibold"
                 >
-                  Contact partnerships
-                </Button>
-              </Link>
+                <Link to="/contact">Contact partnerships</Link>
+              </Button>
             </div>
           </motion.div>
         </div>

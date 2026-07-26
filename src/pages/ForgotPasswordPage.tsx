@@ -102,11 +102,9 @@ const ForgotPasswordPage = () => {
                   try again
                 </button>
               </p>
-              <Link to="/login">
-                <Button variant="outline" className="w-full">
-                  Return to login
-                </Button>
-              </Link>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/login">Return to login</Link>
+              </Button>
             </div>
           ) : (
             <>

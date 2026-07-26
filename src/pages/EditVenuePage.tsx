@@ -102,12 +102,12 @@ const EditVenuePage = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <Link to={`/venue/${id}/availability`}>
-                <Button variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/venue/${id}/availability`}>
                   <Clock className="h-4 w-4 mr-2" />
                   Hours & Availability
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm">

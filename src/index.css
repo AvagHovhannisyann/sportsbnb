@@ -463,6 +463,27 @@
     @apply mb-2 text-3xl font-bold tracking-tight text-foreground;
   }
 
+  /*
+   * A heading for a group of items inside a page, one level under
+   * `.page-title`. Counted across the in-app pages, the same job was being
+   * done at two sizes: fifteen at text-xl — "About this venue", "Amenities",
+   * "Reviews (12)", the six section headers on /community — and four at
+   * text-lg: "Active Venues (3)" and "Draft/Inactive Venues" on /my-venues,
+   * "Teams I Captain" and "Teams I've Joined" on /teams.
+   *
+   * Nothing distinguished the two groups structurally. All nineteen sit
+   * directly under the page's h1 and label a list below them, so the 20px/18px
+   * split was drift. The majority wins.
+   *
+   * Not included, deliberately: the two uppercase eyebrow labels on /nearby,
+   * which are a different treatment for a denser list and were decided rather
+   * than drifted, and the editorial headings on the marketing and legal pages,
+   * which run their own larger scale.
+   */
+  .section-title {
+    @apply mb-4 text-xl font-semibold text-foreground;
+  }
+
   /* Scoreboard numerals — prices, times, counts */
   .stat-numeral {
     font-family: var(--font-mono);

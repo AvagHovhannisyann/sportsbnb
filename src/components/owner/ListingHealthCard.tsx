@@ -69,9 +69,9 @@ export function ListingHealthCard() {
                             <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
                             <span>{issue.label}</span>
                           </span>
-                          <Link to={issue.fixHref ?? `/venue/${s.id}/edit`}>
-                            <Button variant="link" size="sm" className="h-auto p-0 text-xs">Fix</Button>
-                          </Link>
+                          <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
+                            <Link to={issue.fixHref ?? `/venue/${s.id}/edit`}>Fix</Link>
+                          </Button>
                         </li>
                       ))}
                     </ul>

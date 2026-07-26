@@ -136,9 +136,9 @@ const FAQPage = () => {
               <p className="text-muted-foreground mb-6">
                 Can't find the answer you're looking for? Our team is here to help.
               </p>
-              <Link to="/contact">
-                <Button size="lg">Contact Support</Button>
-              </Link>
+              <Button asChild size="lg">
+                <Link to="/contact">Contact Support</Link>
+              </Button>
             </div>
           </div>
         </div>

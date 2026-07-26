@@ -203,13 +203,13 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
             )}
           </div>
 
-          <Link to="/">
-            <Button variant="ghost" size="sm">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/">
               <ChevronLeft className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Back to site</span>
               <span className="sr-only sm:hidden">Back to site</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </header>
 
         {/* Page content */}

@@ -44,9 +44,9 @@ const GameMatchmakingCard = () => {
         ) : matches.length === 0 ? (
           <div className="text-center py-6">
             <p className="text-sm text-muted-foreground mb-3">No matches found right now</p>
-            <Link to="/games">
-              <Button variant="outline" size="sm">Browse all games</Button>
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/games">Browse all games</Link>
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">

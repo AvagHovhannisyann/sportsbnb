@@ -78,20 +78,28 @@ export function EmptyState({
 
       {(hasPrimary || hasSecondary) && (
         <div className="flex flex-col items-center gap-3 sm:flex-row">
+          {/* `asChild`, not `<Link><Button>`. The latter renders an <a> with a
+              <button> inside it — nested interactive elements, which is
+              invalid HTML and gives assistive tech two controls where the user
+              sees one. I wrote it the wrong way here while moving this
+              component, and a DOM sweep for `a button` found it on every page
+              an empty state reaches. MyVenuesPage had already been fixed for
+              exactly this, with a comment saying so, twenty lines from where I
+              was working. */}
           {hasPrimary &&
             (actionHref ? (
-              <Link to={actionHref}>
-                <Button>{actionLabel}</Button>
-              </Link>
+              <Button asChild>
+                <Link to={actionHref}>{actionLabel}</Link>
+              </Button>
             ) : (
               <Button onClick={onAction}>{actionLabel}</Button>
             ))}
 
           {hasSecondary &&
             (secondaryHref ? (
-              <Link to={secondaryHref}>
-                <Button variant="outline">{secondaryLabel}</Button>
-              </Link>
+              <Button asChild variant="outline">
+                <Link to={secondaryHref}>{secondaryLabel}</Link>
+              </Button>
             ) : (
               <Button variant="outline" onClick={onSecondaryAction}>
                 {secondaryLabel}

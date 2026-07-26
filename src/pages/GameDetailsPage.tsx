@@ -502,11 +502,9 @@ const GameDetailsPage = () => {
                     </Button>
                   ) : isHost ? (
                     <div className="space-y-2">
-                      <Link to={`/game/${game.id}/edit`} className="block">
-                        <Button variant="outline" className="w-full">
-                          Edit Game
-                        </Button>
-                      </Link>
+                      <Button asChild variant="outline" className="w-full">
+                        <Link to={`/game/${game.id}/edit`}>Edit Game</Link>
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" className="w-full">

@@ -114,12 +114,12 @@ const Header = () => {
               <span className="mx-1 h-6 w-px bg-border" aria-hidden />
 
               {isOwner && (
-                <Link to="/add-venue">
-                  <Button size="sm" variant="outline" className="gap-1.5 h-9">
+                <Button asChild size="sm" variant="outline" className="gap-1.5 h-9">
+                  <Link to="/add-venue">
                     <Building className="h-4 w-4" />
                     List venue
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
 
               <DropdownMenu>
@@ -180,14 +180,12 @@ const Header = () => {
             </>
           ) : !isLoading ? (
             <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className="text-foreground-soft hover:text-foreground">
-                  Sign in
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button size="sm" className="h-9 px-4">Get started</Button>
-              </Link>
+              <Button asChild variant="ghost" size="sm" className="text-foreground-soft hover:text-foreground">
+                <Link to="/login">Sign in</Link>
+              </Button>
+              <Button asChild size="sm" className="h-9 px-4">
+                <Link to="/signup">Get started</Link>
+              </Button>
             </>
           ) : null}
         </div>

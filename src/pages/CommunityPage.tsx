@@ -337,11 +337,11 @@ const CommunityPage = () => {
                           </h2>
                           <p className="text-sm text-muted-foreground">Games happening close to you</p>
                         </div>
-                        <Link to="/games">
-                          <Button variant="ghost" size="sm">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/games">
                             View all <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       </div>
                       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {nearbyGames.map(game => (
@@ -374,11 +374,11 @@ const CommunityPage = () => {
                       </div>
                       {/* "View all" led to an equally empty list. */}
                       {trendingGames.length > 0 && (
-                        <Link to="/games">
-                          <Button variant="ghost" size="sm">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/games">
                             View all <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       )}
                     </div>
                     {trendingGames.length > 0 ? (
@@ -453,11 +453,11 @@ const CommunityPage = () => {
                         )}
                       </div>
                       {recentVenues.length > 0 && (
-                        <Link to="/venues">
-                          <Button variant="ghost" size="sm">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/venues">
                             View all <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       )}
                     </div>
                     {/* The games empty state below offers a way out; the
@@ -547,11 +547,11 @@ const CommunityPage = () => {
                         </h2>
                         <p className="text-sm text-muted-foreground">Games you're participating in</p>
                       </div>
-                      <Link to="/dashboard">
-                        <Button variant="ghost" size="sm">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to="/dashboard">
                           View all <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                     {upcomingSessions.length > 0 ? (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">

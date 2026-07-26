@@ -111,14 +111,12 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <Link to={`/game/${game.id}`} className="flex-1">
-          <Button variant={isFull ? "secondary" : "default"} className="w-full" disabled={isFull}>
-            {isFull ? "Full" : "Request to Join"}
-          </Button>
-        </Link>
-        <Link to={`/game/${game.id}`}>
-          <Button variant="outline">Details</Button>
-        </Link>
+        <Button asChild variant={isFull ? "secondary" : "default"} className="flex-1 w-full" disabled={isFull}>
+          <Link to={`/game/${game.id}`}>{isFull ? "Full" : "Request to Join"}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to={`/game/${game.id}`}>Details</Link>
+        </Button>
       </div>
     </div>
   );

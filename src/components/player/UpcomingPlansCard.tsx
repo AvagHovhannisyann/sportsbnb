@@ -42,7 +42,9 @@ export const UpcomingPlansCard = () => {
                 pointing at a flow that no longer exists. Booking and payment
                 happen in the app now. */}
             <p className="mb-3">Nothing here — you can book and pay in the app directly.</p>
-            <Link to="/venues"><Button size="sm">Browse venues</Button></Link>
+            <Button asChild size="sm">
+              <Link to="/venues">Browse venues</Link>
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">

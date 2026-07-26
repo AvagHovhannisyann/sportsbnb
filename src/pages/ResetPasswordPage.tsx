@@ -150,11 +150,9 @@ const ResetPasswordPage = () => {
               <p className="text-muted-foreground mb-6">
                 Your password has been successfully reset. You'll be redirected to login shortly.
               </p>
-              <Link to="/login">
-                <Button className="w-full">
-                  Go to login
-                </Button>
-              </Link>
+              <Button asChild className="w-full">
+                <Link to="/login">Go to login</Link>
+              </Button>
             </div>
           ) : (
             <>

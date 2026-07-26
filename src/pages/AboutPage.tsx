@@ -124,16 +124,12 @@ const AboutPage = () => {
                 Join players and venue owners on Sportsbnb.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/signup">
-                  <Button size="lg" variant="hero">
-                    Get started free
-                  </Button>
-                </Link>
-                <Link to="/contact">
-                  <Button size="lg" variant="hero" className="border-2 border-foreground/30 bg-transparent text-foreground hover:bg-foreground hover:text-background">
-                    Contact us
-                  </Button>
-                </Link>
+                <Button asChild size="lg" variant="hero">
+                  <Link to="/signup">Get started free</Link>
+                </Button>
+                <Button asChild size="lg" variant="hero" className="border-2 border-foreground/30 bg-transparent text-foreground hover:bg-foreground hover:text-background">
+                  <Link to="/contact">Contact us</Link>
+                </Button>
               </div>
             </div>
           </div>

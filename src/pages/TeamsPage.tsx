@@ -64,12 +64,12 @@ const TeamsPage = () => {
               <p className="text-muted-foreground">Create and manage your sports teams</p>
             </div>
             {user && (
-              <Link to="/create-team">
-                <Button className="gap-2">
+              <Button asChild className="gap-2">
+                <Link to="/create-team">
                   <Plus className="h-4 w-4" />
                   Create Team
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </div>
 
@@ -128,7 +128,7 @@ const TeamsPage = () => {
                     {/* Teams I Own */}
                     {(userTeams?.owned?.length ?? 0) > 0 && (
                       <div>
-                        <h2 className="text-lg font-semibold text-foreground mb-4">Teams I Captain</h2>
+                        <h2 className="section-title">Teams I Captain</h2>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {userTeams!.owned.map(team => (
                             <TeamCard key={team.id} team={team} showRole="captain" />
@@ -140,7 +140,7 @@ const TeamsPage = () => {
                     {/* Teams I'm a member of */}
                     {(userTeams?.member?.length ?? 0) > 0 && (
                       <div>
-                        <h2 className="text-lg font-semibold text-foreground mb-4">Teams I've Joined</h2>
+                        <h2 className="section-title">Teams I've Joined</h2>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {userTeams!.member.map(team => (
                             <TeamCard key={team.id} team={team} showRole="member" />
