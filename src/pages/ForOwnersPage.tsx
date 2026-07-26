@@ -360,7 +360,7 @@ const ForOwnersPage = () => {
               { img: venueBasketball, label: "Multi-Sport Complexes" },
             ].map((item, index) => (
               <motion.div key={item.label} {...stagger(index * 0.12)} className="relative aspect-[4/5] rounded-2xl md:rounded-3xl overflow-hidden group">
-                <img src={item.img} alt={item.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={item.img} alt={item.label} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8">
                   <h3 className="text-white text-lg md:text-2xl font-semibold tracking-tight">{item.label}</h3>

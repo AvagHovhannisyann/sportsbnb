@@ -85,7 +85,7 @@ const OwnerVenuesPage = () => {
                     <div className="aspect-video relative">
                       <img
                         src={getVenueImage(venue)}
-                        alt={venue.name}
+                        alt={venue.name} loading="lazy" decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -169,7 +169,7 @@ const OwnerVenuesPage = () => {
                     <div className="aspect-video relative">
                       <img
                         src={getVenueImage(venue)}
-                        alt={venue.name}
+                        alt={venue.name} loading="lazy" decoding="async"
                         className="w-full h-full object-cover grayscale"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

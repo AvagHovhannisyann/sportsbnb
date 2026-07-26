@@ -209,7 +209,7 @@ const SignupPage = () => {
         {/* Background Image */}
         <img
           src={authHero}
-          alt="Athletes playing sports"
+          alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the

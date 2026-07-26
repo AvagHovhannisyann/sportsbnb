@@ -103,7 +103,7 @@ const MyVenuesPage = () => {
                           <img
                             src={getVenueImage(venue)}
                             alt={venue.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover" loading="lazy" decoding="async"
                           />
                           <Badge className="absolute top-3 left-3 bg-green-500">
                             Active
@@ -190,7 +190,7 @@ const MyVenuesPage = () => {
                           <img
                             src={getVenueImage(venue)}
                             alt={venue.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover" loading="lazy" decoding="async"
                           />
                           <Badge variant="secondary" className="absolute top-3 left-3">
                             Draft

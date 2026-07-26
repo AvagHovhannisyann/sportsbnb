@@ -336,7 +336,7 @@ const OwnerOverviewPage = () => {
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
                         <img
                           src={getVenueImage(venue)}
-                          alt={venue.name}
+                          alt={venue.name} loading="lazy" decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </div>

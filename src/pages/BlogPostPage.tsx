@@ -156,12 +156,18 @@ const BlogPostPage = () => {
         </header>
 
         {/* Cover image */}
+        {/* `w-full h-auto` in a plain div reserves no height, so the article
+            body sat directly under the header until the cover arrived and
+            then jumped down by the image's full height. This is the only
+            image in the app not already inside a sized box — every venue
+            card, gallery tile and owner thumbnail has one. 16/9 matches the
+            blog index cards, so a post opens at the ratio its card showed. */}
         {post.cover_image_url && (
-          <div className="rounded-xl overflow-hidden mb-10">
+          <div className="mb-10 aspect-[16/9] overflow-hidden rounded-xl bg-surface-2">
             <img
               src={post.cover_image_url}
               alt={post.title}
-              className="w-full h-auto"
+              className="h-full w-full object-cover"
             />
           </div>
         )}
