@@ -726,6 +726,43 @@ chains span lines. Made multi-line-aware, the count fell to 9. Two crude
 scanners in three passes have now produced mostly false positives; both were
 still worth running to narrow the search, and neither was worth trusting.
 
+## Google Maps loaded on every page in the app
+
+Found by smoke-testing all 19 public routes after 41 commits, to check for
+regressions in my own work. Four routes timed out on `waitUntil: "load"`, and
+the reason was the same on every one: the Maps script was being fetched and
+failing, on pages that have no map.
+
+`GoogleMapsProvider` called `useJsApiLoader` unconditionally at the App root.
+Because it is a hook it cannot be called conditionally, so the Maps JS API was
+requested on **every route** — `/privacy`, `/terms`, `/faq`, `/login`, `/blog`,
+the landing page — when only two screens actually show a map. Each of those is
+a third-party request, a **billable Maps JS API load**, and a connection to
+Google from a page with no reason to make one.
+
+The provider now mounts the loader only once something asks for Maps state.
+`useGoogleMaps()` registers that interest itself, so `<MapsReady>` and every
+existing consumer keep working unchanged.
+
+Measured before and after by counting requests to `maps.googleapis.com`:
+
+| Route | Before | After |
+|---|---|---|
+| `/privacy`, `/terms`, `/faq`, `/login`, `/` | 1 each | **0** |
+| `/venues/map`, `/nearby` | 1 | 1 |
+
+Seven of seven routes loaded Maps before; two of seven after, and both are
+routes that render a map.
+
+### Not defects
+
+The other smoke failures were not the app. `leaderboard.map is not a function`
+on `/login` and `/signup` is the stub returning a single object where the
+leaderboard query expects an array — the error boundary caught it, which is
+the boundary working. And "Failed to load Google Maps script, retrying in 2
+ms" comes from `@react-google-maps/api`'s own backoff, not from any retry code
+in this repo.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
