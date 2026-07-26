@@ -232,6 +232,26 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs admin  $ADMIN
 
+          # Keyboard focus: WCAG 2.4.7 (an indicator is visible) and 2.2's
+          # 2.4.11 (it is not covered by something else). Both by screenshot
+          # and hit-testing, because a Tailwind ring is invisible to
+          # getComputedStyle — the composed box-shadow reads back as its
+          # transparent fallback while it is painting.
+          #
+          # A SUBSET, deliberately. This is the most expensive check here —
+          # 28 screenshots a route, ~19s — so all 62 routes would add about
+          # 21 minutes. The full sweep was run by hand before this landed and
+          # is clean; what it found is fixed. These ten cover the distinct
+          # shells and layouts, which is where the tab order actually differs:
+          # public marketing, list, detail, auth split-panel, player shell,
+          # owner shell, a data table, admin shell, and the embed widget,
+          # whose date strip is its own layout. Routes sharing a shell share
+          # their header tab order, so the marginal value of the rest is low.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs player \
+            / /venues /venue/:venue /login /dashboard /nearby /embed/booking/:venue
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs owner  /owner/venues /owner/earnings
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs admin  /admin
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

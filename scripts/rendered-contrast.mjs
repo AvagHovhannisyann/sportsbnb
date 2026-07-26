@@ -71,7 +71,7 @@
  *   CONTRAST_SELFTEST=1 node scripts/rendered-contrast.mjs player /
  */
 import { chromium } from '@playwright/test';
-import { newStubbedPage, resolveRoute } from '../scripts/lib/stub-page.mjs';
+import { newStubbedPage, resolveRoute, waitForAppReady } from '../scripts/lib/stub-page.mjs';
 import { WALK_SOURCE, revealEverything } from '../scripts/lib/contrast-walk.mjs';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
@@ -284,6 +284,7 @@ for (const route of routes) {
   // that mounts a map, which timed out the whole smoke job once already.
   await page.goto(`${BASE}${url}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForTimeout(1200);
+  await waitForAppReady(page);
   await revealEverything(page);
 
   if (SELFTEST) await page.evaluate(SELFTEST_PROBE);

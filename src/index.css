@@ -260,6 +260,22 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+
+    /* The header is `sticky top-0 z-50` and 65px tall. Anything the browser
+       scrolls to the top of the viewport therefore lands *underneath* it.
+       Tabbing to the "View all" link on /community put it at y=6 with the
+       header occupying y=0–65: `elementFromPoint` at the link's centre
+       returned the header, and a screenshot diff of the link focused versus
+       blurred changed exactly zero pixels. The focus ring was being painted
+       correctly and then covered up.
+
+       That is WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum), Level AA, and
+       it was not one link — it is every focusable element the browser scrolls
+       to the top edge, on every page in the app. `scroll-padding-top` is the
+       one thing that fixes the whole class: it tells the scroll container to
+       stop short, so focus scrolling, anchor jumps and `scrollIntoView` all
+       leave room for the bar. 5rem clears 65px with margin to spare. */
+    scroll-padding-top: 5rem;
   }
 
   body {

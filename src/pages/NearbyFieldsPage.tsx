@@ -178,14 +178,37 @@ const NearbyFieldsPage: React.FC = () => {
                 </Select>
 
                 <div className="flex rounded-lg border border-border overflow-hidden">
+                  {/* Both buttons carry an *inset* ring rather than the app's
+                      `focus-ring` utility. That utility is `ring-offset-2`,
+                      and an offset ring drawn inside this `overflow-hidden`
+                      container is clipped away by it — painted, then cropped,
+                      which is the same invisible-indicator outcome by a
+                      different route. An inset ring stays in the button's own
+                      box. Before this the pair had no focus styling at all and
+                      measured 98 and 64 changed pixels, which is the browser's
+                      default outline and nothing of the app's.
+
+                      The ring colour is set alongside the fill for a reason:
+                      `--ring` and `--primary` are the same value in the dark
+                      theme (151 90% 47%), so an inset `ring-ring` on the
+                      active button is green on green. The first attempt at
+                      this made the active button *worse* — 98 changed pixels
+                      down to 24, because `outline-none` removed the browser
+                      default and the ring it was replaced with was invisible.
+                      `focus-ring` avoids the whole problem elsewhere with
+                      `ring-offset-2`, which lifts the ring off the fill; that
+                      is exactly what this container's `overflow-hidden`
+                      crops. */}
                   <button
                     type="button"
                     aria-label="Map view"
                     aria-pressed={view === "map"}
                     onClick={() => setView("map")}
                     className={cn(
-                      "p-2 transition-colors",
-                      view === "map" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                      "p-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                      view === "map"
+                        ? "bg-primary text-primary-foreground focus-visible:ring-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted focus-visible:ring-ring"
                     )}
                   >
                     <MapIcon className="h-4 w-4" />
@@ -196,8 +219,10 @@ const NearbyFieldsPage: React.FC = () => {
                     aria-pressed={view === "list"}
                     onClick={() => setView("list")}
                     className={cn(
-                      "p-2 transition-colors",
-                      view === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                      "p-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                      view === "list"
+                        ? "bg-primary text-primary-foreground focus-visible:ring-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted focus-visible:ring-ring"
                     )}
                   >
                     <List className="h-4 w-4" />

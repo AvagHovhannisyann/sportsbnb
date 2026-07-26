@@ -24,7 +24,7 @@
  *   node scripts/glass-contrast.mjs <player|owner|admin> <route>...
  */
 import { chromium } from '@playwright/test';
-import { newStubbedPage, resolveRoute } from '../scripts/lib/stub-page.mjs';
+import { newStubbedPage, resolveRoute, waitForAppReady } from '../scripts/lib/stub-page.mjs';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
 const WIDTH = Number(process.env.SMOKE_WIDTH ?? 1440);
@@ -79,6 +79,11 @@ for (const route of routes) {
     await page.evaluate(() => document.documentElement.classList.remove('dark'));
   }
   await page.waitForTimeout(700);
+  // The splash covers the viewport for 2.3s. This script picks its scroll
+  // offsets by sampling the backdrop luminance under the bar — during the
+  // splash that is one flat colour at every offset, so "both extremes" picks
+  // two arbitrary positions — and then screenshots from ~1100ms.
+  await waitForAppReady(page);
 
   // Which scroll offsets to measure.
   //

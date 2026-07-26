@@ -253,12 +253,20 @@ const EmbedBookingPage = () => {
               <Calendar className="h-4 w-4" />
               Select Date
             </label>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            {/* A seven-column grid, not a horizontal scroll strip. Seven
+                buttons at `min-w-[60px]` plus gaps need 468px; the strip is
+                414px wide inside the embed's `max-w-md` card, so the last day
+                was cut off with 6 of its 60 pixels showing and `scrollLeft`
+                stayed at 0 when it was focused — measured, and reported by
+                focus-visible.mjs as a control entirely covered by the page
+                behind it. A fixed count of items in a fixed-width card is a
+                grid; scrolling was never going to fit them. */}
+            <div className="grid grid-cols-7 gap-1 pb-2">
               {dateOptions.map((date) => (
                 <button
                   key={date.toISOString()}
                   onClick={() => setSelectedDate(date)}
-                  className={`flex-shrink-0 p-2 rounded-lg text-center min-w-[60px] transition-colors ${
+                  className={`min-w-0 rounded-lg p-1.5 text-center transition-colors ${
                     format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted hover:bg-muted/80"

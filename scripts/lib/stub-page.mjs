@@ -311,3 +311,55 @@ export async function newStubbedPage(browser, { userType, width, height }) {
   }
   return p;
 }
+
+/**
+ * Waits until nothing full-screen is covering the app, then a beat more.
+ *
+ * `SplashScreen` holds a `fixed inset-0 z-[9999]` panel over the whole
+ * viewport for 1800ms and then fades it for 500ms — 2.3 seconds during which
+ * every page in the app looks like a flat `bg-background` rectangle with a
+ * spinner on it. The DOM underneath is complete the whole time, so the audits
+ * that read the DOM never noticed. The ones that look at *pixels* or ask
+ * `elementFromPoint` what is on top were measuring the splash:
+ *
+ *   - `focus-visible.mjs` settled for 1500ms, so its 2.4.11 check reported the
+ *     logo link "entirely covered" on 27 routes. It was — by the splash.
+ *   - `glass-contrast.mjs` settled for 700ms and took its first screenshots
+ *     around 1100ms, and picked its scroll offsets by sampling backdrop
+ *     luminance, which during the splash is one flat colour at every offset.
+ *
+ * Both are the same mistake as measuring a page before its scroll reveals
+ * fire: a state no reader is ever looking at. Rather than pushing each
+ * script's fixed delay past 2.3s and leaving it to rot the next time that
+ * duration changes, this asks the page directly.
+ *
+ * Deliberately generic — any full-viewport fixed overlay counts, not
+ * `SplashScreen` by name — so a future modal-style loader is covered too.
+ * Caps out rather than throwing: a route that legitimately shows a
+ * full-screen overlay should still be measured, just with the fact recorded
+ * by whatever check runs next.
+ */
+export async function waitForAppReady(page, { timeout = 8000 } = {}) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const covered = await page
+      .evaluate(() => {
+        const area = innerWidth * innerHeight;
+        for (const el of document.querySelectorAll('body *')) {
+          const cs = getComputedStyle(el);
+          if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
+          if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+          if (parseFloat(cs.opacity) === 0) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width * r.height >= area * 0.9) return true;
+        }
+        return false;
+      })
+      .catch(() => false);
+    if (!covered || Date.now() > deadline) break;
+    await page.waitForTimeout(150);
+  }
+  // The fade leaves the element at opacity 0 for a frame or two before React
+  // unmounts it; settle past that rather than racing the transition.
+  await page.waitForTimeout(250);
+}
