@@ -1,3 +1,18 @@
+// Run `npm run typecheck`, not `tsc --noEmit`.
+//
+// This file has `"files": []` and only project references, which is the
+// standard solution-style layout — and it means a bare `tsc --noEmit` here
+// compiles nothing and exits 0. It does not check the app; it does not check
+// anything. `npm run typecheck` points at tsconfig.app.json, which does.
+//
+// Worth a note because the silent pass is indistinguishable from a real one,
+// and I spent a while reporting "typecheck clean" from the bare form before
+// noticing that an unimported `useMemo` sailed through it. CI has always run
+// the script, so nothing escaped on the strength of it.
+//
+// The compilerOptions below are inert for the same reason — with no files in
+// scope they apply to nothing. tsconfig.app.json carries its own copy, which
+// is the one that takes effect.
 {
   "compilerOptions": {
     "allowJs": true,

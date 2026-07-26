@@ -32,6 +32,7 @@ import { describeActiveFilters, type FilterKey } from "@/features/venues/activeF
 import { sportTypes } from "@/data/constants";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import Layout from "@/components/layout/Layout";
+import { FilterChips } from "@/components/ui/filter-chips";
 import { useVenues, getVenueImage } from "@/hooks/useVenues";
 import { useAuth } from "@/hooks/useAuth";
 import { SmartSearch } from "@/components/search/SmartSearch";
@@ -558,28 +559,12 @@ const DiscoverPage = () => {
               them: desktop had a single Clear that dropped all five, mobile
               had a badge on the Filters button reading "!". A grid narrowed to
               two results was indistinguishable from an empty catalogue. */}
-          {activeFilters.length > 0 && (
-            <div className="mb-6 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">Filtered by</span>
-              {activeFilters.map((f) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => clearFilter(f.key)}
-                  aria-label={`Remove filter: ${f.label}`}
-                  className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-1 py-1 pl-3 pr-2 text-sm text-foreground transition-colors hover:border-border-strong hover:bg-surface-2"
-                >
-                  {f.label}
-                  <X className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                </button>
-              ))}
-              {activeFilters.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Clear all
-                </Button>
-              )}
-            </div>
-          )}
+          <FilterChips
+            className="mb-6"
+            chips={activeFilters}
+            onRemove={(key) => clearFilter(key as FilterKey)}
+            onClearAll={clearFilters}
+          />
 
           {isLoading ? (
             // Skeletons rather than a centred spinner: same grid, same card

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import SEOHead from "@/components/seo/SEOHead";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, LayoutGrid, Map, Navigation, MapPinOff, Banknote } from "lucide-react";
@@ -16,6 +16,8 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { sportTypes } from "@/data/constants";
 import Layout from "@/components/layout/Layout";
+import { FilterChips } from "@/components/ui/filter-chips";
+import { describeActiveGameFilters } from "@/features/games/activeFilters";
 import { ErrorPanel } from "@/components/common/StatusPanel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useGames, type Game } from "@/hooks/useGames";
@@ -236,6 +238,25 @@ const GamesPage = () => {
 
   const hasActiveFilters = searchQuery || selectedSport || selectedLevel || userLocation;
 
+  const activeFilters = useMemo(
+    () =>
+      describeActiveGameFilters({
+        searchQuery,
+        selectedSport,
+        selectedLevel,
+        hasLocation: !!userLocation,
+      }),
+    [searchQuery, selectedSport, selectedLevel, userLocation],
+  );
+
+  /** Drop one filter, leaving the rest alone. */
+  const clearGameFilter = (key: string) => {
+    if (key === "query") setSearchQuery("");
+    else if (key === "sport") setSelectedSport("");
+    else if (key === "level") setSelectedLevel("");
+    else if (key === "location") setUserLocation(null);
+  };
+
   const handleCreateGame = () => {
     if (!user) {
       navigate("/login");
@@ -433,6 +454,17 @@ const GamesPage = () => {
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
+
+          {/* Same gap Discover had: the page filtered on four things and
+              showed a count of them on the Filters button, which says how many
+              are hidden without naming one, and offers no way to drop a single
+              one. */}
+          <FilterChips
+            className="mb-6"
+            chips={activeFilters}
+            onRemove={clearGameFilter}
+            onClearAll={clearFilters}
+          />
 
           {isLoading ? (
             // Same grid, same card footprint, so nothing moves when the real
