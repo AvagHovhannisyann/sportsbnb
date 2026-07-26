@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 const OwnerOverviewPage = () => {
   const navigate = useNavigate();
@@ -211,7 +212,7 @@ const OwnerOverviewPage = () => {
                             <div>
                               <p className="font-medium text-foreground">{booking.venue_name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {dateLabel} at {booking.booking_time}
+                                {dateLabel} at {formatTimeOfDay(booking.booking_time)}
                               </p>
                             </div>
                           </div>

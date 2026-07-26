@@ -12,6 +12,7 @@ import { useGames, useUserGames } from "@/hooks/useGames";
 import { useVenues } from "@/hooks/useVenues";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 // Haversine formula for distance calculation
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -30,14 +31,6 @@ const formatGameDate = (dateStr: string): string => {
   if (isToday(date)) return "Today";
   if (isTomorrow(date)) return "Tomorrow";
   return format(date, "EEE, MMM d");
-};
-
-const formatGameTime = (timeStr: string): string => {
-  const [hours, minutes] = timeStr.split(':');
-  const hour = parseInt(hours);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 || 12;
-  return `${hour12}:${minutes} ${ampm}`;
 };
 
 interface GameCardProps {
@@ -88,7 +81,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
               <Calendar className="h-3.5 w-3.5 text-primary" />
               <span>{formatGameDate(game.game_date)}</span>
               <Clock className="h-3.5 w-3.5 ml-2 text-primary" />
-              <span>{formatGameTime(game.game_time)}</span>
+              <span>{formatTimeOfDay(game.game_time)}</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5 text-primary" />

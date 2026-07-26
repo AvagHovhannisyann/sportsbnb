@@ -55,6 +55,7 @@ import {
 import { format } from "date-fns";
 import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
 import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
+import { formatTimeOfDay } from "@/lib/time";
 
 // FieldSubmissionsTab and CandidateFieldsTab used to be lazy-imported here and
 // never rendered — no TabsTrigger, no TabsContent, no route. Both components
@@ -267,7 +268,7 @@ const AdminDashboard = () => {
                             <div>
                               <p className="font-medium text-foreground">{booking.venue_name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {format(new Date(booking.booking_date), "MMM d, yyyy")} • {booking.booking_time}
+                                {format(new Date(booking.booking_date), "MMM d, yyyy")} • {formatTimeOfDay(booking.booking_time)}
                               </p>
                             </div>
                             <div className="text-right">
@@ -480,7 +481,7 @@ const AdminDashboard = () => {
                           <TableRow key={booking.id}>
                             <TableCell className="font-medium">{booking.venue_name}</TableCell>
                             <TableCell>{format(new Date(booking.booking_date), "MMM d, yyyy")}</TableCell>
-                            <TableCell>{booking.booking_time}</TableCell>
+                            <TableCell>{formatTimeOfDay(booking.booking_time)}</TableCell>
                             <TableCell>{booking.duration_hours}h</TableCell>
                             <TableCell>{formatCurrency(booking.total_price)}</TableCell>
                             <TableCell>

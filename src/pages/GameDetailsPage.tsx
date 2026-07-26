@@ -36,6 +36,7 @@ import { ChatButton } from "@/components/chat/ChatButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { formatTimeRange } from "@/lib/time";
 
 const GameDetailsPage = () => {
   const { id } = useParams();
@@ -313,7 +314,7 @@ const GameDetailsPage = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Time</p>
                         <p className="font-medium text-foreground">
-                          {game.game_time} ({game.duration_hours}h)
+                          {formatTimeRange(game.game_time, game.duration_hours)}
                         </p>
                       </div>
                     </div>

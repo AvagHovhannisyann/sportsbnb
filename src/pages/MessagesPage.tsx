@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 interface ChatRoomWithDetails {
   room_id: string;
@@ -88,7 +89,7 @@ const MessagesPage = () => {
             .single();
           
           title = booking?.venue_name || "Booking Chat";
-          subtitle = booking ? `${booking.booking_date} at ${booking.booking_time}` : "";
+          subtitle = booking ? `${booking.booking_date} at ${formatTimeOfDay(booking.booking_time)}` : "";
         } else if (room.type === "venue") {
           const { data: venue } = await supabase
             .from("venues")

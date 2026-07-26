@@ -36,6 +36,7 @@ import {
   type BookingIntent,
   type IntentStatus,
 } from "@/hooks/useBookingIntents";
+import { formatTimeOfDay } from "@/lib/time";
 
 const STATUS_LABELS: Record<IntentStatus, { label: string; className: string }> = {
   clicked: { label: "Clicked", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
@@ -203,7 +204,7 @@ export default function BookingLeadsTab() {
                           {intent.booking_date ? (
                             <>
                               {format(new Date(intent.booking_date), "MMM d")}
-                              {intent.booking_time && ` • ${intent.booking_time}`}
+                              {intent.booking_time && ` • ${formatTimeOfDay(intent.booking_time)}`}
                               {intent.players_count && ` • ${intent.players_count}p`}
                             </>
                           ) : (

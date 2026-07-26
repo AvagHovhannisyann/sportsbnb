@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOwnerLeads, useUpdateLeadOutcome, type LeadOutcome, type OwnerLead } from "@/hooks/useLeads";
 import { formatDistanceToNow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 const channelIcon = {
   whatsapp: MessageCircle,
@@ -97,7 +98,7 @@ const LeadRow = ({
           <div className="text-sm text-muted-foreground mt-0.5">
             {lead.customer_name || "Unknown player"}
             {lead.booking_date && ` · ${lead.booking_date}`}
-            {lead.booking_time && ` ${lead.booking_time}`}
+            {lead.booking_time && ` ${formatTimeOfDay(lead.booking_time)}`}
             {lead.players_count ? ` · ${lead.players_count} players` : ""}
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">

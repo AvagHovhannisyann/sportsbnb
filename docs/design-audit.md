@@ -1351,3 +1351,59 @@ by the owner on that date, and genuinely full.
 
 The rule is now `"error"` rather than `"off"`, so the next one fails CI. 132 →
 0. Prefix with `_` to keep something deliberately unused.
+
+---
+
+## Round: the logged-in dashboard, with something in it
+
+Same method as the venue page — stub rows, real browser, look at it. Two bugs
+and one design problem, plus a seventh false positive I checked before acting
+on.
+
+**Every time in the app printed its seconds.** `games.game_time`,
+`bookings.booking_time` and friends are Postgres `time` columns, which
+PostgREST serialises as `HH:MM:SS`. Nine places rendered that string directly,
+so a player's own dashboard said their game was at `19:00:00`, as did the games
+list, game details, both admin tables, the owner's bookings and the lead inbox.
+
+The tenth place had a local helper that produced `7:00 PM` instead — correct
+about the seconds, wrong about everything else on the page. The venue page's
+opening hours, the booking panel's slot buttons and the checkout summary are
+all 24-hour, which is also the convention in the app's primary market. So
+there is now one shared `formatTimeOfDay` in `src/lib/time.ts`, 24-hour, used
+in all ten places, with `formatTimeRange` for game details (`19:00 – 20:00`
+beats `19:00:00 (1h)`). Nine unit tests, including the null and unparseable
+cases, because a formatter that renders `NaN:NaN` into a booking confirmation
+is worse than one that renders nothing.
+
+**The stat strip.** Four separate cards, each a large bold number over a label,
+and for any new player all four read `0`. Four zeros in 30px bold were the
+loudest thing on the page — a wall of failure as a greeting. They are now one
+connected band with hairline dividers, each cell an icon, a number and a label,
+each linking to the thing it counts (nothing on that strip was clickable
+before, though every cell names a place in the app). A zero is dimmed and a
+non-zero gets a small primary dot, so the strip reads as prompts when empty and
+as status when not.
+
+Measured rather than eyeballed: the dimmed zero is `rgba(156,171,158,.5)` on
+`rgb(28,38,35)` — **6.46:1**, against the 3:1 that 30px bold needs and the
+4.5:1 for normal text. My instinct said it was too faint. It was not, and the
+only reason I know that is that I measured it.
+
+### The seventh false positive
+
+The screenshot showed the same game listed twice under "Your Games" — once
+badged "Hosting", once not — which looks exactly like a host being counted as
+their own participant. `useUserGames` already guards it: the joined query ends
+`.neq("host_id", userId)`. The duplicate was my stub answering both queries
+with the same row and ignoring the filter. Checked the code before touching
+anything, which is the only reason this is a paragraph rather than a commit.
+
+### Still weak, and deliberately not touched
+
+"Recommended Games" renders roughly 300px of empty box while it loads, "Your
+Sports DNA" is a tall card holding one line of centred text, and "Recommended
+for You" is a spinner at the bottom of the page. All three are AI-backed and
+all three want the same treatment the Next Move card got. That is a real piece
+of work rather than a tweak, and doing it badly to be seen doing it would be
+worse than leaving it noted.

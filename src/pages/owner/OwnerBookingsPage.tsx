@@ -28,6 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { format, parseISO } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 const OwnerBookingsPage = () => {
   const navigate = useNavigate();
@@ -237,7 +238,7 @@ const OwnerBookingsPage = () => {
                       <p className="font-medium text-foreground">
                         {format(parseISO(booking.booking_date), "MMM d, yyyy")}
                       </p>
-                      <p className="text-xs text-muted-foreground">{booking.booking_time}</p>
+                      <p className="text-xs text-muted-foreground">{formatTimeOfDay(booking.booking_time)}</p>
                     </div>
                   </TableCell>
                   <TableCell>

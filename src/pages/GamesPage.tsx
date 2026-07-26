@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import GamesMapView from "@/components/games/GamesMapView";
 import { toast } from "sonner";
+import { formatTimeOfDay } from "@/lib/time";
 
 type GameWithDistance = Game & { distance?: number | null };
 
@@ -75,7 +76,7 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            <span>{game.game_time}</span>
+            <span>{formatTimeOfDay(game.game_time)}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
