@@ -5,7 +5,12 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-const YANDEX_GEOCODER_API_KEY = "0182c04c-963d-409f-a83d-26b2fb34547e";
+// Browser-callable geocoder key. It is necessarily public — it ships in the
+// bundle — but it was hardcoded here, which meant it could not be swapped per
+// environment or rotated without a code change, and it sits in git history.
+// Configured like VITE_GOOGLE_MAPS_BROWSER_KEY instead. Restrict it by HTTP
+// referrer in the Yandex console; the quota is billable.
+const YANDEX_GEOCODER_API_KEY = import.meta.env.VITE_YANDEX_GEOCODER_KEY ?? "";
 
 interface SearchSuggestion {
   id: string;
@@ -130,7 +135,7 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
             data: { uri: item.uri, fullText: item.subtitle?.text ? `${item.title.text}, ${item.subtitle.text}` : item.title.text },
           });
         });
-      } else {
+      } else if (YANDEX_GEOCODER_API_KEY) {
         const geocodeResponse = await fetch(
           `https://geocode-maps.yandex.ru/1.x/?apikey=${YANDEX_GEOCODER_API_KEY}&geocode=${encodeURIComponent(query)}&format=json&results=4&lang=en_US&ll=44.5152,40.1872&spn=2,2&rspn=1`
         );
@@ -161,6 +166,9 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
   }, []);
 
   const resolveLocationCoords = async (data: any): Promise<{ lat: number; lng: number; address: string } | null> => {
+    // Without a key the request is rejected by Yandex anyway; skipping it keeps
+    // venue and game suggestions working instead of failing the whole search.
+    if (!YANDEX_GEOCODER_API_KEY) return null;
     try {
       const geocodeParam = data.uri
         ? `uri=${encodeURIComponent(data.uri)}`

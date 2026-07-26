@@ -37,6 +37,8 @@ jobs:
       VITE_SUPABASE_URL: https://smoketest.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_smoke_test_placeholder
       VITE_SUPABASE_PROJECT_ID: smoketest
+      # Intentionally unset: VITE_YANDEX_GEOCODER_KEY. Leaving it empty
+      # exercises the no-key path in SmartSearch rather than a doomed request.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

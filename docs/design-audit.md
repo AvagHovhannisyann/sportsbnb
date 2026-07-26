@@ -901,6 +901,40 @@ same way, so it is universally true and therefore tells the reader nothing.
 Removing it would also remove a genuine trust signal. That is a design
 judgement rather than a defect, so it is recorded here instead of decided.
 
+## Third-party hosts — a hardcoded API key
+
+The Unsplash hot-linking found on Discover suggested a class worth sweeping, so
+I enumerated every external host referenced anywhere in `src`. Most are inert:
+`w3.org` and `schema.org` are XML/JSON-LD namespaces, `calendar.google.com` is
+an add-to-calendar link, `fonts.googleapis.com` is expected. `wa.me` survives
+only inside `src/lib/phone.ts` and its test, not on any live booking path.
+
+One is not inert.
+
+| Finding | Detail |
+|---|---|
+| **Yandex Geocoder API key hardcoded in source** | `SmartSearch.tsx` carried `const YANDEX_GEOCODER_API_KEY = "0182c04c-…"` as a literal, committed and present in git history. A browser-callable geocoder key is necessarily public — it ships in the bundle either way — but hardcoding it meant it could not be swapped per environment or rotated without a code change, and the quota is billable, so an abused key costs the owner money. Phase 0 covered secrets hygiene and rotated the Google Maps key; this one was missed. |
+
+Now read from `VITE_YANDEX_GEOCODER_KEY`, matching how
+`VITE_GOOGLE_MAPS_BROWSER_KEY` is handled, and added to `.env.example`. Both
+call sites are guarded so an unset key skips the geocoder instead of firing a
+request Yandex will reject — venue and game suggestions keep working, only
+location suggestions drop out. The CI smoke job deliberately leaves it unset,
+which exercises that path on every run. Verified the literal no longer appears
+in the build output.
+
+**This needs action beyond the code change:** the key is in git history, so
+moving it does not un-expose it. It should be rotated in the Yandex console
+and the replacement restricted by HTTP referrer.
+
+### Canonical URL disagrees with itself
+
+`SEOHead` sets `SITE_URL = "https://sportsbnb.org"` while `AboutPage`'s JSON-LD
+publishes `https://www.sportsbnb.org`. Search engines treat those as different
+origins. Left alone rather than guessed at — which of the two is the real
+production domain is not something I can determine from the repo, and picking
+wrong is worse than flagging it.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
