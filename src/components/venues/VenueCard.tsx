@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Star, Zap, Sparkles, ArrowUpRight, ImageOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,18 @@ const VenueCard = ({
   distance,
   isPromoted,
 }: VenueCardProps) => {
-  const [imageFailed, setImageFailed] = useState(false);
+  // Seeded from the prop, not just from onError. venues.image_url is
+  // nullable, and an empty string renders <img src=""> — which resolves to the
+  // page itself and never fires onError, so a venue listed without a photo got
+  // a black void where the earlier 404 fallback should have been.
+  const hasImage = typeof image === "string" && image.trim().length > 0;
+  const [imageFailed, setImageFailed] = useState(!hasImage);
+
+  // Cards are keyed by venue id today, so React remounts rather than reuses
+  // them — but resetting on the prop keeps that from being load-bearing.
+  useEffect(() => {
+    setImageFailed(!hasImage);
+  }, [hasImage, image]);
 
   return (
     <Link to={`/venue/${id}`} className="group block focus-ring rounded-2xl">
@@ -91,7 +102,7 @@ const VenueCard = ({
               {name}
             </h3>
             <div className="flex items-center gap-1 text-sm shrink-0">
-              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
               <span className="font-semibold text-foreground">{rating || "—"}</span>
               {reviewCount > 0 && (
                 <span className="text-muted-foreground text-xs">({reviewCount})</span>

@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import venueFootball from "@/assets/venue-football.jpg";
+import venueBasketball from "@/assets/venue-basketball.jpg";
+import venueTennis from "@/assets/venue-tennis.jpg";
+import venueSwimming from "@/assets/venue-swimming.jpg";
+import venueGeneric from "@/assets/hero-sports.jpg";
 
 export interface Venue {
   id: string;
@@ -28,17 +33,23 @@ export interface Venue {
   sms_enabled?: boolean;
 }
 
-// Default images for venues without custom images
+// Fallback imagery for venues with no photo of their own.
+//
+// These were hot-linked from images.unsplash.com. That meant a third-party
+// request for every photoless venue card, a page that stops rendering
+// correctly if those URLs rot or Unsplash blocks hotlinking, and an
+// inconsistency with the landing page — which already ships bundled versions
+// of the same four sports. Serving them from the bundle removes the
+// dependency entirely and makes the fallback deterministic.
+//
+// Sports without a bundled photo share the generic one rather than reaching
+// back out to a third party for a more specific image.
 const defaultImages: Record<string, string> = {
-  Football: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&h=600&fit=crop",
-  Basketball: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=600&fit=crop",
-  Tennis: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop",
-  Swimming: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&h=600&fit=crop",
-  Volleyball: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&h=600&fit=crop",
-  Badminton: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&h=600&fit=crop",
-  Rugby: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&h=600&fit=crop",
-  Gym: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop",
-  default: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&h=600&fit=crop",
+  Football: venueFootball,
+  Basketball: venueBasketball,
+  Tennis: venueTennis,
+  Swimming: venueSwimming,
+  default: venueGeneric,
 };
 
 export const getVenueImage = (venue: Venue): string => {

@@ -874,6 +874,33 @@ sound: the main `Header` (already covered by the 375px sweeps, and its nav
 collapses to a hamburger) and the drawer's own logo row (short, non-wrapping
 content). No further instances.
 
+## Discover with real content — venue fallbacks were hot-linked
+
+First look at Discover populated (six stubbed venues) rather than empty.
+
+| Finding | Detail |
+|---|---|
+| **Fallback venue images were hot-linked from Unsplash** | `getVenueImage` fell back to nine `images.unsplash.com` URLs for venues with no photo of their own. That is a third-party request per photoless card, and if those URLs rot or Unsplash blocks hotlinking, every photoless venue breaks at once. The app already ships bundled photos for four of those sports — the landing page uses them. Now served from the bundle; sports without one share the generic image rather than reaching out to a third party. |
+| Rating star was off-palette | `fill-warning` amber, where the venue-details rating and every other star in the app use `fill-primary`. |
+| Missing image never reached the placeholder | `imageFailed` was only ever set by `onError`, but an empty `image_url` renders `<img src="">`, which resolves to the page itself and never errors. Seeded from the prop instead, with an effect to reset it. In practice `getVenueImage` always returns something, so this is belt-and-braces — but the earlier 404 fallback quietly did not cover the empty case it appeared to. |
+
+### What the screenshot appeared to show, and did not
+
+Every card first rendered as a black void, which looked like a serious defect.
+It was the container: Unsplash is unreachable here, so the images hung at
+`complete: false, naturalWidth: 0` — never loading, never erroring. In
+production they would have loaded fine. Reading `currentSrc` and
+`naturalWidth` off the elements is what separated an environment artifact from
+a real problem, and the real problem turned out to be the hot-linking itself
+rather than anything visible.
+
+### Noted, not changed
+
+Every card carries an "Instant Book" pill. Since Phase 2 every venue books the
+same way, so it is universally true and therefore tells the reader nothing.
+Removing it would also remove a genuine trust signal. That is a design
+judgement rather than a defect, so it is recorded here instead of decided.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
