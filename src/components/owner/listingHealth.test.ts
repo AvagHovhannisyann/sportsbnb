@@ -31,8 +31,10 @@ describe("scoreVenue", () => {
   });
 
   it("does not penalise a venue for review_count, which nothing maintains", () => {
-    // The column is DEFAULT 0 with no writer. Scoring it docked every owner a
-    // fixed share of the total and told them "No reviews yet" regardless.
+    // review_count is maintained by the update_venue_rating trigger, so 0
+    // genuinely means "no reviews yet" rather than "unknown". Scoring that
+    // absence as failure capped a new listing below 85 for something it
+    // cannot control, so the category is excluded until there is data.
     const perfect = base({
       image_url: "x", description: "d".repeat(80), location_confirmed: true,
       sports: ["Football"], amenities: ["a", "b", "c"], is_active: true,

@@ -64,11 +64,17 @@ export function scoreVenue(v: Venue, responseRate: number | null): VenueScore {
   award(5, amenities >= 3, "Add at least 3 amenities", amenities > 0 ? 2 : 0);
 
   // Reputation (15) — only when there is reputation data to judge.
-  // venues.review_count has no writer anywhere in the codebase; it is
-  // DEFAULT 0 and stays 0 however many reviews a venue actually collects. As
-  // a scored category it docked every owner 15 points permanently and told
-  // them "No reviews yet" regardless of the truth. Excluded from the
-  // denominator until something maintains the column.
+  //
+  // Correcting an earlier comment here, which claimed review_count had no
+  // writer. It does: the `update_venue_rating` trigger recomputes both it and
+  // venues.rating from the reviews table on insert, update and delete
+  // (migration 20260114060648). The column is accurate.
+  //
+  // The exclusion stays, on its own merits rather than that false premise: a
+  // venue with no reviews yet has no reputation to judge, and scoring an
+  // absence of data as a failure permanently caps a brand-new listing below
+  // 85 for something outside its control. Once a venue has reviews the
+  // category scores normally.
   if (v.review_count > 0) {
     award(15, v.review_count >= 5, "Get more reviews (5+ unlocks full credit)", 8);
   }

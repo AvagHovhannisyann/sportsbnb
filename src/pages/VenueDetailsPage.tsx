@@ -198,14 +198,15 @@ const VenueDetailsPage = () => {
                     <MapPin className="h-4 w-4" />
                     <span>{location}</span>
                   </div>
-                  {/* Derived from the reviews actually on this page, not from
-                      venues.rating / venues.review_count. Those two columns
-                      have no writer that derives them from the reviews table —
-                      the only things that set them are the outreach functions,
-                      which store Google Places counts for prospecting targets.
-                      Reading them here let the header claim "4.7 (23 reviews)"
-                      directly above a "Reviews (0)" section on the same page.
-                      With no reviews there is no rating to state. */}
+                  {/* Derived from the reviews actually rendered on this page
+                      rather than from venues.rating / venues.review_count.
+                      Correcting an earlier comment: those columns *are*
+                      maintained, by the update_venue_rating trigger. Deriving
+                      here is still preferable — it cannot drift from the list
+                      directly beneath it, and it needs no second source of
+                      truth — but it is a consistency choice, not a fix for a
+                      broken column. With no reviews there is no rating to
+                      state. */}
                   {reviews.length > 0 && (
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-primary text-primary" />

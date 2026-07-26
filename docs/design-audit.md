@@ -966,6 +966,46 @@ replacement by HTTP referrer. Restriction matters more than rotation here,
 since a browser key ships in the bundle regardless and referrer-locking is what
 actually prevents third-party use.
 
+## Correction — `venues.review_count` is maintained after all
+
+Several entries in this document, and the commits behind them, asserted that
+nothing writes `venues.review_count` or `venues.rating`. **That is false.**
+
+The `update_venue_rating` trigger recomputes both from the `reviews` table on
+insert, update and delete. It is in this repository at
+`supabase/migrations/20260114060648_…sql` and is live on the project — four
+triggers on `reviews`, three of them wired to that function.
+
+How the error survived several passes is the useful part. The grep that
+"proved" the absence filtered migration matches through
+`grep -iE "trigger|update venues|set rating|set review_count"`, which requires
+those phrases on a single line. The trigger's statement spans lines:
+
+```sql
+UPDATE public.venues
+SET
+  rating = ...,
+  review_count = (SELECT COUNT(*) ...)
+```
+
+`SET` and `review_count =` are on different lines, so the filter discarded the
+one line that disproved the claim, and the empty result read as confirmation. A
+negative result from a line-oriented filter is not evidence of absence — that
+is the fourth time on this branch a crude check has misled, and the first time
+it did so in the direction of a false *finding* rather than a false alarm.
+
+### What this changes, and what it does not
+
+| Fix | Still correct? |
+|---|---|
+| Guarding `⭐ 0` on NearbyFieldsPage and VenueMapPage | **Yes.** A venue with genuinely zero reviews has `rating = 0`; rendering that as a zero-star score is wrong regardless of who maintains the column. |
+| Venue header derived from the fetched reviews | **Yes**, but as a consistency choice rather than a repair — it cannot drift from the list directly below it. `venues.rating` was never broken. |
+| Listing-health excluding reputation at zero reviews | **Yes**, on different grounds: a new venue has no reputation to judge, and scoring an absence as failure caps it below 85 for something outside its control. Not, as claimed, because the column is dead. |
+
+Code comments in `listingHealth.ts`, `listingHealth.test.ts` and
+`VenueDetailsPage.tsx` have been corrected, since a comment asserting a
+falsehood is worse than no comment.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
