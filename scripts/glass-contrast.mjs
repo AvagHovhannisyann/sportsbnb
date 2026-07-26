@@ -149,6 +149,32 @@ for (const route of routes) {
           if (r.top < box.top - 1 || r.bottom > box.bottom + 1) continue;
           const ns = getComputedStyle(node);
           if (ns.visibility === 'hidden' || ns.opacity === '0') continue;
+
+          // Skip text that sits on its own opaque fill.
+          //
+          // The notification badge and the avatar initial are dark glyphs on a
+          // solid primary chip. Their legibility has nothing to do with what
+          // scrolls under the bar — the chip is between them and it — so they
+          // are contrast-audit's business, not this script's.
+          //
+          // They also break the sampling outright, which is how this was
+          // found. The median-pixel rule assumes glyphs are a minority of a
+          // text box; that is true of a word and false of one bold character
+          // in a 16px circle, where the median lands *on* the glyph. It passed
+          // locally and failed in CI on nothing but font metrics — eight
+          // failures, none of them real, on a check I had self-tested.
+          let onOwnFill = false;
+          for (let a = node; a && a !== el; a = a.parentElement) {
+            const alpha = (getComputedStyle(a).backgroundColor.match(/[\d.]+/g) ?? [])[3];
+            if (alpha === undefined || Number(alpha) > 0.5) {
+              const bg = getComputedStyle(a).backgroundColor;
+              if (bg !== 'transparent' && !bg.startsWith('rgba(0, 0, 0, 0)')) {
+                onOwnFill = true;
+                break;
+              }
+            }
+          }
+          if (onOwnFill) continue;
           out.push({
             text: text.slice(0, 24),
             color: ns.color,

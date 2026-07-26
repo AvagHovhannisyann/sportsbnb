@@ -43,9 +43,17 @@ const Footer = () => {
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
             {linkSections.map((section) => (
               <div key={section.title}>
-                <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-3 md:mb-4 font-semibold">
+                {/* h2, not h4. These are the top-level headings inside the
+                    footer landmark — nothing above them in here is a heading
+                    at all — so h4 skipped two levels from whatever the page
+                    ended on, on every page in the app at once. The size and
+                    weight are set by the utility classes, and the base rule
+                    styles h1–h6 identically, so this is a semantic change with
+                    no visual one: measured before and after, 283x16 at 12px /
+                    600 / Space Grotesk either way. */}
+                <h2 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-3 md:mb-4 font-semibold">
                   {section.title}
-                </h4>
+                </h2>
                 <ul className="space-y-2.5 md:space-y-3">
                   {section.links.map((link) => (
                     <li key={link.href}>
