@@ -35,6 +35,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+
+const PAGE_TITLE = "Equipment Rentals";
+const PAGE_SUBTITLE = "Manage rental items and packages for your venues";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { 
@@ -132,7 +135,7 @@ const OwnerEquipmentPage = () => {
 
   if (venuesLoading) {
     return (
-      <OwnerLayout>
+      <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -142,7 +145,7 @@ const OwnerEquipmentPage = () => {
 
   if (venues.length === 0) {
     return (
-      <OwnerLayout>
+      <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
         <EmptyState
           icon={Package}
           title="No venues yet"
@@ -155,14 +158,16 @@ const OwnerEquipmentPage = () => {
   }
 
   return (
-    <OwnerLayout>
+    <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Equipment Rentals</h1>
-            <p className="text-muted-foreground">Manage rental items and packages for your venues</p>
-          </div>
+        {/* The h1 and the strapline come from OwnerLayout now, as they do on
+            every other owner page. They used to be written out here instead,
+            which meant the two early returns above — "still loading" and "no
+            venues yet" — rendered no h1 at all. Measured with an empty owner
+            account, the page's outline started at h2: a new owner arriving at
+            this screen got a document with no heading for the page they were
+            on. */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4 mr-2" />
             Add Equipment

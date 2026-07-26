@@ -126,10 +126,30 @@ jobs:
             /community /teams /about /for-owners /faq /contact /nearby
             /venue/:venue /blog"
 
+          # The other branch of every list page: a signed-in account with no
+          # data. The fixtures here are populated on purpose — an audit
+          # against a page full of em-dashes measures nothing — and the cost is
+          # that the empty branch has never been rendered by any check.
+          #
+          # That is not hypothetical. The h1-to-h3 skip on /teams was found
+          # through the signed-out pass and had nothing to do with being signed
+          # out: its h2s are "Teams I Captain" and "Teams I've Joined", which
+          # only exist once the user has teams, so every new account hit it.
+          # Sweeping the empty state directly then found /owner/equipment
+          # rendering no h1 at all before a first venue exists.
+          #
+          # `-empty` keeps the session and profile and serves no content rows,
+          # so it measures "new account" rather than "broken account".
+          EMPTY_PLAYER="/teams /games /venues /community /messages /dashboard /nearby /profile"
+          EMPTY_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
+            /owner/analytics /owner/schedule /owner/equipment /owner/hours /owner/pricing"
+
           node scripts/smoke-routes.mjs player $PLAYER
           node scripts/smoke-routes.mjs owner  $OWNER
           node scripts/smoke-routes.mjs admin  $ADMIN
           node scripts/smoke-routes.mjs anon   $ANON
+          node scripts/smoke-routes.mjs player-empty $EMPTY_PLAYER
+          node scripts/smoke-routes.mjs owner-empty  $EMPTY_OWNER
 
           # Contrast of every design token against every surface it lands on,
           # both themes. Cheap — one page load — and it is the only thing that
@@ -149,6 +169,8 @@ jobs:
           node scripts/smoke-routes.mjs owner  $OWNER
           node scripts/smoke-routes.mjs admin  $ADMIN
           node scripts/smoke-routes.mjs anon   $ANON
+          node scripts/smoke-routes.mjs player-empty $EMPTY_PLAYER
+          node scripts/smoke-routes.mjs owner-empty  $EMPTY_OWNER
 
           # Tap targets at phone width, against WCAG 2.2 SC 2.5.8 including
           # its spacing exception. The app passes today; this holds the line.
@@ -168,6 +190,8 @@ jobs:
           node scripts/a11y-names.mjs owner  $OWNER
           node scripts/a11y-names.mjs admin  $ADMIN
           node scripts/a11y-names.mjs anon   $ANON
+          node scripts/a11y-names.mjs player-empty $EMPTY_PLAYER
+          node scripts/a11y-names.mjs owner-empty  $EMPTY_OWNER
 
           # A skeleton exists to hold the space its content lands in, so a
           # skeleton of the wrong shape causes the shift it was added to
@@ -213,6 +237,9 @@ jobs:
             /embed/booking/:venue
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs admin  $ADMIN
+          # The empty branch is where the h1 goes missing — see EMPTY_* above.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player-empty $EMPTY_PLAYER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs owner-empty  $EMPTY_OWNER
 
           # Text on the glass header, against what is actually scrolling under
           # it. contrast-audit checks tokens against declared surfaces and
@@ -260,6 +287,8 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs admin  $ADMIN
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs anon   $ANON
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs player-empty $EMPTY_PLAYER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs owner-empty  $EMPTY_OWNER
 
           # Keyboard focus: WCAG 2.4.7 (an indicator is visible) and 2.2's
           # 2.4.11 (it is not covered by something else). Both by screenshot

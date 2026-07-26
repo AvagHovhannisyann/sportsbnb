@@ -273,7 +273,27 @@ const listOf = (row) => {
  * runner happened to resolve a position. Granting it makes the branch
  * deterministic instead of lucky.
  */
-export async function newStubbedPage(browser, { userType, width, height }) {
+/**
+ * `userType` also accepts a `-empty` suffix — `player-empty`, `owner-empty` —
+ * which keeps the session and the profile but serves no content rows.
+ *
+ * The fixtures here are deliberately populated, and the header says why: an
+ * audit against a page full of em-dashes measures nothing. The cost of that
+ * choice is that the *other* branch of every list page — the one a new account
+ * and a quiet week both see — has never been rendered by any check here.
+ *
+ * It is not a hypothetical gap. The h1-to-h3 skip on /teams was found by
+ * accident, through the signed-out pass, and it had nothing to do with being
+ * signed out: the h2s are "Teams I Captain" and "Teams I've Joined", which
+ * only exist once the user has teams. Every new account hit it.
+ *
+ * Only the content tables are emptied. The profile and role stay, because a
+ * missing profile is a different scenario — it redirects to onboarding — and
+ * emptying both at once would measure that instead.
+ */
+export async function newStubbedPage(browser, { userType: requested, width, height }) {
+  const emptyData = requested.endsWith('-empty');
+  const userType = emptyData ? requested.slice(0, -'-empty'.length) : requested;
   const ctx = await browser.newContext({
     viewport: { width, height },
     permissions: ['geolocation'],
@@ -314,6 +334,9 @@ export async function newStubbedPage(browser, { userType, width, height }) {
     r.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify(isSingleLookup(r.request().url())?row:[row])});
   });
+  // In `-empty` mode these are simply not registered, so the generic `[]`
+  // above answers every content query.
+  if (!emptyData)
   for (const [table,row] of Object.entries(ROWS)) {
     await p.route(`**/rest/v1/${table}**`, r=>r.fulfill({status:200,
       contentType:'application/json',
