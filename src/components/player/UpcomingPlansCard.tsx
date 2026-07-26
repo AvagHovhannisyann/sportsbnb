@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { formatTimeOfDay } from "@/lib/time";
 import { Sparkles, MessageCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +64,7 @@ export const UpcomingPlansCard = () => {
                       <Badge variant="outline" className={tag.cls}>{tag.text}</Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                      {lead.booking_date && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.booking_date} {lead.booking_time}</span>}
+                      {lead.booking_date && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.booking_date} {formatTimeOfDay(lead.booking_time)}</span>}
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</span>
                     </div>
                   </div>

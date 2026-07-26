@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { formatTimeOfDay } from "@/lib/time";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useEffect, useState } from "react";
 import { MapPin, Star, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
@@ -299,7 +300,13 @@ const VenueDetailsPage = () => {
                               {hour?.is_closed
                                 ? "Closed"
                                 : hour
-                                  ? `${hour.open_time} – ${hour.close_time}`
+                                  ? // Raw SQL `time` values: this printed
+                                    // "08:00:00 – 23:00:00" on the page a
+                                    // booking decision is made on, while every
+                                    // other time in the app goes through this
+                                    // helper. Seconds are never part of an
+                                    // opening hour.
+                                    `${formatTimeOfDay(hour.open_time)} – ${formatTimeOfDay(hour.close_time)}`
                                   : "—"}
                             </span>
                           </div>

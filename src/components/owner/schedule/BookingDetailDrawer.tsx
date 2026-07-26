@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 import { TONE_CHIP } from "@/lib/chips";
 import {
   Calendar,
@@ -135,7 +136,7 @@ export function BookingDetailDrawer({
               <div>
                 <p className="text-sm text-muted-foreground">Time & Duration</p>
                 <p className="font-medium text-foreground">
-                  {booking.booking_time} • {booking.duration_hours} hour
+                  {formatTimeOfDay(booking.booking_time)} • {booking.duration_hours} hour
                   {booking.duration_hours > 1 ? "s" : ""}
                 </p>
               </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatTimeOfDay } from "@/lib/time";
 import {
   format,
   startOfWeek,
@@ -240,7 +241,7 @@ export function WeekCalendar({
                             {booking.customer_name || "Booking"}
                           </div>
                           <div className="text-xs opacity-80 truncate">
-                            {booking.booking_time} • {booking.venue_name}
+                            {formatTimeOfDay(booking.booking_time)} • {booking.venue_name}
                           </div>
                         </button>
                       ))}

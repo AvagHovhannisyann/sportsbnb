@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { formatTimeOfDay } from "@/lib/time";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
 import { Calendar, Clock, Users } from "lucide-react";
 import { MapsReady } from "@/components/maps/GoogleMapsProvider";
@@ -79,7 +80,7 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
                 <Calendar size={12} aria-hidden="true" />
                 {format(new Date(selectedGame.game_date), "MMM d, yyyy")}
                 <Clock size={12} aria-hidden="true" style={{ marginLeft: 4 }} />
-                {selectedGame.game_time}
+                {formatTimeOfDay(selectedGame.game_time)}
               </p>
               <p style={{ fontSize: 12, color: (selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "#6b7280" : "#0f766e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
                 <Users size={12} aria-hidden="true" />
