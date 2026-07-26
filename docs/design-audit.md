@@ -935,6 +935,37 @@ origins. Left alone rather than guessed at — which of the two is the real
 production domain is not something I can determine from the repo, and picking
 wrong is worse than flagging it.
 
+## Secrets hygiene — verified, and one item is still live
+
+Phase 0 recorded secrets hygiene as done: `.env` gitignored and untracked, and
+the Google Maps key to be rotated. Since Phase 0 also missed the hardcoded
+Yandex key above, the rest of that claim was worth checking rather than
+trusting.
+
+**What holds.** `.env` is untracked — only `.env.example` is in the index — and
+`.gitignore` covers `.env` and `.env.*`. A sweep for credential-shaped literals
+across `src` and `supabase/functions` (KEY/TOKEN/SECRET/PASSWORD assignments,
+UUID, JWT and `sk_`/`pk_`/`sb_` prefixes) found nothing beyond the Yandex key
+already fixed.
+
+**What does not.** `.env` remains in git history from before its removal. It
+held five values, all `VITE_*` and browser-exposed by design — and, reassuringly,
+**no service-role key and no secret**. Three are the old Lovable Supabase
+project's publishable credentials, which are public by nature and belong to a
+project being decommissioned.
+
+The fourth matters: **the Google Maps browser key currently in use is
+byte-identical to the one in git history.** Compared by SHA-256 fingerprint
+rather than by reading either value; they match. The rotation Phase 0
+recommended has not happened, the key is retrievable by anyone with repository
+access, and Maps JS API loads are billable.
+
+Nothing further can be fixed in code — the key is already env-configured. The
+remaining action is in the Google Cloud console: rotate it, and restrict the
+replacement by HTTP referrer. Restriction matters more than rotation here,
+since a browser key ships in the bundle regardless and referrer-locking is what
+actually prevents third-party use.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
