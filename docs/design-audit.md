@@ -1531,3 +1531,59 @@ would have been a bug: `pending_payment` means the customer holds a slot and
 has not paid, so confirming by hand gives away a court, and Phase 2 revoked the
 client's UPDATE on booking status precisely so the payment callback is the only
 thing that confirms. Left alone, with the reasoning written next to it.
+
+---
+
+## Round: the money path, which turned out to be fine
+
+The checkout chain — `/book/:id` → provider → `/booking/:id/status` — had been
+smoked for crashes but never looked at. It is the page customers actually pay
+on, so it was the last high-value surface unexamined.
+
+**It is in good shape**, and saying so is the finding. Rendered with a live
+hold: a countdown, the venue and slot, a price breakdown, three providers, one
+strong action, and honest security copy ("card details never touch SportsBnB").
+The two failure states a real customer hits are both correct and both
+recoverable — an expired hold says so and routes back to the venue; a booking
+already paid says "Already paid — nothing further to pay" rather than offering
+to charge again.
+
+The case that mattered most was the hold expiring *while the page is open*, and
+it was verified rather than assumed: with a 7-second hold and a 12-second wait,
+the page flips to the expired state on its own. A customer cannot pay for a
+slot they no longer hold.
+
+### The eighth false positive
+
+The checkout showed "Venue ֏8,550 · Service fee ֏450 · Total ֏9,000" while the
+venue page's booking panel quoted "֏9,000 + ֏450 = ֏9,450" — the same customer
+being quoted one total and charged another, on the money path. That is about as
+serious as a finding gets, and I nearly wrote it up as one.
+
+`create_booking_hold` settles it:
+
+```
+v_owner_minor := round(v_price_per_hour * v_hours * 100);
+v_fee_minor   := round(v_owner_minor * v_commission_bps / 10000.0);
+... amount_minor = v_owner_minor + v_fee_minor
+```
+
+The fee is added on top: the customer pays ֏9,450 and the owner receives
+֏9,000. The booking panel is right, the checkout is right, and **my stub row
+was internally inconsistent** — I had written `amount_minor` and
+`owner_amount_minor` that no RPC would ever produce together. Re-rendered with
+figures the RPC actually generates, the two screens agree exactly.
+
+Eighth of these. The pattern never varies: a discrepancy on screen is evidence
+that two things disagree, never evidence about which one is wrong. Checking the
+source of truth costs a minute; a wrong "fix" on the payment path costs
+considerably more.
+
+### The one real gap
+
+The confirmation screen stated no amount and no reference. It confirmed a
+payment without saying what was charged — and an email receipt is not
+guaranteed, since the sending domain is still unverified (see the handover), so
+someone querying a charge on their card statement had nothing on the page to
+point at. It now shows the amount paid and the first eight characters of the
+booking id as a reference.
