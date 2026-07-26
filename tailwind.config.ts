@@ -44,6 +44,8 @@ export default {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
+          // Fill behind white text. See the note in index.css.
+          solid: "hsl(var(--destructive-solid))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         success: "hsl(var(--success))",

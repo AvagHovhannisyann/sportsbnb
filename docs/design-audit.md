@@ -1587,3 +1587,54 @@ guaranteed, since the sending domain is still unverified (see the handover), so
 someone querying a charge on their card statement had nothing on the page to
 point at. It now shows the amount paid and the first eight characters of the
 booking id as a reference.
+
+---
+
+## Round: the signup form, and a token that failed both ways
+
+The next real action on this app is the user signing up — it is what unblocks
+the seed data in the handover — and the signup path had never been examined.
+
+**The form itself is good.** Split layout with a hero, a role choice up front,
+a live password strength meter with a requirements checklist (8+ characters,
+lowercase, uppercase, number), an inline error, and terms linked before the
+button. Better than I expected, and nothing to fix.
+
+What did not pass was the colour it says all that in.
+
+### `--destructive` failed AA in both of its roles at once
+
+Measured on the rendered form, not estimated:
+
+| | ratio | needs |
+|---|---|---|
+| "Very Weak" (12px, 500) on card | **3.85:1** | 4.5:1 |
+| "Password must be at least 8 characters" (14px) on card | **3.85:1** | 4.5:1 |
+| White on the destructive button fill | **4.04:1** | 4.5:1 |
+
+One token was doing two opposite jobs. `text-destructive` (89 uses) and
+`border-destructive` (37) need it light enough to read *on* a dark surface;
+`bg-destructive` with `--destructive-foreground: white` needs it dark enough
+for white to read *on it*. At `358 72% 58%` it was too dark for the first and
+too light for the second, and moving it fixed either at the other's expense —
+which is presumably why it sat in the middle failing both.
+
+Split in two. `--destructive` is now the text and border value; a new
+`--destructive-solid` is the fill, wired through Tailwind as
+`bg-destructive-solid` and used by the button variant, the toast variant and
+the chat badge. The 23 `bg-destructive/N` tints keep the text value, which is
+correct — they are backgrounds *behind* destructive text, not fills under
+white.
+
+Dark: text `358 72% 68%`, fill `358 68% 42%`. Light: both `358 68% 44%`, where
+one value serves both roles because the pair is the same either way round.
+
+Verified in the browser after the change, both directions: error copy
+3.85 → **5.29:1**, white on the fill 4.04 → **6.57:1**. 62 route-loads clean
+across three roles and both widths afterwards, which is the check that matters
+for a token with 160-odd consumers.
+
+This is the first change of the session that is design-system level rather than
+local, and it is worth noting why it took a measurement to find: the red *looks*
+fine. It reads as a normal error red on a dark card. Nothing about it invites
+suspicion until you put a number on it.

@@ -52,7 +52,16 @@
     --accent: 36 16% 93%;
     --accent-foreground: 220 28% 10%;
 
-    --destructive: 358 68% 48%;
+    /* Two tokens, because one cannot serve both roles.
+       `--destructive` is what `text-destructive` and `border-destructive`
+       resolve to — 89 and 37 uses — and must clear 4.5:1 against the surface
+       it sits on. `--destructive-solid` is the fill behind white text on
+       buttons, toasts and badges, and must clear 4.5:1 the other way round.
+       Measured on the signup form: the old single value gave 3.85:1 for error
+       copy on a card and 4.04:1 for white on the button. Both failed AA, and
+       moving the one value fixed either at the other's expense. */
+    --destructive: 358 68% 44%;
+    --destructive-solid: 358 68% 44%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 158 64% 32%;
@@ -154,7 +163,11 @@
     --accent: 158 14% 14%;
     --accent-foreground: 100 20% 96%;
 
-    --destructive: 358 72% 58%;
+    /* Dark: text must lighten to clear the card, the fill must darken to
+       carry white. 68% gives 5.28:1 on card and 4.84:1 on surface-1; the
+       42% fill gives 6.56:1 for white on it. */
+    --destructive: 358 72% 68%;
+    --destructive-solid: 358 68% 42%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 151 80% 44%;
