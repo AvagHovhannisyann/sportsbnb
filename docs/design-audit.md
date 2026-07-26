@@ -2935,3 +2935,55 @@ The habit this corrects is narrower than "check your assumptions". It is:
 **never send a server's output to `/dev/null`.** A backgrounded process whose
 failure is invisible is a process you are entitled to believe is working, for
 as long as you like.
+
+---
+
+## The venue gallery only fitted at four photos
+
+`/venue/:id` is where a booking decision gets made, and its gallery had a
+column that only worked at one specific photo count.
+
+The thumbnail column was `grid-cols-2`, always, whatever it contained. The
+zero case had already been handled — one photo goes full-width rather than
+padding the grid with grey boxes. But **one** extra photo, which is the common
+case above zero, produced a quarter-filled column: a short 4:3 tile top-left
+with roughly 265px of nothing beside and below it, against a 504px main image.
+
+### My first fix was wrong, and measuring is the only reason I know
+
+I made the tiles `h-full` inside a column with explicit rows. Reading the
+rendered boxes across every count:
+
+| photos | main | thumbnails | column vs main |
+|---|---|---|---|
+| 1 | 672×504 | 672×**672** | **168px too tall** |
+| 2 | 672×504 | 328×504 ×2 | level |
+| 3 | 672×504 | 328×328 ×3 | **168px too tall** |
+| 4 | 672×504 | 328×328 ×4 | **168px too tall** |
+
+`h-full` against an auto-sized grid row is circular, so the browser fell back
+to something square. Worse, the 3-and-4 cases had been *correct* before I
+touched them — the old `aspect-[4/3]` tiles happened to stack to 508px against
+a 504px image. I had broken two working cases to fix one broken one, and the
+page still looked plausible in a screenshot.
+
+The fix is to make the height derivable rather than circular: the column gets
+`aspect-[4/3]`, the same ratio as the main tile. Both are the same width in a
+two-column grid, so they are the same height by construction, and the rows
+divide it.
+
+Re-measured across 0, 1, 2, 3, 4 and 6 photos at 1440px and 375px: **every
+count now finishes exactly level with the main image**, and mobile shows the
+main image alone as intended.
+
+| photos | main | thumbnails |
+|---|---|---|
+| 0 | 896×384 solo | — |
+| 1 | 672×504 | 672×504 |
+| 2 | 672×504 | 328×504 ×2 |
+| 3–6 | 672×504 | 328×244, capped at four |
+
+The habit worth keeping from this one: a layout fix verified by looking at a
+picture is a layout fix verified at one arbitrary input. Six counts and two
+widths is thirty seconds of scripting and it caught a regression I had just
+written.

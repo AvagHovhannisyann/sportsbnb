@@ -55,8 +55,11 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
   // full width instead.
   const hasThumbnails = thumbnails.length > 0;
 
-  const tileClass =
-    "group relative aspect-[4/3] overflow-hidden rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  const tileBase =
+    "group relative overflow-hidden rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  // The main tile sets the row height; the thumbnails fill whatever that is.
+  const tileClass = `${tileBase} aspect-[4/3]`;
+  const thumbClass = `${tileBase} h-full w-full`;
   const imgClass =
     "h-full w-full object-cover transition-transform duration-300 group-hover:scale-105";
   // A full-width single image still needs a ceiling: at 21/9 across a 1360px
@@ -79,14 +82,31 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
         </button>
 
         {hasThumbnails && (
-          <div className="hidden grid-cols-2 gap-4 md:grid">
+          // The thumbnail column was always `grid-cols-2`, whatever it held.
+          // Venues with one extra photo — the common case above zero — got a
+          // quarter-filled column: one short 4:3 tile top-left, and roughly
+          // 265px of nothing beside and below it, next to a 510px main image.
+          // The column now takes its shape from how many photos there are.
+          // `aspect-[4/3]` on the column, matching the main tile: both are the
+          // same width in this two-column grid, so the same ratio makes them
+          // the same height by construction. The first attempt used `h-full`
+          // on the tiles instead, which is circular in an auto-sized row —
+          // measured, that gave a 672px column beside a 504px image with one
+          // thumbnail, and broke the 3-and-4 cases that had been correct.
+          <div
+            className={cn(
+              "hidden aspect-[4/3] gap-4 md:grid",
+              thumbnails.length === 1 ? "grid-cols-1" : "grid-cols-2",
+              thumbnails.length > 2 ? "grid-rows-2" : "grid-rows-1",
+            )}
+          >
             {thumbnails.map((img, i) => (
               <button
                 type="button"
                 key={img.id}
                 onClick={() => openLightbox(i + 1)}
                 aria-label={img.caption || `${venueName} photo ${i + 2}`}
-                className={tileClass}
+                className={thumbClass}
               >
                 <GalleryImage
                   src={img.image_url}
