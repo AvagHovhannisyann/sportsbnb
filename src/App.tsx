@@ -13,6 +13,7 @@ import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { RequireRole } from "@/components/auth/RequireRole";
+import RouteMeta from "@/components/seo/RouteMeta";
 import Layout from "./components/layout/Layout";
 
 // Eagerly load HomePage since it's the landing page
@@ -53,7 +54,6 @@ const OwnerOnboarding = lazy(() => import("./pages/OwnerOnboarding"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
-const MyVenuesPage = lazy(() => import("./pages/MyVenuesPage"));
 const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForOwnersPage = lazy(() => import("./pages/ForOwnersPage"));
@@ -118,6 +118,12 @@ const App = () => {
                     on navigation — and outside Suspense, so it catches
                     lazy-chunk load failures as well as render errors. */}
                 <RouteErrorBoundary>
+                {/* Above <Routes>, deliberately. It gives every route a title
+                    from one table (WCAG 2.4.2, Level A — 17 of 35 player
+                    routes were still showing the string from index.html), and
+                    react-helmet-async resolves competing tags in mount order,
+                    so a page rendering its own SEOHead still overrides this. */}
+                <RouteMeta />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Layout showMobileNav={false}><HomePage /></Layout>} />
@@ -173,7 +179,15 @@ const App = () => {
                     <Route path="/add-venue" element={<ProtectedRoute><AddVenuePage /></ProtectedRoute>} />
                     <Route path="/venue/:id/edit" element={<ProtectedRoute><EditVenuePage /></ProtectedRoute>} />
                     <Route path="/venue/:id/availability" element={<ProtectedRoute><VenueAvailabilityPage /></ProtectedRoute>} />
-                    <Route path="/my-venues" element={<ProtectedRoute><MyVenuesPage /></ProtectedRoute>} />
+                    {/* /my-venues was a second, orphaned copy of /owner/venues:
+                        same purpose, same "My Venues" heading on screen, and
+                        linked from nowhere in the app — the only reference to
+                        it in the whole repository was this route. The page
+                        titles check found it as two pages sharing one title,
+                        which is the visible symptom of two pages doing one
+                        job. Redirected rather than deleted so an old bookmark
+                        still lands somewhere sensible. */}
+                    <Route path="/my-venues" element={<Navigate to="/owner/venues" replace />} />
                     {/* Auth */}
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/login" element={<LoginPage />} />

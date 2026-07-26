@@ -143,8 +143,11 @@ const NearbyFieldsPage: React.FC = () => {
 
   return (
     <Layout>
+      {/* No " | Sportsbnb" in the title — SEOHead appends the site name
+          itself, so passing it made the tab read "Nearby Sports Fields |
+          Sportsbnb | Sportsbnb". */}
       <SEOHead
-        title="Nearby Sports Fields | Sportsbnb"
+        title="Nearby Sports Fields"
         description="Discover verified public sports fields and courts near you. See real-time occupancy, check in, and find the best spots to play."
       />
 

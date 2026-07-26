@@ -264,6 +264,21 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs owner  /owner/venues /owner/earnings
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs admin  /admin
 
+          # WCAG 2.4.2 (Page Titled), Level A. Nothing sets a title in an SPA
+          # unless told to, and the string from index.html sits in the tab
+          # looking like a real one: 17 of the 35 player routes were still
+          # showing "Sportsbnb — Book Sports Venues & Join Games Near You",
+          # /login and /settings and the whole checkout chain among them.
+          # Titles now come from src/lib/routeTitles.ts via RouteMeta.
+          #
+          # Duplicates fail too — a title that does not distinguish the page
+          # does not describe it. Grouped by the pathname the app *lands* on,
+          # so a redirect (/discover to /venues, or /login to /dashboard under
+          # the stubbed session) is not mistaken for two pages sharing a name.
+          node scripts/page-titles.mjs player $PLAYER
+          node scripts/page-titles.mjs owner  $OWNER
+          node scripts/page-titles.mjs admin  $ADMIN
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

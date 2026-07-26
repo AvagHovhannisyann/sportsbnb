@@ -506,8 +506,9 @@
    * `.page-title`. Counted across the in-app pages, the same job was being
    * done at two sizes: fifteen at text-xl — "About this venue", "Amenities",
    * "Reviews (12)", the six section headers on /community — and four at
-   * text-lg: "Active Venues (3)" and "Draft/Inactive Venues" on /my-venues,
-   * "Teams I Captain" and "Teams I've Joined" on /teams.
+   * text-lg: "Active Venues (3)" and "Draft/Inactive Venues" on the venue
+   * listing, "Teams I Captain" and "Teams I've Joined" on /teams. (The first
+   * two were on /my-venues, since removed as a duplicate of /owner/venues.)
    *
    * Nothing distinguished the two groups structurally. All nineteen sit
    * directly under the page's h1 and label a list below them, so the 20px/18px
