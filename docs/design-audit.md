@@ -1407,3 +1407,51 @@ for You" is a spinner at the bottom of the page. All three are AI-backed and
 all three want the same treatment the Next Move card got. That is a real piece
 of work rather than a tweak, and doing it badly to be seen doing it would be
 worse than leaving it noted.
+
+---
+
+## Round: the three AI cards I said I would come back to
+
+Last round I named three AI-backed surfaces as "real work rather than a tweak"
+and left them. This is that work. Rendering them with their services *failing*,
+rather than merely empty, is what showed the actual problem — and it was not
+the one I had written down.
+
+I had described them as a layout complaint: an empty box, a tall card holding
+one line, a spinner at the foot of the page. Two of the three were reporting
+failure as emptiness.
+
+**`GameMatchmakingCard` said "No matches found right now"** whenever the
+recommendation function errored. The hook rethrows, so `data` stayed undefined,
+`matches` defaulted to `[]`, and the empty branch told a player there were no
+games suited to them. Fourth instance of this exact shape in the codebase,
+after owner venues, venue availability and user games.
+
+**`SportsDNACard` swallowed both of its query errors** with `?? []` and
+aggregated the nothing that produced, rendering "Book a court or join a game —
+your sports identity will appear here." to a player who may have a season of
+history. Both now surface `ErrorPanel` with a retry, and both say plainly that
+the rest of the page is unaffected, because these are summaries of data that is
+fine.
+
+`AIRecommendations` returns `null` on error with the comment "silently fail —
+this is an enhancement". That one is defensible and I left it.
+
+### The bug the failure render actually surfaced
+
+With the function stubbed to return `{}`, the Next Move card drew a **husk**: a
+"Suggestion" badge, no headline, no detail, and an arrow button with no
+accessible name pointing at `to={undefined}`. `{}` is truthy, so the card's
+`if (error || !data) return null` guard passed it straight through.
+
+`player-insights` is LLM-backed. `data as PlayerNextMove` is a cast, not a
+check, and a reshaped or truncated payload from a model is an ordinary outcome
+rather than a hypothetical. There is now an `asNextMove` validator that
+requires every field the card actually renders — a suggestion missing its own
+call to action is not a partial suggestion, it is not one — and falls back to a
+known `vibe` rather than indexing the style map with whatever string arrived.
+Six tests, aimed squarely at the malformed cases.
+
+The lesson repeats: I could not have found this by reading the component, and I
+would not have found it by rendering the happy path either. It needed the
+failure rendered.
