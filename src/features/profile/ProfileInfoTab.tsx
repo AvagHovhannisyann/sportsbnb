@@ -211,19 +211,31 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               const isSelected = isOwner
                 ? formData.sportsOffered.includes(sport)
                 : formData.preferredSports.includes(sport);
+              // Was a plain <div onClick> holding a `pointer-events-none`
+              // checkbox: the card looked like a checkbox, reported itself to
+              // assistive tech as an unnamed one, and could not be reached or
+              // toggled by keyboard at all — twelve sports, none selectable
+              // without a mouse. A <Label> wrapping a real Checkbox keeps the
+              // whole card as the hit area, gives the control its name from
+              // the sport, and restores Tab and Space for free.
+              const id = `sport-${sport.toLowerCase().replace(/\s+/g, "-")}`;
               return (
-                <div
+                <Label
                   key={sport}
-                  onClick={() => handleSportToggle(sport)}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  htmlFor={id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all font-normal ${
                     isSelected
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
                   }`}
                 >
-                  <Checkbox checked={isSelected} className="pointer-events-none" />
+                  <Checkbox
+                    id={id}
+                    checked={isSelected}
+                    onCheckedChange={() => handleSportToggle(sport)}
+                  />
                   <span className="text-sm font-medium">{sport}</span>
-                </div>
+                </Label>
               );
             })}
           </div>

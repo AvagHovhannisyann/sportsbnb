@@ -545,10 +545,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>
-            <Label>Accept WhatsApp messages</Label>
+            <Label htmlFor="venue-whatsapp-messages">Accept WhatsApp messages</Label>
             <p className="text-xs text-muted-foreground">Recommended — most players prefer this</p>
           </div>
           <Switch
+            id="venue-whatsapp-messages"
             checked={formData.whatsappEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
           />
@@ -556,10 +557,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>
-            <Label>Accept SMS as fallback</Label>
+            <Label htmlFor="venue-sms-fallback">Accept SMS as fallback</Label>
             <p className="text-xs text-muted-foreground">Used when WhatsApp isn't available</p>
           </div>
           <Switch
+            id="venue-sms-fallback"
             checked={formData.smsEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
           />
@@ -607,10 +609,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <Label>Accept WhatsApp bookings</Label>
+            <Label htmlFor="venue-whatsapp-bookings">Accept WhatsApp bookings</Label>
             <p className="text-sm text-muted-foreground">Primary booking channel</p>
           </div>
           <Switch
+            id="venue-whatsapp-bookings"
             checked={formData.whatsappEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
           />
@@ -618,10 +621,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <Label>Accept SMS bookings</Label>
+            <Label htmlFor="venue-sms-bookings">Accept SMS bookings</Label>
             <p className="text-sm text-muted-foreground">Fallback if WhatsApp is off</p>
           </div>
           <Switch
+            id="venue-sms-bookings"
             checked={formData.smsEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
           />
@@ -659,10 +663,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <Label>Indoor Venue</Label>
+            <Label htmlFor="venue-indoor">Indoor Venue</Label>
             <p className="text-sm text-muted-foreground">Is this an indoor facility?</p>
           </div>
           <Switch
+            id="venue-indoor"
             checked={formData.isIndoor}
             onCheckedChange={(checked) => setFormData({ ...formData, isIndoor: checked })}
           />
@@ -671,10 +676,11 @@ export const VenueForm = ({
         {mode === "edit" && (
           <div className="flex items-center justify-between">
             <div>
-              <Label>Active Listing</Label>
+              <Label htmlFor="venue-active">Active Listing</Label>
               <p className="text-sm text-muted-foreground">Make this venue visible to players</p>
             </div>
             <Switch
+            id="venue-active"
               checked={formData.isActive}
               onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
             />

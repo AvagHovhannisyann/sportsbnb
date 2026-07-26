@@ -2293,3 +2293,98 @@ dropping `bg-yellow-400 text-white` into a file and confirming a red exit at
 1.53:1.
 
 A passing check is only evidence if you have watched it fail.
+
+---
+
+## Measuring tap targets, and what that actually found
+
+The next systematic thing I had never measured: how big the things you tap
+are, at the width most people will use this app. `scripts/tap-targets.mjs`
+loads each route at 375px and measures the rendered box of every interactive
+element, on the same argument that made the contrast audit render real
+swatches — `size="icon"` is 40px in one place and 32px in another depending on
+what the parent does to it, and no amount of reading class strings tells you
+which.
+
+**The headline result is that the app passes.** Zero WCAG 2.2 SC 2.5.8 (AA)
+failures across 44 routes and three roles. That is worth stating plainly rather
+than dressed up as a finding.
+
+Getting to a result I trust took three corrections, and each one changed the
+number by a lot.
+
+### 1. The spacing exception — 51 failures that were not failures
+
+The first run reported 51 failures, almost all footer links at 16px tall. But
+SC 2.5.8 has a *Spacing* exception that is part of the criterion: an undersized
+target passes if a 24px-diameter circle centred on it intersects neither
+another target's box nor another undersized target's circle. Footer links
+stacked with real leading satisfy it comfortably.
+
+Implementing it properly took 51 failures to 0. That is a suspicious-looking
+change, so it is the one I checked hardest: a probe page with two 16px links
+40px apart and two adjacent 20×16 buttons still reports the spaced pair as
+notes and both crowded buttons as failures. The exception discriminates; it
+does not whitewash.
+
+### 2. The target is the label, not the control
+
+A checkbox inside a `<label>` is activated by clicking anywhere on that label,
+so the label *is* the target. Measuring the 16px dot alone understates it by an
+order of magnitude, and would have had me padding controls that are already the
+size of a card. The audit now unions the associated label's box in.
+
+### 3. Radix mirrors every switch with a hidden input
+
+Each Radix switch and checkbox ships an `aria-hidden`, `tabIndex=-1` input for
+form submission. Counting it reports every control twice. Excluded.
+
+### What the audit found on the way — the part that mattered
+
+Chasing "38 unlabelled 16×16 buttons" is what turned up the real defects, and
+none of them are tap-target defects:
+
+**Twelve sport checkboxes no keyboard could reach.** `ProfileInfoTab` rendered
+each sport as a `<div onClick>` wrapping a `pointer-events-none` Checkbox. The
+card looked like a checkbox, announced itself as an unnamed one, and could not
+be focused or toggled without a mouse — on `/profile` and `/settings` both. A
+`<Label htmlFor>` around a real Checkbox keeps the whole card as the hit area,
+names the control from the sport, and restores Tab and Space for free. This is
+SC 2.1.1, Level A, and it is a worse defect than anything I set out to measure.
+
+**Twenty-five controls with no accessible name:**
+
+| where | what |
+|---|---|
+| `/owner/hours` | 7 day switches — a screen reader read the page as "switch, on" seven times, with nothing to say which day it was closing |
+| `/owner/hours` | 14 time inputs, unlabelled |
+| `/add-venue`, `/venue/:id/edit` | 6 switches: WhatsApp, SMS, Indoor, Active Listing |
+| `/profile`, `/settings` | the 12 sports above |
+
+The hours page also gained clickable "Open"/"Closed" labels, since the switch
+alone was a 16px-tall target, and lost a hardcoded `text-emerald-600` for the
+`--success` token that was already sitting beside it.
+
+Verified in the rendered DOM rather than by reading the diff: `/settings` went
+from 12 unnamed controls and 0 keyboard-reachable sports to 0 and 12;
+`/owner/hours` from 7 unnamed to 0. Three apparent stragglers on `/add-venue`
+were the Radix mirror inputs above — a false positive of my *probe*, caught
+before it became a false finding.
+
+### The harness is now shared
+
+`smoke-routes.mjs` had grown 200 lines of fixtures that this audit needs
+identically, and two copies drift: the moment one gains a column the other does
+not, the two scripts are measuring different apps. Both now import
+`scripts/lib/stub-page.mjs`. The smoke script went from 339 lines to 100 with
+identical results — 62 routes clean at both widths, and `SMOKE_SELFTEST=1`
+still fires, which is the only reason to believe the first number.
+
+### A checker that returned 0 while every route errored
+
+Worth its own line. The first run of the tap-target script exited **0** with
+all five routes reporting `Too many arguments` — `page.evaluate` takes one
+argument. Every route failed to measure and the script called it a pass. A
+route that could not be measured is not a route that passed, and that is the
+precise failure this entire approach exists to avoid. Unmeasurable routes now
+fail the run.

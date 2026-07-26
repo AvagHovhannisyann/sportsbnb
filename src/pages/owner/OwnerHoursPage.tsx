@@ -214,21 +214,38 @@ const OwnerHoursPage = () => {
                       <div className="w-24 font-medium text-foreground sm:w-28">
                         {DAYS_OF_WEEK[hour.day_of_week]}
                       </div>
+                      {/* All seven switches were anonymous: no id, no label,
+                          no aria-label, so a screen reader read this page as
+                          "switch, on" seven times with nothing to say which
+                          day it was closing. The day name is the switch's
+                          name; "Open"/"Closed" is its state, and is now a
+                          label so tapping the word works too — the switch
+                          alone is a 16px-tall target. */}
                       <div className="flex items-center gap-3">
                         <Switch
+                          id={`day-open-${hour.day_of_week}`}
+                          aria-label={DAYS_OF_WEEK[hour.day_of_week]}
                           checked={!hour.is_closed}
                           onCheckedChange={(checked) =>
                             handleHourChange(hour.day_of_week, "is_closed", !checked)
                           }
                         />
-                        <span className={`text-sm ${hour.is_closed ? "text-destructive" : "text-emerald-600"}`}>
+                        <Label
+                          htmlFor={`day-open-${hour.day_of_week}`}
+                          /* text-emerald-600 was off the token system, and the
+                             one beside it was already on it. */
+                          className={`cursor-pointer py-1 text-sm font-normal ${
+                            hour.is_closed ? "text-destructive" : "text-success"
+                          }`}
+                        >
                           {hour.is_closed ? "Closed" : "Open"}
-                        </span>
+                        </Label>
                       </div>
                       {!hour.is_closed && (
                         <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
                           <Input
                             type="time"
+                            aria-label={`${DAYS_OF_WEEK[hour.day_of_week]} opening time`}
                             value={hour.open_time}
                             onChange={(e) =>
                               handleHourChange(hour.day_of_week, "open_time", e.target.value)
@@ -238,6 +255,7 @@ const OwnerHoursPage = () => {
                           <span className="text-muted-foreground">to</span>
                           <Input
                             type="time"
+                            aria-label={`${DAYS_OF_WEEK[hour.day_of_week]} closing time`}
                             value={hour.close_time}
                             onChange={(e) =>
                               handleHourChange(hour.day_of_week, "close_time", e.target.value)
