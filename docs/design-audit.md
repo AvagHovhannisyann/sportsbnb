@@ -846,6 +846,34 @@ Fixed with `min-h-16` plus padding so the bar grows, `min-w-0` and a
 site" label reduced to its chevron below `sm` with the text kept for screen
 readers. Desktop is unchanged — full subtitle, full label.
 
+### Owner mobile drawer — checked, and correct
+
+The only owner surface no sweep can reach, since it exists only after tapping
+the hamburger. Opened and driven directly: all 13 nav items reachable, active
+state correct, no overflow, no page errors, a real `rgba(0,0,0,0.5)` backdrop,
+and it dismisses both on the close button and on an outside tap.
+
+**A false positive worth recording.** My first check reported that tapping
+outside did *not* close it, and I was one step from "fixing" working code. The
+check asked whether a nav link still had non-zero width and height — which
+stays true for a drawer that is translated off-screen rather than unmounted.
+Measuring the element's actual position instead (`left: -256`, `onScreen:
+false`, backdrop gone) showed it closing exactly as intended.
+
+That is the third crude check on this branch to produce a false positive, after
+the constraint-drift scanner and the read-only-table scan. The pattern is
+consistent enough to state plainly: these scans are good at narrowing where to
+look and unreliable as evidence. Every one of them needed the specific case
+verified by hand before it was worth acting on.
+
+### Fixed-height containers holding wrapping text
+
+Searched for the shape behind the clipped owner header — a fixed `h-*` on a
+flex row containing text — across the codebase. Two other candidates, both
+sound: the main `Header` (already covered by the 375px sweeps, and its nav
+collapses to a hamburger) and the drawer's own logo row (short, non-wrapping
+content). No further instances.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
