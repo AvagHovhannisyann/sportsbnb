@@ -21,6 +21,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import VenueCard from "@/components/venues/VenueCard";
+import {
+  compareVenues,
+  isVenueSort,
+  VENUE_SORTS,
+  DEFAULT_VENUE_SORT,
+  type VenueSort,
+} from "@/features/venues/sortVenues";
 import { sportTypes } from "@/data/constants";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import Layout from "@/components/layout/Layout";
@@ -67,6 +74,13 @@ const DiscoverPage = () => {
   // just the default waiting to learn what the catalogue actually costs.
   const [priceTouched, setPriceTouched] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
+  // Seeded straight from the URL rather than in the mount effect below,
+  // because an unrecognised value has to fall back to the default before the
+  // first render orders anything — `isVenueSort` is the guard for that.
+  const [sortBy, setSortBy] = useState<VenueSort>(() => {
+    const fromUrl = searchParams.get("sort");
+    return isVenueSort(fromUrl) ? fromUrl : DEFAULT_VENUE_SORT;
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -148,9 +162,12 @@ const DiscoverPage = () => {
     setOrDelete("q", searchQuery || null);
     setOrDelete("city", selectedCity || null);
     setOrDelete("maxPrice", priceTouched && priceRange[1] < maxPrice ? String(priceRange[1]) : null);
+    // Only when it differs from the default, so an untouched Discover link
+    // stays clean and a shared one carries the order it was shared in.
+    setOrDelete("sort", sortBy === DEFAULT_VENUE_SORT ? null : sortBy);
     setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSport, searchQuery, selectedCity, priceRange]);
+  }, [selectedSport, searchQuery, selectedCity, priceRange, sortBy]);
 
   // Auto-set city from user profile on first load
   useEffect(() => {
@@ -210,31 +227,26 @@ const DiscoverPage = () => {
       return matchesSearch && matchesSport && matchesPrice && matchesCity;
     });
 
-    // Sort by distance if we have location
+    // Distance is annotated whenever a location is known, whatever the sort —
+    // the cards show it, so it cannot be computed only when it is also the
+    // ordering key.
     const locationToUse = searchLocation || (userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null);
-    
     if (locationToUse) {
-      result = result.map(venue => ({
+      result = result.map((venue) => ({
         ...venue,
-        distance: venue.latitude && venue.longitude
-          ? calculateDistance(locationToUse.lat, locationToUse.lng, venue.latitude, venue.longitude)
-          : null,
-      })).sort((a, b) => {
-        if (a.distance === null) return 1;
-        if (b.distance === null) return -1;
-        return a.distance - b.distance;
-      });
-    } else {
-      // Sort promoted venues first when not sorting by distance
-      result.sort((a, b) => {
-        const aPromoted = promotedVenueIds.has(a.id) ? 1 : 0;
-        const bPromoted = promotedVenueIds.has(b.id) ? 1 : 0;
-        return bPromoted - aPromoted;
-      });
+        distance:
+          venue.latitude && venue.longitude
+            ? calculateDistance(locationToUse.lat, locationToUse.lng, venue.latitude, venue.longitude)
+            : null,
+      }));
     }
 
-    return result;
-  }, [venues, searchQuery, selectedSport, priceRange, selectedCity, userLocation, searchLocation, promotedVenueIds]);
+    // The comparators live in features/venues/sortVenues, where the decisions
+    // that need testing are: an unreviewed venue is not a zero-rated one, a
+    // venue with no coordinates sorts last rather than nearest, and promoted
+    // placement never touches the price order.
+    return [...result].sort(compareVenues(sortBy, promotedVenueIds));
+  }, [venues, searchQuery, selectedSport, priceRange, selectedCity, userLocation, searchLocation, promotedVenueIds, sortBy]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -456,7 +468,12 @@ const DiscoverPage = () => {
 
         {/* Results */}
         <div className="container py-8">
-          <div className="flex items-center justify-between mb-6">
+          {/* This row was `justify-between` with a single child, so the space
+              the sort control now occupies was already reserved and empty.
+              `flex-wrap` with the control pushed by `ms-auto` keeps it beside
+              the heading on a desktop and under it on a phone, rather than
+              squeezing the title. */}
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="eyebrow mb-2">Book by the hour</p>
               <h1 className="page-title">Venues</h1>
@@ -471,6 +488,29 @@ const DiscoverPage = () => {
                     : `${filteredVenues.length} ${filteredVenues.length === 1 ? "venue" : "venues"} available`}
               </p>
             </div>
+
+            {/* Hidden while there is nothing to order, rather than rendered
+                disabled: a sort control over an empty or still-loading grid is
+                a promise the page cannot keep yet. */}
+            {!isLoading && !isError && filteredVenues.length > 1 && (
+              <div className="ms-auto flex items-center gap-2">
+                <Label htmlFor="venue-sort" className="text-sm text-muted-foreground">
+                  Sort by
+                </Label>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as VenueSort)}>
+                  <SelectTrigger id="venue-sort" className="w-[11.5rem]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VENUE_SORTS.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {isLoading ? (

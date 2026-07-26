@@ -224,6 +224,47 @@ export { IDS, ROWS, NOW, BASE, EXEC, UID, VIEWPORT_WIDTH, VIEWPORT_HEIGHT };
 export const resolveRoute = (route) => route.replace(/:(\w+)/g, (m, k) => IDS[k] ?? m);
 
 /**
+ * A list response: the canonical row, then two variants of it.
+ *
+ * Every list endpoint used to answer with `[row]` — exactly one item, on every
+ * grid in the app. So nothing that only exists at two or more rows had ever
+ * been loaded in CI: no ordering, no column alignment, no "N of M", and no
+ * control that hides itself below a threshold. The venues sort control was the
+ * case that exposed this — it renders only when there is more than one result,
+ * so the accessible-name sweep walked straight past it and still reported the
+ * route clean.
+ *
+ * The canonical row stays first and keeps its id, so `/venue/:venue` and every
+ * other detail route still resolve. The variants differ in the fields lists
+ * actually order and align on — name, price, rating, review count, date — and
+ * deliberately include a zero-review row, since "unrated" and "rated zero" are
+ * a distinction real ranking code gets wrong.
+ */
+const listOf = (row) => {
+  if (!row || typeof row !== 'object' || !('id' in row)) return [row];
+  const variant = (n, over) => ({
+    ...row,
+    ...over,
+    // Keep it a syntactically valid uuid, distinct from the canonical one.
+    id: `${n}${String(row.id).slice(1)}`,
+    ...(row.name ? { name: `${row.name} ${n}` } : {}),
+  });
+  return [
+    row,
+    variant(8, {
+      ...(row.price_per_hour !== undefined ? { price_per_hour: 2500 } : {}),
+      ...(row.rating !== undefined ? { rating: 0 } : {}),
+      ...(row.review_count !== undefined ? { review_count: 0 } : {}),
+    }),
+    variant(9, {
+      ...(row.price_per_hour !== undefined ? { price_per_hour: 24000 } : {}),
+      ...(row.rating !== undefined ? { rating: 4.9 } : {}),
+      ...(row.review_count !== undefined ? { review_count: 137 } : {}),
+    }),
+  ];
+};
+
+/**
  * A page with the session stubbed and every REST table answered.
  *
  * Geolocation is granted deliberately. /nearby only evaluates its map markers
@@ -266,7 +307,7 @@ export async function newStubbedPage(browser, { userType, width, height }) {
   for (const [table,row] of Object.entries(ROWS)) {
     await p.route(`**/rest/v1/${table}**`, r=>r.fulfill({status:200,
       contentType:'application/json',
-      body:JSON.stringify(isSingleLookup(r.request().url())?row:[row])}));
+      body:JSON.stringify(isSingleLookup(r.request().url())?row:listOf(row))}));
   }
   return p;
 }
