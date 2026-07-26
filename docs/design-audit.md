@@ -2987,3 +2987,54 @@ The habit worth keeping from this one: a layout fix verified by looking at a
 picture is a layout fix verified at one arbitrary input. Six counts and two
 widths is thirty seconds of scripting and it caught a regression I had just
 written.
+
+---
+
+## A venue priced over ֏200,000 could not be found on Discover
+
+The Discover price filter looked like the decorative one I had just found on
+`/owner/bookings`, so I checked whether it was wired. **It was** — it filters,
+it syncs to the URL, the slider is bound. Which is what made it dangerous.
+
+```js
+const [priceRange, setPriceRange] = useState<[number, number]>([0, 200000]);
+const maxPrice = Math.max(...venues.map(v => v.price_per_hour), 200000);
+…
+const matchesPrice = venue.price_per_hour >= priceRange[0]
+                  && venue.price_per_hour <= priceRange[1];
+```
+
+`maxPrice` rises with the catalogue. `priceRange` never moved off its initial
+value. So any venue dearer than ֏200,000/hour was filtered out of Discover **on
+first load**, before anyone touched anything — and the slider sat parked
+mid-track with a "clear filters" affordance showing, as though the visitor had
+set that filter themselves.
+
+An unfindable venue is an unbookable one. Neither the player nor the owner had
+any way to know.
+
+### Demonstrated, not reasoned
+
+With two venues stubbed at ֏8,000 and ֏350,000, on the code as it stood:
+
+```
+venues shown: ["Budget Pitch, 1 St"]
+```
+
+The ֏350,000 venue is absent. After the fix, with the same fixture:
+
+```
+venues shown: ["Budget Pitch, 1 St", "Premium Dome, 1 St"]
+count line  : "2 venues available"
+```
+
+I reverted the change with `git stash` to get the first of those, because a fix
+whose bug was never observed is a story about code rather than a finding about
+behaviour.
+
+The ceiling now follows the catalogue until the visitor picks one — a
+`priceTouched` flag distinguishes "the user chose this" (slider, or a shared
+URL carrying `maxPrice`) from "this is the default, still waiting to learn what
+things cost". The three scattered `200000` literals became one named constant,
+since two of them meant "starting guess" and one meant "the real ceiling", and
+nothing in the code said which was which.

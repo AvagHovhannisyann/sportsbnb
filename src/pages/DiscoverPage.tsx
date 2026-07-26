@@ -43,12 +43,29 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
+/** Starting ceiling for the price filter, before the catalogue is known. */
+const PRICE_FLOOR_CEILING = 200000;
+
 const DiscoverPage = () => {
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSport, setSelectedSport] = useState<string>(searchParams.get("sport") || "");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200000]);
+  /**
+   * `PRICE_FLOOR_CEILING` is the *starting* ceiling, not the real one.
+   *
+   * `maxPrice` below is `Math.max(...venuePrices, 200000)`, so it rises above
+   * this whenever a venue costs more — but this range never moved off its
+   * initial value, and the filter is `price_per_hour <= priceRange[1]`. A
+   * venue above ֏200,000/hour was therefore filtered out of Discover on first
+   * load, with the slider parked mid-track as if someone had set that filter
+   * deliberately. An unfindable venue is an unbookable one, and neither the
+   * player nor the owner had any way to know.
+   */
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, PRICE_FLOOR_CEILING]);
+  // Whether the ceiling is the user's choice (slider or shared URL) or still
+  // just the default waiting to learn what the catalogue actually costs.
+  const [priceTouched, setPriceTouched] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -82,9 +99,15 @@ const DiscoverPage = () => {
 
   // Get max price from venues
   const maxPrice = useMemo(() => {
-    if (venues.length === 0) return 200000;
-    return Math.max(...venues.map(v => v.price_per_hour), 200000);
+    if (venues.length === 0) return PRICE_FLOOR_CEILING;
+    return Math.max(...venues.map(v => v.price_per_hour), PRICE_FLOOR_CEILING);
   }, [venues]);
+
+  // Until the user picks a price, the ceiling follows the catalogue. Without
+  // this the initial 200,000 stayed put and quietly excluded anything dearer.
+  useEffect(() => {
+    if (!priceTouched) setPriceRange(([lo]) => [lo, maxPrice]);
+  }, [maxPrice, priceTouched]);
 
   // Handle URL params for location search
   useEffect(() => {
@@ -107,7 +130,10 @@ const DiscoverPage = () => {
     }
     if (q) setSearchQuery(q);
     if (city) setSelectedCity(city);
-    if (maxPrice && /^\d+$/.test(maxPrice)) setPriceRange([0, parseInt(maxPrice)]);
+    if (maxPrice && /^\d+$/.test(maxPrice)) {
+      setPriceRange([0, parseInt(maxPrice)]);
+      setPriceTouched(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -121,7 +147,7 @@ const DiscoverPage = () => {
     setOrDelete("sport", selectedSport || null);
     setOrDelete("q", searchQuery || null);
     setOrDelete("city", selectedCity || null);
-    setOrDelete("maxPrice", priceRange[1] < 200000 ? String(priceRange[1]) : null);
+    setOrDelete("maxPrice", priceTouched && priceRange[1] < maxPrice ? String(priceRange[1]) : null);
     setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSport, searchQuery, selectedCity, priceRange]);
@@ -317,7 +343,10 @@ const DiscoverPage = () => {
                       </div>
                       <Slider
                         value={priceRange}
-                        onValueChange={(value) => setPriceRange(value as [number, number])}
+                        onValueChange={(value) => {
+                          setPriceTouched(true);
+                          setPriceRange(value as [number, number]);
+                        }}
                         max={maxPrice}
                         min={0}
                         step={1000}
@@ -389,7 +418,10 @@ const DiscoverPage = () => {
                   </p>
                   <Slider
                     value={priceRange}
-                    onValueChange={(value) => setPriceRange(value as [number, number])}
+                    onValueChange={(value) => {
+                          setPriceTouched(true);
+                          setPriceRange(value as [number, number]);
+                        }}
                     max={maxPrice}
                     min={0}
                     step={1000}
