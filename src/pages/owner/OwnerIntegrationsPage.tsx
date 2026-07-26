@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { useCalendarIntegrations } from "@/hooks/useCalendarIntegrations";
 import { toast } from "sonner";

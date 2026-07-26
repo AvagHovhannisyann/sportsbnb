@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Layout from "@/components/layout/Layout";
 import { ErrorPanel } from "@/components/common/StatusPanel";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 
@@ -79,21 +80,14 @@ const MyVenuesPage = () => {
               />
             </Card>
           ) : myVenues.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No venues yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Start earning by listing your first sports venue.
-                </p>
-                <Link to="/add-venue">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Venue
-                  </Button>
-                </Link>
-              </div>
-            </Card>
+            <EmptyState
+              bordered
+              icon={MapPin}
+              title="No venues yet"
+              description="Start earning by listing your first sports venue."
+              actionLabel="Add Your First Venue"
+              actionHref="/add-venue"
+            />
           ) : (
             <div className="space-y-8">
               {/* Active Venues */}

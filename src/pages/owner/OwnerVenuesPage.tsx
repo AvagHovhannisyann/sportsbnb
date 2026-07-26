@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { Building2 } from "lucide-react";

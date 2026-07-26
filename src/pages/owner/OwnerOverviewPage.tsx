@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorPanel } from "@/components/common/StatusPanel";
 import { WeekCalendar } from "@/components/owner/schedule/WeekCalendar";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";

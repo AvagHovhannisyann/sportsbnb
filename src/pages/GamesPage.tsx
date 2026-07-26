@@ -16,6 +16,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { sportTypes } from "@/data/constants";
 import Layout from "@/components/layout/Layout";
 import { ErrorPanel } from "@/components/common/StatusPanel";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useGames, type Game } from "@/hooks/useGames";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -417,29 +418,19 @@ const GamesPage = () => {
           ) : isError ? (
             <ErrorPanel what="games" onRetry={() => refetch()} isRetrying={isFetching} />
           ) : (
-            <div className="text-center py-16">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Search className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No games found</h3>
-              <p className="text-muted-foreground mb-4">
-                {hasActiveFilters 
+            <EmptyState
+              icon={Search}
+              title="No games found"
+              description={
+                hasActiveFilters
                   ? "Try adjusting your filters or create your own game"
                   : "Be the first to create a game and find players!"
-                }
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters}>
-                    Clear filters
-                  </Button>
-                )}
-                <Button onClick={handleCreateGame}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Game
-                </Button>
-              </div>
-            </div>
+              }
+              actionLabel="Create Game"
+              onAction={handleCreateGame}
+              secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+              onSecondaryAction={clearFilters}
+            />
           )}
         </div>
       </div>

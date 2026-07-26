@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import {

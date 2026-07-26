@@ -13,6 +13,7 @@ import { useVenues } from "@/hooks/useVenues";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Haversine formula for distance calculation
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -392,12 +393,15 @@ const CommunityPage = () => {
                         ))}
                       </div>
                     ) : (
-                      <Card className="p-8 text-center">
-                        <p className="text-muted-foreground">No trending games yet</p>
-                        <Link to="/create-game" className="mt-4 inline-block">
-                          <Button>Create a game</Button>
-                        </Link>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={TrendingUp}
+                        title="No trending games yet"
+                        description="Start one and it will be the first thing people see here."
+                        actionLabel="Create a game"
+                        actionHref="/create-game"
+                      />
                     )}
                   </section>
 
@@ -456,6 +460,9 @@ const CommunityPage = () => {
                         </Link>
                       )}
                     </div>
+                    {/* The games empty state below offers a way out; the
+                        venues one was a dead end. Owners can seed the
+                        catalogue, so send them there. */}
                     {recentVenues.length > 0 ? (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {recentVenues.map(venue => (
@@ -499,14 +506,15 @@ const CommunityPage = () => {
                         ))}
                       </div>
                     ) : (
-                      <Card className="p-8 text-center">
-                        <p className="text-muted-foreground">No venues added yet</p>
-                        {/* The games empty state offers a way out; this one
-                            was a dead end. Owners can seed the catalogue. */}
-                        <Link to="/for-owners" className="mt-4 inline-block">
-                          <Button variant="outline">List your venue</Button>
-                        </Link>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={MapPin}
+                        title="No venues added yet"
+                        description="The first listing here will be the one everybody books."
+                        actionLabel="List your venue"
+                        actionHref="/for-owners"
+                      />
                     )}
                   </section>
                 </>
@@ -515,16 +523,14 @@ const CommunityPage = () => {
 
             <TabsContent value="my-activity" className="space-y-8">
               {!user ? (
-                <Card className="p-12 text-center">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Join the Community</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Sign in to see your activity and connect with other players.
-                  </p>
-                  <Link to="/login">
-                    <Button>Sign In</Button>
-                  </Link>
-                </Card>
+                <EmptyState
+                  bordered
+                  icon={Users}
+                  title="Join the Community"
+                  description="Sign in to see your activity and connect with other players."
+                  actionLabel="Sign In"
+                  actionHref="/login"
+                />
               ) : userGamesLoading ? (
                 <div className="text-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
@@ -559,18 +565,17 @@ const CommunityPage = () => {
                         ))}
                       </div>
                     ) : (
-                      <Card className="p-8 text-center">
-                        <Calendar className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground mb-4">No upcoming games</p>
-                        <div className="flex gap-3 justify-center">
-                          <Link to="/games">
-                            <Button variant="outline">Find a game</Button>
-                          </Link>
-                          <Link to="/create-game">
-                            <Button>Create a game</Button>
-                          </Link>
-                        </div>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={Calendar}
+                        title="No upcoming games"
+                        description="Join one that's already filling up, or start your own."
+                        actionLabel="Create a game"
+                        actionHref="/create-game"
+                        secondaryLabel="Find a game"
+                        secondaryHref="/games"
+                      />
                     )}
                   </section>
 

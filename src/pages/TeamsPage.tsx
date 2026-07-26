@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { ErrorPanel } from "@/components/common/StatusPanel";
+import { EmptyState } from "@/components/ui/empty-state";
 import TeamCard from "@/components/teams/TeamCard";
 import { useTeams, useUserTeams, useUserTeamInvites, useRespondToInvite } from "@/hooks/useTeams";
 import { useAuth } from "@/hooks/useAuth";
@@ -164,24 +165,17 @@ const TeamsPage = () => {
                     {!userTeamsError &&
                       (userTeams?.owned?.length ?? 0) === 0 &&
                       (userTeams?.member?.length ?? 0) === 0 && (
-                      <Card>
-                        <CardContent className="py-12 text-center">
-                          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold text-foreground mb-2">No teams yet</h3>
-                          <p className="text-muted-foreground mb-4">Create your first team or browse public teams to join.</p>
-                          <div className="flex gap-3 justify-center">
-                            <Link to="/create-team">
-                              <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Team
-                              </Button>
-                            </Link>
-                            <Button variant="outline" onClick={() => setActiveTab("browse")}>
-                              Browse Teams
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={Users}
+                        title="No teams yet"
+                        description="Create your first team or browse public teams to join."
+                        actionLabel="Create Team"
+                        actionHref="/create-team"
+                        secondaryLabel="Browse Teams"
+                        onSecondaryAction={() => setActiveTab("browse")}
+                      />
                     )}
                   </div>
                 )}
@@ -237,13 +231,15 @@ const TeamsPage = () => {
                   <ErrorPanel what="teams" onRetry={() => refetchTeams()} isRetrying={teamsFetching} />
                 </Card>
               ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No teams found</h3>
-                    <p className="text-muted-foreground">Be the first to create a team!</p>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  bordered
+                  compact
+                  icon={Users}
+                  title="No teams found"
+                  description="Be the first to create a team!"
+                  actionLabel="Create Team"
+                  actionHref="/create-team"
+                />
               )}
             </TabsContent>
           </Tabs>

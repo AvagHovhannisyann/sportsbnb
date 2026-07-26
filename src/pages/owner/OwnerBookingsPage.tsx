@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorPanel } from "@/components/common/StatusPanel";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";
 import { useAuth } from "@/hooks/useAuth";

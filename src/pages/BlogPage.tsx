@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import { EmptyState } from "@/components/ui/empty-state";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { usePublishedBlogPosts } from "@/hooks/useBlogPosts";
 import { Card, CardContent } from "@/components/ui/card";
@@ -116,11 +117,11 @@ const BlogPage = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <BookOpen className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">No articles yet</h2>
-            <p className="text-muted-foreground">Check back soon for expert tips and insights.</p>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title="No articles yet"
+            description="Check back soon for expert tips and insights."
+          />
         )}
       </section>
     </Layout>

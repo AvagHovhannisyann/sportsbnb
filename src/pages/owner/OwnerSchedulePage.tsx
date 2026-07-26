@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { WeekCalendar } from "@/components/owner/schedule/WeekCalendar";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";
 import { BlockTimeDialog } from "@/components/owner/schedule/BlockTimeDialog";
