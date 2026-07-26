@@ -24,10 +24,17 @@ const ReferralCard = () => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Gift className="h-5 w-5 text-primary" />
-              Refer & Earn
+              Invite a friend
             </CardTitle>
+            {/* No credit is promised here any more. referral_credits has no
+                writer anywhere — not in app code, not in an edge function, not
+                in a migration trigger — so the ֏2,000 this used to advertise
+                could never be granted. Offering money the platform cannot pay
+                is worse than the unevidenced stats already removed elsewhere,
+                because a user can act on it by sharing the code widely. The
+                badge above still appears the moment real credits exist. */}
             <CardDescription>
-              Invite friends and both get ֏2,000 booking credit!
+              Share your code so friends can find their court faster.
             </CardDescription>
           </div>
           {totalCredits > 0 && (

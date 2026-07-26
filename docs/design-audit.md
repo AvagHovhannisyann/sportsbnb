@@ -694,6 +694,38 @@ comment calling this signal "always meaningful". The score now takes
 window, so an unmeasurable rate is excluded rather than scored as failure. A
 genuine 0% still counts.
 
+## Dead-data sweep — a promise of money nothing could pay
+
+Three fixes in a row had the same shape: user-facing logic driven by a column
+or table nothing maintains. Rather than keep finding them one at a time, this
+pass enumerated every table the app reads and checked which have no writer
+anywhere — app code, edge functions, or SQL.
+
+44 tables touched, 9 never written from app code. Seven are explained: views
+(`owner_balances`, `profiles_public`), migration-seeded reference data
+(`achievements`), and tables written through RPCs rather than `.from()`
+(`chat_rooms`, `referral_codes`, `user_achievements`, `outreach_messages`).
+
+| Finding | Detail |
+|---|---|
+| **`referral_credits` has no writer at all** | Not in app code, not in an edge function, not in a migration trigger. The card advertised **"Invite friends and both get ֏2,000 booking credit!"** under a "Refer & Earn" heading, and generates a real, shareable code. The credit could never be granted. This is worse than the unevidenced stats removed earlier: those were boasts, this is an offer a user can act on by sharing the code widely. Copy now describes what actually happens; the credit badge is already guarded on `> 0`, so it lights up by itself if fulfilment is ever built. |
+
+### Left alone
+
+`venue_promotions` also has no writer, but reads clean: `DiscoverPage` uses it
+to sort promoted venues first, and an empty set simply means no venue is
+falsely flagged. The plumbing is correct and inert, so deleting it would only
+remove working groundwork for an unbuilt feature.
+
+### The first scan was wrong again
+
+The initial heuristic reported **31** read-only tables, including `profiles`
+and `game_participants`, which are obviously written. It matched
+`.insert(`/`.update(` only within 200 characters *on one line*, and Supabase
+chains span lines. Made multi-line-aware, the count fell to 9. Two crude
+scanners in three passes have now produced mostly false positives; both were
+still worth running to narrow the search, and neither was worth trusting.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
