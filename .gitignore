@@ -29,3 +29,7 @@ dist-ssr
 *.sw?
 test-results/
 playwright-report/
+
+# Throwaway scratch scripts run from the repo root so node resolves
+# node_modules (screenshot probes, codemods). Never part of the app.
+/.*.mjs
