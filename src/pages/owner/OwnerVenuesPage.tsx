@@ -81,7 +81,7 @@ const OwnerVenuesPage = () => {
               </h3>
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {activeVenues.map((venue) => (
-                  <Card key={venue.id} className="overflow-hidden group hover:shadow-lg transition-all">
+                  <Card key={venue.id} className="card-lift group overflow-hidden">
                     <div className="aspect-video relative">
                       <img
                         src={getVenueImage(venue)}

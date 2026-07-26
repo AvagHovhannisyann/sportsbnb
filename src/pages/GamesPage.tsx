@@ -34,7 +34,7 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
   const isFull = spotsLeft <= 0;
 
   return (
-    <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all duration-200">
+    <div className="card-lift rounded-xl border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-2 mb-2">

@@ -67,7 +67,7 @@ const BlogPage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post) => (
               <Link key={post.id} to={`/blog/${post.slug}`} className="group">
-                <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-border/50">
+                <Card className="card-lift h-full overflow-hidden border-border/50">
                   {post.cover_image_url ? (
                     <div className="h-48 overflow-hidden">
                       <img

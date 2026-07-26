@@ -154,7 +154,7 @@ const NearbyPlayers = () => {
                 {players.map((player, idx) => (
                   <div
                     key={player.name + idx}
-                    className="flex items-center gap-4 bg-card border border-border/50 rounded-2xl p-4 hover:shadow-md transition-shadow"
+                    className="card-lift flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4"
                   >
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">

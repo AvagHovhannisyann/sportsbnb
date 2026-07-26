@@ -64,7 +64,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [],
 
   return (
     <Link to={`/game/${game.id}`} className="block h-full">
-      <Card className="h-full overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] group">
+      <Card className="card-lift group h-full overflow-hidden">
         <CardContent className="flex h-full flex-col p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ const CommunityPage = () => {
                       </div>
                       <div className="flex gap-4 overflow-x-auto pb-2">
                         {playedWith.map((person) => (
-                          <Card key={person.id} className="shrink-0 w-36 text-center p-4 hover:shadow-md transition-shadow">
+                          <Card key={person.id} className="card-lift w-36 shrink-0 p-4 text-center">
                             <Avatar className="h-16 w-16 mx-auto mb-2">
                               <AvatarImage src={person.avatar_url} />
                               <AvatarFallback className="bg-primary/10 text-lg">
@@ -467,7 +467,7 @@ const CommunityPage = () => {
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {recentVenues.map(venue => (
                           <Link key={venue.id} to={`/venue/${venue.id}`}>
-                            <Card className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] group">
+                            <Card className="card-lift group overflow-hidden">
                               <div className="aspect-[16/10] relative">
                                 <img
                                   src={venue.image_url || '/placeholder.svg'}
@@ -591,7 +591,7 @@ const CommunityPage = () => {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         {playedWith.map((person) => (
-                          <Card key={person.id} className="text-center p-4 hover:shadow-md transition-shadow">
+                          <Card key={person.id} className="card-lift p-4 text-center">
                             <Avatar className="h-16 w-16 mx-auto mb-2">
                               <AvatarImage src={person.avatar_url} />
                               <AvatarFallback className="bg-primary/10 text-lg">

@@ -55,7 +55,7 @@ const VenueCard = ({
       className="group block focus-ring rounded-2xl"
     >
       <article
-        className={`relative overflow-hidden rounded-2xl bg-card border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+        className={`card-lift relative overflow-hidden rounded-2xl bg-card border ${
           isPromoted ? "border-primary/40 ring-1 ring-primary/15" : "border-border hover:border-border-strong"
         }`}
       >

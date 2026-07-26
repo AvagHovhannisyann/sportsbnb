@@ -36,8 +36,9 @@ const TeamCard = ({ team, showRole }: TeamCardProps) => {
     <Link to={`/team/${team.id}`} className="group block h-full focus-ring rounded-xl">
       <Card
         className={cn(
-          "flex h-full flex-col overflow-hidden transition-all duration-200",
-          "hover:-translate-y-0.5 hover:border-border-strong hover:shadow-lg",
+          "card-lift flex h-full flex-col overflow-hidden",
+          // The border brightening is this card's own and stays.
+          "hover:border-border-strong",
         )}
       >
         <CardContent className="flex h-full flex-col p-4">

@@ -511,10 +511,49 @@
   .glow-primary {
     box-shadow: 0 0 32px -8px hsl(var(--primary) / 0.45), var(--shadow-md);
   }
+
+  /*
+   * How a card responds to the pointer. One answer, because there were six.
+   *
+   * The same object behaved differently depending on the page it was on:
+   *
+   *   venue card   /discover, /venues   -translate-y-1  + shadow-lg
+   *   venue card   /community           scale-[1.02]    + shadow-lg
+   *   venue card   /owner/venues        shadow-lg, no movement
+   *   game card    /games               shadow-md, no movement
+   *   game card    /community           scale-[1.02]    + shadow-lg
+   *   team card    /teams               -translate-y-0.5 + shadow-lg
+   *
+   * A venue card that rises on /discover and zooms on /community is two
+   * different components as far as the eye is concerned, and /community
+   * managed to hold both treatments at once — its game and venue cards zoom
+   * while its people cards only deepen a shadow.
+   *
+   * Lift rather than scale: `scale` resamples every glyph in the card, so text
+   * softens for the length of the transition and snaps back, while `translate`
+   * moves the same rasterisation. Both are GPU-composited, so this costs
+   * nothing either way.
+   *
+   * Deliberately not folded in here: the image zoom inside a card (a different
+   * job — the picture moves, the card does not), the auth CTA glow, the
+   * chatbot's floating button, and the header logo.
+   */
+  .card-lift {
+    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-lg;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .live-dot::after { animation: none; }
+
+  /* The shadow still answers the pointer; the movement does not. Nothing else
+     in the app declares a hover transform, so this covers the set. */
+  .card-lift {
+    transition: box-shadow 200ms ease;
+  }
+  .card-lift:hover {
+    transform: none;
+  }
 }
 
 @layer utilities {
