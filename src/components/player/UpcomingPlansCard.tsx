@@ -23,7 +23,8 @@ export const UpcomingPlansCard = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        {/* A dashboard section under the page h1: h2, not the h3 default. */}
+        <CardTitle as="h2" className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           Earlier inquiries
         </CardTitle>

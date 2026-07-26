@@ -45,7 +45,7 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
               {skillLevelLabel(game.skill_level)}
             </Badge>
           </div>
-          <h3 className="font-semibold text-foreground text-lg">{game.title}</h3>
+          <h2 className="font-semibold text-foreground text-lg">{game.title}</h2>
         </div>
         {/* One statement, not two numbers.
             This read "10 spots" over "of 10 left" — the same figure twice in

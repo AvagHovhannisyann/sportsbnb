@@ -233,7 +233,7 @@ const MessagesPage = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-semibold text-foreground truncate">{room.title}</h3>
+                          <h2 className="font-semibold text-foreground truncate">{room.title}</h2>
                           <span className="text-xs text-muted-foreground shrink-0">
                             {formatDistanceToNow(new Date(room.updated_at), { addSuffix: true })}
                           </span>

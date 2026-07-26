@@ -107,9 +107,9 @@ const VenueCard = ({
         {/* Content */}
         <div className="p-4 md:p-5">
           <div className="flex items-start justify-between gap-3 mb-1.5">
-            <h3 className="font-display text-base md:text-lg font-semibold text-foreground tracking-extra-tight leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+            <h2 className="font-display text-base md:text-lg font-semibold text-foreground tracking-extra-tight leading-snug line-clamp-1 group-hover:text-primary transition-colors">
               {name}
-            </h3>
+            </h2>
             <div className="flex items-center gap-1 text-sm shrink-0">
               <Star className="h-3.5 w-3.5 fill-primary text-primary" />
               {/* Formatted rather than printed raw. Every current caller passes

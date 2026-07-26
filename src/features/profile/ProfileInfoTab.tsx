@@ -63,7 +63,9 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
+          {/* First heading under the page h1, so h2 — the CardTitle default
+              of h3 skipped a level here. */}
+          <CardTitle as="h2">Personal Information</CardTitle>
           <CardDescription>
             Update your personal details and public profile.
           </CardDescription>

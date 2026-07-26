@@ -169,6 +169,23 @@ jobs:
           # 14.7px, and at 6x it visibly collided with the digit beside it, on
           # the most important number on a venue card. <Price> splits the mark
           # out; this keeps it split.
+          # One h1 per page, no skipped levels. Heading level carries no
+          # styling here — the base rule treats h1–h6 alike — so this drifts
+          # invisibly, and did: the footer's h4 columns skipped two levels on
+          # every page at once, and CardTitle's hardcoded h3 skipped one
+          # wherever a card was the first thing under the page h1.
+          #
+          # Deliberately the public routes only, not $PLAYER or $OWNER. The
+          # owner console has thirteen more skips of the same shape, all of
+          # them "the first CardTitle under the page h1" — fixing those means
+          # deciding whether a card title should default to h2, which changes
+          # dozens of call sites and is a design call, not a cleanup. Wiring
+          # the check over routes known to be red would just paint CI red.
+          # The list grows as those are fixed.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player \
+            / /about /blog /community /contact /cookies /discover /faq /games \
+            /nearby /privacy /teams /terms /venues
+
           # Text on the glass header, against what is actually scrolling under
           # it. contrast-audit checks tokens against declared surfaces and
           # structurally cannot see this: at --glass-alpha 0.72 the same five
