@@ -805,6 +805,29 @@ Verified against a dev server booted with the exact placeholder env the CI job
 uses: guarded routes resolve under a *different* project ref, and forcing the
 old hardcoded ref reproduces the redirect failure.
 
+## Mobile sweep — two real overflows
+
+"Mobile layout quality" sat in the open list from the beginning as *confirmed
+not broken, not yet designed for*, on the strength of spot-checks at a handful
+of pages. The smoke harness already measures horizontal overflow per route, so
+sweeping all 23 player routes at 375px cost one extra pass and settled it.
+
+| Finding | Detail |
+|---|---|
+| `/nearby` toolbar did not wrap | The heading and a three-control toolbar shared a `justify-between` row with no wrapping. At 375px they came to **438px**, so the whole page scrolled sideways. Both the outer row and the inner control group now wrap. |
+| **Every toast gave the page horizontal scroll** | Sonner's mobile breakpoint sets the toast list to `width: 100%` while keeping `left: 16px; right: 16px`, so the container measured 375px starting at x=16 and ran 16px past the viewport. Not specific to one page — toasts fire on errors and confirmations throughout the app. |
+
+The toast fix took two attempts. The first set `--width` to
+`min(356px, calc(100vw - 2rem))`, which looked right and did nothing: that
+variable is ignored at Sonner's mobile breakpoint. Measuring the computed style
+rather than trusting the change showed `--width` correctly applied and the
+element still 375px wide. Overriding `width` in that media query is what
+actually works — the container is now 343px, exactly the viewport minus both
+insets.
+
+All 23 player routes are clean at 375px, and the mobile pass now runs in CI
+alongside the desktop one, so this cannot regress unnoticed.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
@@ -839,8 +862,9 @@ Ordered by leverage, not by effort.
 6. **Auth pages** — login, signup, reset, both onboarding flows.
 7. **Static pages** — About, FAQ, Contact, For Owners, Blog, Community.
 8. **Venue cards and the booking panel** — blocked on seed data, see below.
-9. **Mobile layout quality.** Confirmed not *broken* at 375/768; not yet
-   designed for.
+9. ~~**Mobile layout quality.**~~ Swept at 375px across all 23 player routes;
+   two overflows found and fixed, and the pass now runs in CI. See "Mobile
+   sweep" above.
 
 ### Two unlabelled buttons left, deliberately
 

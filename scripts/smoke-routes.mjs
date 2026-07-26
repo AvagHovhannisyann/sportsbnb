@@ -42,6 +42,12 @@ const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
 // has to match whatever VITE_SUPABASE_URL the app was built with. Hardcoding
 // one ref meant the session stub silently did nothing anywhere else — every
 // guarded route would just redirect to /login and still report "clean".
+// Viewport, so the same route list can be swept at mobile widths. Overflow is
+// already checked per route, which makes this the cheapest way to cover a
+// surface that had only ever been spot-checked on a handful of pages.
+const VIEWPORT_WIDTH = Number(process.env.SMOKE_WIDTH ?? 1440);
+const VIEWPORT_HEIGHT = Number(process.env.SMOKE_HEIGHT ?? 900);
+
 const PROJECT_REF =
   process.env.SMOKE_PROJECT_REF ??
   (process.env.VITE_SUPABASE_URL ?? '').match(/https?:\/\/([^.]+)\./)?.[1] ??
@@ -59,7 +65,7 @@ for (const route of ROUTES) {
   // invisible locally, purely because the runner happened to resolve a
   // position. Granting it makes the branch deterministic instead of lucky.
   const ctx = await b.newContext({
-    viewport: { width: 1440, height: 900 },
+    viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
     permissions: ['geolocation'],
     geolocation: { latitude: 40.1792, longitude: 44.4991 }, // Yerevan
   });
@@ -101,6 +107,6 @@ for (const route of ROUTES) {
   } catch (e) { bad++; console.log(`FAIL ${route}  ${String(e).split('\n')[0].slice(0,70)}`); }
   await p.close();
 }
-console.log(`\n${ROUTES.length-bad}/${ROUTES.length} clean (${userType})`);
+console.log(`\n${ROUTES.length-bad}/${ROUTES.length} clean (${userType} @ ${VIEWPORT_WIDTH}px)`);
 await b.close();
 process.exit(bad === 0 ? 0 : 1);

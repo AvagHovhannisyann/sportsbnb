@@ -267,6 +267,18 @@
     font-weight: 600;
   }
 
+  /* Sonner's mobile breakpoint sets the toast list to `width: 100%` while
+     keeping `left: 16px; right: 16px`, so at 375px the container measures 375px
+     starting at x=16 and ends 16px past the viewport. Every toast — and they
+     fire on errors and confirmations throughout the app — therefore gave the
+     page horizontal scroll. Setting --width does not help: that variable is
+     ignored at this breakpoint. Letting the insets define the box does. */
+  @media (max-width: 600px) {
+    ol.toaster {
+      width: auto;
+    }
+  }
+
   /* Selection */
   ::selection {
     background-color: hsl(var(--primary) / 0.18);

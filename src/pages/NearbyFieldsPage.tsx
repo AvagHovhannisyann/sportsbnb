@@ -115,7 +115,10 @@ const NearbyFieldsPage: React.FC = () => {
         {/* Header */}
         <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">
           <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
+            {/* Wraps: at 375px the heading plus the three controls came to
+                438px against a 375px viewport, so the whole page scrolled
+                sideways. */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 className="text-xl font-bold text-foreground">Nearby Fields</h1>
                 <p className="text-sm text-muted-foreground">
@@ -123,7 +126,7 @@ const NearbyFieldsPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Select value={sportFilter} onValueChange={setSportFilter}>
                   <SelectTrigger className="w-32 h-9">
                     <Filter className="h-3.5 w-3.5 mr-1" />

@@ -92,6 +92,15 @@ jobs:
             /admin /operator /operator/outreach /create-game /create-team \
             /nearby/submit /onboarding/player /discover
 
+          # Same routes at phone width. Horizontal overflow is already checked
+          # per route, so this costs one extra pass and covers a surface that
+          # had only ever been spot-checked by hand.
+          SMOKE_WIDTH=375 SMOKE_HEIGHT=812 \
+          node scripts/smoke-routes.mjs player \
+            / /about /blog /community /contact /cookies /discover /faq /for-owners \
+            /forgot-password /games /login /nearby /privacy /signup /teams /terms \
+            /venues /venues/map /dashboard /profile /settings /messages
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:
