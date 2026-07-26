@@ -38,7 +38,36 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const allImages = [{ id: "main", image_url: mainImage, caption: venueName }, ...images];
+  // A blank URL is not a photo. `venue_images.image_url` is nullable and can
+  // hold an empty string, and `<img src="">` resolves to the page itself, so it
+  // never fires onError — the tile just sits there empty. On this page that is
+  // half the hero: a 670x505 grey void beside the one real photo, above the
+  // fold, on the screen where someone decides whether to book.
+  //
+  // VenueCard already guards exactly this, with a comment describing the same
+  // failure. The guard was written once and not carried to the component that
+  // shows the same images four tiles at a time.
+  const usable = (url: string | null | undefined) =>
+    typeof url === "string" && url.trim().length > 0;
+
+  const allImages = [
+    ...(usable(mainImage) ? [{ id: "main", image_url: mainImage, caption: venueName }] : []),
+    ...images.filter((img) => usable(img.image_url)),
+  ];
+
+  // With the blank URLs filtered out, a venue can legitimately have no photos
+  // at all — and this component read `allImages[0].image_url` unconditionally,
+  // so it would now throw rather than render. One honest tile instead: the
+  // page still needs something occupying the hero, and "no photos yet" beats
+  // both a crash and a grey rectangle pretending to be a picture.
+  if (allImages.length === 0) {
+    return (
+      <div className="flex aspect-[21/9] max-h-96 w-full flex-col items-center justify-center gap-2 rounded-xl bg-surface-2">
+        <ImageOff className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+        <p className="text-sm text-muted-foreground">No photos yet</p>
+      </div>
+    );
+  }
 
   const openLightbox = (index: number) => {
     setSelectedIndex(index);
@@ -65,7 +94,13 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
   // A full-width single image still needs a ceiling: at 21/9 across a 1360px
   // container it ran ~580px tall and pushed the venue name, price and booking
   // panel below the fold.
-  const soloTileClass = "md:aspect-[21/9] md:max-h-[24rem]";
+  //
+  // But `aspect-[21/9] max-h-96` was the wrong ceiling, and measuring showed
+  // why: an aspect ratio plus a max height is satisfied by shrinking the
+  // *width*, so the tile came out 896px inside a 1360px column with 464px of
+  // background beside it. Same circularity as the `h-full` thumbnail attempt.
+  // A plain height with object-cover crops instead, which is what was meant.
+  const soloTileClass = "md:aspect-auto md:h-96 md:w-full";
 
   return (
     <>
