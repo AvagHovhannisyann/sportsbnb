@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asNextMove } from "./useAIInsights";
+import { asNextMove } from "./aiInsights";
 
 /**
  * The card renders whatever this returns, so the cases that matter are the

@@ -1455,3 +1455,25 @@ Six tests, aimed squarely at the malformed cases.
 The lesson repeats: I could not have found this by reading the component, and I
 would not have found it by rendering the happy path either. It needed the
 failure rendered.
+
+### CI failure: a test that passed locally for the wrong reason
+
+The `asNextMove` test above went red in CI with `supabaseUrl is required`. It
+lived in `src/hooks/useAIInsights.test.ts` and imported the hook, whose module
+scope constructs the Supabase client. Locally that works, because `.env`
+supplies `VITE_SUPABASE_*`. The `ci` job sets no env at all, so `createClient`
+threw at import time and the whole suite file failed to load.
+
+Two things wrong, one fixed and one prevented.
+
+The validator is a pure function and had no business living beside a client
+singleton; it now sits in `src/lib/aiInsights.ts` with the other pure modules,
+which is where every other test in this repo already points.
+
+The larger problem is that `npm test` and CI were not running the same thing.
+Vite loads `.env` in every mode, so the local suite always had credentials the
+CI suite never has — meaning this class of failure could only ever be
+discovered after a push. `vitest.config.ts` now sets `envDir` to an empty
+directory, so the local run matches CI. Verified both directions: the suite
+passes with `.env` moved away, and a throwaway test importing the client
+reproduces `supabaseUrl is required` locally now, which it did not before.

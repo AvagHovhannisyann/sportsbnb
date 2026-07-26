@@ -1,14 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { asNextMove, type PlayerNextMove } from "@/lib/aiInsights";
 import { useAuth } from "@/hooks/useAuth";
 
-export interface PlayerNextMove {
-  headline: string;
-  detail: string;
-  cta_label: string;
-  cta_link: string;
-  vibe: "urgent" | "positive" | "neutral" | "discovery";
-}
 
 export interface OwnerNudge {
   title: string;
@@ -26,39 +20,6 @@ export interface AdminBrief {
   };
   kpis: Record<string, unknown>;
 }
-
-/**
- * A suggestion the model produced, or null.
- *
- * `player-insights` is LLM-backed, so a partial or reshaped payload is a
- * realistic outcome rather than a theoretical one — and `data as
- * PlayerNextMove` is a cast, not a check. A response missing `headline` and
- * `cta_link` still passed the card's `!data` guard, because `{}` is truthy,
- * and rendered an empty husk: a "Suggestion" badge, no text, and an arrow
- * button with no accessible name pointing at `to={undefined}`.
- */
-export const asNextMove = (value: unknown): PlayerNextMove | null => {
-  if (!value || typeof value !== "object") return null;
-  const v = value as Record<string, unknown>;
-  const str = (k: string) => (typeof v[k] === "string" && v[k] ? (v[k] as string) : null);
-  const headline = str("headline");
-  const ctaLabel = str("cta_label");
-  const ctaLink = str("cta_link");
-  // Everything the card renders has to be present. A suggestion missing its
-  // own call to action is not a partial suggestion, it is not one.
-  if (!headline || !ctaLabel || !ctaLink) return null;
-  const vibe = str("vibe");
-  return {
-    headline,
-    detail: str("detail") ?? "",
-    cta_label: ctaLabel,
-    cta_link: ctaLink,
-    vibe:
-      vibe === "urgent" || vibe === "positive" || vibe === "discovery"
-        ? vibe
-        : "neutral",
-  };
-};
 
 export function usePlayerNextMove() {
   const { user } = useAuth();
