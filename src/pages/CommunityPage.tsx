@@ -383,8 +383,12 @@ const CommunityPage = () => {
                         </Button>
                       )}
                     </div>
+                    {/* Three across, like Nearby Open Games directly above and
+                        like /games itself. It was four, so the identical card
+                        rendered 440px wide in one section and 328px in the
+                        next, one scroll apart on the same screen. */}
                     {trendingGames.length > 0 ? (
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {trendingGames.map(game => (
                           <GameCard
                             key={game.id}
@@ -572,7 +576,7 @@ const CommunityPage = () => {
                       </Button>
                     </div>
                     {upcomingSessions.length > 0 ? (
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {upcomingSessions.map(game => (
                           <GameCard
                             key={game.id}
