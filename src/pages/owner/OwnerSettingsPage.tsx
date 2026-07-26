@@ -235,7 +235,7 @@ const OwnerSettingsPage = () => {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="pl-10"
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="+374 XX XXXXXX"
                     />
                   </div>
                 </div>
@@ -301,7 +301,7 @@ const OwnerSettingsPage = () => {
                     id="city"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="New York"
+                    placeholder="Yerevan"
                   />
                 </div>
 

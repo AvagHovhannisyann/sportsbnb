@@ -122,7 +122,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+1 (555) 000-0000"
+                placeholder="+374 XX XXXXXX"
               />
             </div>
           </div>
@@ -134,7 +134,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                 id="city"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="New York"
+                placeholder="Yerevan"
               />
             </div>
             {!isOwner && (

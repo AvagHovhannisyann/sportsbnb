@@ -27,6 +27,7 @@ import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDr
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
+import { useOwnerBookings } from "@/hooks/useOwnerBookings";
 import { format, parseISO } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
 import { bookingStatusDescriptor, type BookingStatusTone } from "@/features/booking/status";
@@ -35,13 +36,16 @@ const OwnerBookingsPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
   const { data: myVenues = [] } = useOwnerVenues(user?.id);
+  // Two sources on purpose. The table needs every status; the summary cards
+  // are revenue figures and revenue counts confirmed money only.
   const {
-    data: analytics,
-    isLoading: analyticsLoading,
-    isError: analyticsError,
-    refetch: refetchAnalytics,
-    isFetching: analyticsFetching,
-  } = useOwnerAnalytics();
+    data: bookings = [],
+    isLoading: bookingsLoading,
+    isError: bookingsError,
+    refetch: refetchBookings,
+    isFetching: bookingsFetching,
+  } = useOwnerBookings();
+  const { data: analytics } = useOwnerAnalytics();
 
   const [selectedVenueId, setSelectedVenueId] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -61,7 +65,7 @@ const OwnerBookingsPage = () => {
     }
   }, [user, profile, authLoading, isProfileLoading, navigate]);
 
-  if (authLoading || analyticsLoading) {
+  if (authLoading || bookingsLoading) {
     return (
       <OwnerLayout title="Bookings">
         <div className="flex items-center justify-center h-64">
@@ -71,19 +75,10 @@ const OwnerBookingsPage = () => {
     );
   }
 
-  // Get bookings from analytics
-  const allBookings = (analytics?.recentBookings || []).map((b: any) => ({
-    id: b.id,
-    booking_date: b.booking_date,
-    booking_time: b.booking_time || "10:00",
-    duration_hours: b.duration_hours || 1,
-    venue_name: b.venue_name,
-    venue_id: b.venue_id,
-    total_price: b.total_price,
-    status: b.status || "confirmed",
-    customer_name: "Customer",
-    customer_email: "customer@example.com",
-  }));
+  // Straight from the hook. This used to remap analytics' confirmed-only rows
+  // and hardcode the customer as "Customer" / "customer@example.com" on every
+  // one of them — while the search box below filters on customer_name.
+  const allBookings = bookings;
 
   // Apply filters
   const filteredBookings = allBookings.filter((booking: any) => {
@@ -93,7 +88,8 @@ const OwnerBookingsPage = () => {
       const query = searchQuery.toLowerCase();
       return (
         booking.venue_name.toLowerCase().includes(query) ||
-        booking.customer_name?.toLowerCase().includes(query)
+        booking.customer_name?.toLowerCase().includes(query) ||
+        booking.customer_email?.toLowerCase().includes(query)
       );
     }
     return true;
@@ -106,7 +102,7 @@ const OwnerBookingsPage = () => {
     positive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     danger: "bg-destructive/10 text-destructive",
-    neutral: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    neutral: "bg-muted text-muted-foreground",
   };
 
   return (
@@ -115,7 +111,10 @@ const OwnerBookingsPage = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Total Bookings</p>
-          <p className="text-2xl font-bold text-foreground">{analytics?.totalBookings || 0}</p>
+          {/* Was analytics' confirmed-only count, which made this card and the
+              "Confirmed" card beside it show the same number, and neither of
+              them agree with the table below. */}
+          <p className="text-2xl font-bold text-foreground tabular-nums">{allBookings.length}</p>
         </Card>
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Confirmed</p>
@@ -195,13 +194,13 @@ const OwnerBookingsPage = () => {
       {/* Bookings Table */}
       {/* Same hazard as the overview: an owner who reads "no bookings" from a
           failed request may not turn up for one that exists. */}
-      {analyticsError ? (
+      {bookingsError ? (
         <Card>
           <ErrorPanel
             what="your bookings"
             description="We couldn't reach our servers. Don't assume your schedule is clear until this loads."
-            onRetry={() => refetchAnalytics()}
-            isRetrying={analyticsFetching}
+            onRetry={() => refetchBookings()}
+            isRetrying={bookingsFetching}
           />
         </Card>
       ) : filteredBookings.length === 0 ? (
@@ -242,8 +241,12 @@ const OwnerBookingsPage = () => {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-foreground">{booking.customer_name}</p>
-                      <p className="text-xs text-muted-foreground">{booking.customer_email}</p>
+                      <p className="font-medium text-foreground">
+                        {booking.customer_name || "No name given"}
+                      </p>
+                      {booking.customer_email && (
+                        <p className="text-xs text-muted-foreground">{booking.customer_email}</p>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

@@ -2813,3 +2813,67 @@ removing the `dark` class flips `--chart-1` from `151 90% 47%` to
 `158 72% 22%` and the sector fill follows, `rgb(12,228,123)` → `rgb(16,96,67)`.
 Hardcoded HSL could not have done that. Whether anyone ever sees the light
 values is a separate decision, and not one made here.
+
+---
+
+## /owner/bookings was showing every customer as "Customer"
+
+Chasing a US placeholder led somewhere much worse. The page built its rows like
+this:
+
+```js
+const allBookings = (analytics?.recentBookings || []).map((b) => ({
+  …
+  booking_time: b.booking_time || "10:00",
+  status: b.status || "confirmed",
+  customer_name: "Customer",
+  customer_email: "customer@example.com",
+}));
+```
+
+**Every booking an owner has ever taken displayed the customer as "Customer",
+`customer@example.com`.** The columns exist and were being fetched — the
+analytics query is `select("*")` — and were dropped on the way through, because
+`recentBookings` is typed with six fields and no customer. The page then filled
+the gap with a constant.
+
+Three consequences, each worse than the last:
+
+1. **The search box filters on `customer_name`.** Searching for a real customer
+   matched nothing, because every row said "Customer".
+2. **The status filter could not filter.** Its source is
+   `.eq("status", "confirmed")` — correct for analytics, which exists to
+   compute revenue — so of the four options offered (Confirmed, Pending,
+   Cancelled, Completed) three could never return a row.
+3. **"Awaiting payment" was structurally always zero.** Earlier in this work I
+   widened that card's predicate to count `pending_payment` as well as the
+   legacy `pending`, and wrote it up. That fix was correct and completely dead:
+   the array it filters could not contain a pending booking. A right answer
+   applied to the wrong data.
+
+`useOwnerBookings` now fetches the owner's bookings in every status with the
+customer columns. Analytics keeps its confirmed-only query, which is right for
+what it does; the two are different questions and were sharing one answer.
+
+Also dropped on the way: `booking_time || "10:00"` and `status || "confirmed"`.
+A booking whose time did not arrive is not a booking at ten o'clock, and
+defaulting an unknown state to "this is happening and it is paid for" is the
+worst possible guess on an owner's money page.
+
+Verified with four bookings across four statuses and a null name and a null
+email: **Total 4 · Confirmed 1 · Awaiting payment 1** — a number that card had
+never been able to show — with real names, the email line omitted when there
+is none, and "No name given" when there is no name.
+
+### The thread that led here
+
+A sweep for US defaults in an Armenia-first product found seventeen strings.
+Most were legitimate: `example.com` is the reserved example domain (RFC 2606),
+and the Los Angeles references belong to a genuinely supported second market.
+Five were real — `New York` as a city placeholder and `+1 (555) 000-0000` as a
+phone placeholder, on the profile, venue and owner-settings forms — and are now
+Yerevan and `+374 XX XXXXXX`.
+
+The eighteenth hit was `customer@example.com` on `/owner/bookings`, which is
+how a search for placeholder text turned into the biggest data-invention
+finding since the fabricated avatars.

@@ -349,7 +349,7 @@ export const VenueForm = ({
             <Label htmlFor="city">City *</Label>
             <Input
               id="city"
-              placeholder="e.g., New York"
+              placeholder="e.g., Yerevan"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               maxLength={100}
