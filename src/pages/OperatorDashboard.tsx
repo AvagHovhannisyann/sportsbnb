@@ -23,7 +23,7 @@ const OperatorDashboard = () => {
                 <BarChart3 className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Operator dashboard</h1>
+                <h1 className="page-title">Operator dashboard</h1>
                 <p className="text-muted-foreground">Live liquidity, GMV, and retention across Yerevan & LA</p>
               </div>
             </div>

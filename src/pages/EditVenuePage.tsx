@@ -97,7 +97,7 @@ const EditVenuePage = () => {
                 <ArrowLeft className="h-5 w-5" aria-hidden="true" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Edit Venue</h1>
+                <h1 className="page-title">Edit Venue</h1>
                 <p className="text-muted-foreground">Update your venue details</p>
               </div>
             </div>

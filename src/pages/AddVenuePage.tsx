@@ -52,7 +52,7 @@ const AddVenuePage = () => {
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Add New Venue</h1>
+              <h1 className="page-title">Add New Venue</h1>
               <p className="text-muted-foreground">Create a quality venue listing</p>
             </div>
           </div>

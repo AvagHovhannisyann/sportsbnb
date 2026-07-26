@@ -145,7 +145,7 @@ const AdminDashboard = () => {
                 <Shield className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                <h1 className="page-title">Admin Dashboard</h1>
                 <p className="text-muted-foreground">Manage users, venues, and platform activity</p>
               </div>
             </div>

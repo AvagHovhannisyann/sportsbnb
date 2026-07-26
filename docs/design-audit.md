@@ -3038,3 +3038,45 @@ URL carrying `maxPrice`) from "this is the default, still waiting to learn what
 things cost". The three scattered `200000` literals became one named constant,
 since two of them meant "starting guess" and one meant "the real ceiling", and
 nothing in the code said which was which.
+
+---
+
+## The page title was a coin flip, fifteen times
+
+Rather than another surface-by-surface pass, I measured one thing across every
+route: the rendered size of the page's own `h1`, and the gap beneath it.
+
+Across thirteen routes the page title rendered at **four sizes** — 24, 30, 36
+and 48px — with **four different gaps** below it: none, 4px, 8px and 16px.
+
+In source, that is seven pages saying `text-2xl` and eight saying `text-3xl`
+for the same structural thing: the `h1` naming an app page, under the same
+header, above the same `text-muted-foreground` subtitle.
+
+| | pages |
+|---|---|
+| `text-2xl` | AddVenue, CreateGame, CreateTeam, Discover, EditVenue, Games, Profile |
+| `text-3xl` | Admin, Community, GameDetails, Messages, MyVenues, Operator, PlayerDashboard, PlayerOnboarding |
+
+No rule separates those two lists. It is a coin flip, repeated fifteen times.
+
+`.page-title` in `index.css` now carries the size, weight, tracking, colour and
+the gap to the subtitle, and thirteen page titles use it. **Measured after:
+one distinct value across ten routes**, down from five.
+
+### What I deliberately did not flatten
+
+- **Marketing pages** — About, FAQ, Contact — keep their larger editorial
+  titles. A landing page and a list page are not the same job.
+- **Empty states and errors** — "Venue Not Found", "Please sign in to view
+  messages" — keep their own treatment. They are not page titles; they are the
+  page.
+- **`pageTop`**, the distance from the viewport to the title, still varies:
+  97px on Community and Teams, 178px on Discover, Games and Venues. That is not
+  drift — those three carry a sticky filter bar above the heading. Forcing them
+  equal would make the layout worse to make a number tidier, and a measurement
+  is a prompt to look, not an instruction to obey.
+
+Verified at both widths across sixteen routes and three roles: no overflow, no
+error boundaries. A larger heading is exactly the change that breaks a 375px
+layout, which is why that check mattered more here than usual.

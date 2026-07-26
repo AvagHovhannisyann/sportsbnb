@@ -404,6 +404,23 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
+  /**
+   * The page's own title, and the gap to the subtitle that always follows it.
+   *
+   * Measured across thirteen routes, this was rendering at four sizes — 24, 30,
+   * 36 and 48px — with four different gaps beneath it (none, 4, 8, 16px). Seven
+   * pages said text-2xl and eight said text-3xl for the same structural thing:
+   * the h1 of an app page, under the same header, above the same muted
+   * subtitle. There was no rule, only a coin flip repeated fifteen times.
+   *
+   * Marketing pages (About, FAQ, Contact) keep their larger editorial titles,
+   * and empty states ("Venue Not Found") keep theirs — those are different
+   * jobs, decided rather than drifted.
+   */
+  .page-title {
+    @apply mb-1 text-3xl font-bold tracking-tight text-foreground;
+  }
+
   /* Scoreboard numerals — prices, times, counts */
   .stat-numeral {
     font-family: var(--font-mono);

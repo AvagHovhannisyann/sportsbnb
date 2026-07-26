@@ -152,7 +152,7 @@ const CreateGamePage = () => {
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Create a Game</h1>
+              <h1 className="page-title">Create a Game</h1>
               <p className="text-muted-foreground">Find players for your next match</p>
             </div>
           </div>

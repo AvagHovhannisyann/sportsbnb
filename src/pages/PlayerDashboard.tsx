@@ -64,7 +64,7 @@ const PlayerDashboard = () => {
           {/* Header */}
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-1">
+              <h1 className="page-title">
                 Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
               </h1>
               <p className="text-muted-foreground">Your sports cockpit at a glance.</p>

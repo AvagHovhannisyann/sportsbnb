@@ -457,7 +457,7 @@ const DiscoverPage = () => {
         <div className="container py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">Venues</h1>
+              <h1 className="page-title">Venues</h1>
               {/* Nothing is "available" until the query resolves. Rendering
                   filteredVenues.length during load stated "0 venues available"
                   as fact on every cold visit, then contradicted itself. */}

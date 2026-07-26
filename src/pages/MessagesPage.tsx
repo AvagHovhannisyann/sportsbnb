@@ -189,7 +189,7 @@ const MessagesPage = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">Messages</h1>
+            <h1 className="page-title">Messages</h1>
             <p className="text-muted-foreground">Your conversations with game hosts and venue owners</p>
           </div>
 

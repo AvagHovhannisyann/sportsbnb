@@ -116,7 +116,7 @@ const CreateTeamPage = () => {
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Create a Team</h1>
+              <h1 className="page-title">Create a Team</h1>
               <p className="text-muted-foreground">Build your squad</p>
             </div>
           </div>
