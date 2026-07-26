@@ -5,6 +5,7 @@ import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, Layou
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -31,11 +32,20 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
   const spotsLeft = game.max_players - (game.participant_count || 0);
   const isFull = spotsLeft <= 0;
 
+  // The last hardcoded-palette chips in the app. Every other status chip is a
+  // token tint — `border-X/20 bg-X/10 text-X` — and these were raw Tailwind
+  // greens, yellows and reds with light/dark pairs, half of which never render
+  // because the app ships dark-only.
+  //
+  // Advanced also moves off red. Red means one thing everywhere else here —
+  // destructive buttons, error panels, failed payments — so an advanced game
+  // was styled to look like a broken one. Purple keeps the three levels
+  // distinguishable without borrowing the error colour.
   const levelColors: Record<string, string> = {
-    beginner: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    intermediate: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    advanced: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    all: "bg-primary/10 text-primary",
+    beginner: "border-success/20 bg-success/10 text-success",
+    intermediate: "border-warning/20 bg-warning/10 text-warning",
+    advanced: "border-chart-4/20 bg-chart-4/10 text-chart-4",
+    all: "border-primary/20 bg-primary/10 text-primary",
   };
 
   return (
@@ -128,6 +138,46 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
     </div>
   );
 };
+
+/**
+ * The loading shape of the card above.
+ *
+ * `/games` showed one 32px spinner and the words "Loading games..." in an
+ * otherwise empty page, while `/discover` — one nav click away — showed a full
+ * grid of skeleton cards in the final layout. A spinner says "wait"; a
+ * skeleton says "here is what is arriving, and where".
+ *
+ * Every block mirrors a real element: the two chips, the title, the spots
+ * counter on the right, three rows of metadata, and the two footer buttons.
+ */
+const GameCardSkeleton = () => (
+  <div className="rounded-xl border border-border bg-card p-5">
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-center gap-2">
+          <Skeleton className="h-5 w-16 rounded-full bg-surface-2" />
+          <Skeleton className="h-5 w-20 rounded-full bg-surface-2" />
+        </div>
+        <Skeleton className="h-6 w-3/4 bg-surface-3" />
+      </div>
+      <div className="shrink-0 space-y-1.5 text-right">
+        <Skeleton className="ml-auto h-6 w-8 bg-surface-3" />
+        <Skeleton className="ml-auto h-4 w-16 bg-surface-2" />
+      </div>
+    </div>
+
+    <div className="mb-4 space-y-2">
+      <Skeleton className="h-4 w-2/3 bg-surface-2" />
+      <Skeleton className="h-4 w-1/2 bg-surface-2" />
+      <Skeleton className="h-4 w-3/5 bg-surface-2" />
+    </div>
+
+    <div className="flex items-center gap-3">
+      <Skeleton className="h-10 flex-1 bg-surface-3" />
+      <Skeleton className="h-10 w-20 bg-surface-2" />
+    </div>
+  </div>
+);
 
 const GamesPage = () => {
   const navigate = useNavigate();
@@ -401,9 +451,12 @@ const GamesPage = () => {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading games...</p>
+            // Same grid, same card footprint, so nothing moves when the real
+            // games land in it.
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }, (_, i) => (
+                <GameCardSkeleton key={i} />
+              ))}
             </div>
           ) : games.length > 0 ? (
             viewMode === "map" ? (

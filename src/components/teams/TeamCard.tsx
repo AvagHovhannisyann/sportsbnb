@@ -3,6 +3,7 @@ import { Lock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Team } from "@/hooks/useTeams";
 
@@ -126,5 +127,40 @@ const TeamCard = ({ team, showRole }: TeamCardProps) => {
     </Link>
   );
 };
+
+/**
+ * The loading shape of the card above, kept in this file so the two cannot
+ * drift apart.
+ *
+ * `/teams` showed a single 32px spinner in an otherwise empty page while
+ * `/discover` — its sibling in the same nav — showed a full grid of skeleton
+ * cards. Same app, two answers to the same question, one click apart.
+ *
+ * Every block below mirrors a real element: the 48px avatar, the name line,
+ * the sport chip, two lines of description, and the roster meter pinned to the
+ * floor by `mt-auto`, exactly as the card does it.
+ */
+export const TeamCardSkeleton = () => (
+  <Card className="flex h-full flex-col overflow-hidden">
+    <CardContent className="flex h-full flex-col p-4">
+      <div className="flex items-start gap-3">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-lg bg-surface-3" />
+        <div className="min-w-0 flex-1">
+          <Skeleton className="mb-1.5 h-5 w-2/3 bg-surface-3" />
+          <Skeleton className="h-5 w-16 rounded-full bg-surface-2" />
+          <Skeleton className="mt-2 h-4 w-full bg-surface-2" />
+          <Skeleton className="mt-1.5 h-4 w-4/5 bg-surface-2" />
+        </div>
+      </div>
+      <div className="mt-auto pt-4">
+        <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <Skeleton className="h-4 w-12 bg-surface-2" />
+          <Skeleton className="h-3 w-20 bg-surface-2" />
+        </div>
+        <Skeleton className="h-1.5 w-full rounded-full bg-surface-3" />
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default TeamCard;

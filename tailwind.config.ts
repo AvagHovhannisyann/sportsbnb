@@ -52,6 +52,18 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        // The categorical five. They were already tokens in index.css for both
+        // themes, but only reachable from JS as `var(--chart-N)` — so anything
+        // in markup that needed a non-semantic colour reached for raw Tailwind
+        // palette instead. Exposing them here is what makes `text-chart-4`
+        // resolve rather than silently render nothing.
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

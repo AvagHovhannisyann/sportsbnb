@@ -7,11 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { ErrorPanel } from "@/components/common/StatusPanel";
 import { EmptyState } from "@/components/ui/empty-state";
-import TeamCard from "@/components/teams/TeamCard";
+import TeamCard, { TeamCardSkeleton } from "@/components/teams/TeamCard";
 import { useTeams, useUserTeams, useUserTeamInvites, useRespondToInvite } from "@/hooks/useTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { sportTypes } from "@/data/constants";
@@ -119,8 +118,10 @@ const TeamsPage = () => {
             {user && (
               <TabsContent value="my-teams">
                 {userTeamsLoading ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <TeamCardSkeleton key={i} />
+                    ))}
                   </div>
                 ) : (
                   <div className="space-y-8">
@@ -217,8 +218,10 @@ const TeamsPage = () => {
               </div>
 
               {teamsLoading ? (
-                <div className="text-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <TeamCardSkeleton key={i} />
+                  ))}
                 </div>
               ) : publicTeams.length > 0 ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

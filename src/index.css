@@ -205,7 +205,12 @@
     --chart-1: 151 90% 47%;
     --chart-2: 190 80% 50%;
     --chart-3: 42 95% 55%;
-    --chart-4: 268 65% 62%;
+    /* Was 268 65% 62%. Every other chart token can carry text on its own 10%
+       tint at AA; this one measured 3.35:1, which is fine for a chart fill
+       (graphical objects need 3:1) but fails the moment it is used in markup
+       — which it now is, on the skill-level chips. Lightened until the chip
+       measured 4.5:1, verified in the browser rather than computed here. */
+    --chart-4: 268 80% 76%;
     --chart-5: 130 8% 64%;
 
     /* Deeper shadows for the dark stage */
