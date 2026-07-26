@@ -15,6 +15,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatAmd } from "@/features/booking/hooks/useBookingFlow";
 import { ledgerEntryLabel } from "@/features/booking/ledger";
+import { payoutStatusDescriptor } from "@/features/booking/payout";
+
+/**
+ * The two tables on this page sit side by side and formatted the same column
+ * two different ways — "Jan 1, 00:00" beside "Jan 1, 1970". A ledger entry is
+ * a moment in a day, so it keeps the time; a payout is a day, so it keeps the
+ * year. Both now say which month and day in the same words.
+ */
+const LEDGER_DATE = "d MMM, HH:mm";
+const PAYOUT_DATE = "d MMM yyyy";
+
+/** Badge treatment per payout tone, using the audited token pairs. */
+const PAYOUT_TONE: Record<string, string> = {
+  positive: "bg-primary text-primary-foreground",
+  warning: "border-warning/20 bg-warning/10 text-warning",
+  danger: "border-destructive/20 bg-destructive/10 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
+};
 
 export default function OwnerEarningsPage() {
   const { user } = useAuth();
@@ -188,7 +206,7 @@ export default function OwnerEarningsPage() {
                   {ledger.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(entry.created_at), "MMM d, HH:mm")}
+                        {format(new Date(entry.created_at), LEDGER_DATE)}
                       </TableCell>
                       <TableCell>{ledgerEntryLabel(entry.entry_type)}</TableCell>
                       <TableCell
@@ -225,10 +243,18 @@ export default function OwnerEarningsPage() {
                   {payouts.map((payout) => (
                     <TableRow key={payout.id}>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(payout.created_at), "MMM d, yyyy")}
+                        {format(new Date(payout.created_at), PAYOUT_DATE)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={payout.status === "paid" ? "default" : "secondary"}>{payout.status}</Badge>
+                        {/* Was `{payout.status}` in a badge whose only variant
+                            test was `=== "paid"`, so a failed transfer and a
+                            scheduled one rendered identically. */}
+                        <Badge
+                          className={PAYOUT_TONE[payoutStatusDescriptor(payout.status).tone]}
+                          title={payoutStatusDescriptor(payout.status).hint}
+                        >
+                          {payoutStatusDescriptor(payout.status).label}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{formatAmd(payout.amount_minor)}</TableCell>
                     </TableRow>

@@ -2687,3 +2687,37 @@ Both worth recording, because both would have silently written the wrong thing:
 
 Scripted edits across many files are worth it at this volume, but only with an
 assertion at every anchor. Without one they fail silently and plausibly.
+
+---
+
+## /owner/earnings — the third table printing its own column names
+
+**A failed payout looked exactly like a scheduled one.** The status cell was:
+
+```jsx
+<Badge variant={payout.status === "paid" ? "default" : "secondary"}>{payout.status}</Badge>
+```
+
+Two defects in one line. The label was the raw column value, so an owner's
+payout history read `pending` — lowercase, a database identifier, in the table
+that tells them where their money is. And the only variant test was `=== "paid"`,
+which put `failed`, `processing` and `pending` in the same grey. A transfer that
+bounced and a transfer that has not been sent yet rendered identically.
+
+`payoutStatusDescriptor` gives each of the four allowed statuses a label, a
+tone and a hint — Scheduled / On its way / Paid / Failed, neutral / warning /
+positive / danger. Verified by rendering one payout per status: four visibly
+different badges. Values taken from the live CHECK constraint
+(`pending, processing, paid, failed`) rather than from reading migrations,
+and the test fails if a migration widens it.
+
+Third table on this branch to need this, after `bookings.status` and
+`ledger_entries.entry_type`. The pattern is consistent enough to name: **this
+app renders enum columns directly unless something stops it**, and money
+surfaces are where it costs most.
+
+**Two date formats, side by side.** The ledger table used `MMM d, HH:mm` and
+the payouts table beside it used `MMM d, yyyy` — "Jan 1, 00:00" next to
+"Jan 1, 1970", same column type, one screen. A ledger entry is a moment in a
+day so it keeps its time; a payout is a day so it keeps its year; both now say
+the month and day in the same words.
