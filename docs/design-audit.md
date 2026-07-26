@@ -1688,3 +1688,54 @@ I also had to fix the script's own output: it printed `FAIL` on decorative
 tokens the summary correctly excluded, so the per-line marker and the exit code
 disagreed. A measurement tool that says two different things is worse than no
 tool.
+
+---
+
+## Round: onboarding, and a two-letter keyword
+
+The screen a new account lands on after the signup form. Two findings, and two
+things that looked wrong and were not.
+
+**Every progress bar in the app had a white track.** `Progress` is shadcn's,
+which defaults its track to `bg-secondary` because in shadcn's palette
+secondary is a muted grey. This design system defines `--secondary` as the
+*inverted near-white surface* that secondary buttons use to carry dark text —
+a deliberate choice, but it means the unfilled half of every progress bar
+rendered as a bright white stripe on a near-black page. Ten places: onboarding,
+signup, level progress on the dashboard, listing health, password strength,
+owner occupancy, CAC retention, discovery controls. `Slider` had the same
+inherited assumption. Both now use `bg-surface-3`, checked in both themes.
+
+**`classifyMarket` counted Armenian towns as Los Angeles.** The operator
+dashboard splits users, bookings and GMV by market, and the classifier was
+`city.toLowerCase().includes(keyword)` over a list containing the two-letter
+keyword `"la"`. Substring matching on two letters is indiscriminate:
+
+```
+Los Angeles  Alaverdi      Los Angeles  Portland
+Los Angeles  Gladzor       Los Angeles  Oakland
+Los Angeles  Lachin        Los Angeles  Cleveland
+```
+
+Alaverdi, Gladzor and Lachin are towns in Armenia. `currencyFor` keys off the
+same market, so those users were counted in USD as well as in the wrong column
+— on the dashboard the whole point of which is knowing how each market is
+doing. The city is free text from onboarding, so this was reachable by anyone
+typing where they actually live.
+
+Keywords now have to match whole words. `\b` is not Unicode-aware and would
+have broken the Armenian spellings, so the string is reduced to
+space-separated tokens and each keyword is searched with its own spaces around
+it. Extracted to `src/lib/market.ts` — client-free, so it is testable — with
+nine tests including the six misclassifications above and the ordering that
+keeps "Malatia-Sebastia" in Yerevan despite containing "la".
+
+### Two that looked wrong and were not
+
+The **"Back" button on step 1** appears active. It is `disabled={currentStep
+=== 1}`; it just reads as available at 50% opacity. No bug.
+
+The **Armenian spelling of Yerevan** looked like an obvious omission from a
+keyword list written in Latin script. It is there — `"երևան"` — along with
+eleven district names. Checked before touching it, which is the only reason
+this is a sentence rather than a commit that added something already present.
