@@ -159,7 +159,15 @@ export default function OutreachConsole() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={STATUS_COLORS[t.status] ?? ""}>{t.status}</Badge>
+                      {/* These nine values are already ordinary words, unlike the payout and
+    booking enums; the only defect was that they rendered in database
+    lowercase. A descriptor module here would be ceremony. */}
+                      <Badge
+                        variant="outline"
+                        className={`capitalize ${STATUS_COLORS[t.status] ?? ""}`}
+                      >
+                        {t.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {t.last_contacted_at ? formatDistanceToNow(new Date(t.last_contacted_at), { addSuffix: true }) : "—"}

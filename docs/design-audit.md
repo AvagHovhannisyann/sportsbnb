@@ -2721,3 +2721,41 @@ the payouts table beside it used `MMM d, yyyy` — "Jan 1, 00:00" next to
 "Jan 1, 1970", same column type, one screen. A ledger entry is a moment in a
 day so it keeps its time; a payout is a day so it keeps its year; both now say
 the month and day in the same words.
+
+---
+
+## Sweeping for the pattern instead of meeting it a fourth time
+
+Having named it — *this app renders enum columns directly unless something
+stops it* — the honest follow-up was to look for the rest rather than wait to
+trip over them.
+
+A scan for `{x.status}`-shaped expressions across `src/**/*.tsx` returned
+**seven** candidates. **Two were real.** The other five were a regex unable to
+tell a render from:
+
+- `<Select value={intent.status}>` — a form binding (×3)
+- `selectedRoom.type === "venue"` — a comparison inside a JSX expression
+- `status={target.status}` — a prop being passed down
+
+Precision 2/7, which is fine for a one-off sweep and would be useless as a CI
+gate. It is recorded rather than dressed up, because "I scanned for it" and "I
+found seven" are different claims, and only the second one needs checking.
+
+### The two that were real
+
+**`PayoutsTab.tsx` — a third copy of payout-status knowledge.** The admin
+payouts table carried its own `STATUS_VARIANT` map *and* printed
+`{payout.status}` beside it. That made three descriptions of the same four
+values: the owner page's inline `=== "paid"` ternary, this map, and (as of the
+previous commit) the descriptor. Two of the three also rendered the raw column.
+The map is deleted; both surfaces read `payoutStatusDescriptor`. Verified by
+opening the admin Payouts tab with one payout per status: Scheduled, On its
+way, Paid, Failed.
+
+**`OutreachConsole.tsx`** rendered nine target statuses raw — but those are
+already ordinary words (`new`, `enriched`, `contacted`, `replied`, `passed`),
+unlike `pending_payment` or `platform_commission`. The only defect was database
+lowercase, so it gets `capitalize` and not a descriptor module. Building one
+here would be ceremony, and the point of naming a pattern is to apply judgement
+to it, not to apply the same fix everywhere it matches.
