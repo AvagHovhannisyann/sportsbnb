@@ -139,9 +139,15 @@
     --dur-base: 250ms;
     --dur-slow: 400ms;
 
-    /* ── Glass (light) ── */
+    /* ── Glass (light) ──
+       Same defect as the dark bar, mirrored. A light bar is washed out by
+       *dark* content passing under it, not light: at 0.8 the nav read 5.2–5.3:1
+       over the light bands of the home page and 3.55–3.80:1 over the inverted
+       section, all five below AA. Latent today — the app ships dark-only — but
+       the light tokens are maintained and audited, so they should be right.
+       Measured, like the dark one, with `glass-contrast.mjs --light`. */
     --glass-bg: 40 18% 97%;
-    --glass-alpha: 0.8;
+    --glass-alpha: 0.93;
     --glass-border: 30 12% 88%;
     --glass-blur: 16px;
   }

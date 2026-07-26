@@ -30,7 +30,15 @@ const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
 const WIDTH = Number(process.env.SMOKE_WIDTH ?? 1440);
 const HEIGHT = Number(process.env.SMOKE_HEIGHT ?? 900);
 
-const [userType, ...routes] = process.argv.slice(2);
+/**
+ * `--light` flips the theme the way contrast-audit's does. Without it this
+ * only ever measured the mode the app ships in, and the light glass has the
+ * same defect inverted: a light bar over a dark section washes out exactly as
+ * a dark bar over a light one does. Measured before the fix, the nav read
+ * 3.55–3.80:1 there.
+ */
+const LIGHT = process.argv.includes('--light');
+const [userType, ...routes] = process.argv.slice(2).filter((a) => a !== '--light');
 if (!userType || routes.length === 0) {
   console.error('usage: node scripts/glass-contrast.mjs <player|owner|admin> <route>...');
   process.exit(2);
@@ -60,6 +68,9 @@ for (const route of routes) {
   const url = resolveRoute(route);
   const page = await newStubbedPage(browser, { userType, width: WIDTH, height: HEIGHT });
   await page.goto(`${BASE}${url}`, { waitUntil: 'networkidle' });
+  if (LIGHT) {
+    await page.evaluate(() => document.documentElement.classList.remove('dark'));
+  }
   await page.waitForTimeout(700);
 
   // Which scroll offsets to measure.
@@ -96,9 +107,20 @@ for (const route of routes) {
     seen.push({ y: scrollable, l: probe(scrollable) });
     scrollTo(0, 0);
 
-    // The three lightest backdrops, plus the top of the page.
-    const lightest = [...seen].sort((a, b) => b.l - a.l).slice(0, 3).map((s) => s.y);
-    return [...new Set([0, ...lightest])];
+    // Both extremes, not one.
+    //
+    // The first version took only the lightest backdrops, because the defect
+    // that prompted this was a dark bar washing out over a light section. That
+    // is half the problem: which direction is dangerous depends on the tint of
+    // the glass, and the light theme's bar is light, so *dark* content is what
+    // washes it out. Seeking only light backdrops, the `--light` run reported
+    // clean over a section measured by hand at 3.55–3.80:1.
+    //
+    // Sorting by luminance and taking both ends is direction-agnostic, which
+    // is the property actually wanted — no theme needs to be reasoned about.
+    const byLuminance = [...seen].sort((a, b) => b.l - a.l);
+    const extremes = [...byLuminance.slice(0, 2), ...byLuminance.slice(-2)].map((s) => s.y);
+    return [...new Set([0, ...extremes])];
   });
 
   for (const offset of offsets) {
@@ -241,7 +263,10 @@ for (const route of routes) {
 
 await browser.close();
 
-console.log(`\nGlass contrast — ${measured} composited sample(s) across ${routes.length} route(s) at ${WIDTH}px\n`);
+console.log(
+  `\nGlass contrast — ${measured} composited sample(s) across ${routes.length} route(s)` +
+    ` at ${WIDTH}px (${LIGHT ? 'light' : 'dark'} theme)\n`,
+);
 
 if (measured === 0) {
   // Nothing measured is not a pass. If no sticky glass was found, either the
