@@ -445,7 +445,7 @@ const DiscoverPage = () => {
             // geometry, so the results land in place instead of shifting the
             // page down when they arrive.
             <div
-              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
               role="status"
               aria-label="Loading venues"
             >
@@ -485,7 +485,7 @@ const DiscoverPage = () => {
               className="rounded-2xl border border-destructive/25 bg-destructive/5"
             />
           ) : filteredVenues.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredVenues.map((venue: any) => (
                 <VenueCard
                   key={venue.id}

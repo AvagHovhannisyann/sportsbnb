@@ -1032,6 +1032,44 @@ something, not by failing to find a string.
 That also means the referral finding is safe: the ֏2,000 credit really was
 unfulfillable, and removing the promise was right.
 
+## Discover density — a browse page that showed three venues
+
+With the defect queue worked out, this is design rather than repair. Discover
+is where the landing page's primary CTA lands, and it had never been looked at
+as a browsing surface.
+
+Measured before: cards 437x536 with the photo taking 348px — 65% of a card
+whose job is comparing venues by name, price and rating. The grid capped at
+`lg:grid-cols-3`, so **1920px showed the same three columns as 1440px**, and
+only three cards were fully visible above the fold.
+
+After: a fourth column from `xl`, and the image aspect from `5/4` to `3/2`.
+
+| | Before | After |
+|---|---|---|
+| Card height | 536px | **403px** |
+| Image height | 348px | 215px |
+| Cards per row (1440 / 1920) | 3 / 3 | **4 / 4** |
+| Fully visible above the fold | 3 | 4 |
+
+Tablet stays at two columns and mobile at one, both without overflow.
+
+### Nearly a third false positive
+
+The first render with twelve venues showed truncated names — "Kent…", "Aq…" —
+which read as a regression from narrower cards. It was not. My stub generated
+ratings as `4.1 + (i%9)/10`, which produces `4.199999999999999`; seventeen
+characters of rating in a row shared with the title. With properly rounded
+values, matching the `NUMERIC(2,1)` the database actually stores, **zero titles
+truncate**.
+
+Worth checking before changing anything, and it did surface something real: the
+card printed `rating` raw. Every current caller passes a database numeric so
+nothing was broken, but the venue-details header derives its rating in
+JavaScript, and any future caller doing the same would have reproduced exactly
+what my stub did. Now formatted to one decimal, with the em-dash retained so an
+unrated venue does not show a zero.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`

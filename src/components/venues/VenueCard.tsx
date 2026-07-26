@@ -51,7 +51,7 @@ const VenueCard = ({
         }`}
       >
         {/* Image */}
-        <div className="relative aspect-[5/4] overflow-hidden bg-surface-3">
+        <div className="relative aspect-[3/2] overflow-hidden bg-surface-3">
           {imageFailed ? (
             /* Venue images are remote (owner uploads, Unsplash fallbacks). When
                one 404s or the network drops, the browser paints the alt text as
@@ -103,7 +103,15 @@ const VenueCard = ({
             </h3>
             <div className="flex items-center gap-1 text-sm shrink-0">
               <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-              <span className="font-semibold text-foreground">{rating || "—"}</span>
+              {/* Formatted rather than printed raw. Every current caller passes
+                  a NUMERIC(2,1) from the database, so this changes nothing
+                  today — but a computed average, as the venue-details header
+                  derives, renders as 4.199999999999999 and squeezes the venue
+                  name into an ellipsis. The em-dash keeps unrated venues from
+                  showing a zero score. */}
+              <span className="font-semibold text-foreground">
+                {rating ? Number(rating).toFixed(1) : "—"}
+              </span>
               {reviewCount > 0 && (
                 <span className="text-muted-foreground text-xs">({reviewCount})</span>
               )}
