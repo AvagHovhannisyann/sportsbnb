@@ -179,7 +179,7 @@ const OwnerPoliciesPage = () => {
           <div>
             <Label className="mb-2 block">Select Venue</Label>
             <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
-              <SelectTrigger className="w-full max-w-xs">
+              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a venue" />
               </SelectTrigger>
               <SelectContent>
@@ -228,10 +228,10 @@ const OwnerPoliciesPage = () => {
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Overtime Rate (per minute)</Label>
+                      <Label htmlFor="policy-overtime-rate">Overtime Rate (per minute)</Label>
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">֏</span>
-                        <Input
+                        <Input id="policy-overtime-rate"
                           type="number"
                           min="0"
                           step="10"
@@ -290,7 +290,7 @@ const OwnerPoliciesPage = () => {
                           value={earlyArrivalMinutes.toString()} 
                           onValueChange={(v) => setEarlyArrivalMinutes(parseInt(v))}
                         >
-                          <SelectTrigger className="w-48">
+                          <SelectTrigger aria-label="Maximum early arrival window" className="w-48">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -402,7 +402,7 @@ const OwnerPoliciesPage = () => {
                     <div className="space-y-2">
                       <Label>Minimum Duration</Label>
                       <Select value={minDuration.toString()} onValueChange={(v) => setMinDuration(parseFloat(v))}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Minimum duration">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -418,7 +418,7 @@ const OwnerPoliciesPage = () => {
                     <div className="space-y-2">
                       <Label>Maximum Duration</Label>
                       <Select value={maxDuration.toString()} onValueChange={(v) => setMaxDuration(parseFloat(v))}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Maximum duration">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -434,7 +434,7 @@ const OwnerPoliciesPage = () => {
                     <div className="space-y-2">
                       <Label>Time Slot Increments</Label>
                       <Select value={timeSlotIncrement.toString()} onValueChange={(v) => setTimeSlotIncrement(parseInt(v))}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Time slot increments">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -448,7 +448,7 @@ const OwnerPoliciesPage = () => {
                     <div className="space-y-2">
                       <Label>Booking Window</Label>
                       <Select value={bookingWindowDays.toString()} onValueChange={(v) => setBookingWindowDays(parseInt(v))}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Booking window">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -464,7 +464,7 @@ const OwnerPoliciesPage = () => {
                     <div className="space-y-2">
                       <Label>Buffer Between Bookings</Label>
                       <Select value={bufferMinutes.toString()} onValueChange={(v) => setBufferMinutes(parseInt(v))}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Buffer between bookings">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -479,7 +479,7 @@ const OwnerPoliciesPage = () => {
                     <div className="space-y-2">
                       <Label>Late Arrival Grace Period</Label>
                       <Select value={gracePeriodMinutes.toString()} onValueChange={(v) => setGracePeriodMinutes(parseInt(v))}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Late arrival grace period">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -507,8 +507,8 @@ const OwnerPoliciesPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label>Venue Rules</Label>
-                    <Textarea
+                    <Label htmlFor="policy-venue-rules">Venue Rules</Label>
+                    <Textarea id="policy-venue-rules"
                       placeholder="e.g., No outside food or drinks, proper sports attire required, no smoking on premises..."
                       value={venueRules}
                       onChange={(e) => setVenueRules(e.target.value)}

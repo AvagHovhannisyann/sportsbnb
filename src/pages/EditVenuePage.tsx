@@ -93,8 +93,8 @@ const EditVenuePage = () => {
               a ~486px row that pushed past a 375px screen. */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-5 w-5" />
+              <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" aria-hidden="true" />
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Edit Venue</h1>

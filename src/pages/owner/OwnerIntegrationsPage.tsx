@@ -250,11 +250,17 @@ const OwnerIntegrationsPage = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <Input
+                        aria-label="Calendar feed URL"
                         value={icalFeedUrl}
                         readOnly
                         className="font-mono text-xs bg-background"
                       />
-                      <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Copy calendar feed URL"
+                        onClick={handleCopyLink}
+                      >
                         {copied ? (
                           <Check className="h-4 w-4 text-emerald-600" />
                         ) : (
@@ -313,8 +319,9 @@ const OwnerIntegrationsPage = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>iCal URL</Label>
+              <Label htmlFor="external-ical-url">iCal URL</Label>
               <Input
+                id="external-ical-url"
                 placeholder="https://calendar.google.com/calendar/ical/..."
                 value={externalCalendarUrl}
                 onChange={(e) => setExternalCalendarUrl(e.target.value)}

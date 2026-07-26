@@ -113,7 +113,7 @@ const OwnerWidgetPage = () => {
                 value={selectedVenueId || ""}
                 onValueChange={setSelectedVenueId}
               >
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>
@@ -180,14 +180,16 @@ const OwnerWidgetPage = () => {
 
                 <TabsContent value="iframe" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>iFrame Embed Code</Label>
+                    <Label htmlFor="widget-code-iframe">iFrame Embed Code</Label>
                     <div className="relative">
                       <Textarea
+                        id="widget-code-iframe"
                         value={iframeCode}
                         readOnly
                         className="font-mono text-xs h-32 bg-muted"
                       />
                       <Button
+                        aria-label="Copy embed code"
                         variant="outline"
                         size="sm"
                         className="absolute top-2 right-2"
@@ -208,14 +210,16 @@ const OwnerWidgetPage = () => {
 
                 <TabsContent value="script" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>JavaScript Embed Code</Label>
+                    <Label htmlFor="widget-code-script">JavaScript Embed Code</Label>
                     <div className="relative">
                       <Textarea
+                        id="widget-code-script"
                         value={scriptCode}
                         readOnly
                         className="font-mono text-xs h-24 bg-muted"
                       />
                       <Button
+                        aria-label="Copy script tag"
                         variant="outline"
                         size="sm"
                         className="absolute top-2 right-2"
@@ -244,6 +248,7 @@ const OwnerWidgetPage = () => {
                         className="font-mono text-xs bg-muted"
                       />
                       <Button
+                        aria-label="Copy booking link"
                         variant="outline"
                         size="icon"
                         onClick={() => handleCopy(`${baseUrl}/venue/${selectedVenueId}`, "link")}
@@ -261,14 +266,16 @@ const OwnerWidgetPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>HTML Link Code</Label>
+                    <Label htmlFor="widget-code-html">HTML Link Code</Label>
                     <div className="relative">
                       <Textarea
+                        id="widget-code-html"
                         value={linkCode}
                         readOnly
                         className="font-mono text-xs h-16 bg-muted"
                       />
                       <Button
+                        aria-label="Copy link HTML"
                         variant="outline"
                         size="sm"
                         className="absolute top-2 right-2"
@@ -298,12 +305,12 @@ const OwnerWidgetPage = () => {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Theme</Label>
+                  <Label htmlFor="widget-theme">Theme</Label>
                   <Select
                     value={widgetSettings.theme}
                     onValueChange={(value) => setWidgetSettings({ ...widgetSettings, theme: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="widget-theme">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -315,15 +322,18 @@ const OwnerWidgetPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Primary Color</Label>
+                  <Label htmlFor="widget-primary-color">Primary Color</Label>
                   <div className="flex gap-2">
                     <Input
+                      id="widget-primary-color"
+                      aria-label="Primary colour swatch"
                       type="color"
                       value={widgetSettings.primaryColor}
                       onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
                       className="w-12 h-10 p-1 cursor-pointer"
                     />
                     <Input
+                      aria-label="Primary colour hex value"
                       value={widgetSettings.primaryColor}
                       onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
                       className="font-mono"

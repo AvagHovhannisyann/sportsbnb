@@ -2639,3 +2639,51 @@ Corrected in `scripts/lib/stub-page.mjs`, with the reason next to it. It is a
 small instance of the recurring one: a stub that is never read against is a
 stub that can be wrong indefinitely. This one was caught by the type system
 only because the feature finally used the data.
+
+---
+
+## I sampled the route list and reported the sample as the whole
+
+CI failed on the accessible-name check with **26 unnamed controls across 20
+owner routes**. I had run that check locally and reported "owner is clean".
+
+Both are true. I ran it on **nine** of the twenty owner routes, because the
+full list takes longer than the two-minute command timeout in this environment,
+so I split it — and then reported the result as though it covered the list. The
+eleven routes I dropped are exactly where all 26 failures were. Every one was a
+real defect that had been sitting there the whole time; the sampling is what
+let me say otherwise.
+
+The routes I skipped, and what was in them:
+
+| route | unnamed |
+|---|---|
+| `/venue/:id/availability` | 7 day switches — **the same defect as `/owner/hours`, in a second copy of the opening-hours editor**, plus a back arrow |
+| `/owner/policies` | 8 selects, the overtime-rate input, the venue-rules textarea |
+| `/owner/widget` | venue and theme selects, three embed-code boxes, four copy buttons, both halves of the colour picker |
+| `/owner/integrations` | the calendar-feed URL, its copy button, the iCal URL field |
+| `/my-venues` | two ⋯ menus and a `<Link>` wrapping an icon-only `<Button>` |
+| `/venue/:id/edit` | a back arrow |
+
+The availability page is the one that stings: I fixed seven anonymous day
+switches on `/owner/hours` and wrote it up, and an identical set on a second
+route went unexamined because it fell outside the slice I happened to run.
+
+**All 51 routes now pass, verified in chunks that add up to the CI lists rather
+than a subset of them.** The rule this leaves: when a check has to be split to
+run, the split is part of the check, and "it passed" means the union of the
+splits equals what CI runs — not that each piece passed.
+
+### Two scripted edits stopped by their own assertions
+
+Both worth recording, because both would have silently written the wrong thing:
+
+- Anchoring a copy button on the string `"script"` found `<TabsTrigger
+  value="script">` first, 45 lines earlier, and walked back to an unrelated
+  `<Button`. The assert on "this button has no aria-label yet" caught it.
+- The same helper, run over the seven policy selects, was about to attach labels
+  by line number after an earlier edit had shifted them; sorting the edits back
+  to front is what makes that safe.
+
+Scripted edits across many files are worth it at this volume, but only with an
+assertion at every anchor. Without one they fail silently and plausibly.

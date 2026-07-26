@@ -120,8 +120,9 @@ const MyVenuesPage = () => {
                                 variant="secondary" 
                                 size="icon" 
                                 className="absolute top-3 right-3 h-8 w-8"
+                                aria-label={`Actions for ${venue.name}`}
                               >
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -160,11 +161,16 @@ const MyVenuesPage = () => {
                               <span className="text-muted-foreground">/hr</span>
                             </div>
                             <div className="flex gap-2">
-                              <Link to={`/venue/${venue.id}/availability`}>
-                                <Button variant="outline" size="sm">
-                                  <Calendar className="h-4 w-4" />
-                                </Button>
-                              </Link>
+                              {/* Was a Link wrapping a Button — invalid
+                                  nesting, and neither carried a name. */}
+                              <Button asChild variant="outline" size="sm">
+                                <Link
+                                  to={`/venue/${venue.id}/availability`}
+                                  aria-label={`Schedule for ${venue.name}`}
+                                >
+                                  <Calendar className="h-4 w-4" aria-hidden="true" />
+                                </Link>
+                              </Button>
                               <Link to={`/venue/${venue.id}/edit`}>
                                 <Button variant="outline" size="sm">
                                   Edit
@@ -203,8 +209,9 @@ const MyVenuesPage = () => {
                                 variant="secondary" 
                                 size="icon" 
                                 className="absolute top-3 right-3 h-8 w-8"
+                                aria-label={`Actions for ${venue.name}`}
                               >
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
