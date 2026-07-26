@@ -163,6 +163,16 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/layout-shift.mjs
           node scripts/layout-shift.mjs
 
+          # `.stat-numeral` is JetBrains Mono, which has no U+058F — so every
+          # price set through it dropped a proportional Armenian dram sign into
+          # a monospaced run. Measured: digits advance 12px, the dram sign
+          # 14.7px, and at 6x it visibly collided with the digit beside it, on
+          # the most important number on a venue card. <Price> splits the mark
+          # out; this keeps it split.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs player $PLAYER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs owner  $OWNER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs admin  $ADMIN
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

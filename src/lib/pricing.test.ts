@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { getCustomerPrice, getPlatformFee, getOwnerPrice, formatPrice } from "./pricing";
+import {
+  getCustomerPrice,
+  getPlatformFee,
+  getOwnerPrice,
+  formatPrice,
+  formatPriceParts,
+} from "./pricing";
 
 describe("pricing", () => {
   it("adds the platform fee on top of the owner price, rounding up", () => {
@@ -41,5 +47,28 @@ describe("pricing", () => {
 
     localStorage.setItem("sportsbnb_region", "OTHER");
     expect(formatPrice(13000)).toBe(`֏${(13000).toLocaleString()}`);
+  });
+  // The split exists so the currency mark can be set in a face that has it.
+  // Whatever else changes, the two halves must still join back into exactly
+  // what formatPrice returns — otherwise the visible price and the one read
+  // out to a screen reader drift apart.
+  it("splits into a symbol and a figure that rejoin as formatPrice", () => {
+    for (const region of ["US", "AM", "OTHER"]) {
+      localStorage.setItem("sportsbnb_region", region);
+      const { symbol, amount } = formatPriceParts(9500);
+      expect(`${symbol}${amount}`).toBe(formatPrice(9500));
+      expect(amount).toBe((9500).toLocaleString());
+    }
+  });
+
+  // The whole point: the figure must stay inside JetBrains Mono's repertoire,
+  // because `.stat-numeral` sets it in that font and the dram sign is not in
+  // it. Measured, U+058F advanced 14.7px against the mono 12px and collided
+  // with the digit beside it.
+  it("keeps the figure free of non-ASCII, whatever the currency", () => {
+    for (const region of ["US", "AM", "OTHER"]) {
+      localStorage.setItem("sportsbnb_region", region);
+      expect(formatPriceParts(1234567).amount).toMatch(/^[\x20-\x7E]+$/);
+    }
   });
 });

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
+import { Price } from "@/components/ui/price";
 import BookingPanel from "@/features/booking/BookingPanel";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import ReviewList from "@/components/reviews/ReviewList";
@@ -441,10 +442,12 @@ const VenueDetailsPage = () => {
           <div className="container flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
               <p className="truncate">
-                <span className="stat-numeral text-lg font-bold text-foreground">
-                  ֏{venue.price_per_hour.toLocaleString()}
-                </span>
-                <span className="text-sm text-muted-foreground"> / hour</span>
+                <Price
+                  amount={venue.price_per_hour}
+                  suffix="/ hour"
+                  className="text-lg font-bold text-foreground"
+                  suffixClassName="text-sm text-muted-foreground"
+                />
               </p>
               {/* Deliberately not a cancellation promise. Terms vary per
                   venue and the panel below computes the real one from

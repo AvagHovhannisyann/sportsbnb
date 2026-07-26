@@ -51,9 +51,33 @@ export const getOwnerPrice = (customerPrice: number): number => {
  * @returns Formatted price string
  */
 export const formatPrice = (price: number): string => {
+  const { symbol, amount } = formatPriceParts(price);
+  return `${symbol}${amount}`;
+};
+
+/**
+ * The same price, split into the currency mark and the number.
+ *
+ * These want different typefaces, and gluing them together forces one choice
+ * for both. Prices are set in `.stat-numeral`, which is JetBrains Mono with
+ * tabular figures — the right call for the digits, since it is what lets a
+ * column of prices line up. But JetBrains Mono has no U+058F, so the dram sign
+ * falls through to Noto Sans Armenian, a proportional face, and lands in the
+ * middle of a monospaced run wearing none of its metrics.
+ *
+ * Measured at 20px: every digit and the `$` advance 12px, as a monospaced font
+ * guarantees; the dram sign advances 14.7px and stands 30px tall inside a 28px
+ * line box. Rendered at 6x the two glyphs plainly collide — `֏` and `8` touch,
+ * so the most important number on a venue card reads as one mangled shape.
+ *
+ * Splitting them lets the mark set in the sans stack it was drawn for while
+ * the digits keep their tabular alignment. `formatPrice` still returns the
+ * joined string, which is what aria-labels, titles and tests want.
+ */
+export const formatPriceParts = (price: number): { symbol: string; amount: string } => {
   const region = typeof window !== "undefined" ? localStorage.getItem("sportsbnb_region") : null;
-  if (region === "US") {
-    return `$${price.toLocaleString()}`;
-  }
-  return `֏${price.toLocaleString()}`;
+  return {
+    symbol: region === "US" ? "$" : "֏",
+    amount: price.toLocaleString(),
+  };
 };

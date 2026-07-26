@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { addDays, format } from "date-fns";
 import { CalendarDays, Clock, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -134,8 +135,12 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
     <div className="glass rounded-2xl p-6">
       <div className="flex items-baseline justify-between mb-4">
         <div>
-          <span className="stat-numeral text-2xl font-bold">{formatAmd(pricePerHour * 100)}</span>
-          <span className="text-muted-foreground"> / hour</span>
+          <Price
+            amount={pricePerHour}
+            suffix="/ hour"
+            className="text-2xl font-bold"
+            suffixClassName="text-muted-foreground"
+          />
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Star, Zap, Sparkles, ArrowUpRight, ImageOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatPrice } from "@/lib/pricing";
+import { Price } from "@/components/ui/price";
 
 interface VenueCardProps {
   id: string;
@@ -146,12 +146,16 @@ const VenueCard = ({
           </div>
 
           <div className="flex items-end justify-between pt-3 border-t border-border">
-            <div className="flex items-baseline gap-1">
-              <span className="stat-numeral text-xl font-bold text-foreground">
-                {formatPrice(price)}
-              </span>
-              <span className="text-xs text-muted-foreground">/ hour</span>
-            </div>
+            {/* The dram sign is not in JetBrains Mono, so setting the whole
+                string in `.stat-numeral` dropped a proportional Armenian glyph
+                into a monospaced run — measured, it collided with the first
+                digit. <Price> keeps the figures tabular and puts the mark in
+                the sans stack it was drawn for. */}
+            <Price
+              amount={price}
+              suffix="/ hour"
+              className="text-xl font-bold text-foreground"
+            />
             <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
               View
               <ArrowUpRight className="h-3.5 w-3.5" />
