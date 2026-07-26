@@ -224,15 +224,28 @@ for (const route of routes) {
 
     measured += 1;
     const changed = await changedPixels(probe, focused, blurred);
-    // Reported as its own criterion rather than folded into the pixel count.
-    // They fail for different reasons and are fixed in different places: an
-    // absent ring is a component's styling, an obscured one is the page's
-    // scroll behaviour, and calling both "no focus indicator" sends the next
+    // Two criteria, told apart by two pieces of evidence.
+    //
+    // `entirelyObscured` comes from `elementFromPoint`, which answers a
+    // hit-testing question, not a painting one. Those differ: on /signup the
+    // radio buttons are overlapped by their own `<label>`, so the label is
+    // "on top" at every sampled point — and it is transparent, so the ring
+    // underneath is perfectly visible. Reported on hit-testing alone that was
+    // a false failure on a control with a working indicator.
+    //
+    // The pixel diff already knows. A ring that is covered changes nothing on
+    // screen; a ring under a transparent overlap changes hundreds of pixels.
+    // So obscuring is only claimed when *both* agree, and the hit test then
+    // serves its real purpose: distinguishing why the pixels did not change.
+    // An absent ring is a component's styling, an obscured one is the page's
+    // scroll or stacking, and calling both "no focus indicator" sends the next
     // person to the wrong file.
-    if (target.entirelyObscured) {
-      obscured.push({ route: url, name: target.name, tag: target.tag, by: target.coveredBy });
-    } else if (changed < MIN_CHANGED_PX) {
-      failures.push({ route: url, name: target.name, tag: target.tag, changed });
+    if (changed < MIN_CHANGED_PX) {
+      if (target.entirelyObscured) {
+        obscured.push({ route: url, name: target.name, tag: target.tag, by: target.coveredBy, changed });
+      } else {
+        failures.push({ route: url, name: target.name, tag: target.tag, changed });
+      }
     }
 
     // Focus was dropped to take the second shot; put the caret back where the
@@ -263,7 +276,8 @@ if (measured === 0) {
 }
 for (const f of obscured) {
   console.log(
-    `  FAIL  ${f.route}  ${f.tag} ${JSON.stringify(f.name)} — entirely covered by ${f.by}`,
+    `  FAIL  ${f.route}  ${f.tag} ${JSON.stringify(f.name)} — entirely covered by ${f.by}` +
+      ` (${f.changed} pixel(s) changed)`,
   );
 }
 if (obscured.length) {

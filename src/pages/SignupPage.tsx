@@ -262,7 +262,14 @@ const SignupPage = () => {
           </div>
           
           {/* Footer */}
-          <div className="text-sm text-white/40">
+          {/* /40 composited to #6c706e on this near-black panel: 3.81:1,
+              under the 4.5:1 body copy needs. /50 measures 5.29:1 and is
+              still far quieter than the headline above it. The same defect on
+              the forgot- and reset-password panels was found and fixed
+              earlier; these two were invisible to every audit here, because
+              /login and /signup redirect to /dashboard under the stubbed
+              signed-in session. */}
+          <div className="text-sm text-white/50">
             © {new Date().getFullYear()} Sportsbnb. All rights reserved.
           </div>
         </div>
@@ -366,6 +373,14 @@ const SignupPage = () => {
                   onValueChange={(value) => setUserType(value as "player" | "owner")}
                   className="grid grid-cols-2 gap-3"
                 >
+                  {/* The radios are `peer sr-only` and these labels are the
+                      visible control, so the focus ring the radio paints is
+                      behind an opaque card and changes nothing on screen —
+                      measured at 0 pixels with `:focus-visible` matching and a
+                      composed 4px green box-shadow on the input. The card
+                      already reacts to `peer-data-[state=checked]`; it has to
+                      react to focus too, or tabbing to the first choice on the
+                      signup form shows the user nothing. */}
                   <div>
                     <RadioGroupItem
                       value="player"
@@ -374,7 +389,7 @@ const SignupPage = () => {
                     />
                     <Label
                       htmlFor="player"
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background cursor-pointer transition-all"
                     >
                       <User className="h-6 w-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-primary" />
                       <span className="font-medium text-sm">Play Sports</span>
@@ -388,7 +403,7 @@ const SignupPage = () => {
                     />
                     <Label
                       htmlFor="owner"
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background cursor-pointer transition-all"
                     >
                       <Building className="h-6 w-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-primary" />
                       <span className="font-medium text-sm">List Venues</span>
@@ -456,7 +471,15 @@ const SignupPage = () => {
                     className={`h-12 pl-11 pr-11 text-base border-2 transition-colors ${errors.password ? "border-destructive focus:border-destructive" : "focus:border-primary"}`}
                     required
                   />
+                  {/* Named, like the identical toggle on ResetPasswordPage.
+                      Both are icon-only buttons; that one carried an aria-label
+                      because a11y-names could reach the page it lives on, and
+                      this one did not because /signup redirects to /dashboard
+                      under the stubbed session every audit here uses. Same
+                      component, same defect, fixed only where it was visible. */}
                   <button
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -516,6 +539,10 @@ const SignupPage = () => {
                     required
                   />
                   <button
+                    aria-label={
+                      showConfirmPassword ? "Hide password confirmation" : "Show password confirmation"
+                    }
+                    aria-pressed={showConfirmPassword}
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"

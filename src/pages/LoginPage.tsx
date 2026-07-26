@@ -281,7 +281,14 @@ const LoginPage = () => {
           </div>
           
           {/* Footer */}
-          <div className="text-sm text-white/40">
+          {/* /40 composited to #6c706e on this near-black panel: 3.81:1,
+              under the 4.5:1 body copy needs. /50 measures 5.29:1 and is
+              still far quieter than the headline above it. The same defect on
+              the forgot- and reset-password panels was found and fixed
+              earlier; these two were invisible to every audit here, because
+              /login and /signup redirect to /dashboard under the stubbed
+              signed-in session. */}
+          <div className="text-sm text-white/50">
             © {new Date().getFullYear()} Sportsbnb. All rights reserved.
           </div>
         </div>

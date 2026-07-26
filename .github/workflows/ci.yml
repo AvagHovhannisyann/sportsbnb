@@ -113,9 +113,23 @@ jobs:
           ADMIN="/admin /operator /operator/outreach /create-game /create-team
             /nearby/submit /onboarding/player"
 
+          # The signed-out app, which no check here had ever loaded.
+          #
+          # Every audit runs against a stubbed signed-in session — right for
+          # covering the interior, and it means /login and /signup redirect to
+          # /dashboard before anything can look at them. That hid real defects
+          # on the two forms every user meets first: two unnamed controls, two
+          # AA contrast failures, and an account-type picker whose focus ring
+          # was painted behind an opaque card. The public pages render a
+          # different header signed out, so they are worth the pass too.
+          ANON="/ /login /signup /forgot-password /reset-password /venues /games
+            /community /teams /about /for-owners /faq /contact /nearby
+            /venue/:venue /blog"
+
           node scripts/smoke-routes.mjs player $PLAYER
           node scripts/smoke-routes.mjs owner  $OWNER
           node scripts/smoke-routes.mjs admin  $ADMIN
+          node scripts/smoke-routes.mjs anon   $ANON
 
           # Contrast of every design token against every surface it lands on,
           # both themes. Cheap — one page load — and it is the only thing that
@@ -134,6 +148,7 @@ jobs:
           node scripts/smoke-routes.mjs player $PLAYER
           node scripts/smoke-routes.mjs owner  $OWNER
           node scripts/smoke-routes.mjs admin  $ADMIN
+          node scripts/smoke-routes.mjs anon   $ANON
 
           # Tap targets at phone width, against WCAG 2.2 SC 2.5.8 including
           # its spacing exception. The app passes today; this holds the line.
@@ -152,6 +167,7 @@ jobs:
           node scripts/a11y-names.mjs player $PLAYER
           node scripts/a11y-names.mjs owner  $OWNER
           node scripts/a11y-names.mjs admin  $ADMIN
+          node scripts/a11y-names.mjs anon   $ANON
 
           # A skeleton exists to hold the space its content lands in, so a
           # skeleton of the wrong shape causes the shift it was added to
@@ -243,6 +259,7 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs player $PLAYER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs admin  $ADMIN
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs anon   $ANON
 
           # Keyboard focus: WCAG 2.4.7 (an indicator is visible) and 2.2's
           # 2.4.11 (it is not covered by something else). Both by screenshot
@@ -263,6 +280,7 @@ jobs:
             / /venues /venue/:venue /login /dashboard /nearby /embed/booking/:venue
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs owner  /owner/venues /owner/earnings
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs admin  /admin
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs anon   /login /signup
 
           # WCAG 2.4.2 (Page Titled), Level A. Nothing sets a title in an SPA
           # unless told to, and the string from index.html sits in the tab
@@ -278,6 +296,7 @@ jobs:
           node scripts/page-titles.mjs player $PLAYER
           node scripts/page-titles.mjs owner  $OWNER
           node scripts/page-titles.mjs admin  $ADMIN
+          node scripts/page-titles.mjs anon   $ANON
 
           # WCAG 1.3.5 (Identify Input Purpose), Level AA. The app had
           # autoComplete on nothing at all, which in practice means a password

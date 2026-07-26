@@ -186,6 +186,21 @@ const TeamsPage = () => {
 
             {/* Browse Tab */}
             <TabsContent value="browse">
+              {/* The h2 this tab panel was missing.
+                  Every team name below is a card title, which is an h3, so
+                  with no heading here the outline ran h1 "Teams" straight to
+                  h3 "Smoke FC". The "My Teams" panel does not have the problem
+                  because it renders "Teams I Captain" and "Teams I've Joined"
+                  — but only when the user *has* teams, so a signed-out
+                  visitor and any new account both got the skip. It was found
+                  signed out, and it was never specific to that.
+
+                  `sr-only` because the tab trigger already says "Browse Teams"
+                  on screen and repeating it would be visual noise; the heading
+                  is for someone navigating by heading, who otherwise arrives
+                  at a team name with no idea which list it is in. */}
+              <h2 className="sr-only">Browse teams</h2>
+
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="relative flex-1">
