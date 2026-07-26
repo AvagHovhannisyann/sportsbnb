@@ -24,6 +24,7 @@
  */
 import { chromium } from '@playwright/test';
 import { BASE, EXEC, resolveRoute, newStubbedPage } from './lib/stub-page.mjs';
+import { isThirdPartyMapControl } from './lib/third-party-dom.mjs';
 
 const JSON_OUT = process.argv.includes('--json');
 const argv = process.argv.slice(2).filter((a) => a !== '--json');
@@ -84,15 +85,22 @@ for (const route of ROUTES) {
         // Node detached between snapshot and resolution — rare, and not worth
         // failing the run over.
       }
-      // The Google Maps JS API injects its own pan and marker controls as
-      // bare `<div role="button" tabindex="0">` with inline styles and no
-      // name. They are not this codebase's markup and cannot be fixed from
-      // here, so they are not this audit's business — but the count is
-      // printed rather than dropped silently, because an exclusion nobody can
-      // see is how a checker quietly stops checking.
+      // The map SDK injects its own pan and marker controls as bare
+      // `<div role="button">`s with inline styles and no name. They are not
+      // this codebase's markup and cannot be fixed from here, so they are not
+      // this audit's business — but the count is printed rather than dropped
+      // silently, because an exclusion nobody can see is how a checker quietly
+      // stops checking.
       //
-      // What *is* ours is the map container, and both maps now carry a label.
-      if (/\brole="button" tabindex="0" style="[^"]*position: absolute/.test(html)) {
+      // The signature moved to `lib/third-party-dom` and grew a test when it
+      // let four of them through: it required `tabindex="0"`, which the pan
+      // controls carry and the markers do not. Nothing about the app changed
+      // — widening the stub fixture from one venue to three simply put more
+      // pins on the map, and the audit met the other half of this markup for
+      // the first time. The test pins the exact HTML from that CI run.
+      //
+      // What *is* ours is the map container, and both maps carry a label.
+      if (isThirdPartyMapControl(html)) {
         thirdParty += 1;
         continue;
       }

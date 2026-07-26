@@ -221,9 +221,25 @@
     --shadow-xl:  0 24px 48px -12px hsl(160 30% 2% / 0.7);
     --shadow-ring-primary: 0 0 0 4px hsl(var(--primary) / 0.18);
 
-    /* ── Glass (dark) ── */
+    /* ── Glass (dark) ──
+       `--glass-alpha` is a legibility figure, not a taste one.
+       The sticky header is glass, and the home page has light sections. At
+       0.72 the bar tinted dark over a dark hero and washed out to a muddy grey
+       over a light band, while the nav labels kept the one colour they have.
+       Measured on `/`: the same five links read 7.36–7.57:1 over the hero and
+       3.01–3.59:1 four thousand pixels further down — every one of them below
+       AA, purely because of what happened to be scrolling underneath.
+
+       The token audit cannot see this. It checks a colour against the surface
+       it is declared on; nothing in it composites a translucent bar over
+       arbitrary page content. scripts/glass-contrast.mjs does exactly that.
+
+       0.9 is the measured value, not a guessed one: it is where the composite
+       over the lightest section in the app stays dark enough for the nav to
+       clear 4.5:1, with the blur and saturation — the part that actually reads
+       as glass — untouched. */
     --glass-bg: 160 18% 8%;
-    --glass-alpha: 0.72;
+    --glass-alpha: 0.9;
     --glass-border: 155 20% 30%;
     --glass-blur: 18px;
   }

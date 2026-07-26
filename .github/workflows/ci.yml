@@ -169,6 +169,13 @@ jobs:
           # 14.7px, and at 6x it visibly collided with the digit beside it, on
           # the most important number on a venue card. <Price> splits the mark
           # out; this keeps it split.
+          # Text on the glass header, against what is actually scrolling under
+          # it. contrast-audit checks tokens against declared surfaces and
+          # structurally cannot see this: at --glass-alpha 0.72 the same five
+          # nav links read 7.4:1 over the dark hero and 3.0:1 over a light
+          # section further down the home page, with no colour having changed.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/glass-contrast.mjs player / /venues /games /community
+
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs player $PLAYER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs admin  $ADMIN

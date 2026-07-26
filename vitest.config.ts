@@ -24,7 +24,12 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    // `scripts/` is included because the audits in it contain real logic —
+    // and the piece of it that has now broken twice is a regex over markup,
+    // which is exactly the kind of thing that needs pinned specimens rather
+    // than a live browser. The scripts themselves still run against a real
+    // page; only their pure helpers are unit-tested here.
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.{ts,mjs}"],
     coverage: {
       provider: "v8",
       include: ["src/lib/**", "src/hooks/**", "src/features/**"],
