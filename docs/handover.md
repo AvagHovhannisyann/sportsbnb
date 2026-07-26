@@ -155,11 +155,16 @@ authors on every venue page all read `profiles_public` now, which is the view
 created for exactly this. That view deliberately does **not** expose `xp` or
 `level`, so the leaderboard cannot be fixed the same way.
 
-**The decision is whether a player's XP and level are public.** They are
-already shown on your own profile and in the dashboard header; showing them on
-a leaderboard means every user can read every other user's score. If that is
-what you want, the fix is a one-line migration adding `xp, level` to
-`profiles_public`. If it is not, the leaderboard should be removed rather than
+**The decision is whether a player's XP and level are public** — but the
+database has arguably already made it. `user_achievements` carries a policy
+named, verbatim, "Anyone can view achievements for leaderboard", with
+`USING (true)`. Every user's achievement rows are already readable by everyone,
+explicitly for this feature. XP and level are the same category of data, so
+adding them to `profiles_public` looks like completing a decision rather than
+making a new one.
+
+If you agree, the fix is a one-line migration adding `xp, level` to
+`profiles_public`. If you do not, the leaderboard should be removed rather than
 left rendering a single row.
 
 I did not make that call, because widening a security view is not something
@@ -167,7 +172,58 @@ that should arrive inside a UI commit.
 
 ---
 
-## 7. Small, optional
+## 7. Check-in records nothing anyone can see
+
+`/nearby` shows "N playing now" from `active_checkins` on `public_fields` and
+`verified_fields`. Checking in inserts a row into `field_checkins` — and
+nothing ever updates that counter.
+
+Verified against the live database rather than by reading code: no trigger on
+`field_checkins`, no function in `pg_proc` whose body mentions either
+`field_checkins` or `active_checkins`, no edge function referencing it, and the
+client only inserts. (I check exhaustively now because I once concluded
+"nothing maintains this" from a grep and was wrong — see §4.)
+
+The success toast used to say "Checked in! Others can see this field is
+active." It now just says "Checked in.", because the first half was true and
+the second was not.
+
+**The fix I would suggest**, which also closes a privacy gap: drop the
+denormalised counter and compute it at read time.
+
+```sql
+CREATE OR REPLACE FUNCTION public.active_checkin_counts(p_field_ids uuid[])
+RETURNS TABLE (field_id uuid, active_count bigint)
+LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  SELECT field_id, count(*)
+  FROM public.field_checkins
+  WHERE field_id = ANY(p_field_ids)
+    AND checked_out_at IS NULL
+    AND checked_in_at > now() - interval '3 hours'
+  GROUP BY field_id;
+$$;
+
+-- and then the raw rows no longer need to be readable by everyone:
+DROP POLICY IF EXISTS "Authenticated users can view checkins" ON public.field_checkins;
+CREATE POLICY "Users can view their own checkins"
+  ON public.field_checkins FOR SELECT TO authenticated USING (auth.uid() = user_id);
+```
+
+The second half matters on its own. `field_checkins` holds `user_id`,
+`field_id`, `checked_in_at` and `checked_out_at`, and its current SELECT policy
+is `USING (true)` for any authenticated user — so anyone with an account can
+query the REST API directly and reconstruct where a given person plays and
+when. Phase 1 narrowed this from anonymous to authenticated deliberately
+("stop broadcasting who is where to anonymous visitors"); the aggregate RPC is
+what lets it be narrowed the rest of the way without losing the feature.
+
+I have not applied either half. It is a schema change on your live project that
+alters what `/nearby` reads, and it wants your sign-off rather than arriving
+inside a UI commit.
+
+---
+
+## 8. Small, optional
 
 - **`e2e` CI job** — gated on an `E2E_ENABLED` repository variable and
   `VITE_SUPABASE_*` secrets that were never set, so it has never once run. The

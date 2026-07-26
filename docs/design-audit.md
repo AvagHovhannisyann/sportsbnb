@@ -1798,3 +1798,60 @@ stub's doing. The production bug underneath it is real and was found by
 checking the policy rather than by trusting the screenshot — which is the same
 sequence as every other time this has gone right, and the opposite of the nine
 occasions it did not.
+
+---
+
+## Round: asking the database instead of the migrations
+
+The `profiles_public` bug has a general shape — a client read that RLS answers
+with an empty set, which looks exactly like "no data" in the UI and in every
+test. Worth checking whether there were others, and worth doing against the
+live database rather than by reading 49 layered migrations, which is how I have
+generated false positives before.
+
+**No table is unreadable outright.** Every RLS-enabled table has at least one
+SELECT-capable policy — the query for `relrowsecurity AND zero SELECT policies`
+returns nothing. The public reads the app depends on (venues, games, teams,
+reviews, venue hours, courts, blocked dates) are all explicitly permitted.
+
+**The cross-user sweep is complete.** Beyond the four fixed last round, the
+remaining `profiles` reads are own-row (`useAuth`, `useCurrency`,
+`AuthCallbackPage`, `OwnerSettingsPage`, and the join-request lookup in
+`useGames`, where the id is the requester's own) or admin, which has a matching
+policy. Nothing else was missed.
+
+### What the inverse question turned up
+
+Asking for policies with `USING (true)` on tables holding personal data
+returned three, and two of them matter.
+
+**`user_achievements` :: "Anyone can view achievements for leaderboard" ::
+`USING (true)`.** That largely settles the question I had deferred to the owner
+about whether XP should be public — the database already publishes every user's
+achievement rows to everyone, explicitly for this feature. The handover now
+says so, and reframes the leaderboard fix as completing a decision rather than
+making one.
+
+**`field_checkins` :: `USING (true)` for authenticated.** The table holds
+`user_id`, `field_id`, `checked_in_at`, `checked_out_at` — so any account can
+query the REST API and reconstruct where a person plays and when. Phase 1
+narrowed this from anonymous to authenticated on purpose; it never got as far
+as the aggregate-RPC-only reads the plan called for.
+
+### And underneath that, a feature that does nothing
+
+Pulling the thread: `/nearby` shows "N playing now" from `active_checkins`.
+Checking in inserts into `field_checkins`. **Nothing updates the counter.**
+
+This is the same shape as the `review_count` claim I got wrong, so it was
+checked exhaustively rather than by grep: no trigger on the table
+(`pg_trigger`), no function whose body mentions `field_checkins` or
+`active_checkins` (`pg_proc`), no edge function, and the client only ever
+inserts. All four writer classes eliminated against the live database.
+
+The immediate harm was a lie in the UI: "Checked in! Others can see this field
+is active." Half of that was true. It now reads "Checked in." The real fix —
+an aggregate RPC computing the count at read time, which also lets the raw
+rows stop being world-readable — is written out in the handover with the SQL,
+unapplied, because it is a schema change to a live project that alters what
+`/nearby` reads.

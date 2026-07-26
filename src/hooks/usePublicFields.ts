@@ -65,7 +65,16 @@ export const usePublicFields = () => {
       return false;
     }
 
-    toast.success("Checked in! Others can see this field is active.");
+    // Not "others can see this field is active".
+    //
+    // The check-in row lands in `field_checkins`, and the counter the UI reads
+    // — `active_checkins` on public_fields / verified_fields — has no writer:
+    // no trigger on the table, no database function referencing it (checked
+    // against pg_proc and pg_trigger on the live project, not by grepping),
+    // no edge function, and the client only ever inserts. So nobody sees
+    // anything, and the old copy promised a visible effect that does not
+    // happen. See docs/handover.md for the aggregate-RPC fix.
+    toast.success("Checked in.");
     await fetchFields();
     return true;
   };
