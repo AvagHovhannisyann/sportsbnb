@@ -151,6 +151,47 @@ const ROWS = {
     sender_id: UID, content: 'Is the pitch free on Thursday?',
     message_type: 'text', created_at: NOW,
   },
+  // Rows for the tables the detail and list pages join against. Without
+  // these the harness answers `[]` and the page renders its empty branch —
+  // "clean" then means "the interesting code did not run". 33 tables the app
+  // queries were in that state; these are the ones that carry visible content.
+  reviews: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000001', venue_id: IDS.venue,
+    user_id: UID, rating: 5, comment: 'Great surface, lights are excellent.',
+    created_at: NOW, updated_at: NOW,
+  },
+  game_participants: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000002', game_id: IDS.game,
+    user_id: UID, status: 'confirmed', created_at: NOW,
+  },
+  team_members: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000003', team_id: IDS.team,
+    user_id: UID, role: 'member', joined_at: NOW,
+  },
+  venue_hours: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000004', venue_id: IDS.venue,
+    day_of_week: 0, open_time: '08:00:00', close_time: '23:00:00',
+    is_closed: false,
+  },
+  venue_images: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000005', venue_id: IDS.venue,
+    image_url: '', display_order: 0, created_at: NOW,
+  },
+  // Mirrors the real column list. Every NOT NULL column is present; the three
+  // nullable ones are left null on purpose, because a stub that fills in
+  // every field only ever tests the happy path — and `overtime_rate_per_minute`,
+  // `early_arrival_policy` and `early_arrival_minutes` are nullable in the
+  // schema despite having defaults, so a row can genuinely carry nulls.
+  venue_policies: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000006', venue_id: IDS.venue,
+    cancellation_policy: 'flexible', cancellation_hours: 24, refund_type: 'full',
+    min_duration_hours: 1, max_duration_hours: 8, time_slot_increment: 60,
+    booking_window_days: 30, buffer_minutes: 0, grace_period_minutes: 15,
+    venue_rules: null, checkin_instructions: 'Gate code on arrival.',
+    overtime_rate_per_minute: null, early_arrival_policy: null,
+    early_arrival_minutes: null,
+    created_at: NOW, updated_at: NOW,
+  },
   payments: {
     id: IDS.payment, user_id: UID, booking_id: IDS.booking, game_id: null,
     provider: 'mock', status: 'pending', order_ref: 1001,
@@ -204,8 +245,8 @@ for (const route of ROUTES) {
   // TeamDetailsPage reads the owner through profiles_public with maybeSingle;
   // the generic `[]` above satisfies the request but not the shape.
   await p.route('**/rest/v1/profiles_public**', r=>{
-    const row={id:'p1',user_id:UID,full_name:'Demo',username:'demo',
-      avatar_url:null,xp:120,level:2,created_at:NOW};
+    const row={id:'p1',user_id:UID,full_name:'Demo Player',username:'demo',
+      avatar_url:null,city:'Yerevan',xp:120,level:2,created_at:NOW};
     r.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify(isSingleLookup(r.request().url())?row:[row])});
   });

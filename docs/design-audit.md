@@ -1949,3 +1949,53 @@ code that builds it.
 That is the more useful outcome of the round: not a defect fixed, but a place
 where "clean" meant "did not run". Worth remembering that every green result in
 this file carries that caveat until the stub is checked.
+
+---
+
+## Round: measuring how much "clean" was not covering
+
+Last round ended on a caveat — that a green smoke result means nothing if the
+stub behind it returned an empty array, and that I had now hit that twice. A
+caveat repeated twice is worth turning into a number.
+
+Comparing the tables the client queries against the tables the harness stubs:
+**33 tables were answered with `[]`**, including `profiles_public` (10 call
+sites), `game_participants` (10), `team_members` (9), `reviews` (6) and
+`venue_hours` (4). Every route that joins against those was reporting clean
+while rendering its empty branch — including the surfaces I had just fixed
+bugs on. `team_members` returning `[]` is precisely why the smoke suite never
+saw `—/11 players`.
+
+Six now carry rows: `reviews`, `game_participants`, `team_members`,
+`venue_hours`, `venue_images` and `venue_policies`, plus `profiles_public`
+answering `.in()` lookups.
+
+### Which immediately produced a crash
+
+`/owner/policies` threw `TypeError: Cannot read properties of undefined
+(reading 'toString')` and tripped the error boundary the moment
+`venue_policies` returned a row instead of nothing.
+
+That was **my stub**, not the app. The real table has six `NOT NULL` numeric
+columns my row omitted — `min_duration_hours`, `max_duration_hours`,
+`time_slot_increment`, `booking_window_days`, `buffer_minutes`,
+`grace_period_minutes` — and a real row always has them.
+
+The useful part is what the check then proved. The stub now mirrors the schema
+exactly, with the three genuinely nullable columns
+(`overtime_rate_per_minute`, `early_arrival_policy`, `early_arrival_minutes`)
+left **null on purpose**, because a stub that fills every field only tests the
+happy path. The page renders clean with those nulls, which is a real
+verification rather than an absence of one.
+
+Twelfth false positive. The rule that keeps holding: get the schema from the
+database and make the fixture match it, rather than inventing a row and
+believing what breaks.
+
+### Where this leaves the green results
+
+34 routes across three roles, both widths, still clean — but now with reviews,
+participants, members, hours, images and policies actually on the page. The
+remaining 27 unstubbed tables are listed above; they are mostly admin and
+operator surfaces, and each one is a place where "clean" still means "did not
+run".
