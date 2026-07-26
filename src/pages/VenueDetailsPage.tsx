@@ -198,11 +198,25 @@ const VenueDetailsPage = () => {
                     <MapPin className="h-4 w-4" />
                     <span>{location}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-primary text-primary" />
-                    <span className="font-medium text-foreground">{venue.rating}</span>
-                    <span>({venue.review_count} reviews)</span>
-                  </div>
+                  {/* Derived from the reviews actually on this page, not from
+                      venues.rating / venues.review_count. Those two columns
+                      have no writer that derives them from the reviews table —
+                      the only things that set them are the outreach functions,
+                      which store Google Places counts for prospecting targets.
+                      Reading them here let the header claim "4.7 (23 reviews)"
+                      directly above a "Reviews (0)" section on the same page.
+                      With no reviews there is no rating to state. */}
+                  {reviews.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-primary text-primary" />
+                      <span className="font-medium text-foreground">
+                        {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)}
+                      </span>
+                      <span>
+                        ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -326,7 +340,12 @@ const VenueDetailsPage = () => {
 
             {/* Booking Card */}
             <div className="lg:col-span-1">
-              <div className="sticky top-24 space-y-4">
+              {/* Above the AI launcher (z-50). The launcher is fixed to the
+                  bottom-right and overlapped the Reserve button by 7px at
+                  1440 and 27px at 1024 — and being fixed with a higher stack
+                  order, it took the clicks. A floating helper must not
+                  intercept the primary booking control. */}
+              <div className="sticky top-24 z-[60] space-y-4">
                 <BookingPanel venueId={venue.id} pricePerHour={venue.price_per_hour} />
 
                 <div className="rounded-2xl border bg-card p-4">

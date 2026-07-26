@@ -510,6 +510,40 @@ whereas these lead to the owner's own management pages where the empty state
 offers "Add Your First Venue". Navigation to somewhere you can act is not the
 same as a link promising content that does not exist.
 
+## Venue details + booking panel — no longer blocked
+
+Earlier entries in this document call this surface blocked on seed data. That
+was wrong, and worth correcting: stubbing `/rest/v1/venues` and
+`/rest/v1/rpc/get_available_slots` renders the whole page, booking panel
+included. The surface was unseeded, not unreachable. Everything below was
+found that way.
+
+The panel itself works. With slots stubbed, available ones are enabled and the
+unavailable one is disabled and struck through; the price, date strip, policy
+line and "Secure payment via Ameriabank / Idram" all render correctly.
+
+| Finding | Detail |
+|---|---|
+| **Header rating contradicted the reviews below it** | The header read `venues.rating` / `venues.review_count`; the section below counts rows from the `reviews` table. **Nothing derives those two columns from actual reviews** — the only writers are `outreach-enrich` and `outreach-prepare`, which store *Google Places* counts for prospecting targets. A venue could therefore show "4.7 (23 reviews)" directly above "Reviews (0)" — and would, for any venue whose row came from outreach. The header now derives both from the reviews already fetched on the page, and shows nothing when there are none. |
+| AI launcher overlaps the Reserve button | Measured 7px at 1440 and 27px at 1024. The launcher is `fixed z-50`; the sticky panel had no stacking context, so the launcher sat on top. Panel raised to `z-[60]`. |
+
+### Two corrections to my own findings
+
+**The launcher overlap is narrower than it first looked.** Reserve is
+click-actionable *with and without* the fix — Playwright drives an element's
+centre, which was never obstructed. The click-theft region is only the 7-27px
+strip at the button's right edge. The fix is still right (a floating helper
+should not outrank the primary control) but it is a small robustness
+improvement, not a repair to a broken booking flow.
+
+**Two apparent bugs were my harness, not the app.** All slots first rendered
+struck through because my stub returned `is_available` while the RPC's actual
+signature is `RETURNS TABLE (slot_start, slot_end, available boolean)` — the
+component was reading the right field all along. And a "Reserve is not
+clickable" result was the button's legitimate `disabled` state with no slot
+selected, which a trial click waits out. Both checked against the migration
+and the component before being written down.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
