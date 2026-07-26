@@ -130,6 +130,27 @@ const ROWS = {
     created_by_owner_id: null, recurring_booking_id: null,
     cancellation_policy: null, created_at: NOW, updated_at: NOW,
   },
+  // Chat. Without these, /messages renders an empty list and the code that
+  // builds each conversation's title and subtitle never runs — the route
+  // passed while the thing worth testing was skipped, which is the same gap
+  // the dynamic routes had. Found by rendering /messages by hand and seeing a
+  // literal "undefined" that the smoke run could not have reached.
+  chat_rooms: {
+    id: '77777777-7777-7777-7777-777777777777', type: 'venue',
+    reference_id: IDS.venue, name: 'Smoke Arena',
+    created_at: NOW, updated_at: NOW,
+  },
+  chat_members: {
+    id: '88888888-8888-8888-8888-888888888888',
+    room_id: '77777777-7777-7777-7777-777777777777',
+    user_id: UID, role: 'member', joined_at: NOW,
+  },
+  chat_messages: {
+    id: '99999999-9999-9999-9999-999999999999',
+    room_id: '77777777-7777-7777-7777-777777777777',
+    sender_id: UID, content: 'Is the pitch free on Thursday?',
+    message_type: 'text', created_at: NOW,
+  },
   payments: {
     id: IDS.payment, user_id: UID, booking_id: IDS.booking, game_id: null,
     provider: 'mock', status: 'pending', order_ref: 1001,

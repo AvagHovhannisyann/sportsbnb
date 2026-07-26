@@ -1917,3 +1917,35 @@ Nothing. 54 routes across three roles, no failures and no false positives — no
 page in the app currently renders an unrenderable value. That is the honest
 result: this round added a guard rather than fixing a defect, and its worth is
 entirely in the regressions it will catch later.
+
+---
+
+## Round: Messages, an eleventh false positive, and the gap it exposed
+
+Rendering `/messages` with a conversation in it showed a row reading
+**"Venue Chat / 📍 undefined"** — precisely the class the new junk assertion
+was added for, on a route that assertion had just passed.
+
+It was not a bug. `MessagesPage` builds the subtitle as
+`venue ? \`📍 ${venue.address || venue.city}\` : …`, and my stub had no
+`venues` row, so the `.single()` came back as `[]` — an empty array, which is
+truthy, and `[].address` is `undefined`. Adding the venue row the room points
+at renders "Nairi Arena / 📍 12 Tumanyan St" correctly. `venues.city` is
+`NOT NULL` in the schema, so the fallback cannot be reached in production
+either. Eleventh false positive, and again caught by testing the hypothesis
+rather than writing it up.
+
+**But the reason the smoke run could not have found it is a real gap.**
+`/messages` passed because the harness answered `chat_rooms` with `[]`, so the
+conversation list was empty and the code that builds every title and subtitle
+never ran. The route reported clean while the only interesting thing on it was
+skipped — the same shape as the dynamic routes, where a detail page handed an
+empty array rendered its not-found branch and passed.
+
+The harness now stubs `chat_rooms`, `chat_members` and `chat_messages`, so
+`/messages` renders an actual conversation and the junk assertion covers the
+code that builds it.
+
+That is the more useful outcome of the round: not a defect fixed, but a place
+where "clean" meant "did not run". Worth remembering that every green result in
+this file carries that caveat until the stub is checked.
