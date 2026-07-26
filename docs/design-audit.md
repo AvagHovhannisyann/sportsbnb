@@ -2551,3 +2551,47 @@ rather than casting the types.
 Two JSX mistakes on the way, both mine and both the same one: `{/* … */}`
 placed directly after `? (` in a ternary is expression position, not children,
 and does not parse. Typecheck caught it both times.
+
+---
+
+## /teams — the card that had not been redesigned
+
+`/teams` was still the pre-redesign shape: a bare box with a 60px indent
+mismatch in it, sitting alone in a 1440px column.
+
+**The alignment defect.** The description was a sibling of the whole
+avatar-plus-text row, not a child of the text column, so it began under the
+*avatar* rather than under the name it describes — title at x=118, description
+at x=59. Everything the title owns now lives in one column.
+
+**Roster as the card's spine.** Whether a team has room is the one fact that
+decides whether you can act on it, and it was the smallest, greyest line on the
+card: `1/11 players`, plain muted text, last. It is now a labelled row on the
+card's floor — `2/5` on the left, `3 spots open` in the accent colour on the
+right — over a capacity meter. A full squad turns the meter muted rather than
+green and reads "Full squad", because a full bar in the "go" colour says the
+opposite of what it means. `mt-auto` keeps that row on the baseline, so cards
+in a row line up whatever the description length: measured at 183px across four
+cards carrying zero, one and three lines of text.
+
+The meter is `aria-hidden` and the same figures are stated in text directly
+above it, so it decorates the information rather than carrying it.
+
+**Smaller things in the same pass.** The link gained `focus-ring` and the
+hover-lift the venue and game cards already use; the sport badge capitalises
+(the column is lowercase); and the private-team indicator was a bare `Shield`
+glyph with nothing to say what it meant — now a `Lock` with a label.
+
+### The fixture lied again, and the guard is a guard
+
+Four teams were stubbed with distinct `member_count` values and every card
+rendered `0/N`. The card was not ignoring the data: `useTeams` derives
+`member_count` from `team_members` and overwrites whatever the row carried, so
+the fixture's counts were discarded before the card saw them. Re-stubbed with
+real `team_members` rows, all four states render correctly — 11/11 full, 2/5,
+0/4, 1/6.
+
+Which also settled a question about the card's own fallback: both hooks always
+set `member_count` to a number, so the `—/N` branch is a guard against the
+type's optionality and not a state reachable today. The comment now says that
+instead of implying it renders.
