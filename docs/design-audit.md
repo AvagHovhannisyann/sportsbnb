@@ -2464,3 +2464,54 @@ technique rather than the code, and the third time a scanner flagged my own
 prose. The pattern is consistent enough to state plainly: **a regex over a
 structured language is a guess, and a checker that has never been shown a true
 positive and a true negative is not evidence.**
+
+---
+
+## The dram sign, again — one thing with two definitions
+
+Rendering the home page to look at it as design rather than as markup, the
+confirmation card's price read `֏12,000` with the dram sign visibly in a
+different face from the digits beside it.
+
+That looked like a finding I had already made and fixed. It half was.
+
+**What was already right.** `index.css` carries the fix, with a comment
+explaining it: none of Space Grotesk, DM Sans or JetBrains Mono contains
+U+058F, so each `--font-*` variable ends with `'Noto Sans Armenian'`, and a
+second `@import` subsets that family to the single codepoint (`&text=%D6%8F`,
+~1KB) rather than pulling a whole Armenian face. CSS fallback is per-glyph, so
+Latin still sets in the primary font and only ֏ resolves to Noto.
+
+**What was wrong.** `tailwind.config.ts` declared its own `fontFamily` block —
+a second, independent copy of all three stacks, none of them carrying the
+Armenian fallback. So `.stat-numeral`, which reads `var(--font-mono)`, rendered
+֏ correctly, while every `className="font-mono"` price did not: the hero's
+confirmation card, checkout, booking status, owner earnings. Measured directly
+rather than inferred — the computed `font-family` on those price nodes was
+`"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace`, with no
+Noto in it at all.
+
+The fix is not to paste the fallback into the second copy. It is to delete the
+second copy: Tailwind's stacks are now `["var(--font-display)"]`,
+`["var(--font-sans)"]`, `["var(--font-mono)"]`, so there is one definition and
+the two cannot drift again. Verified after rebuild — all three computed stacks
+now end in Noto Sans Armenian, on prices, body copy and the h1.
+
+**One honest limit.** This container loads no web fonts at all —
+`document.fonts` is empty, and a canvas measurement showed `֏` and `A`
+resolving to the same generic fallback width as a serif. So what is verified
+here is the *stack*, not the rendered glyph. The glyph claim rests on the
+codepoint coverage of the three families, which is why the fallback exists at
+all.
+
+`src/lib/fonts.test.ts` pins both halves: every `--font-*` must carry Noto Sans
+Armenian, the import must stay subset to the dram sign, and Tailwind must defer
+to the variables rather than naming a family literally. Self-tested by putting
+the old literal stack back — two tests fail.
+
+And once more, for the record: the assertion "the Tailwind block names no font
+family literally" failed on its first run **against the comment explaining why
+no font family should be named literally**. That is the third checker in this
+codebase to flag its own documentation, after the palette audit and the
+clickable-element scanner. Every text scanner in this repo now strips comments
+before it looks, and the reason is written next to each one.

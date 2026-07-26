@@ -111,9 +111,19 @@ export default {
         shimmer: "shimmer 2s linear infinite",
       },
       fontFamily: {
-        display: ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
-        sans: ["DM Sans", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // These point at the CSS variables rather than restating the stacks,
+        // because restating them is exactly how they went wrong. `--font-*` in
+        // index.css each carry 'Noto Sans Armenian' to supply U+058F, the dram
+        // sign, which none of Space Grotesk, DM Sans or JetBrains Mono
+        // includes — but this block was a second, independent copy without it.
+        //
+        // So `.stat-numeral`, which reads var(--font-mono), rendered ֏
+        // correctly while every `className="font-mono"` price did not: the
+        // hero's confirmation card, checkout, booking status, owner earnings.
+        // Two definitions of one thing, and only one of them got fixed.
+        display: ["var(--font-display)"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
       },
       letterSpacing: {
         tightest: "-0.04em",
