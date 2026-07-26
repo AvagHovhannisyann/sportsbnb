@@ -485,6 +485,23 @@
   }
 
   /*
+   * A content panel — the surface a page section sits on.
+   *
+   * The venue page put its four sections (About, Operating Hours, Amenities,
+   * Reviews) as bare text on the page background, divided by hairline rules,
+   * directly beside a booking panel that is a glass card. So the column a
+   * buyer reads had no surface at all while the column they act in did, and
+   * the rules did the work a card edge should.
+   *
+   * Same tokens as Card, as a utility rather than a component, because these
+   * are page sections rather than list items and do not want CardHeader /
+   * CardContent structure imposed on them.
+   */
+  .panel {
+    @apply rounded-2xl border border-border bg-card p-6;
+  }
+
+  /*
    * The eyebrow — small mono caps above a heading.
    *
    * This is the landing page's typographic signature, and it stopped at the

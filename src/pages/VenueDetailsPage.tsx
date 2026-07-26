@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { MapPin, Star, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -237,24 +236,18 @@ const VenueDetailsPage = () => {
                 </div>
               </div>
 
-              <Separator />
-
               {/* Description */}
               {venue.description && (
-                <>
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-4">About this venue</h2>
-                    <p className="text-muted-foreground leading-relaxed">{venue.description}</p>
-                  </div>
-                  <Separator />
-                </>
+                <section className="panel">
+                  <h2 className="section-title">About this venue</h2>
+                  <p className="text-muted-foreground leading-relaxed">{venue.description}</p>
+                </section>
               )}
 
               {/* Operating Hours */}
               {venueHours.length > 0 && (
-                <>
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-4">Operating Hours</h2>
+                <section className="panel">
+                  <h2 className="section-title">Operating Hours</h2>
                     {/* Each day sits on its own tinted row. As a bare
                         `justify-between` inside a three-column grid, every
                         time was pushed hard right against the *next* day's
@@ -313,35 +306,29 @@ const VenueDetailsPage = () => {
                         );
                       })}
                     </div>
-                  </div>
-                  <Separator />
-                </>
+                </section>
               )}
 
               {/* Amenities */}
               {venue.amenities.length > 0 && (
-                <>
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-4">Amenities</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {venue.amenities.map((amenity) => (
-                        <div
-                          key={amenity}
-                          className="flex items-center gap-3 text-muted-foreground"
-                        >
-                          {amenityIcons[amenity] || <CheckCircle className="h-5 w-5" />}
-                          <span>{amenity}</span>
-                        </div>
-                      ))}
-                    </div>
+                <section className="panel">
+                  <h2 className="section-title">Amenities</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {venue.amenities.map((amenity) => (
+                      <div
+                        key={amenity}
+                        className="flex items-center gap-3 text-muted-foreground"
+                      >
+                        {amenityIcons[amenity] || <CheckCircle className="h-5 w-5" />}
+                        <span>{amenity}</span>
+                      </div>
+                    ))}
                   </div>
-                  <Separator />
-                </>
+                </section>
               )}
 
-
               {/* Reviews Section */}
-              <div>
+              <section className="panel">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-foreground">
                     Reviews ({reviews.length})
@@ -397,7 +384,7 @@ const VenueDetailsPage = () => {
                     onDelete={handleDeleteReview}
                   />
                 )}
-              </div>
+              </section>
             </div>
 
             {/* Booking Card */}
