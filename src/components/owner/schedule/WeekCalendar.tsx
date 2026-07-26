@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Plus, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { bookingStatusDescriptor } from "@/features/booking/status";
 
 interface Booking {
   id: string;
@@ -206,11 +207,17 @@ export function WeekCalendar({
                           onClick={() => onBookingClick?.(booking)}
                           className={cn(
                             "absolute left-1 right-1 rounded-md p-2 cursor-pointer transition-all hover:ring-2 hover:ring-primary/50",
-                            booking.status === "confirmed"
-                              ? "bg-primary text-primary-foreground"
-                              : booking.status === "pending"
-                              ? "bg-amber-500 text-white"
-                              : "bg-muted text-muted-foreground"
+                            /* Tone-driven, so `pending_payment` reads as
+                               awaiting rather than falling through to the grey
+                               used for cancelled and expired. It matched only
+                               the legacy `pending`, which made an unpaid hold
+                               look settled on the owner's own calendar. */
+                            {
+                              positive: "bg-primary text-primary-foreground",
+                              warning: "bg-amber-500 text-white",
+                              danger: "bg-destructive/20 text-destructive",
+                              neutral: "bg-muted text-muted-foreground",
+                            }[bookingStatusDescriptor(booking.status).tone]
                           )}
                           style={{
                             top: "2px",

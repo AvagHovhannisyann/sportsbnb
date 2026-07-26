@@ -16,6 +16,8 @@ import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
+import { cn } from "@/lib/utils";
+import { bookingStatusDescriptor } from "@/features/booking/status";
 
 const OwnerOverviewPage = () => {
   const navigate = useNavigate();
@@ -56,11 +58,32 @@ const OwnerOverviewPage = () => {
     );
   }
 
+  // Month-over-month, computed, or absent.
+  //
+  // These four badges read "+12%", "+8%", "+15%" and "+5%" — string literals,
+  // shown whenever the matching figure was above zero. An owner looking at
+  // "Total Revenue ֏27,000 +12%" on their own business dashboard would
+  // reasonably conclude revenue grew 12% against the previous period. Nothing
+  // was compared; the numbers were decoration.
+  //
+  // `revenueByMonth` carries six real months, so revenue and bookings can show
+  // a true change. Unique customers and occupancy have no prior-period figure
+  // anywhere in the analytics, so they show none — an absent badge is honest,
+  // an invented one is not.
+  const monthly = analytics?.revenueByMonth ?? [];
+  const thisMonth = monthly[monthly.length - 1];
+  const lastMonth = monthly[monthly.length - 2];
+  const changeOf = (now?: number, before?: number): string | null => {
+    if (now === undefined || before === undefined || before === 0) return null;
+    const pct = Math.round(((now - before) / before) * 100);
+    return `${pct >= 0 ? "+" : ""}${pct}%`;
+  };
+
   const stats = [
     {
       label: "Total Revenue",
       value: analytics ? `֏${analytics.totalRevenue.toLocaleString()}` : "֏0",
-      change: analytics?.totalRevenue > 0 ? "+12%" : "—",
+      change: changeOf(thisMonth?.revenue, lastMonth?.revenue),
       icon: Banknote,
       color: "text-emerald-600",
       bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -68,7 +91,7 @@ const OwnerOverviewPage = () => {
     {
       label: "Total Bookings",
       value: analytics?.totalBookings?.toString() || "0",
-      change: analytics?.totalBookings > 0 ? "+8%" : "—",
+      change: changeOf(thisMonth?.bookings, lastMonth?.bookings),
       icon: Calendar,
       color: "text-primary",
       bgColor: "bg-primary/10",
@@ -76,7 +99,7 @@ const OwnerOverviewPage = () => {
     {
       label: "Unique Customers",
       value: analytics?.uniqueCustomers?.toString() || "0",
-      change: analytics?.uniqueCustomers > 0 ? "+15%" : "—",
+      change: null,
       icon: Users,
       color: "text-violet-600",
       bgColor: "bg-violet-100 dark:bg-violet-900/30",
@@ -84,7 +107,7 @@ const OwnerOverviewPage = () => {
     {
       label: "Occupancy Rate",
       value: analytics ? `${analytics.occupancyRate}%` : "0%",
-      change: analytics?.occupancyRate > 0 ? "+5%" : "—",
+      change: null,
       icon: TrendingUp,
       color: "text-amber-600",
       bgColor: "bg-amber-100 dark:bg-amber-900/30",
@@ -124,9 +147,18 @@ const OwnerOverviewPage = () => {
                   <div className={`w-10 h-10 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
                     <Icon className={`h-5 w-5 ${stat.color}`} />
                   </div>
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    {stat.change}
-                  </Badge>
+                  {stat.change && (
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-xs font-normal tabular-nums",
+                        stat.change.startsWith("-") && "text-destructive",
+                      )}
+                      title="Compared with last month"
+                    >
+                      {stat.change}
+                    </Badge>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -221,7 +253,7 @@ const OwnerOverviewPage = () => {
                               ֏{booking.total_price.toLocaleString()}
                             </p>
                             <Badge variant="secondary" className="text-xs">
-                              {booking.status || "Confirmed"}
+                              {bookingStatusDescriptor(booking.status).label}
                             </Badge>
                           </div>
                         </div>

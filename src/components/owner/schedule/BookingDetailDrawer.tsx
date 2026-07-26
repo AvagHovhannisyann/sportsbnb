@@ -177,6 +177,12 @@ export function BookingDetailDrawer({
               Contact Customer
             </Button>
 
+            {/* Deliberately not widened to `pending_payment`. That status
+                means the customer has a hold and has not paid; confirming it
+                by hand would hand out a court for free, and Phase 2 revoked
+                the client's UPDATE on booking status anyway — the payment
+                callback is what confirms. Legacy `pending` predates payment
+                and is still an owner decision. */}
             {booking.status === "pending" && (
               <Button
                 className="w-full justify-start"

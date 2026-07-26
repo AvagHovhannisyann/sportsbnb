@@ -29,6 +29,7 @@ import { useOwnerVenues } from "@/hooks/useVenues";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { format, parseISO } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
+import { bookingStatusDescriptor, type BookingStatusTone } from "@/features/booking/status";
 
 const OwnerBookingsPage = () => {
   const navigate = useNavigate();
@@ -98,11 +99,14 @@ const OwnerBookingsPage = () => {
     return true;
   });
 
-  const statusColors: Record<string, string> = {
-    confirmed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    cancelled: "bg-destructive/10 text-destructive",
-    completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  // Keyed by tone rather than by status, so the six statuses added with in-app
+  // payment cannot fall through to grey the way they did when this map listed
+  // only the four legacy values.
+  const toneClasses: Record<BookingStatusTone, string> = {
+    positive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    danger: "bg-destructive/10 text-destructive",
+    neutral: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   };
 
   return (
@@ -120,9 +124,18 @@ const OwnerBookingsPage = () => {
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Pending</p>
+          {/* Counts `pending_payment` as well as the legacy `pending`.
+              It matched only the latter, so an owner with unpaid bookings saw
+              "Pending 0" directly above a table listing them as awaiting
+              payment — and this is the number that tells them there is money
+              to chase before those holds expire. */}
+          <p className="text-sm text-muted-foreground">Awaiting payment</p>
           <p className="text-2xl font-bold text-amber-600">
-            {allBookings.filter((b: any) => b.status === "pending").length}
+            {
+              allBookings.filter(
+                (b: any) => b.status === "pending" || b.status === "pending_payment",
+              ).length
+            }
           </p>
         </Card>
         <Card className="p-4">
@@ -247,9 +260,10 @@ const OwnerBookingsPage = () => {
                     </p>
                   </TableCell>
                   <TableCell>
-                    <Badge className={statusColors[booking.status] || "bg-muted"}>
-                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                    </Badge>
+                    {(() => {
+                      const { label, tone } = bookingStatusDescriptor(booking.status);
+                      return <Badge className={toneClasses[tone]}>{label}</Badge>;
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

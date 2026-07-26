@@ -1477,3 +1477,57 @@ discovered after a push. `vitest.config.ts` now sets `envDir` to an empty
 directory, so the local run matches CI. Verified both directions: the suite
 passes with `.env` moved away, and a throwaway test importing the client
 reproduces `supabaseUrl is required` locally now, which it did not before.
+
+---
+
+## Round: the owner dashboard, which nobody had looked at with data
+
+The supply side of a marketplace, never once rendered with a venue and bookings
+in it. Four findings, three of them fabricated or wrong data rather than
+anything visual.
+
+**The growth badges were decoration.** "+12%", "+8%", "+15%", "+5%" — string
+literals, shown whenever the matching figure was above zero:
+
+```
+change: analytics?.totalRevenue > 0 ? "+12%" : "—",
+```
+
+An owner reading "Total Revenue ֏27,000 +12%" on their own business dashboard
+concludes revenue grew 12% against the previous period. Nothing was compared.
+Second instance of fabricated data presented as the owner's own, after the
+invented pricing rules.
+
+`useOwnerAnalytics` already computes six months of revenue, so a *real*
+month-over-month figure was available for revenue, and one line in the same
+loop added it for bookings. Unique customers and occupancy have no prior-period
+number anywhere in the analytics, so they now show no badge at all. An absent
+badge is honest; an invented one is not.
+
+Verified in both directions, because checking only that the fake number
+disappeared would have shipped a badge that never appears: with no prior month
+the badges are absent, and with two bookings last month against three this
+month both read +50%.
+
+**Booking statuses rendered as database identifiers.** The owner's overview
+showed `pending_payment`; the bookings table's colour map knew only the four
+legacy statuses, so the six added with in-app payment fell through to grey and
+printed their raw column value. `cancelled_by_player` is not a sentence. There
+is now one `bookingStatusDescriptor` covering every value
+`bookings_status_check` allows, returning a label and a tone, with a test that
+fails if a migration widens the constraint without anyone naming the new state.
+
+**"Pending 0" above a table listing one booking as awaiting payment.** The
+counter matched `status === "pending"` only, so `pending_payment` — the status
+that means an owner has money to chase before the hold expires — counted as
+nothing. Same legacy-only check coloured unpaid holds grey on the week
+calendar, indistinguishable from cancelled.
+
+### The one I did not "fix"
+
+`BookingDetailDrawer` shows "Confirm Booking" only for legacy `pending`, and
+the obvious move was to widen it to `pending_payment` for consistency. That
+would have been a bug: `pending_payment` means the customer holds a slot and
+has not paid, so confirming by hand gives away a court, and Phase 2 revoked the
+client's UPDATE on booking status precisely so the payment callback is the only
+thing that confirms. Left alone, with the reasoning written next to it.
