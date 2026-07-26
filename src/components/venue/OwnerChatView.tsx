@@ -4,15 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { 
-  MessageSquare, 
-  Flag, 
-  Ban, 
-  MoreVertical,
-  Plus,
-  Trash2,
-  Zap
-} from "lucide-react";
+import { Ban, Building2, Flag, MessageSquare, MoreVertical, Plus, Trash2, Zap } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -148,8 +140,9 @@ export const OwnerChatView = ({ roomId, venueName, customerId }: OwnerChatViewPr
       {/* Header */}
       <div className="px-4 py-3 border-b flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="text-xs">
-            🏟️ {venueName}
+          <Badge variant="secondary" className="gap-1 text-xs">
+            <Building2 className="h-3 w-3" aria-hidden="true" />
+            {venueName}
           </Badge>
         </div>
         <div className="flex items-center gap-2">

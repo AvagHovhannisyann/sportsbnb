@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
+import { Calendar, Clock, Users } from "lucide-react";
 import { MapsReady } from "@/components/maps/GoogleMapsProvider";
 import { format } from "date-fns";
 import type { Game } from "@/hooks/useGames";
@@ -70,15 +71,23 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
               <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0" }}>
                 {selectedGame.sport} • {selectedGame.skill_level === "all" ? "All levels" : selectedGame.skill_level}
               </p>
-              <p style={{ fontSize: 12, color: "#6b7280" }}>
-                📅 {format(new Date(selectedGame.game_date), "MMM d, yyyy")} · 🕐 {selectedGame.game_time}
+              {/* Google draws this popup on its own white surface, so these
+                  keep literal light-surface colours rather than app tokens.
+                  The glyphs were 📅 🕐 👥 — emoji as icons, setting in the
+                  system emoji font at a size nothing around them shares. */}
+              <p style={{ fontSize: 12, color: "#6b7280", display: "flex", alignItems: "center", gap: 4 }}>
+                <Calendar size={12} aria-hidden="true" />
+                {format(new Date(selectedGame.game_date), "MMM d, yyyy")}
+                <Clock size={12} aria-hidden="true" style={{ marginLeft: 4 }} />
+                {selectedGame.game_time}
               </p>
-              <p style={{ fontSize: 12, color: (selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "#6b7280" : "#3b82f6", fontWeight: 600 }}>
-                👥 {(selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "Full" : `${selectedGame.max_players - (selectedGame.participant_count || 0)} spots left`}
+              <p style={{ fontSize: 12, color: (selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "#6b7280" : "#0f766e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                <Users size={12} aria-hidden="true" />
+                {(selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "Full" : `${selectedGame.max_players - (selectedGame.participant_count || 0)} spots left`}
               </p>
               <a
                 href={`/game/${selectedGame.id}`}
-                style={{ display: "block", textAlign: "center", padding: 8, background: "#3b82f6", color: "white", borderRadius: 6, textDecoration: "none", marginTop: 8, fontSize: 14 }}
+                style={{ display: "block", textAlign: "center", padding: 8, background: "#0f766e", color: "white", borderRadius: 6, textDecoration: "none", marginTop: 8, fontSize: 14 }}
               >
                 View Game
               </a>

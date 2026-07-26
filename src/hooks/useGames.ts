@@ -336,7 +336,7 @@ export const useRequestToJoinGame = () => {
         await supabase.rpc("notify_user", {
           p_user_id: game.host_id,
           p_type: "game",
-          p_title: "New Join Request! 🙋",
+          p_title: "New Join Request!",
           p_message: `${requester?.full_name || "Someone"} wants to join your game "${game.title}". Review their request.`,
           p_link: `/game/${gameId}`,
         });
@@ -403,7 +403,7 @@ export const useApproveParticipant = () => {
       await supabase.rpc("notify_user", {
         p_user_id: userId,
         p_type: "game",
-        p_title: "Request Approved! 🎉",
+        p_title: "Request Approved!",
         p_message: `Your request to join "${game?.title}" has been approved. See you there!`,
         p_link: `/game/${gameId}`,
       });
@@ -504,7 +504,7 @@ export const useCancelGame = () => {
             supabase.rpc("notify_user", {
               p_user_id: p.user_id,
               p_type: "game",
-              p_title: "Game Cancelled 😔",
+              p_title: "Game Cancelled",
               p_message: `The game "${game.title}" has been cancelled by the host.`,
               p_link: `/games`,
             })

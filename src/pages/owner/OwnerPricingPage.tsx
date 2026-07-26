@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Banknote, Plus, Trash2, Edit } from "lucide-react";
+import { Banknote, Edit, Lightbulb, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -240,7 +240,10 @@ const OwnerPricingPage = () => {
           {/* Pricing Tips */}
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-6">
-              <h4 className="font-medium text-foreground mb-3">💡 Pricing Tips</h4>
+              <h4 className="mb-3 flex items-center gap-1.5 font-medium text-foreground">
+                <Lightbulb className="h-4 w-4 text-primary" aria-hidden="true" />
+                Pricing tips
+              </h4>
               <ul className="text-sm text-muted-foreground space-y-2">
                 <li>• Set higher prices for peak hours (evenings and weekends) to maximize revenue</li>
                 <li>• Offer discounts for early morning slots to fill less popular times</li>

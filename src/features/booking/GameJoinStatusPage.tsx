@@ -79,7 +79,9 @@ export default function GameJoinStatusPage() {
             {status === "success" && (
               <>
                 <CheckCircle2 className="h-14 w-14 text-green-600 mx-auto mb-4" />
-                <h1 className="text-2xl font-bold mb-2">You're in! 🎉</h1>
+                {/* A CheckCircle2 already sits directly above this line; the 🎉
+                    was a second celebratory glyph in a different font. */}
+                <h1 className="text-2xl font-bold mb-2">You're in!</h1>
                 <p className="text-muted-foreground mb-6">Payment received — see you on the field.</p>
                 <Button asChild>
                   <Link to={`/game/${gameId}`}>Back to the game</Link>

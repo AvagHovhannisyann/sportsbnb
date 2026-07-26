@@ -2,7 +2,7 @@ import React from "react";
 import { TONE_CHIP } from "@/lib/chips";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, MapPin } from "lucide-react";
+import { CheckCircle, Loader2, MapPin, Sun, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,9 +120,16 @@ const FieldSubmissionsTab: React.FC = () => {
                         <p className="text-sm text-muted-foreground mt-1">{sub.description}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        📍 {sub.latitude.toFixed(4)}, {sub.longitude.toFixed(4)} • 
+                        <MapPin className="mr-1 inline h-3 w-3" aria-hidden="true" />
+                        <span className="tabular-nums">{sub.latitude.toFixed(4)}, {sub.longitude.toFixed(4)}</span> • 
                         Submitted {format(new Date(sub.created_at), "MMM d, yyyy")}
-                        {sub.has_lighting && " • 💡 Has lighting"}
+                        {sub.has_lighting && (
+                          <>
+                            {" • "}
+                            <Sun className="mr-1 inline h-3 w-3" aria-hidden="true" />
+                            Has lighting
+                          </>
+                        )}
                       </p>
                     </div>
                     <div className="flex gap-2 shrink-0">

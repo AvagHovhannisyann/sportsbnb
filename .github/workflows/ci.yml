@@ -22,6 +22,10 @@ jobs:
       # token audit. It covers what that one structurally cannot see: colours
       # written straight into a class string, past the token layer.
       - run: node scripts/palette-contrast.mjs
+      # The app draws its icons with Lucide, and forty-nine lines did not — a
+      # 📅 beside a Lucide Clock is a different font at a different baseline,
+      # ignores currentColor, and is announced by its CLDR name. Static.
+      - run: node scripts/no-emoji-icons.mjs
       - run: npm run build
       # Every browser check in this repo runs against `npx vite` — the dev
       # server — so import.meta.env.DEV is true for all of them and DEV-gated

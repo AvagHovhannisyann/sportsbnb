@@ -325,7 +325,7 @@ export const useInviteToTeam = () => {
         await supabase.rpc("notify_user", {
           p_user_id: userId,
           p_type: "team",
-          p_title: "Team Invite! 🏆",
+          p_title: "Team Invite!",
           p_message: `You've been invited to join "${team?.name}".`,
           p_link: `/teams`,
         });

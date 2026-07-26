@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { Link, useSearchParams } from "react-router-dom";
-import { Filter, MapPin, X, Loader2, Navigation, SearchX } from "lucide-react";
+import { Check, Filter, Loader2, MapPin, Navigation, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -328,7 +328,8 @@ const DiscoverPage = () => {
                       Price
                       {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
                         <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                          ✓
+                          <Check className="h-3 w-3" aria-hidden="true" />
+                          <span className="sr-only">Price filter active</span>
                         </Badge>
                       )}
                     </Button>

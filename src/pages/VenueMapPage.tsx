@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Star, Loader2, Layers } from "lucide-react";
+import { Star, Loader2, Layers, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
@@ -87,8 +87,9 @@ const VenueMapPage = () => {
                       style={{ width: "100%", height: 96, objectFit: "cover", borderRadius: 8, marginBottom: 8 }}
                     />
                     <h3 style={{ fontWeight: 600 }}>{selectedVenue.name}</h3>
-                    <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0" }}>
-                      📍 {selectedVenue.address || selectedVenue.city}
+                    <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0", display: "flex", alignItems: "center", gap: 4 }}>
+                      <MapPin size={12} aria-hidden="true" />
+                      {selectedVenue.address || selectedVenue.city}
                     </p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
                       <strong>{formatPrice(getCustomerPrice(selectedVenue.price_per_hour))}/hr</strong>

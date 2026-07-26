@@ -100,7 +100,8 @@ const CreateTeamPage = () => {
         visibility: formData.visibility,
       });
 
-      toast.success("Team created! 🎉");
+      // Sonner draws its own success mark; the 🎉 was a second one.
+      toast.success("Team created");
       navigate(`/team/${team.id}`);
     } catch {
       toast.error("Failed to create team");

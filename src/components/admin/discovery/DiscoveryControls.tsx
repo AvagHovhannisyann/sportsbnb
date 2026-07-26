@@ -11,19 +11,19 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const REGIONS = [
-  { key: "yerevan", label: "Yerevan", emoji: "🏙️" },
-  { key: "gyumri", label: "Gyumri", emoji: "🏘️" },
-  { key: "vanadzor", label: "Vanadzor", emoji: "🏘️" },
-  { key: "kotayk", label: "Kotayk Province", emoji: "🏔️" },
-  { key: "armavir", label: "Armavir Province", emoji: "🌾" },
-  { key: "ararat", label: "Ararat Province", emoji: "🗻" },
-  { key: "aragatsotn", label: "Aragatsotn Province", emoji: "⛰️" },
-  { key: "gegharkunik", label: "Gegharkunik Province", emoji: "🌊" },
-  { key: "lori", label: "Lori Province", emoji: "🌲" },
-  { key: "tavush", label: "Tavush Province", emoji: "🌿" },
-  { key: "syunik", label: "Syunik Province", emoji: "🏔️" },
-  { key: "vayots_dzor", label: "Vayots Dzor Province", emoji: "🍇" },
-  { key: "shirak", label: "Shirak Province", emoji: "❄️" },
+  { key: "yerevan", label: "Yerevan" },
+  { key: "gyumri", label: "Gyumri" },
+  { key: "vanadzor", label: "Vanadzor" },
+  { key: "kotayk", label: "Kotayk Province" },
+  { key: "armavir", label: "Armavir Province" },
+  { key: "ararat", label: "Ararat Province" },
+  { key: "aragatsotn", label: "Aragatsotn Province" },
+  { key: "gegharkunik", label: "Gegharkunik Province" },
+  { key: "lori", label: "Lori Province" },
+  { key: "tavush", label: "Tavush Province" },
+  { key: "syunik", label: "Syunik Province" },
+  { key: "vayots_dzor", label: "Vayots Dzor Province" },
+  { key: "shirak", label: "Shirak Province" },
 ];
 
 interface BatchProgress {
@@ -146,7 +146,7 @@ const DiscoveryControls: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ["verified-fields"] });
 
     toast.success(
-      `🏁 Full scan complete! ${accumulated.totalFound} fields found, ${accumulated.autoApproved} auto-approved across ${accumulated.batchesCompleted} batches`
+      `Full scan complete! ${accumulated.totalFound} fields found, ${accumulated.autoApproved} auto-approved across ${accumulated.batchesCompleted} batches`
     );
   }, [scanMode, maxTiles, queryClient]);
 
@@ -263,7 +263,7 @@ const DiscoveryControls: React.FC = () => {
               <SelectContent>
                 {REGIONS.map(r => (
                   <SelectItem key={r.key} value={r.key}>
-                    {r.emoji} {r.label}
+                    {r.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -318,7 +318,7 @@ const DiscoveryControls: React.FC = () => {
                 handleAutoScan(r.key);
               }}
             >
-              {r.emoji} {r.label}
+              {r.label}
             </Button>
           ))}
         </div>

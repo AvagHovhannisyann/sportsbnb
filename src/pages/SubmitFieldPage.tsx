@@ -160,8 +160,11 @@ const SubmitFieldPage: React.FC = () => {
                         {location ? "Re-capture" : "Use My Location"}
                       </Button>
                       {location && (
-                        <span className="text-sm text-muted-foreground">
-                          📍 {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span className="tabular-nums">
+                            {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                          </span>
                         </span>
                       )}
                     </div>

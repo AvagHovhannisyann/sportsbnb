@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle, XCircle, Eye } from "lucide-react";
+import { Building2, CheckCircle, Eye, MapPin, Sparkles, Star, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
@@ -29,19 +29,29 @@ const CandidateCard: React.FC<CandidateCardProps> = ({
             {getStatusBadge(candidate.status)}
           </div>
           {meta?.ai_suggested_name && (
-            <p className="text-sm font-medium text-foreground">🏟️ {meta.ai_suggested_name}</p>
+            <p className="flex items-center gap-1 text-sm font-medium text-foreground">
+            <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
+            {meta.ai_suggested_name}
+          </p>
           )}
           {meta?.name && meta.name !== meta?.ai_suggested_name && (
             <p className="text-xs text-muted-foreground">Google: {meta.name}</p>
           )}
           <p className="text-sm text-muted-foreground">
-            📍 {meta?.address || `${candidate.latitude.toFixed(4)}, ${candidate.longitude.toFixed(4)}`}
+            <MapPin className="mr-1 inline h-3 w-3" aria-hidden="true" />
+          {meta?.address || `${candidate.latitude.toFixed(4)}, ${candidate.longitude.toFixed(4)}`}
           </p>
           {meta?.rating && (
-            <p className="text-xs text-muted-foreground mt-1">⭐ {meta.rating} ({meta.user_rating_count || 0} reviews)</p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <Star className="h-3 w-3 fill-current" aria-hidden="true" />
+            {meta.rating} ({meta.user_rating_count || 0} reviews)
+          </p>
           )}
           {meta?.ai_reason && (
-            <p className="text-xs text-muted-foreground mt-1 italic">🤖 AI: {meta.ai_reason}</p>
+            <p className="mt-1 flex items-start gap-1 text-xs italic text-muted-foreground">
+            <Sparkles className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>AI: {meta.ai_reason}</span>
+          </p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
             Detected: {format(new Date(candidate.detection_timestamp), "MMM d, yyyy HH:mm")}

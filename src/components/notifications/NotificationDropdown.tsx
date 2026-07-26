@@ -24,9 +24,9 @@ const getNotificationIcon = (type: string) => {
     case "booking":
       return <Calendar className="h-4 w-4 text-primary" />;
     case "game":
-      return <Users className="h-4 w-4 text-green-500" />;
+      return <Users className="h-4 w-4 text-success" />;
     case "review":
-      return <Star className="h-4 w-4 text-yellow-500" />;
+      return <Star className="h-4 w-4 text-warning" />;
     default:
       return <Info className="h-4 w-4 text-muted-foreground" />;
   }
