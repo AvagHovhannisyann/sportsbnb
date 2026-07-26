@@ -125,10 +125,16 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
   const selected = slots?.find((s) => s.slot_start === selectedSlot);
 
   return (
+    // Every figure in this panel goes through formatAmd. Two of them used to
+    // build the string inline — `֏{pricePerHour.toLocaleString()}` — while the
+    // fee and total below used the helper, so one panel converted major to
+    // minor units in two places and hardcoded the symbol in two more. Same
+    // pixels today; a currency or locale change would have landed on half of
+    // the breakdown and left the header quoting the old one.
     <div className="glass rounded-2xl p-6">
       <div className="flex items-baseline justify-between mb-4">
         <div>
-          <span className="stat-numeral text-2xl font-bold">֏{pricePerHour.toLocaleString()}</span>
+          <span className="stat-numeral text-2xl font-bold">{formatAmd(pricePerHour * 100)}</span>
           <span className="text-muted-foreground"> / hour</span>
         </div>
       </div>
@@ -233,7 +239,7 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
         <div className="mb-4 rounded-lg bg-muted/50 p-3 text-sm space-y-1">
           <div className="flex justify-between">
             <span className="text-muted-foreground">1 hour</span>
-            <span>֏{pricePerHour.toLocaleString()}</span>
+            <span>{formatAmd(pricePerHour * 100)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Service fee (5%)</span>
