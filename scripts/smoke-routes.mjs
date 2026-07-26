@@ -196,15 +196,44 @@ for (const route of ROUTES) {
   try {
     await p.goto(BASE + url, { waitUntil:'domcontentloaded', timeout:15000 });
     await p.waitForTimeout(2500);
+    // Self-test hook. A detector that cannot be shown to fire is worth
+    // nothing — this one silently passed its first trial run because the
+    // injected node never reached the DOM, which is exactly the failure mode
+    // it exists to catch elsewhere. `SMOKE_SELFTEST=1` proves it still bites.
+    if (process.env.SMOKE_SELFTEST) {
+      await p.evaluate(() => {
+        const d = document.createElement('div');
+        d.textContent = 'value: undefined and [object Object]';
+        document.body.appendChild(d);
+      });
+    }
     const m = await p.evaluate(()=>({ path: location.pathname,
       textLen: document.body.innerText.trim().length,
       sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth,
-      boundary: /Something went wrong on this page/.test(document.body.innerText) }));
+      boundary: /Something went wrong on this page/.test(document.body.innerText),
+      // Values that are never a deliberate design choice. Every one of them
+      // means a formatter or a lookup produced something it could not render,
+      // and none of them throws — a page showing "Invalid Date" or "NaN" is a
+      // completely successful render as far as everything else here is
+      // concerned. Deliberately not including "—" or "Anonymous": both are
+      // legitimate fallbacks in this app (an unrated venue, a user who has not
+      // set a name), so failing on them would be noise.
+      junk: ['undefined', 'null', 'NaN', '[object Object]', 'Invalid Date']
+        .filter((t) => {
+          const body = document.body.innerText;
+          if (t === 'null' || t === 'undefined') {
+            // Bounded so prose like "cancelled" or "undefined behaviour" in a
+            // terms page cannot trip it.
+            return new RegExp(`(^|[\\s>:,/(])${t}([\\s<:,./)]|$)`).test(body);
+          }
+          return body.includes(t);
+        }) }));
     const probs = [];
     if (errs.length) probs.push(`pageerror: ${errs[0]}`);
     if (m.boundary) probs.push('ERROR BOUNDARY CAUGHT A CRASH');
     if (m.textLen < 40) probs.push(`blank (${m.textLen})`);
     if (m.sw > m.cw) probs.push(`h-overflow ${m.sw}>${m.cw}`);
+    if (m.junk.length) probs.push(`rendered ${m.junk.map((j) => `"${j}"`).join(', ')}`);
     // A guarded route bouncing to /login means the session stub did not take,
     // which would otherwise be reported as a clean pass.
     if (m.path === '/login' && route !== '/login') probs.push('redirected to /login — session stub not applied');

@@ -1875,3 +1875,45 @@ and member lists together. Rendered before and after: `—/11` became `2/11`,
 Worth noting what made this findable. Nothing about it throws, nothing fails a
 type check, and the smoke test passes — an em-dash is a perfectly valid render.
 It is only visible if you put data on the page and read it.
+
+---
+
+## Round: a check for values that are never intentional
+
+Last round I noted that none of the gates built this session would have caught
+the pricing rules, the fabricated growth badges, "Hosted by Anonymous" or
+"—/11 players". They are not errors — they are wrong *content*, and every
+automated check passes on them. That observation is worth acting on rather than
+just making.
+
+The smoke harness now also fails a route that renders `undefined`, `null`,
+`NaN`, `[object Object]` or `Invalid Date`. None of those is ever a deliberate
+design choice; each one means a formatter or a lookup produced something it
+could not render, and none of them throws.
+
+Deliberately **not** included: `—` and "Anonymous". Both are legitimate
+fallbacks here — an unrated venue, a user who has not set a name — so failing
+on them would be noise, and a check that cries wolf gets muted. `null` and
+`undefined` are matched with word boundaries so prose on the terms page cannot
+trip them.
+
+### It did not work the first time, and the first test did not show that
+
+The initial version passed its own self-test — I injected `undefined` and
+`[object Object]` into the page and the run came back clean. That is the exact
+failure this whole session keeps circling: a check that cannot fail looks
+identical to a check that passes.
+
+The injection was hooked to `window.addEventListener('load')` from
+`addInitScript`, and the node never reached the DOM at all — `bodyChildren`
+was 2 and the appended div was absent. Moving the injection to a `p.evaluate`
+after the settle wait fixed it, and the self-test now fails with the injection
+and passes without it. `SMOKE_SELFTEST=1` is kept in the script so the next
+person can re-prove it in one command rather than trusting this paragraph.
+
+### What it found
+
+Nothing. 54 routes across three roles, no failures and no false positives — no
+page in the app currently renders an unrenderable value. That is the honest
+result: this round added a guard rather than fixing a defect, and its worth is
+entirely in the regressions it will catch later.
