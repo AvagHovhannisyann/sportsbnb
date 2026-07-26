@@ -15,7 +15,9 @@ const OperatorDashboard = () => {
     <Layout>
       <div className="bg-background min-h-screen">
         <div className="container py-8">
-          <div className="flex items-center justify-between mb-8">
+          {/* flex-wrap + gap: the title block and the two nav buttons were one
+              unbreakable row on a 375px screen. */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <BarChart3 className="h-5 w-5 text-primary" />
@@ -55,7 +57,9 @@ const OperatorDashboard = () => {
               <MarketOverviewCards markets={data.markets} />
               <GMVTrendChart data={data.gmvTrend} />
               <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2">
+                {/* min-w-0 so the table scrolls inside its own wrapper rather
+                    than sizing the grid track to its content. */}
+                <div className="min-w-0 lg:col-span-2">
                   <NeighborhoodTable rows={data.neighborhoods} />
                 </div>
                 <CACRetentionPanel metrics={data.retention} />

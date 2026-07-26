@@ -150,7 +150,9 @@ const AdminDashboard = () => {
       <div className="bg-background min-h-screen">
         <div className="container py-8">
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 mb-8">
+          {/* flex-wrap: title block plus the "Operator view" button ran 47px
+              past a 375px screen. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Shield className="h-5 w-5 text-primary" />

@@ -138,8 +138,11 @@ const OwnerPricingPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-xs">
+              {/* Wraps: the input, the "per hour" label and a 220px button
+                  were one non-wrapping row, which put the button 3px past the
+                  right edge of a 375px screen and scrolled the page. */}
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div className="relative min-w-0 flex-1 max-w-xs">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">֏</span>
                   <Input
                     type="number"

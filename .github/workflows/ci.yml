@@ -79,36 +79,40 @@ jobs:
           done
           [ "$up" = 1 ] || { echo "dev server did not come up"; exit 1; }
 
-          node scripts/smoke-routes.mjs player \
-            / /about /blog /community /contact /cookies /discover /faq /for-owners \
-            /forgot-password /games /login /nearby /privacy /signup /teams /terms \
-            /venues /venues/map /dashboard /profile /settings /messages
+          # `:venue`, `:game`, `:team`, `:booking`, `:payment` and `:slug`
+          # resolve to the stub ids the script serves. Dynamic routes were the
+          # uncovered half of the router until now — /venue/:id and the whole
+          # checkout chain had never loaded in CI once.
+          PLAYER="/ /about /blog /blog/:slug /community /contact /cookies /discover
+            /faq /for-owners /forgot-password /games /game/:game /game/:game/join-status
+            /login /nearby /privacy /reset-password /signup /teams /team/:team
+            /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard
+            /profile /settings /messages /book/:booking /booking/:booking/status
+            /pay/mock/:payment /embed/booking/:venue /auth/callback"
 
-          node scripts/smoke-routes.mjs owner \
-            /owner-dashboard /owner/venues /owner/bookings /owner/hours \
-            /owner/pricing /owner/policies /owner/settings /owner/widget \
-            /owner/earnings /owner/equipment /owner/integrations /owner/analytics \
-            /owner/schedule /my-venues /add-venue /list-venue
+          OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/hours
+            /owner/pricing /owner/policies /owner/settings /owner/widget
+            /owner/earnings /owner/equipment /owner/integrations
+            /owner/integrations/callback /owner/analytics /owner/schedule
+            /my-venues /add-venue /list-venue /venue/:venue/edit
+            /venue/:venue/availability /onboarding/owner"
 
-          node scripts/smoke-routes.mjs admin \
-            /admin /operator /operator/outreach /create-game /create-team \
-            /nearby/submit /onboarding/player /discover
+          ADMIN="/admin /operator /operator/outreach /create-game /create-team
+            /nearby/submit /onboarding/player"
+
+          node scripts/smoke-routes.mjs player $PLAYER
+          node scripts/smoke-routes.mjs owner  $OWNER
+          node scripts/smoke-routes.mjs admin  $ADMIN
 
           # Same routes at phone width. Horizontal overflow is already checked
           # per route, so this costs one extra pass and covers a surface that
-          # had only ever been spot-checked by hand.
-          SMOKE_WIDTH=375 SMOKE_HEIGHT=812 \
-          node scripts/smoke-routes.mjs player \
-            / /about /blog /community /contact /cookies /discover /faq /for-owners \
-            /forgot-password /games /login /nearby /privacy /signup /teams /terms \
-            /venues /venues/map /dashboard /profile /settings /messages
-
-          SMOKE_WIDTH=375 SMOKE_HEIGHT=812 \
-          node scripts/smoke-routes.mjs owner \
-            /owner-dashboard /owner/venues /owner/bookings /owner/hours \
-            /owner/pricing /owner/policies /owner/settings /owner/widget \
-            /owner/earnings /owner/equipment /owner/integrations /owner/analytics \
-            /owner/schedule /my-venues /add-venue /list-venue
+          # had only ever been spot-checked by hand — it found sideways scroll
+          # on the owner dashboard, opening hours, pricing, both admin consoles
+          # and the venue page, none of which reproduce without data on screen.
+          export SMOKE_WIDTH=375 SMOKE_HEIGHT=812
+          node scripts/smoke-routes.mjs player $PLAYER
+          node scripts/smoke-routes.mjs owner  $OWNER
+          node scripts/smoke-routes.mjs admin  $ADMIN
 
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.

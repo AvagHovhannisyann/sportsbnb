@@ -56,12 +56,17 @@ const EmbedBookingPage = () => {
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("widget-data", {
-        body: null,
-        headers: {},
-      });
-
-      // Since we can't pass query params directly, fetch venue directly
+      // There used to be an `await supabase.functions.invoke("widget-data")`
+      // here whose result was destructured and then never read. It could not
+      // have returned anything useful either: the function takes `venueId`
+      // from the query string, and this called it with `body: null` and no
+      // params, so it answered 400 every time.
+      //
+      // It was not free. Nothing on this page renders until it settles — the
+      // widget shows a bare spinner — and this page is what owners embed in
+      // their own websites, so that round trip sat in front of first paint on
+      // somebody else's domain. The route smoke test caught it as a permanently
+      // blank render once dynamic routes were covered.
       const { data: venueData, error: venueError } = await supabase
         .from("venues")
         .select("id, name, address, city, sports, price_per_hour, image_url, description")

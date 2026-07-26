@@ -177,9 +177,16 @@ const VenueDetailsPage = () => {
         </div>
 
         <div className="container pb-16">
+          {/* min-w-0 on both columns, not decoration. A grid item defaults to
+              `min-width: auto`, which resolves to its min-content — so at
+              375px the booking column's intrinsic width sized the single
+              column track to 938px and the whole page scrolled sideways.
+              Neither column has anything that must not shrink; the date strip
+              inside the panel already carries `overflow-x-auto` and simply
+              never got the chance to use it. */}
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="min-w-0 lg:col-span-2 space-y-8">
               {/* Header */}
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -340,7 +347,7 @@ const VenueDetailsPage = () => {
             </div>
 
             {/* Booking Card */}
-            <div className="lg:col-span-1">
+            <div className="min-w-0 lg:col-span-1">
               {/* Above the AI launcher (z-50). The launcher is fixed to the
                   bottom-right and overlapped the Reserve button by 7px at
                   1440 and 27px at 1024 — and being fixed with a higher stack

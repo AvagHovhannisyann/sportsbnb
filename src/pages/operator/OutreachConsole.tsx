@@ -75,11 +75,14 @@ export default function OutreachConsole() {
     <div className="min-h-screen bg-background">
       <SEOHead title="AI Outreach Console · Sportsbnb" description="Admin outreach workspace" />
       <div className="border-b border-border/40 bg-card/30 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
+        {/* flex-wrap + min-w-0 on the title block: back link, title and two
+            action buttons made a ~600px sticky bar that scrolled a 375px
+            screen sideways. */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <Button asChild variant="ghost" size="sm">
             <Link to="/operator"><ChevronLeft className="h-4 w-4 mr-1" /> Operator</Link>
           </Button>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold tracking-tight">AI Venue Outreach</h1>
             <p className="text-xs text-muted-foreground">One-click research, contact discovery, draft, send, and reply tracking</p>
           </div>

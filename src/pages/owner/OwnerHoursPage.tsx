@@ -205,9 +205,14 @@ const OwnerHoursPage = () => {
                   {hours.map((hour) => (
                     <div
                       key={hour.day_of_week}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors"
+                      /* Wraps below sm. A day row is a fixed 112px label, a
+                         toggle, and two 128px time inputs on one line — about
+                         520px that never fitted a 375px phone, so the whole
+                         opening-hours page scrolled sideways. Below sm the
+                         time range drops to its own full-width line. */
+                      className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors sm:gap-4"
                     >
-                      <div className="w-28 font-medium text-foreground">
+                      <div className="w-24 font-medium text-foreground sm:w-28">
                         {DAYS_OF_WEEK[hour.day_of_week]}
                       </div>
                       <div className="flex items-center gap-3">
@@ -222,14 +227,14 @@ const OwnerHoursPage = () => {
                         </span>
                       </div>
                       {!hour.is_closed && (
-                        <div className="flex items-center gap-2 ml-auto">
+                        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
                           <Input
                             type="time"
                             value={hour.open_time}
                             onChange={(e) =>
                               handleHourChange(hour.day_of_week, "open_time", e.target.value)
                             }
-                            className="w-32"
+                            className="flex-1 sm:w-32 sm:flex-none"
                           />
                           <span className="text-muted-foreground">to</span>
                           <Input
@@ -238,7 +243,7 @@ const OwnerHoursPage = () => {
                             onChange={(e) =>
                               handleHourChange(hour.day_of_week, "close_time", e.target.value)
                             }
-                            className="w-32"
+                            className="flex-1 sm:w-32 sm:flex-none"
                           />
                         </div>
                       )}

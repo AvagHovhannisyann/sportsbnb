@@ -136,9 +136,15 @@ const OwnerOverviewPage = () => {
         })}
       </div>
 
+      {/* min-w-0 on both columns. The week calendar inside deliberately sets
+          `min-w-[800px]` on its grid and wraps it in `overflow-x-auto` so it
+          scrolls on a phone — but an explicit min-width still counts toward a
+          grid item's min-content, and the item defaults to `min-width: auto`.
+          The 800px propagated all the way out and scrolled the entire owner
+          dashboard sideways instead of just the calendar. */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content - Calendar */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="min-w-0 lg:col-span-2 space-y-6">
           {/* An owner with venues must never be told they have none because a
               request failed — the empty state's call to action is "add your
               first venue", which invites a duplicate listing. */}
@@ -237,7 +243,7 @@ const OwnerOverviewPage = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* Quick Actions */}
           <Card>
             <CardHeader>

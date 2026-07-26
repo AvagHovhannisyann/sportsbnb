@@ -1126,3 +1126,87 @@ dashboards render empty and cannot be designed or evaluated. That is roughly
 half the app's surface.
 
 **To unblock:** sign up once in the app, then seed venues under that `user_id`.
+
+---
+
+## Round: the half of the router CI had never opened
+
+Every smoke pass so far walked *static* routes only. The dynamic ones —
+`/venue/:id`, `/game/:id`, `/team/:id`, `/blog/:slug`, `/venue/:id/edit`,
+`/venue/:id/availability`, and the entire checkout chain `/book/:id` →
+`/pay/mock/:id` → `/booking/:id/status` — had never been loaded in CI once.
+That is the venue page and the money path.
+
+They could not simply be added to the list. The smoke harness answered every
+REST call with `[]`, and a detail page handed an empty array renders its
+not-found branch: the route "passes" while the code under test never runs. So
+the harness now serves one plausible row per table (`venues`, `games`, `teams`,
+`blog_posts`, `bookings`, `payments`, `profiles_public`), returning an object
+for a primary-key lookup and an array otherwise.
+
+The regex for that is `[?&](id|slug)=eq\.`, not `id=eq\.` — `venue_id=eq.`
+contains the latter, and answering a foreign-key filter with a bare object
+produces `x.map is not a function`, which reads as an app bug and is not one.
+The same trap the `profiles` stub had already fallen into once.
+
+Coverage went from 39 route-loads per width to 62, and `:venue`-style tokens in
+the route list expand to the stub ids so the workflow stays readable.
+
+### What it found
+
+Populating the stubs also gave the *existing* routes data for the first time,
+which is where most of this came from. Nine defects, none of which reproduce on
+an empty database:
+
+| Where | Symptom |
+|---|---|
+| `/embed/booking/:id` | Rendered a bare spinner and never resolved |
+| `/venue/:id` @375 | Page scrolled sideways — 958px wide on a 375px screen |
+| `/dashboard` @375 | 381px |
+| `/owner-dashboard` @375 | 818px |
+| `/owner/hours` @375 | 563px |
+| `/owner/pricing` @375 | 378px |
+| `/venue/:id/edit` @375 | 486px |
+| `/venue/:id/availability` @375 | 559px |
+| `/admin`, `/operator`, `/operator/outreach` @375 | 422 / 526 / 603px |
+
+**The embed one is the worst of them**, because of where it runs. The page
+awaited `supabase.functions.invoke("widget-data")`, destructured the result,
+and never read it — and could not have: the function takes `venueId` from the
+query string and the call passed `body: null` with no params, so it answered
+400 every time. Nothing on the page renders until that settles, and this is the
+page owners paste into their own websites. A dead round trip in front of first
+paint on somebody else's domain, and a permanent spinner whenever the function
+is slow or unreachable. Deleted.
+
+### One cause behind seven of the others
+
+`min-width: auto` on grid and flex items. An item's default minimum is its
+*min-content*, so anything inside that refuses to shrink sizes the track — and
+a single-column grid on a phone then becomes as wide as its widest descendant,
+scrolling the whole page rather than the element.
+
+The tell is that every fix is `min-w-0` or `flex-wrap`, and that several of the
+offenders had already tried to handle it:
+
+- `WeekCalendar` sets `min-w-[800px]` inside `overflow-x-auto` precisely so it
+  scrolls on a phone. An explicit `min-width` still counts toward min-content,
+  so the 800px propagated out through `lg:col-span-2` and scrolled the owner
+  dashboard instead of the calendar.
+- `BookingPanel`'s date strip carries `overflow-x-auto` and simply never got
+  the chance to use it.
+- The dashboard's game location has `truncate`, which is decorative on a flex
+  item without `min-w-0` — it kept full intrinsic width instead.
+
+The rest were fixed-width rows that never fitted: the opening-hours editor
+(a 112px day label, a toggle and two 128px time inputs ≈ 520px, in two separate
+files), the pricing base-rate row, and four page headers whose action buttons
+sat on one unbreakable line with the title.
+
+Verified: 62 routes × 3 roles × 2 widths, all clean. Both widths now run in CI.
+
+### What this does not do
+
+It does not unblock *design* review. The stub rows are one venue named "Smoke
+Arena" with three amenities — enough to prove a layout holds, not enough to
+judge whether it is any good. The seed-data blocker below still stands.

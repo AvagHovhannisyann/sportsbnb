@@ -176,12 +176,14 @@ const VenueAvailabilityPage = () => {
                 {hours.map((hour) => (
                   <div
                     key={hour.day_of_week}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+                    /* Same wrap as OwnerHoursPage: label + toggle + two
+                       128px time inputs never fitted 375px on one line. */
+                    className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50 sm:gap-4"
                   >
-                    <div className="w-28 font-medium text-foreground">
+                    <div className="w-24 font-medium text-foreground sm:w-28">
                       {DAYS_OF_WEEK[hour.day_of_week]}
                     </div>
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2 sm:flex-1">
                       <Switch
                         checked={!hour.is_closed}
                         onCheckedChange={(checked) =>
@@ -193,14 +195,14 @@ const VenueAvailabilityPage = () => {
                       </span>
                     </div>
                     {!hour.is_closed && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex w-full items-center gap-2 sm:w-auto">
                         <Input
                           type="time"
                           value={hour.open_time}
                           onChange={(e) =>
                             handleHourChange(hour.day_of_week, "open_time", e.target.value)
                           }
-                          className="w-32"
+                          className="flex-1 sm:w-32 sm:flex-none"
                         />
                         <span className="text-muted-foreground">to</span>
                         <Input
@@ -209,7 +211,7 @@ const VenueAvailabilityPage = () => {
                           onChange={(e) =>
                             handleHourChange(hour.day_of_week, "close_time", e.target.value)
                           }
-                          className="w-32"
+                          className="flex-1 sm:w-32 sm:flex-none"
                         />
                       </div>
                     )}

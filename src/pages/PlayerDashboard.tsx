@@ -122,7 +122,7 @@ const PlayerDashboard = () => {
           {/* Upcoming Plans + Games */}
           <div className="grid lg:grid-cols-2 gap-6">
             <UpcomingPlansCard />
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Your Games</CardTitle>
                 <Link to="/games" className="text-sm text-primary hover:underline">Find more</Link>
@@ -150,7 +150,12 @@ const PlayerDashboard = () => {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(game.game_date), "EEE, MMM d")}</div>
                           <div className="flex items-center gap-1"><Clock className="h-3 w-3" />{game.game_time}</div>
-                          <div className="flex items-center gap-1 truncate"><MapPin className="h-3 w-3" />{game.location}</div>
+                          {/* min-w-0 or `truncate` is decorative: a flex item
+                              defaults to min-width:auto, so the location kept
+                              its full intrinsic width, pushed the card past
+                              the grid track and scrolled the dashboard
+                              sideways at 375px. */}
+                          <div className="flex min-w-0 items-center gap-1 truncate"><MapPin className="h-3 w-3" />{game.location}</div>
                         </div>
                       </div>
                     </Link>

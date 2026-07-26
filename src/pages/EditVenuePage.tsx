@@ -89,7 +89,9 @@ const EditVenuePage = () => {
       <div className="bg-background min-h-screen">
         <div className="container py-8 max-w-3xl">
           {/* Header */}
-          <div className="flex items-center justify-between gap-4 mb-8">
+          {/* flex-wrap: the title block and the two-button action group are
+              a ~486px row that pushed past a 375px screen. */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="h-5 w-5" />
