@@ -176,7 +176,16 @@ const NearbyFieldsPage: React.FC = () => {
         </div>
 
         {view === "map" ? (
-          <div className="h-[calc(100vh-180px)]">
+          // A named region. The Maps API injects its own unnamed pan controls,
+          // which are not ours to fix — but the area they sit in is, and it
+          // had no name either, so the map read as an anonymous block of the
+          // page. `ariaLabel` on MapOptions would be the tidier home for this,
+          // but it is absent from the installed @types/google.maps.
+          <div
+            role="region"
+            aria-label="Map of nearby fields"
+            className="h-[calc(100vh-180px)]"
+          >
             {!mapsLoaded ? (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                 {mapsError ? "Map unavailable" : "Loading map…"}

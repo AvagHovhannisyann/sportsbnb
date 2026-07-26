@@ -72,6 +72,7 @@ for (const route of ROUTES) {
     );
 
     const items = [];
+    let thirdParty = 0;
     for (const n of unnamed) {
       // Resolve to markup, so the report says which control rather than
       // handing back an opaque node id nobody can act on.
@@ -83,6 +84,18 @@ for (const route of ROUTES) {
         // Node detached between snapshot and resolution — rare, and not worth
         // failing the run over.
       }
+      // The Google Maps JS API injects its own pan and marker controls as
+      // bare `<div role="button" tabindex="0">` with inline styles and no
+      // name. They are not this codebase's markup and cannot be fixed from
+      // here, so they are not this audit's business — but the count is
+      // printed rather than dropped silently, because an exclusion nobody can
+      // see is how a checker quietly stops checking.
+      //
+      // What *is* ours is the map container, and both maps now carry a label.
+      if (/\brole="button" tabindex="0" style="[^"]*position: absolute/.test(html)) {
+        thirdParty += 1;
+        continue;
+      }
       items.push({ role: n.role.value, html });
     }
     // The same unnamed control repeated down a list is one defect.
@@ -90,6 +103,7 @@ for (const route of ROUTES) {
     for (const i of items) seen.set(`${i.role}|${i.html}`, (seen.get(`${i.role}|${i.html}`) ?? 0) + 1);
     report.push({
       route,
+      thirdParty,
       items: [...seen].map(([k, count]) => {
         const [role, ...rest] = k.split('|');
         return { role, html: rest.join('|'), count };
@@ -105,6 +119,7 @@ await browser.close();
 // A route that could not be measured is not a route that passed.
 const errors = report.filter((r) => r.error);
 const total = report.reduce((n, r) => n + (r.items ?? []).reduce((m, i) => m + i.count, 0), 0);
+const skipped = report.reduce((n, r) => n + (r.thirdParty ?? 0), 0);
 
 if (JSON_OUT) {
   console.log(JSON.stringify({ report, errors, total }, null, 2));
@@ -123,6 +138,7 @@ if (JSON_OUT) {
   }
   console.log(
     `\n${total} unnamed control(s) across ${report.length} route(s)` +
+      `${skipped ? `, ${skipped} third-party control(s) skipped` : ''}` +
       `${errors.length ? `, ${errors.length} unmeasurable` : ''}\n`,
   );
 }

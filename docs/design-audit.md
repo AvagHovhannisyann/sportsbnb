@@ -2515,3 +2515,39 @@ no font family should be named literally**. That is the third checker in this
 codebase to flag its own documentation, after the palette audit and the
 clickable-element scanner. Every text scanner in this repo now strips comments
 before it looks, and the reason is written next to each one.
+
+---
+
+## CI caught the new audit policing someone else's DOM
+
+The accessible-name check went red on CI within minutes of being added, on two
+routes it had passed locally: `/nearby` and `/venues/map`.
+
+```
+button  <div title="" role="button" tabindex="0" style="width: 32px; height: 32px; …position: absolute…
+button  <div role="button" tabindex="0" style="width: 26px; height: 37px; …position: absolute…
+```
+
+Those are the Google Maps JS API's own pan and marker controls. They are not
+this codebase's markup and cannot be fixed from here. They never appeared
+locally because the Maps script does not load in this container at all — the
+same reason the font measurement earlier could only verify a stack and not a
+glyph. **A check that only ever runs in one environment has only ever been
+tested in one environment.**
+
+The audit now skips controls with that shape and **prints how many it skipped**
+on every run. An exclusion nobody can see is how a checker quietly stops
+checking, which is the failure mode the whole exercise exists to avoid.
+Self-tested: a bare `<button></button>` is still reported, the
+absolutely-positioned `role="button"` div is not.
+
+What *was* ours: both map containers had no accessible name, so the map — the
+main content of both pages — read as an anonymous block. Both are now
+`role="region"` with a label. `ariaLabel` on `MapOptions` would be the tidier
+home for it and the Maps API does support it, but it is missing from the
+installed `@types/google.maps`, so the region wrapper is the honest option
+rather than casting the types.
+
+Two JSX mistakes on the way, both mine and both the same one: `{/* … */}`
+placed directly after `? (` in a ternary is expression position, not children,
+and does not parse. Typecheck caught it both times.

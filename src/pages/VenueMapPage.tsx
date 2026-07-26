@@ -53,7 +53,9 @@ const VenueMapPage = () => {
           <Badge variant="secondary">{filteredVenues.length} venues</Badge>
         </div>
 
-        <div className="flex-1 relative">
+        {/* Named region, for the same reason as /nearby: the map area had
+            no name, so it read as an anonymous block of the page. */}
+        <div role="region" aria-label="Map of venues" className="flex-1 relative">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
