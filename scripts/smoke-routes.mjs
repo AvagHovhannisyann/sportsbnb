@@ -29,6 +29,16 @@ import { chromium } from '@playwright/test';
 
 const EXEC = process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
+
+// Supabase namespaces its session in localStorage by project ref, so the key
+// has to match whatever VITE_SUPABASE_URL the app was built with. Hardcoding
+// one ref meant the session stub silently did nothing anywhere else — every
+// guarded route would just redirect to /login and still report "clean".
+const PROJECT_REF =
+  process.env.SMOKE_PROJECT_REF ??
+  (process.env.VITE_SUPABASE_URL ?? '').match(/https?:\/\/([^.]+)\./)?.[1] ??
+  'skwzaxqhgrysbsuqkuyp';
+const AUTH_KEY = `sb-${PROJECT_REF}-auth-token`;
 const UID='00000000-0000-0000-0000-000000000001';
 const userType = process.argv[2];
 const ROUTES = process.argv.slice(3);
@@ -38,11 +48,11 @@ for (const route of ROUTES) {
   const p = await b.newPage({ viewport:{ width:1440, height:900 } });
   const errs = [];
   p.on('pageerror', e => errs.push(String(e).split('\n')[0].slice(0,100)));
-  await p.addInitScript(()=>{const exp=Math.floor(Date.now()/1000)+3600;
-    localStorage.setItem('sb-skwzaxqhgrysbsuqkuyp-auth-token',JSON.stringify({access_token:'stub',
+  await p.addInitScript((authKey)=>{const exp=Math.floor(Date.now()/1000)+3600;
+    localStorage.setItem(authKey,JSON.stringify({access_token:'stub',
       token_type:'bearer',expires_at:exp,expires_in:3600,refresh_token:'stub',
       user:{id:'00000000-0000-0000-0000-000000000001',aud:'authenticated',role:'authenticated',
-      email:'u@example.com',app_metadata:{},user_metadata:{},created_at:new Date(0).toISOString()}}));});
+      email:'u@example.com',app_metadata:{},user_metadata:{},created_at:new Date(0).toISOString()}}));}, AUTH_KEY);
   // Array for list endpoints; single object only where the app uses maybeSingle.
   await p.route('**/rest/v1/**', r=>r.fulfill({status:200,contentType:'application/json',body:'[]'}));
   await p.route('**/rest/v1/profiles**', r=>{
@@ -66,6 +76,9 @@ for (const route of ROUTES) {
     if (m.boundary) probs.push('ERROR BOUNDARY CAUGHT A CRASH');
     if (m.textLen < 40) probs.push(`blank (${m.textLen})`);
     if (m.sw > m.cw) probs.push(`h-overflow ${m.sw}>${m.cw}`);
+    // A guarded route bouncing to /login means the session stub did not take,
+    // which would otherwise be reported as a clean pass.
+    if (m.path === '/login' && route !== '/login') probs.push('redirected to /login — session stub not applied');
     if (probs.length) { bad++; console.log(`FAIL ${route} -> ${m.path}  ${probs.join(' | ')}`); }
   } catch (e) { bad++; console.log(`FAIL ${route}  ${String(e).split('\n')[0].slice(0,70)}`); }
   await p.close();

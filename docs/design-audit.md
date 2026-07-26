@@ -782,8 +782,28 @@ was being fetched on every page and never resolving; that fix closed them out.
 The harness is now `scripts/smoke-routes.mjs` rather than a throwaway. It had
 been rewritten from scratch several times across this branch, which is how the
 stub-shape mistake behind the phantom "leaderboard.map is not a function"
-crash kept recurring. It exits non-zero on failure, so it can be wired into
-the `e2e` CI job whenever that is enabled.
+crash kept recurring.
+
+**It now runs in CI on every pull request**, as a `smoke` job. It needs no
+secrets — every REST call is intercepted and the session is stubbed, so
+placeholder env is enough to boot the Supabase client. That matters because
+the existing `e2e` job is gated on secrets nobody has set and has therefore
+*never run*, leaving the browser entirely uncovered.
+
+Two bugs in the harness itself were fixed to make that possible, and the first
+is the more instructive:
+
+- **The localStorage auth key was hardcoded to one project ref.** Supabase
+  namespaces the session by ref, so against any other project the stub simply
+  did nothing: every guarded route redirected to `/login` and the script
+  reported them **clean**, having tested the login page 16 times. The key is
+  now derived from `VITE_SUPABASE_URL`.
+- The script now fails a route that lands on `/login` when it did not ask for
+  it, so that silent-pass mode cannot come back.
+
+Verified against a dev server booted with the exact placeholder env the CI job
+uses: guarded routes resolve under a *different* project ref, and forcing the
+old hardcoded ref reproduces the redirect failure.
 
 ## Verified clean
 

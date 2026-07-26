@@ -20,6 +20,62 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # Loads every route in a real browser and fails on a thrown error, a tripped
+  # error boundary, a blank render, or horizontal overflow.
+  #
+  # Unlike `e2e` below, this needs no secrets: the script intercepts every
+  # Supabase REST call and stubs the session, so placeholder env is enough to
+  # boot the client. That is the point — `e2e` has never actually run, because
+  # it is gated on secrets nobody has set, which left the browser completely
+  # uncovered in CI. This runs on every pull request.
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      # Placeholders only. Nothing reaches the network; the project ref just
+      # has to agree with the localStorage key the script writes, which it
+      # derives from this URL.
+      VITE_SUPABASE_URL: https://smoketest.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_smoke_test_placeholder
+      VITE_SUPABASE_PROJECT_ID: smoketest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Server and smokes share one step so the dev server's lifetime plainly
+      # covers every run, rather than depending on a backgrounded process
+      # surviving between steps.
+      - name: Smoke every route
+        run: |
+          set -euo pipefail
+          npx vite --host 127.0.0.1 --port 4173 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID 2>/dev/null || true' EXIT
+          up=0
+          for _ in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:4173 >/dev/null; then up=1; break; fi
+            sleep 1
+          done
+          [ "$up" = 1 ] || { echo "dev server did not come up"; exit 1; }
+
+          node scripts/smoke-routes.mjs player \
+            / /about /blog /community /contact /cookies /discover /faq /for-owners \
+            /forgot-password /games /login /nearby /privacy /signup /teams /terms \
+            /venues /venues/map /dashboard /profile /settings /messages
+
+          node scripts/smoke-routes.mjs owner \
+            /owner-dashboard /owner/venues /owner/bookings /owner/hours \
+            /owner/pricing /owner/policies /owner/settings /owner/widget \
+            /owner/earnings /owner/equipment /owner/integrations /owner/analytics \
+            /owner/schedule /my-venues /add-venue /list-venue
+
+          node scripts/smoke-routes.mjs admin \
+            /admin /operator /operator/outreach /create-game /create-team \
+            /nearby/submit /onboarding/player /discover
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:
