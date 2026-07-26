@@ -144,6 +144,18 @@ jobs:
           EMPTY_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
             /owner/analytics /owner/schedule /owner/equipment /owner/hours /owner/pricing"
 
+          # And the third state: the request failed. Every fixture here answers
+          # 200, so no check had ever rendered a page whose data did not
+          # arrive — and an empty state shown for a failed fetch is not a blank
+          # screen, it is a false statement. /owner/venues said "No venues yet"
+          # to an owner whose listings had not loaded, with a button offering
+          # to create the first one; /owner/earnings said "No transactions
+          # yet". TeamsPage already carried a comment making this exact
+          # argument about its own error branch.
+          ERROR_PLAYER="/teams /games /venues /community /dashboard /messages"
+          ERROR_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
+            /owner/analytics /owner/equipment"
+
           node scripts/smoke-routes.mjs player $PLAYER
           node scripts/smoke-routes.mjs owner  $OWNER
           node scripts/smoke-routes.mjs admin  $ADMIN
@@ -343,6 +355,11 @@ jobs:
           node scripts/input-purpose.mjs player $PLAYER
           node scripts/input-purpose.mjs owner  $OWNER
           node scripts/input-purpose.mjs admin  $ADMIN
+
+          # An empty state on a failed request is a claim about the user's own
+          # account that happens to be untrue. See ERROR_* above.
+          node scripts/error-affordance.mjs player $ERROR_PLAYER
+          node scripts/error-affordance.mjs owner  $ERROR_OWNER
 
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.

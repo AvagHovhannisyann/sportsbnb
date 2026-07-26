@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { Building2 } from "lucide-react";
@@ -19,7 +20,13 @@ import { Building2 } from "lucide-react";
 const OwnerVenuesPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -60,7 +67,20 @@ const OwnerVenuesPage = () => {
         </Button>
       </div>
 
-      {myVenues.length === 0 ? (
+      {/* An owner whose venues failed to load must not be told they have none.
+          "No venues yet" is a claim about their business, and its call to
+          action invites them to re-create a listing that already exists —
+          the same argument TeamsPage makes in a comment on its own error
+          branch. Measured with the content tables serving 500. */}
+      {venuesError ? (
+        <Card>
+          <ErrorPanel
+            what="your venues"
+            onRetry={() => refetchVenues()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
+      ) : myVenues.length === 0 ? (
         <Card>
           <EmptyState
             icon={Building2}

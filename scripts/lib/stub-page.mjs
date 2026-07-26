@@ -293,7 +293,17 @@ const listOf = (row) => {
  */
 export async function newStubbedPage(browser, { userType: requested, width, height }) {
   const emptyData = requested.endsWith('-empty');
-  const userType = emptyData ? requested.slice(0, -'-empty'.length) : requested;
+  // `-error` serves 500 for every content table, which is what a Supabase
+  // outage or a tripped RLS policy looks like from the browser. Every fixture
+  // here answers 200, so no check had ever seen a page whose data failed to
+  // arrive — and "renders an error panel with a retry" versus "renders a blank
+  // rectangle" is exactly the difference nobody notices until it is live.
+  const errorData = requested.endsWith('-error');
+  const userType = emptyData
+    ? requested.slice(0, -'-empty'.length)
+    : errorData
+      ? requested.slice(0, -'-error'.length)
+      : requested;
   const ctx = await browser.newContext({
     viewport: { width, height },
     permissions: ['geolocation'],
@@ -316,7 +326,12 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
       user:{id:'00000000-0000-0000-0000-000000000001',aud:'authenticated',role:'authenticated',
       email:'u@example.com',app_metadata:{},user_metadata:{},created_at:new Date(0).toISOString()}}));}, AUTH_KEY);
   // Array for list endpoints; single object only where the app uses maybeSingle.
-  await p.route('**/rest/v1/**', r=>r.fulfill({status:200,contentType:'application/json',body:'[]'}));
+  // In `-error` mode this is the failure: PostgREST's own error shape, so the
+  // supabase client surfaces it as an error rather than as unparseable data.
+  await p.route('**/rest/v1/**', r=>errorData
+    ? r.fulfill({status:500,contentType:'application/json',
+        body:JSON.stringify({message:'stubbed failure',code:'XX000',details:null,hint:null})})
+    : r.fulfill({status:200,contentType:'application/json',body:'[]'}));
   await p.route('**/rest/v1/profiles**', r=>{
     const u=r.request().url();
     const single = /user_id=eq\./.test(u) && !/xp=gt/.test(u);
@@ -336,7 +351,7 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
   });
   // In `-empty` mode these are simply not registered, so the generic `[]`
   // above answers every content query.
-  if (!emptyData)
+  if (!emptyData && !errorData)
   for (const [table,row] of Object.entries(ROWS)) {
     await p.route(`**/rest/v1/${table}**`, r=>r.fulfill({status:200,
       contentType:'application/json',

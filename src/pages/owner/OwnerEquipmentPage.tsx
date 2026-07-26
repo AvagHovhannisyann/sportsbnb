@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 
 const PAGE_TITLE = "Equipment Rentals";
 const PAGE_SUBTITLE = "Manage rental items and packages for your venues";
@@ -51,7 +52,13 @@ import { formatPrice } from "@/lib/pricing";
 
 const OwnerEquipmentPage = () => {
   const { user } = useAuth();
-  const { data: venues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const {
+    data: venues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
   const [selectedVenueId, setSelectedVenueId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<VenueEquipment | null>(null);
@@ -139,6 +146,20 @@ const OwnerEquipmentPage = () => {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
+      </OwnerLayout>
+    );
+  }
+
+  if (venuesError) {
+    return (
+      <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
+        {/* Not "No venues yet". That sends an owner whose venue list failed to
+            load off to /add-venue to re-create something they already own. */}
+        <ErrorPanel
+          what="your venues"
+          onRetry={() => refetchVenues()}
+          isRetrying={venuesFetching}
+        />
       </OwnerLayout>
     );
   }

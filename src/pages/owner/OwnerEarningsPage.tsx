@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -51,7 +52,13 @@ export default function OwnerEarningsPage() {
     },
   });
 
-  const { data: ledger, isLoading: ledgerLoading } = useQuery({
+  const {
+    data: ledger,
+    isLoading: ledgerLoading,
+    isError: ledgerError,
+    isFetching: ledgerFetching,
+    refetch: refetchLedger,
+  } = useQuery({
     queryKey: ["owner-ledger", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -189,6 +196,15 @@ export default function OwnerEarningsPage() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
+            ) : ledgerError ? (
+              /* "No transactions yet" on a failed request tells an owner that
+                 their money history is empty. Of every false empty state in
+                 this app that is the one worth the least ambiguity. */
+              <ErrorPanel
+                what="your transactions"
+                onRetry={() => refetchLedger()}
+                isRetrying={ledgerFetching}
+              />
             ) : !ledger || ledger.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No transactions yet — earnings appear here after your first paid booking.

@@ -15,6 +15,7 @@ import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
 import { Price } from "@/components/ui/price";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 
 // Haversine formula for distance calculation
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -151,9 +152,21 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [],
 const CommunityPage = () => {
   const { user } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const { data: publicGames = [], isLoading: gamesLoading } = useGames({ userLocation });
+  const {
+    data: publicGames = [],
+    isLoading: gamesLoading,
+    isError: gamesError,
+    isFetching: gamesFetching,
+    refetch: refetchGames,
+  } = useGames({ userLocation });
   const { data: userGamesData, isLoading: userGamesLoading } = useUserGames(user?.id);
-  const { data: venues = [], isLoading: venuesLoading } = useVenues();
+  const {
+    data: venues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useVenues();
   const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
   const [participantFaces, setParticipantFaces] = useState<Record<string, PlayerFace[]>>({});
   const [playedWith, setPlayedWith] = useState<any[]>([]);
@@ -294,6 +307,22 @@ const CommunityPage = () => {
     .slice(0, 4);
 
   const isLoading = gamesLoading || venuesLoading;
+  /**
+   * Every section on the Discover tab is derived from these two queries, and
+   * every one of them falls back to an EmptyState that says the app has
+   * nothing — "No trending games yet", "No venues added yet". Those are claims
+   * about the world, and on a failed request they are false ones: measured
+   * with the content tables serving 500, /community told the user there were
+   * no trending games and offered to let them create the first.
+   *
+   * TeamsPage already makes this argument in a comment on its own error
+   * branch. This is the same bug on a different page.
+   */
+  const loadFailed = gamesError || venuesError;
+  const retryFeed = () => {
+    if (gamesError) refetchGames();
+    if (venuesError) refetchVenues();
+  };
 
   return (
     <Layout>
@@ -326,6 +355,12 @@ const CommunityPage = () => {
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                   <p className="text-muted-foreground mt-2">Loading community...</p>
                 </div>
+              ) : loadFailed ? (
+                <ErrorPanel
+                  what="the community feed"
+                  onRetry={retryFeed}
+                  isRetrying={gamesFetching || venuesFetching}
+                />
               ) : (
                 <>
                   {/* Nearby Open Games */}

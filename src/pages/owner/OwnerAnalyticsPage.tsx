@@ -1,4 +1,5 @@
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +25,13 @@ const CHART_COLORS = [
 ];
 
 const OwnerAnalyticsPage = () => {
-  const { data: analytics, isLoading } = useOwnerAnalytics();
+  const {
+    data: analytics,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useOwnerAnalytics();
 
   if (isLoading) {
     return (
@@ -33,6 +40,21 @@ const OwnerAnalyticsPage = () => {
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
+      </OwnerLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <OwnerLayout title="Analytics" subtitle="Track your venue performance and revenue.">
+        {/* Every panel below falls back to "No booking data yet", which on a
+            failed request tells an owner their venues took no bookings. That
+            is a false statement about their revenue, not a neutral blank. */}
+        <ErrorPanel
+          what="your analytics"
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
       </OwnerLayout>
     );
   }
