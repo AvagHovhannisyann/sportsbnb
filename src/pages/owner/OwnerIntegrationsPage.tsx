@@ -147,9 +147,12 @@ const OwnerIntegrationsPage = () => {
           {/* Venue Selector */}
           {myVenues.length > 1 && (
             <div>
-              <Label className="mb-2 block">Select Venue</Label>
+              {/* See OwnerSettingsPage: a Label with no `htmlFor` names
+                  nothing. This selector only renders above one venue, which is
+                  why no audit had ever seen it. */}
+              <Label htmlFor="integrations-venue" className="mb-2 block">Select Venue</Label>
               <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger id="integrations-venue" className="w-full max-w-xs">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>

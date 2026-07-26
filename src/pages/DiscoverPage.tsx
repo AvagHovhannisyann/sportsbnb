@@ -28,6 +28,7 @@ import {
   DEFAULT_VENUE_SORT,
   type VenueSort,
 } from "@/features/venues/sortVenues";
+import { describeActiveFilters, type FilterKey } from "@/features/venues/activeFilters";
 import { sportTypes } from "@/data/constants";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import Layout from "@/components/layout/Layout";
@@ -258,8 +259,47 @@ const DiscoverPage = () => {
     setSearchParams({});
   };
 
-  const hasActiveFilters = searchQuery || selectedSport || selectedCity || 
+  const hasActiveFilters = searchQuery || selectedSport || selectedCity ||
     priceRange[0] > 0 || priceRange[1] < maxPrice || userLocation || searchLocation;
+
+  const activeFilters = useMemo(
+    () =>
+      describeActiveFilters({
+        searchQuery,
+        selectedSport,
+        selectedCity,
+        priceCeiling: priceRange[1],
+        maxPrice,
+        priceTouched,
+        locationLabel: searchLocation?.address ?? (userLocation ? "Near me" : null),
+      }),
+    [searchQuery, selectedSport, selectedCity, priceRange, maxPrice, priceTouched, searchLocation, userLocation],
+  );
+
+  /** Drop one filter, leaving the rest alone. */
+  const clearFilter = (key: FilterKey) => {
+    switch (key) {
+      case "query":
+        setSearchQuery("");
+        break;
+      case "sport":
+        setSelectedSport("");
+        break;
+      case "city":
+        setSelectedCity("");
+        break;
+      case "price":
+        // Back to the catalogue's own ceiling, and untouched again — otherwise
+        // the chip would vanish while the slider stayed where it was.
+        setPriceRange([0, maxPrice]);
+        setPriceTouched(false);
+        break;
+      case "location":
+        setUserLocation(null);
+        setSearchLocation(null);
+        break;
+    }
+  };
 
   // Format customer-facing prices (including 5% fee)
   const formatCustomerPrice = (ownerPrice: number) => {
@@ -512,6 +552,34 @@ const DiscoverPage = () => {
               </div>
             )}
           </div>
+
+          {/* What is narrowing the grid, and a way out of each one.
+              Before this the page filtered on five things and named none of
+              them: desktop had a single Clear that dropped all five, mobile
+              had a badge on the Filters button reading "!". A grid narrowed to
+              two results was indistinguishable from an empty catalogue. */}
+          {activeFilters.length > 0 && (
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filtered by</span>
+              {activeFilters.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => clearFilter(f.key)}
+                  aria-label={`Remove filter: ${f.label}`}
+                  className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-1 py-1 pl-3 pr-2 text-sm text-foreground transition-colors hover:border-border-strong hover:bg-surface-2"
+                >
+                  {f.label}
+                  <X className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              ))}
+              {activeFilters.length > 1 && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  Clear all
+                </Button>
+              )}
+            </div>
+          )}
 
           {isLoading ? (
             // Skeletons rather than a centred spinner: same grid, same card

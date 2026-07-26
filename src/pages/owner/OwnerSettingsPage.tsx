@@ -162,12 +162,16 @@ const OwnerSettingsPage = () => {
           {/* Venue Selector */}
           {myVenues.length > 1 && (
             <div>
-              <Label className="mb-2 block">Select Venue</Label>
+              {/* `htmlFor`/`id`, not just proximity. The label was rendered
+                  right above the control and tied to nothing, so Chrome
+                  computed no accessible name for it and a screen reader
+                  announced an unnamed combobox. */}
+              <Label htmlFor="settings-venue" className="mb-2 block">Select Venue</Label>
               <Select
                 value={selectedVenueId || ""}
                 onValueChange={setSelectedVenueId}
               >
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger id="settings-venue" className="w-full max-w-xs">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>

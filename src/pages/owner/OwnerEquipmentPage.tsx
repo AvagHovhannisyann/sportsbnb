@@ -169,10 +169,13 @@ const OwnerEquipmentPage = () => {
           </Button>
         </div>
 
-        {/* Venue Selector */}
+        {/* Venue Selector. This one sits alone in a toolbar row with no
+            visible label, so the name is spelled out rather than borrowed
+            from one. The placeholder is not a name: it disappears the moment
+            a venue is chosen, which is when it would matter most. */}
         {venues.length > 1 && (
           <Select value={selectedVenueId} onValueChange={setSelectedVenueId}>
-            <SelectTrigger className="w-full sm:w-64">
+            <SelectTrigger aria-label="Select venue" className="w-full sm:w-64">
               <SelectValue placeholder="Select a venue" />
             </SelectTrigger>
             <SelectContent>
