@@ -678,9 +678,21 @@ and omits a category from the denominator when the platform cannot judge it,
 so a venue is measured only on things it can control. Reputation returns to
 the score automatically the moment `review_count` is maintained.
 
-Six tests cover it, including that no advice mentions WhatsApp or phone, that
-a fully-configured venue can reach 100, and that reputation still scores once
-a venue genuinely has reviews.
+Seven tests cover it, including that no advice mentions WhatsApp or phone,
+that a fully-configured venue can reach 100, and that reputation still scores
+once a venue genuinely has reviews.
+
+**The same defect was in the response-rate category and I missed it on the
+first pass.** That rate is derived from `booking_intents` — the WhatsApp / SMS
+/ Call handoff table Phase 2 retired. No new rows are ever written, so the
+seven-day window is always empty, the rate is always 0, and every owner was
+docked the full 15 points *and* told "Reply faster — 0% response rate" about a
+channel players can no longer use. Identical semantics to `review_count`,
+which is what makes missing it worth recording: the first fix carried a
+comment calling this signal "always meaningful". The score now takes
+`number | null`, and the card passes `null` when there is nothing in the
+window, so an unmeasurable rate is excluded rather than scored as failure. A
+genuine 0% still counts.
 
 ## Verified clean
 

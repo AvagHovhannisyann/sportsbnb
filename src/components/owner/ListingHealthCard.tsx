@@ -17,7 +17,13 @@ export function ListingHealthCard() {
   const { user } = useAuth();
   const { data: venues = [], isLoading } = useOwnerVenues(user?.id);
   const { data: leads = [] } = useOwnerLeads();
-  const responseRate = useMemo(() => summarizeLeads(leads).responseRate, [leads]);
+  // null, not 0, when there is nothing in the window to measure: booking_intents
+  // stopped receiving rows when the WhatsApp handoff was removed, so a 0 here
+  // means "no data", not "this owner ignores people".
+  const responseRate = useMemo(() => {
+    const { total7d, responseRate: rate } = summarizeLeads(leads);
+    return total7d === 0 ? null : rate;
+  }, [leads]);
 
   const scored = useMemo(() => venues.map((v) => scoreVenue(v, responseRate)), [venues, responseRate]);
   const overall = scored.length

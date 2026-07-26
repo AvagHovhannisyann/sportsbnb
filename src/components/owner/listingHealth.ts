@@ -14,7 +14,7 @@ export interface VenueScore {
   issues: Array<{ label: string; fixHref?: string }>;
 }
 
-export function scoreVenue(v: Venue, responseRate: number): VenueScore {
+export function scoreVenue(v: Venue, responseRate: number | null): VenueScore {
   const issues: VenueScore["issues"] = [];
 
   // Scored as earned-out-of-possible rather than a running total out of a
@@ -73,11 +73,24 @@ export function scoreVenue(v: Venue, responseRate: number): VenueScore {
     award(15, v.review_count >= 5, "Get more reviews (5+ unlocks full credit)", 8);
   }
 
-  // Response rate (15) — owner-wide signal, always meaningful.
-  const rr = Math.max(0, Math.min(100, responseRate));
-  possible += 15;
-  earned += Math.round(rr * 0.15);
-  if (rr < 70) issues.push({ label: `Reply faster — ${rr}% response rate` });
+  // Response rate (15) — only when it was measurable.
+  //
+  // The rate is derived from booking_intents, which records WhatsApp / SMS /
+  // Call handoffs. Phase 2 replaced that flow with in-app payment and the
+  // table is read-only history, so no new intents are ever written and the
+  // seven-day window is always empty. Scoring the resulting 0% docked every
+  // owner the full category and told them to "Reply faster — 0% response
+  // rate" about a channel players can no longer use.
+  //
+  // `null` means the caller had no leads to measure, which is different from
+  // a genuine 0%. A previous version of this file called the signal "always
+  // meaningful"; that was wrong for exactly the same reason review_count was.
+  if (responseRate !== null) {
+    const rr = Math.max(0, Math.min(100, responseRate));
+    possible += 15;
+    earned += Math.round(rr * 0.15);
+    if (rr < 70) issues.push({ label: `Reply faster — ${rr}% response rate` });
+  }
 
   const score = possible === 0 ? 0 : Math.round((earned / possible) * 100);
   return { id: v.id, name: v.name, score: Math.min(100, score), issues };

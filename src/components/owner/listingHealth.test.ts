@@ -53,6 +53,25 @@ describe("scoreVenue", () => {
     expect(scoreVenue(withMany, 100).score).toBe(100);
   });
 
+  it("does not punish an owner for a response rate that could not be measured", () => {
+    // booking_intents stopped receiving rows when the WhatsApp handoff was
+    // removed, so the seven-day window is always empty. Scoring that as 0%
+    // docked every owner the category and told them to reply faster about a
+    // channel players can no longer use.
+    const complete = base({
+      image_url: "x", description: "d".repeat(80), location_confirmed: true,
+      sports: ["Football"], amenities: ["a", "b", "c"], is_active: true,
+    });
+    const unmeasured = scoreVenue(complete, null);
+    expect(unmeasured.score).toBe(100);
+    expect(unmeasured.issues.map((i) => i.label).join(" ")).not.toMatch(/response rate/i);
+
+    // A real 0% still counts against the score.
+    expect(scoreVenue(complete, 0).score).toBeLessThan(100);
+    expect(scoreVenue(complete, 0).issues.map((i) => i.label))
+      .toContain("Reply faster — 0% response rate");
+  });
+
   it("gives partial credit rather than nothing for a short description", () => {
     const short = scoreVenue(base({ description: "tiny" }), 100);
     const none = scoreVenue(base({ description: null }), 100);
