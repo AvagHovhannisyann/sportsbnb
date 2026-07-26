@@ -10,6 +10,42 @@ of its items are live exposures rather than tidy-ups.
 
 ---
 
+## Start here
+
+The sections below accumulated as I found things, which is not the order to do
+them in. This is:
+
+**Do first — everything else waits on these**
+
+1. **Revoke the Supabase PAT** (§1a). One click, and it currently carries full
+   account authority.
+2. **Sign up in the app and send me the email** (§3). It unblocks seed data,
+   which unblocks the remaining design work. Sign up against *this branch* —
+   the owner redirect loop is fixed here and not on `main`.
+
+**Do before anyone else uses the app**
+
+3. **Rotate and referrer-restrict the Maps and Yandex keys** (§1b, §1c). Both
+   are billable and both are in git history. The referrer restriction matters
+   more than the rotation.
+4. **Finish the Supabase migration** (§2) — blog seed, edge functions, secrets,
+   auth URLs, Vercel env. The app cannot serve real traffic until this is done.
+
+**Decisions only you can make** — I deliberately did not make these, and each
+says why at the section
+
+5. Partial-day blocking, or not (§5). Owners currently cannot close two hours.
+6. The leaderboard: publish XP, or remove it (§6). It renders one row today.
+7. Two admin tabs: wire up or delete (§5).
+8. Check-in counts: the aggregate RPC, which also closes a privacy gap (§7).
+
+**Optional** — §8.
+
+Nothing in the code is waiting on items 5–8. They are written up with the SQL
+where SQL is needed, so each is a short job once you have decided.
+
+---
+
 ## 1. Credentials to rotate
 
 Three credentials are exposed in places that removing them from the current
