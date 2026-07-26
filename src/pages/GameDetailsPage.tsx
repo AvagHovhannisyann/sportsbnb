@@ -279,8 +279,6 @@ const GameDetailsPage = () => {
                 </div>
               </div>
 
-              <Separator />
-
               {/* Game Info */}
               <div className="grid grid-cols-2 gap-4">
                 <Card>
@@ -348,25 +346,19 @@ const GameDetailsPage = () => {
 
               {/* Description */}
               {game.description && (
-                <>
-                  <Separator />
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-3">About this game</h2>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{game.description}</p>
-                  </div>
-                </>
+                <section className="panel">
+                  <h2 className="section-title">About this game</h2>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{game.description}</p>
+                </section>
               )}
-
-              <Separator />
 
               {/* Pending Requests - Only visible to host */}
               {isHost && pendingParticipants.length > 0 && (
-                <>
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <UserPlus className="h-5 w-5" />
-                      Join Requests ({pendingParticipants.length})
-                    </h2>
+                <section className="panel">
+                  <h2 className="section-title flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Join Requests ({pendingParticipants.length})
+                  </h2>
                     <div className="space-y-3">
                       {pendingParticipants.map((participant: GameParticipant) => {
                         const initials = participant.profile?.full_name
@@ -416,17 +408,15 @@ const GameDetailsPage = () => {
                         );
                       })}
                     </div>
-                  </div>
-                  <Separator />
-                </>
+                </section>
               )}
 
               {/* Participants */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">
+              <section className="panel">
+                <h2 className="section-title">
                   Players ({game.participant_count || 0}/{game.max_players})
                 </h2>
-                
+
                 {game.participants && game.participants.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {game.participants.map((participant) => {
@@ -456,7 +446,7 @@ const GameDetailsPage = () => {
                 ) : (
                   <p className="text-muted-foreground">No players have joined yet. Be the first!</p>
                 )}
-              </div>
+              </section>
             </div>
 
             {/* Sidebar */}
