@@ -167,7 +167,11 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
+        {/* min-h rather than a fixed h-16: at 375px the subtitle wraps to
+            three lines, which with `items-center` overflowed a 64px header
+            equally above and below and clipped the page title off the top of
+            the screen on every owner page. */}
+        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-border bg-background/95 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:gap-4 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -177,12 +181,14 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="flex-1">
+          {/* min-w-0 lets the subtitle clamp instead of forcing the row wider
+              than the phone. */}
+          <div className="min-w-0 flex-1">
             {title && (
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold text-foreground">{title}</h1>
                 {subtitle && (
-                  <p className="text-sm text-muted-foreground">{subtitle}</p>
+                  <p className="line-clamp-1 text-sm text-muted-foreground">{subtitle}</p>
                 )}
               </div>
             )}
@@ -190,8 +196,9 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
 
           <Link to="/">
             <Button variant="ghost" size="sm">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to site
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Back to site</span>
+              <span className="sr-only sm:hidden">Back to site</span>
             </Button>
           </Link>
         </header>

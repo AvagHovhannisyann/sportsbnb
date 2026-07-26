@@ -101,6 +101,13 @@ jobs:
             /forgot-password /games /login /nearby /privacy /signup /teams /terms \
             /venues /venues/map /dashboard /profile /settings /messages
 
+          SMOKE_WIDTH=375 SMOKE_HEIGHT=812 \
+          node scripts/smoke-routes.mjs owner \
+            /owner-dashboard /owner/venues /owner/bookings /owner/hours \
+            /owner/pricing /owner/policies /owner/settings /owner/widget \
+            /owner/earnings /owner/equipment /owner/integrations /owner/analytics \
+            /owner/schedule /my-venues /add-venue /list-venue
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

@@ -828,6 +828,24 @@ insets.
 All 23 player routes are clean at 375px, and the mobile pass now runs in CI
 alongside the desktop one, so this cannot regress unnoticed.
 
+### The owner header clipped its own title on every page
+
+The overflow sweep passed all 16 owner routes at 375px, so by that measure the
+owner surface was fine. Looking at it was a different answer: `OwnerLayout`
+gave its sticky header a fixed `h-16` while the subtitle wrapped to three lines
+at phone width. With `items-center` the excess split above and below, and
+**"My Venues" was sliced off the top of the screen** — on every owner page.
+
+Worth recording as a limit of the harness rather than a gap in it. Horizontal
+overflow is measurable and now guarded in CI; vertical clipping inside a
+fixed-height container is not, because nothing overflows the *document*. The
+check said clean and was right about the thing it checks.
+
+Fixed with `min-h-16` plus padding so the bar grows, `min-w-0` and a
+`line-clamp-1` subtitle so it never forces the row wider, and the "Back to
+site" label reduced to its chevron below `sm` with the text kept for screen
+readers. Desktop is unchanged — full subtitle, full label.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
