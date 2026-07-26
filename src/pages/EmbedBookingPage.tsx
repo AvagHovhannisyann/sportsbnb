@@ -185,7 +185,7 @@ const EmbedBookingPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background" role="status" aria-label="Loading availability">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -286,7 +286,7 @@ const EmbedBookingPage = () => {
               Available Times
             </label>
             {loadingSlots ? (
-              <div className="flex justify-center py-4">
+              <div className="flex justify-center py-4" role="status" aria-label="Loading availability">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : availability.length === 0 ? (

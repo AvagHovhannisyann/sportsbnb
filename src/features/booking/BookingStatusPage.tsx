@@ -104,7 +104,7 @@ export default function BookingStatusPage() {
   const renderBody = () => {
     if (!finalStatus) {
       return (
-        <div className="text-center py-8">
+        <div className="text-center py-8" role="status" aria-label="Loading your booking">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-1">Confirming your payment…</h1>
           <p className="text-muted-foreground text-sm">This usually takes a few seconds.</p>

@@ -167,7 +167,7 @@ export default function BookingLeadsTab() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-8" role="status" aria-label="Loading booking leads">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filtered.length === 0 ? (

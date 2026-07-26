@@ -160,7 +160,7 @@ const AdminDashboard = () => {
 
           {/* Stats Grid */}
           {statsLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
@@ -217,7 +217,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     {venuesLoading ? (
-                      <div className="flex justify-center py-4">
+                      <div className="flex justify-center py-4" role="status" aria-label="Loading admin data">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
                     ) : (
@@ -260,7 +260,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     {bookingsLoading ? (
-                      <div className="flex justify-center py-4">
+                      <div className="flex justify-center py-4" role="status" aria-label="Loading admin data">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
                     ) : (
@@ -293,7 +293,7 @@ const AdminDashboard = () => {
 
             {/* Booking Leads Tab */}
             <TabsContent value="leads">
-              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-8" role="status" aria-label="Loading admin data"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                 <BookingLeadsTab />
               </Suspense>
             </TabsContent>
@@ -307,7 +307,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {usersLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
@@ -376,7 +376,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {venuesLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
@@ -463,7 +463,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {bookingsLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
@@ -504,13 +504,13 @@ const AdminDashboard = () => {
 
             {/* Blog Tab */}
             <TabsContent value="payouts">
-              <Suspense fallback={<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-10" role="status" aria-label="Loading admin data"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
                 <PayoutsTab />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="blog">
-              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-8" role="status" aria-label="Loading admin data"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                 <BlogPostsTab />
               </Suspense>
             </TabsContent>

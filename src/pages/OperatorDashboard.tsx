@@ -41,7 +41,7 @@ const OperatorDashboard = () => {
           </div>
 
           {isLoading && (
-            <div className="flex justify-center py-16">
+            <div className="flex justify-center py-16" role="status" aria-label="Loading operator data">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           )}

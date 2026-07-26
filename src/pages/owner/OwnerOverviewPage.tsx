@@ -51,7 +51,7 @@ const OwnerOverviewPage = () => {
   if (authLoading) {
     return (
       <OwnerLayout title="Overview">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading your dashboard">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -319,7 +319,7 @@ const OwnerOverviewPage = () => {
             </CardHeader>
             <CardContent>
               {venuesLoading ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-8" role="status" aria-label="Loading your dashboard">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : myVenues.length > 0 ? (

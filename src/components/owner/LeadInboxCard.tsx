@@ -53,7 +53,7 @@ export const LeadInboxCard = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-12 flex justify-center">
+          <div className="py-12 flex justify-center" role="status" aria-label="Loading your inbox">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : filtered.length === 0 ? (

@@ -32,7 +32,7 @@ export const OwnerCoachCard = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-8 flex justify-center text-muted-foreground gap-2">
+          <div className="py-8 flex justify-center text-muted-foreground gap-2" role="status" aria-label="Loading your coach tips">
             <Loader2 className="h-4 w-4 animate-spin" /> Analyzing your venues…
           </div>
         ) : error ? (

@@ -203,7 +203,7 @@ const MessagesPage = () => {
 
           {/* Chat List */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center py-16" role="status" aria-label="Loading messages">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : chatRoomsWithDetails && chatRoomsWithDetails.length > 0 ? (

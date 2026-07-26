@@ -351,7 +351,7 @@ const CommunityPage = () => {
 
             <TabsContent value="discover" className="space-y-8">
               {isLoading ? (
-                <div className="text-center py-12">
+                <div className="text-center py-12" role="status" aria-label="Loading the community">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                   <p className="text-muted-foreground mt-2">Loading community...</p>
                 </div>
@@ -589,7 +589,7 @@ const CommunityPage = () => {
                   actionHref="/login"
                 />
               ) : userGamesLoading ? (
-                <div className="text-center py-12">
+                <div className="text-center py-12" role="status" aria-label="Loading the community">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                 </div>
               ) : (

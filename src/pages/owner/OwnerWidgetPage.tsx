@@ -57,7 +57,7 @@ const OwnerWidgetPage = () => {
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Booking Widget">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading the widget">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>

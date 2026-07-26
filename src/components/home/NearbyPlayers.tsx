@@ -111,7 +111,7 @@ const NearbyPlayers = () => {
 
       {state === "loading" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground" role="status" aria-label="Loading nearby players">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <span className="text-sm font-medium">
               Searching for {selectedSport === "All" ? "players" : selectedSport + " players"}...

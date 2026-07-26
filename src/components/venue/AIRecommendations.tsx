@@ -28,7 +28,7 @@ const AIRecommendations = () => {
             Recommended for You
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
+        <CardContent className="flex items-center justify-center py-8" role="status" aria-label="Finding venues for you">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
           <span className="ml-2 text-sm text-muted-foreground">Finding perfect venues...</span>
         </CardContent>

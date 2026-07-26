@@ -82,7 +82,7 @@ const OwnerIntegrationsPage = () => {
   if (authLoading) {
     return (
       <OwnerLayout title="Integrations">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading integrations">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -184,7 +184,7 @@ const OwnerIntegrationsPage = () => {
                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{integration.description}</p>
                         
                         {isLoading ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" role="status" aria-label="Loading integrations">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span className="text-sm text-muted-foreground">Checking status...</span>
                           </div>

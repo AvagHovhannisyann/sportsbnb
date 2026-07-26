@@ -61,7 +61,7 @@ const GameDetailsPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading the game">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       </Layout>

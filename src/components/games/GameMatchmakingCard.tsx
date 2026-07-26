@@ -21,7 +21,7 @@ const GameMatchmakingCard = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-3" role="status" aria-label="Loading match suggestions">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
           </div>
         ) : isError ? (

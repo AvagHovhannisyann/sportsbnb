@@ -112,7 +112,7 @@ const OwnerPoliciesPage = () => {
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Policies">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading policies">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -193,7 +193,7 @@ const OwnerPoliciesPage = () => {
           </div>
 
           {policyLoading ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-12" role="status" aria-label="Loading policies">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (

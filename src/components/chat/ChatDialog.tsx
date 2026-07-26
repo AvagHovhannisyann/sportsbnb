@@ -86,7 +86,7 @@ export const ChatDialog = ({
   const content = (
     <>
       {isInitializing || isLoadingRoom || !roomId ? (
-        <div className="flex items-center justify-center h-[400px]">
+        <div className="flex items-center justify-center h-[400px]" role="status" aria-label="Loading messages">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (

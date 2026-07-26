@@ -38,7 +38,9 @@ export const UpcomingPlansCard = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          <div className="py-8 flex justify-center" role="status" aria-label="Loading your plans">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
         ) : active.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
             {/* Was "find a venue and tap WhatsApp to start" — an instruction

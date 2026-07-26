@@ -57,7 +57,7 @@ const CalendarCallbackPage = () => {
           <CardHeader className="text-center">
             {status === "loading" && (
               <>
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center mb-4" role="status" aria-label="Connecting your calendar">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
                 <CardTitle as="h2">Connecting Calendar...</CardTitle>

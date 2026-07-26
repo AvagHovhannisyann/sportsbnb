@@ -51,6 +51,9 @@ const IDS = {
 
 const NOW = new Date(0).toISOString();
 
+/** How long `-slow` holds a content response open. */
+const SLOW_MS = 12000;
+
 // One plausible row per table the detail pages read. Deliberately populated
 // rather than minimal — nullable columns left null exercise the fallback
 // branches, but every column the page *renders* carries a value, so the smoke
@@ -299,11 +302,20 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
   // arrive — and "renders an error panel with a retry" versus "renders a blank
   // rectangle" is exactly the difference nobody notices until it is live.
   const errorData = requested.endsWith('-error');
+  // `-slow` holds every content response open, so the page stays on its
+  // loading branch while an audit looks at it. Skeletons and spinners are the
+  // one state every page has and no check here has ever seen: the fixtures
+  // answer instantly, so the loading branch is gone before the first
+  // measurement. On a real phone on a real network it is where people spend
+  // the first second of every page.
+  const slowData = requested.endsWith('-slow');
   const userType = emptyData
     ? requested.slice(0, -'-empty'.length)
     : errorData
       ? requested.slice(0, -'-error'.length)
-      : requested;
+      : slowData
+        ? requested.slice(0, -'-slow'.length)
+        : requested;
   const ctx = await browser.newContext({
     viewport: { width, height },
     permissions: ['geolocation'],
@@ -328,10 +340,14 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
   // Array for list endpoints; single object only where the app uses maybeSingle.
   // In `-error` mode this is the failure: PostgREST's own error shape, so the
   // supabase client surfaces it as an error rather than as unparseable data.
-  await p.route('**/rest/v1/**', r=>errorData
-    ? r.fulfill({status:500,contentType:'application/json',
-        body:JSON.stringify({message:'stubbed failure',code:'XX000',details:null,hint:null})})
-    : r.fulfill({status:200,contentType:'application/json',body:'[]'}));
+  await p.route('**/rest/v1/**', async r=>{
+    if (errorData) return r.fulfill({status:500,contentType:'application/json',
+      body:JSON.stringify({message:'stubbed failure',code:'XX000',details:null,hint:null})});
+    // Long enough to outlast any audit's settle, short enough that the page
+    // still resolves rather than hanging the run.
+    if (slowData) await new Promise(res=>setTimeout(res, SLOW_MS));
+    return r.fulfill({status:200,contentType:'application/json',body:'[]'});
+  });
   await p.route('**/rest/v1/profiles**', r=>{
     const u=r.request().url();
     const single = /user_id=eq\./.test(u) && !/xp=gt/.test(u);
@@ -353,9 +369,11 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
   // above answers every content query.
   if (!emptyData && !errorData)
   for (const [table,row] of Object.entries(ROWS)) {
-    await p.route(`**/rest/v1/${table}**`, r=>r.fulfill({status:200,
-      contentType:'application/json',
-      body:JSON.stringify(isSingleLookup(r.request().url())?row:listOf(row))}));
+    await p.route(`**/rest/v1/${table}**`, async r=>{
+      if (slowData) await new Promise(res=>setTimeout(res, SLOW_MS));
+      return r.fulfill({status:200, contentType:'application/json',
+        body:JSON.stringify(isSingleLookup(r.request().url())?row:listOf(row))});
+    });
   }
   return p;
 }

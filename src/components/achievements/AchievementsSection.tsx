@@ -24,7 +24,7 @@ const AchievementsSection = () => {
   if (achLoading || uaLoading) {
     return (
       <Card>
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-6 space-y-4" role="status" aria-label="Loading achievements">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-20 w-full" />
         </CardContent>
@@ -97,7 +97,7 @@ const AchievementsSection = () => {
             </CardHeader>
             <CardContent>
               {lbLoading ? (
-                <div className="space-y-3">
+                <div className="space-y-3" role="status" aria-label="Loading the leaderboard">
                   {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                 </div>
               ) : leaderboard.length === 0 ? (

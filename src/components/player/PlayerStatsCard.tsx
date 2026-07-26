@@ -11,7 +11,7 @@ const PlayerStatsCard = () => {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center">
+        <CardContent className="py-8 text-center" role="status" aria-label="Loading">
           <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
         </CardContent>
       </Card>

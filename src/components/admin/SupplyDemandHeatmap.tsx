@@ -110,7 +110,7 @@ export function SupplyDemandHeatmap() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <div className="py-8 flex justify-center" role="status" aria-label="Loading the heatmap"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : cells.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">
             Not enough lead data yet — heatmap unlocks once inquiries flow in.

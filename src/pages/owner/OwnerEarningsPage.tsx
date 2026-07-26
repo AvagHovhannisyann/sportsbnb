@@ -193,7 +193,7 @@ export default function OwnerEarningsPage() {
           </CardHeader>
           <CardContent>
             {ledgerLoading ? (
-              <div className="flex justify-center py-8">
+              <div className="flex justify-center py-8" role="status" aria-label="Loading your transactions">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : ledgerError ? (

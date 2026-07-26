@@ -62,7 +62,7 @@ const VenueMapPage = () => {
             no name, so it read as an anonymous block of the page. */}
         <div role="region" aria-label="Map of venues" className="flex-1 relative">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full" role="status" aria-label="Loading the map">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (

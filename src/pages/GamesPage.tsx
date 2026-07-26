@@ -469,7 +469,11 @@ const GamesPage = () => {
           {isLoading ? (
             // Same grid, same card footprint, so nothing moves when the real
             // games land in it.
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              role="status"
+              aria-label="Loading games"
+            >
               {Array.from({ length: 6 }, (_, i) => (
                 <GameCardSkeleton key={i} />
               ))}

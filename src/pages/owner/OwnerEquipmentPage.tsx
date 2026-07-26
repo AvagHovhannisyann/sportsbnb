@@ -143,7 +143,7 @@ const OwnerEquipmentPage = () => {
   if (venuesLoading) {
     return (
       <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
-        <div className="flex items-center justify-center py-16">
+        <div className="flex items-center justify-center py-16" role="status" aria-label="Loading equipment">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -215,7 +215,7 @@ const OwnerEquipmentPage = () => {
         )}
 
         {equipmentLoading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-16" role="status" aria-label="Loading equipment">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : equipment.length === 0 ? (

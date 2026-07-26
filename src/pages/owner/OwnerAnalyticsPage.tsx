@@ -36,7 +36,7 @@ const OwnerAnalyticsPage = () => {
   if (isLoading) {
     return (
       <OwnerLayout title="Analytics">
-        <div className="grid gap-6">
+        <div className="grid gap-6" role="status" aria-label="Loading your analytics">
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>

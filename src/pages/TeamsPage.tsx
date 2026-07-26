@@ -118,8 +118,20 @@ const TeamsPage = () => {
             {/* My Teams Tab */}
             {user && (
               <TabsContent value="my-teams">
+                {/* role="status" + a name on the loading grids below, matching
+                    DiscoverPage and VenueDetailsPage. Skeletons are a status
+                    message under WCAG 4.1.3, and a bare grid of animated grey
+                    boxes is one nobody who is not looking at the screen can
+                    perceive — the page just goes quiet for as long as the
+                    request takes. The label goes on the container, not the
+                    boxes: sixty of them announcing individually would be worse
+                    than silence. */}
                 {userTeamsLoading ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    role="status"
+                    aria-label="Loading your teams"
+                  >
                     {Array.from({ length: 3 }, (_, i) => (
                       <TeamCardSkeleton key={i} />
                     ))}
@@ -234,7 +246,11 @@ const TeamsPage = () => {
               </div>
 
               {teamsLoading ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div
+                  className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  role="status"
+                  aria-label="Loading teams"
+                >
                   {Array.from({ length: 6 }, (_, i) => (
                     <TeamCardSkeleton key={i} />
                   ))}

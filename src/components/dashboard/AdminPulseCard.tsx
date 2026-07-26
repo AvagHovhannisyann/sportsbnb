@@ -16,7 +16,7 @@ export const AdminPulseCard = () => {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-10 flex items-center justify-center gap-2 text-muted-foreground">
+        <CardContent className="py-10 flex items-center justify-center gap-2 text-muted-foreground" role="status" aria-label="Generating the marketplace brief">
           <Loader2 className="h-4 w-4 animate-spin" /> Generating marketplace brief…
         </CardContent>
       </Card>

@@ -81,7 +81,7 @@ export function SportsDNACard() {
       </CardHeader>
       <CardContent className="space-y-5">
         {isLoading ? (
-          <div className="py-8 flex justify-center">
+          <div className="py-8 flex justify-center" role="status" aria-label="Loading your sports profile">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
           </div>
         ) : isError ? (

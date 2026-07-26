@@ -40,7 +40,7 @@ export function ListingHealthCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <div className="py-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          <div className="py-6 flex justify-center" role="status" aria-label="Loading listing health"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : venues.length === 0 ? (
           <p className="text-sm text-muted-foreground">Add a venue to see your listing health score.</p>
         ) : (

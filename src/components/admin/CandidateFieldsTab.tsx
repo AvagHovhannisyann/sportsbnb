@@ -82,7 +82,7 @@ const CandidateFieldsTab: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-8" role="status" aria-label="Loading candidate fields">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );

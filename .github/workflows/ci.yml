@@ -361,6 +361,16 @@ jobs:
           node scripts/error-affordance.mjs player $ERROR_PLAYER
           node scripts/error-affordance.mjs owner  $ERROR_OWNER
 
+          # And the fourth state: still loading. WCAG 4.1.3 asks that a status
+          # message be programmatically determinable without taking focus, and
+          # a spinner is a status message. Forty-six wrappers held a Loader2
+          # with nothing to announce it — the page simply went quiet for the
+          # length of the request. `-slow` holds every content response open so
+          # the branch stays on screen to be measured.
+          node scripts/loading-status.mjs player /dashboard /teams /games /venues /community /messages
+          node scripts/loading-status.mjs owner  /owner-dashboard /owner/venues /owner/bookings /owner/earnings /owner/analytics /owner/equipment
+          node scripts/loading-status.mjs admin  /admin /operator
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

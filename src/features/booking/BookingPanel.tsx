@@ -177,7 +177,7 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
           <Clock className="h-4 w-4" /> Time
         </p>
         {slotsLoading ? (
-          <div className="flex items-center justify-center py-6 text-muted-foreground">
+          <div className="flex items-center justify-center py-6 text-muted-foreground" role="status" aria-label="Loading availability">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : slotsError ? (

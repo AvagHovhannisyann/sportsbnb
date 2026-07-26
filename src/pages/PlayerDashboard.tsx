@@ -136,7 +136,9 @@ const PlayerDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {gamesLoading ? (
-                  <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+                  <div className="py-8 flex justify-center" role="status" aria-label="Loading your games">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
                 ) : upcomingGames.length > 0 ? (
                   upcomingGames.map((game) => (
                     <Link key={game.id} to={`/game/${game.id}`}>

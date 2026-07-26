@@ -83,7 +83,7 @@ const FieldSubmissionsTab: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-8" role="status" aria-label="Loading submissions">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );

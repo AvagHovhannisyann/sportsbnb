@@ -380,7 +380,7 @@ const VenueDetailsPage = () => {
                 )}
 
                 {reviewsLoading ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-8" role="status" aria-label="Loading the venue">
                     <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
                   </div>
                 ) : (

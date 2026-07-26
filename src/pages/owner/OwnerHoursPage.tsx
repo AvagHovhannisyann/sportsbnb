@@ -89,7 +89,7 @@ const OwnerHoursPage = () => {
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Opening Hours">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading opening hours">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -196,7 +196,7 @@ const OwnerHoursPage = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {hoursLoading ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-8" role="status" aria-label="Loading opening hours">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
