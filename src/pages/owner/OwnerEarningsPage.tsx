@@ -126,7 +126,7 @@ export default function OwnerEarningsPage() {
             <CardDescription className="flex items-center gap-1.5">
               <PiggyBank className="h-4 w-4" /> Available balance
             </CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{formatAmd(balance?.balance_minor ?? 0)}</CardTitle>
+            <CardTitle as="h2" className="text-3xl tabular-nums">{formatAmd(balance?.balance_minor ?? 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">
@@ -137,7 +137,7 @@ export default function OwnerEarningsPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle as="h2" className="text-base flex items-center gap-2">
               {method === "idram" ? <Wallet className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
               Payout destination
             </CardTitle>
@@ -182,7 +182,7 @@ export default function OwnerEarningsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent activity</CardTitle>
+            <CardTitle as="h2" className="text-base">Recent activity</CardTitle>
           </CardHeader>
           <CardContent>
             {ledgerLoading ? (
@@ -225,7 +225,7 @@ export default function OwnerEarningsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Payouts</CardTitle>
+            <CardTitle as="h2" className="text-base">Payouts</CardTitle>
           </CardHeader>
           <CardContent>
             {!payouts || payouts.length === 0 ? (

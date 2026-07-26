@@ -107,7 +107,9 @@ const SubmitFieldPage: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              {/* The page had no h1 at all — its only heading was this card title, so
+                  that is what the page is called. */}
+              <CardTitle as="h1" className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
                 Submit a Public Field
               </CardTitle>

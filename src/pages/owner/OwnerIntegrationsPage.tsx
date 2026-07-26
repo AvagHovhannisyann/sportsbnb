@@ -180,7 +180,7 @@ const OwnerIntegrationsPage = () => {
                         <Icon className="h-8 w-8" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground mb-2">{integration.name}</h3>
+                        <h2 className="font-semibold text-foreground mb-2">{integration.name}</h2>
                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{integration.description}</p>
                         
                         {isLoading ? (
@@ -233,7 +233,7 @@ const OwnerIntegrationsPage = () => {
           {/* iCal Export Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Link2 className="h-5 w-5 text-primary" />
                 Manual Calendar Sync
               </CardTitle>
@@ -248,7 +248,7 @@ const OwnerIntegrationsPage = () => {
                     <Link2 className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-foreground mb-1">Export iCal Feed</h4>
+                    <h3 className="font-medium text-foreground mb-1">Export iCal Feed</h3>
                     <p className="text-sm text-muted-foreground mb-3">
                       Copy this link and add it to any calendar app that supports iCal.
                     </p>

@@ -125,7 +125,7 @@ const CreateTeamPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Team Info */}
             <Card>
-              <CardHeader><CardTitle>Team Info</CardTitle></CardHeader>
+              <CardHeader><CardTitle as="h2">Team Info</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Team Name *</Label>

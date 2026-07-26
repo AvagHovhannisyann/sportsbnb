@@ -137,7 +137,7 @@ const OwnerPricingPage = () => {
           {/* Base Price */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Banknote className="h-5 w-5 text-primary" />
                 Base Price
               </CardTitle>
@@ -175,7 +175,7 @@ const OwnerPricingPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Dynamic Pricing Rules</CardTitle>
+                <CardTitle as="h2">Dynamic Pricing Rules</CardTitle>
                 <CardDescription>
                   Set different prices based on day and time
                 </CardDescription>
@@ -240,10 +240,10 @@ const OwnerPricingPage = () => {
           {/* Pricing Tips */}
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-6">
-              <h4 className="mb-3 flex items-center gap-1.5 font-medium text-foreground">
+              <h3 className="mb-3 flex items-center gap-1.5 font-medium text-foreground">
                 <Lightbulb className="h-4 w-4 text-primary" aria-hidden="true" />
                 Pricing tips
-              </h4>
+              </h3>
               <ul className="text-sm text-muted-foreground space-y-2">
                 <li>• Set higher prices for peak hours (evenings and weekends) to maximize revenue</li>
                 <li>• Offer discounts for early morning slots to fill less popular times</li>

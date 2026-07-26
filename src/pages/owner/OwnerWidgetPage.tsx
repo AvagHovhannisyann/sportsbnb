@@ -130,7 +130,7 @@ const OwnerWidgetPage = () => {
           {/* Widget Preview */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Code className="h-5 w-5 text-primary" />
                 Widget Preview
               </CardTitle>
@@ -165,7 +165,7 @@ const OwnerWidgetPage = () => {
           {/* Embed Codes */}
           <Card>
             <CardHeader>
-              <CardTitle>Embed Code</CardTitle>
+              <CardTitle as="h2">Embed Code</CardTitle>
               <CardDescription>
                 Choose how you want to add the booking widget to your website
               </CardDescription>
@@ -297,7 +297,7 @@ const OwnerWidgetPage = () => {
           {/* Customization Options */}
           <Card>
             <CardHeader>
-              <CardTitle>Customization</CardTitle>
+              <CardTitle as="h2">Customization</CardTitle>
               <CardDescription>
                 Customize the look of your booking widget
               </CardDescription>

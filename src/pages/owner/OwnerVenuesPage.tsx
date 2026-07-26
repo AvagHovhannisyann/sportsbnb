@@ -75,10 +75,10 @@ const OwnerVenuesPage = () => {
           {/* Active Venues */}
           {activeVenues.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Active Venues ({activeVenues.length})
-              </h3>
+              </h2>
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {activeVenues.map((venue) => (
                   <Card key={venue.id} className="card-lift group overflow-hidden">
@@ -129,7 +129,7 @@ const OwnerVenuesPage = () => {
                       </DropdownMenu>
                     </div>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h4>
+                      <h3 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h3>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                         <MapPin className="h-3 w-3" />
                         <span className="truncate">{venue.address || venue.city}</span>
@@ -178,7 +178,7 @@ const OwnerVenuesPage = () => {
                       </Badge>
                     </div>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h4>
+                      <h3 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h3>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                         <MapPin className="h-3 w-3" />
                         <span className="truncate">{venue.address || venue.city}</span>

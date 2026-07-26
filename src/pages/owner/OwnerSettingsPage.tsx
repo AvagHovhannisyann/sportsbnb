@@ -188,7 +188,7 @@ const OwnerSettingsPage = () => {
           {/* General Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-primary" />
                 General Information
               </CardTitle>

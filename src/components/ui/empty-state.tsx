@@ -71,7 +71,12 @@ export function EmptyState({
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
         <Icon className="h-8 w-8 text-primary" aria-hidden="true" />
       </div>
-      <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
+      {/* h2, because an empty state stands in for the main content of a page
+          or a panel — it sits where a grid of cards would, at the level those
+          cards would have had. As an h3 it skipped a level on every page whose
+          only other heading is the page h1, which /owner/equipment was. Going
+          *up* a level is never a skip, so this is safe wherever it lands. */}
+      <h2 className="mb-2 text-lg font-semibold text-foreground">{title}</h2>
       {description && (
         <p className="mb-6 max-w-sm text-muted-foreground">{description}</p>
       )}

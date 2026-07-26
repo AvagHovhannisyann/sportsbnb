@@ -37,6 +37,11 @@ const VenueMapPage = () => {
   return (
     <Layout>
       <div className="h-[calc(100vh-64px)] flex flex-col">
+        {/* The page is a full-bleed map with a filter bar and deliberately no
+            visible title, so it had no h1 and its outline began at h2. A
+            visually-hidden heading gives the document a top level without
+            putting anything on screen. */}
+        <h1 className="sr-only">Venues on a map</h1>
         <div className="bg-card border-b p-3 flex items-center gap-3 z-10">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <Select value={selectedSport} onValueChange={setSelectedSport}>

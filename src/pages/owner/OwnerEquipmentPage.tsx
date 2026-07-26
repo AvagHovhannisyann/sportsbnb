@@ -193,26 +193,26 @@ const OwnerEquipmentPage = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : equipment.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No equipment added</h3>
-              <p className="text-muted-foreground mb-4">
-                Add rental items like balls, rackets, or packages for customers to add to their booking.
-              </p>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Equipment
-              </Button>
-            </CardContent>
-          </Card>
+          /* A ninth hand-rolled empty state, on a page that already imports
+             the shared one for its no-venues case. The unification pass caught
+             the eight on the player side and missed this because it sits
+             behind `equipment.length === 0`, which no fixture had ever
+             produced. Found by measuring heading levels, of all things. */
+          <EmptyState
+            bordered
+            icon={Package}
+            title="No equipment added"
+            description="Add rental items like balls, rackets, or packages for customers to add to their booking."
+            actionLabel="Add First Equipment"
+            onAction={() => handleOpenDialog()}
+          />
         ) : (
           <div className="space-y-6">
             {/* Individual Items */}
             {items.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Individual Items</CardTitle>
+                  <CardTitle as="h2" className="text-lg">Individual Items</CardTitle>
                   <CardDescription>Single items customers can rent</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -275,7 +275,7 @@ const OwnerEquipmentPage = () => {
             {packages.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Equipment Packages</CardTitle>
+                  <CardTitle as="h2" className="text-lg">Equipment Packages</CardTitle>
                   <CardDescription>Bundled equipment sets at a discounted price</CardDescription>
                 </CardHeader>
                 <CardContent>

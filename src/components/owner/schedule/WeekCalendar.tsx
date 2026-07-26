@@ -99,7 +99,7 @@ export function WeekCalendar({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-4">
-          <h3 className="font-semibold text-foreground">{resourceName}</h3>
+          <h2 className="font-semibold text-foreground">{resourceName}</h2>
           <Badge variant="outline" className="text-xs">
             {format(weekStart, "MMM d")} - {format(addDays(weekStart, 6), "MMM d, yyyy")}
           </Badge>

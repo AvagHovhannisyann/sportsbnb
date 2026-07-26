@@ -60,7 +60,7 @@ const OwnerAnalyticsPage = () => {
         {/* Revenue Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Revenue (Last 6 Months)</CardTitle>
+            <CardTitle as="h2" className="text-lg">Revenue (Last 6 Months)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -93,7 +93,7 @@ const OwnerAnalyticsPage = () => {
         {/* Bookings by Venue */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Bookings by Venue</CardTitle>
+            <CardTitle as="h2" className="text-lg">Bookings by Venue</CardTitle>
           </CardHeader>
           <CardContent>
             {(analytics?.bookingsByVenue?.length || 0) > 0 ? (

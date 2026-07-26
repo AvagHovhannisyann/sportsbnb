@@ -186,7 +186,7 @@ const OwnerHoursPage = () => {
           {/* Weekly Hours */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
                 Weekly Schedule
               </CardTitle>
@@ -292,7 +292,7 @@ const OwnerHoursPage = () => {
           {/* Exceptions / Blocked Dates */}
           <Card>
             <CardHeader>
-              <CardTitle>Date Exceptions</CardTitle>
+              <CardTitle as="h2">Date Exceptions</CardTitle>
               <CardDescription>
                 Block specific dates for holidays, maintenance, or special events
               </CardDescription>

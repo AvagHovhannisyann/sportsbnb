@@ -20,7 +20,7 @@ export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{flagFor(m.market)}</span>
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground">{m.market}</h3>
+                  <h2 className="text-lg font-semibold text-foreground">{m.market}</h2>
                   <p className="text-xs text-muted-foreground">{m.currency} market</p>
                 </div>
               </div>

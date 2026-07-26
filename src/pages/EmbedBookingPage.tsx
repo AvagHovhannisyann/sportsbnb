@@ -200,7 +200,9 @@ const EmbedBookingPage = () => {
         <CardContent className="p-4 space-y-4">
           {/* Venue Info */}
           <div>
-            <h2 className="text-xl font-semibold text-foreground">{venue.name}</h2>
+            {/* An embed is rendered in its own document inside the iframe, so the
+                venue name is that document's h1, not an h2 under nothing. */}
+            <h1 className="text-xl font-semibold text-foreground">{venue.name}</h1>
             <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
               <MapPin className="h-4 w-4" />
               {venue.address}, {venue.city}

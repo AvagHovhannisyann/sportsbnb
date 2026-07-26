@@ -161,7 +161,7 @@ const CreateGamePage = () => {
             {/* Game Details */}
             <Card>
               <CardHeader>
-                <CardTitle>Game Details</CardTitle>
+                <CardTitle as="h2">Game Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">

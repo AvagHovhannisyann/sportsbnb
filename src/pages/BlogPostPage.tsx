@@ -174,12 +174,30 @@ const BlogPostPage = () => {
 
         {/* Content */}
         <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-a:text-primary prose-strong:text-foreground">
-          <ReactMarkdown>{post.content}</ReactMarkdown>
+          {/* Markdown headings shift down one level.
+              A post is written as a document — it starts at `#` — but here it
+              is nested inside a page that already has an `h1` for the title.
+              Rendered as-is that gives every blog post two `h1`s, one of them
+              the post title and one the author's first section. Shifting the
+              whole scale down keeps the author's structure intact and makes it
+              a subtree of the page instead of a rival document. */}
+          <ReactMarkdown
+            components={{
+              h1: ({ node: _node, ...props }) => <h2 {...props} />,
+              h2: ({ node: _node, ...props }) => <h3 {...props} />,
+              h3: ({ node: _node, ...props }) => <h4 {...props} />,
+              h4: ({ node: _node, ...props }) => <h5 {...props} />,
+              h5: ({ node: _node, ...props }) => <h6 {...props} />,
+              h6: ({ node: _node, ...props }) => <h6 {...props} />,
+            }}
+          >
+            {post.content}
+          </ReactMarkdown>
         </div>
 
         {/* Footer CTA */}
         <div className="mt-16 p-8 bg-primary/5 rounded-2xl text-center border border-primary/10">
-          <h3 className="text-xl font-semibold text-foreground mb-2">Ready to get started?</h3>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Ready to get started?</h2>
           <p className="text-muted-foreground mb-4">Find and book sports venues near you, or list your facility today.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild>

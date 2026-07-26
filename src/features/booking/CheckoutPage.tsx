@@ -195,7 +195,11 @@ export default function CheckoutPage() {
       <div className="container max-w-lg py-10">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            {/* The page had no h1: its only heading was this card title.
+                "Confirm and pay" is what the page is, so it is the page
+                heading — on the one screen in the app where money changes
+                hands, which is not a good place to have no document outline. */}
+            <CardTitle as="h1" className="flex items-center justify-between">
               <span>Confirm and pay</span>
               {/* Was a hardcoded text-amber-600 — off the token system and
                   muddy on a dark surface — and it looked identical at 19:00

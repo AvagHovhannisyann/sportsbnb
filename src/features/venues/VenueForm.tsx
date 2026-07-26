@@ -271,7 +271,7 @@ export const VenueForm = ({
   const basicInfoCard = mode === "create" ? (
     <Card>
       <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
+        <CardTitle as="h2">Basic Information</CardTitle>
         <CardDescription>Provide accurate details to attract more bookings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -318,7 +318,7 @@ export const VenueForm = ({
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
+        <CardTitle as="h2">Basic Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -373,7 +373,7 @@ export const VenueForm = ({
   const imagesCard = mode === "create" ? (
     <Card className={validationErrors.images ? 'border-destructive' : ''}>
       <CardHeader>
-        <CardTitle>
+        <CardTitle as="h2">
           Venue Photos * <span className="text-muted-foreground text-sm font-normal">({imageFiles.length}/{MIN_PHOTOS} minimum)</span>
         </CardTitle>
         <CardDescription>Upload at least 3 high-quality photos showing different areas of your venue</CardDescription>
@@ -430,7 +430,7 @@ export const VenueForm = ({
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle>Venue Image</CardTitle>
+        <CardTitle as="h2">Venue Image</CardTitle>
       </CardHeader>
       <CardContent>
         {imagePreview ? (
@@ -470,7 +470,7 @@ export const VenueForm = ({
   const sportsCard = (
     <Card className={mode === "create" && validationErrors.sports ? 'border-destructive' : ''}>
       <CardHeader>
-        <CardTitle>Sports Offered *</CardTitle>
+        <CardTitle as="h2">Sports Offered *</CardTitle>
         {mode === "create" && (
           <CardDescription>Select all sports available at your venue</CardDescription>
         )}
@@ -487,7 +487,7 @@ export const VenueForm = ({
   const amenitiesCard = (
     <Card>
       <CardHeader>
-        <CardTitle>Amenities</CardTitle>
+        <CardTitle as="h2">Amenities</CardTitle>
         {mode === "create" && (
           <CardDescription>Highlight what makes your venue special</CardDescription>
         )}
@@ -501,7 +501,7 @@ export const VenueForm = ({
   const contactCard = mode === "create" ? (
     <Card className={validationErrors.phone ? 'border-destructive' : ''}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle as="h2" className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-[#25D366]" />
           Booking Contact
         </CardTitle>
@@ -571,7 +571,7 @@ export const VenueForm = ({
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle as="h2" className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-[#25D366]" />
           Booking Contact
         </CardTitle>
@@ -637,7 +637,7 @@ export const VenueForm = ({
   const pricingCard = (
     <Card>
       <CardHeader>
-        <CardTitle>Pricing & Settings</CardTitle>
+        <CardTitle as="h2">Pricing & Settings</CardTitle>
         {mode === "create" && (
           <CardDescription>You'll receive 90% of each booking</CardDescription>
         )}

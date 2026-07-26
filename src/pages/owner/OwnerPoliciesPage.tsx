@@ -217,7 +217,7 @@ const OwnerPoliciesPage = () => {
               {/* Overtime & Early Arrival */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle as="h2" className="flex items-center gap-2">
                     <Timer className="h-5 w-5 text-primary" />
                     Overtime & Early Arrival
                   </CardTitle>
@@ -312,7 +312,7 @@ const OwnerPoliciesPage = () => {
               {/* Cancellation Policy */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle as="h2" className="flex items-center gap-2">
                     <Ban className="h-5 w-5 text-primary" />
                     Cancellation Window
                   </CardTitle>
@@ -389,7 +389,7 @@ const OwnerPoliciesPage = () => {
               {/* Booking Rules */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle as="h2" className="flex items-center gap-2">
                     <Clock className="h-5 w-5 text-primary" />
                     Booking Rules
                   </CardTitle>
@@ -497,7 +497,7 @@ const OwnerPoliciesPage = () => {
               {/* Venue Rules & Instructions */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle as="h2" className="flex items-center gap-2">
                     <Info className="h-5 w-5 text-primary" />
                     Rules & Instructions
                   </CardTitle>
