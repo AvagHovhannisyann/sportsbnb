@@ -1855,3 +1855,23 @@ an aggregate RPC computing the count at read time, which also lets the raw
 rows stop being world-readable — is written out in the handover with the SQL,
 unapplied, because it is a schema change to a live project that alters what
 `/nearby` reads.
+
+---
+
+## Round: your own teams did not have member counts
+
+Teams was the last main-nav page never rendered with data. One finding.
+
+Every card on the **My Teams** tab showed `—/11 players`. `TeamCard` renders
+`{team.member_count ?? "—"}`, and `useUserTeams` — which feeds that tab — never
+set `member_count`. `useTeams`, which feeds **Browse Teams**, computes it
+properly, so the counts were present on strangers' teams and missing on your
+own.
+
+Fixed by doing the same count query in `useUserTeams`, once across the owned
+and member lists together. Rendered before and after: `—/11` became `2/11`,
+`0/10`, `0/4`.
+
+Worth noting what made this findable. Nothing about it throws, nothing fails a
+type check, and the smoke test passes — an em-dash is a perfectly valid render.
+It is only visible if you put data on the page and read it.
