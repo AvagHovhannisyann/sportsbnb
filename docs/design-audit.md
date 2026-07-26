@@ -1006,6 +1006,32 @@ Code comments in `listingHealth.ts`, `listingHealth.test.ts` and
 `VenueDetailsPage.tsx` have been corrected, since a comment asserting a
 falsehood is worse than no comment.
 
+### Re-verifying the rest of the "no writer" claims
+
+The `review_count` error came from trusting a line-oriented grep over
+migrations. Every other claim of that shape on this branch was made the same
+way, so all of them were re-checked against the live database — querying
+`pg_trigger` and every `pg_proc` body, which is precisely what a source grep
+cannot see.
+
+| Claim | Verified against the database | Result |
+|---|---|---|
+| `venues.review_count` / `rating` unmaintained | 4 triggers on `reviews`, 3 running `update_venue_rating` | **False — corrected above** |
+| `referral_credits` has no writer | 0 triggers, no function writes | Holds |
+| `venue_promotions` has no writer | 0 triggers, no function writes | Holds |
+| `condition_rating` is a `DEFAULT 3.0` column nothing maintains | 0 triggers, no function mentions, on both `public_fields` and `verified_fields` | Holds |
+| `add_chat_member` / `send_system_message` unauthorized | Probed directly; all three attack paths raised | Held (fixed) |
+| `chat_rooms_type_check` rejected `venue` | Reproduced the constraint violation | Held (fixed) |
+
+Five of six stand. The one that did not is the one where the evidence was a
+*negative* grep result rather than a positive observation — which is the
+distinction worth carrying forward. The chat and constraint findings were
+never in doubt because they were demonstrated by making the database refuse
+something, not by failing to find a string.
+
+That also means the referral finding is safe: the ֏2,000 credit really was
+unfulfillable, and removing the promise was right.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
