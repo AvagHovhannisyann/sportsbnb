@@ -57,7 +57,12 @@ const VenueDetailsPage = () => {
             the gallery, heading and booking panel land where they were
             already reserved. */}
         <div className="container py-6" role="status" aria-label="Loading venue">
-          <Skeleton className="aspect-[21/9] w-full rounded-xl bg-surface-3 md:aspect-[3/1]" />
+          {/* Matches VenueGallery exactly: 4/3 stacked below md, a flat 384px
+              hero at md and up. It can only match because the gallery is now
+              one height for every venue — while that depended on the photo
+              count (384px solo, 504px with thumbnails) no placeholder could be
+              right, and this one was 69px out. */}
+          <Skeleton className="aspect-[4/3] w-full rounded-xl bg-surface-3 md:aspect-auto md:h-96" />
           <div className="mt-8 grid gap-8 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">
               <Skeleton className="h-6 w-40 bg-surface-2" />

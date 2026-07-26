@@ -487,10 +487,13 @@ const DiscoverPage = () => {
                   key={i}
                   className="overflow-hidden rounded-2xl border border-border bg-card"
                 >
-                  {/* aspect-[5/4] mirrors VenueCard's own image box — a
+                  {/* aspect-[3/2] mirrors VenueCard's own image box — a
                       skeleton whose geometry differs from the real card just
-                      relocates the layout shift instead of removing it. */}
-                  <Skeleton className="aspect-[5/4] w-full rounded-none bg-surface-3" />
+                      relocates the layout shift instead of removing it.
+                      This said 5/4 while the card had moved to 3/2, so every
+                      card in the grid rose 43px on load: 323x258 held, 323x215
+                      delivered. scripts/layout-shift.mjs now measures it. */}
+                  <Skeleton className="aspect-[3/2] w-full rounded-none bg-surface-3" />
                   <div className="space-y-3 p-4">
                     <Skeleton className="h-5 w-3/5 bg-surface-3" />
                     <Skeleton className="h-4 w-2/5 bg-surface-2" />

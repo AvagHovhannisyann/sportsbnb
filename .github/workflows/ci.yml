@@ -153,6 +153,16 @@ jobs:
           node scripts/a11y-names.mjs owner  $OWNER
           node scripts/a11y-names.mjs admin  $ADMIN
 
+          # A skeleton exists to hold the space its content lands in, so a
+          # skeleton of the wrong shape causes the shift it was added to
+          # prevent. Both cases here were already wrong when this was written:
+          # the venues grid held a 5/4 box for a 3/2 card (43px jump per row,
+          # under a comment asserting the two matched) and the venue hero was
+          # 69px out because the gallery's height depended on the photo count.
+          # SMOKE_WIDTH is still 375 from the sweep above; run both.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/layout-shift.mjs
+          node scripts/layout-shift.mjs
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

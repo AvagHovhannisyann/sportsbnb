@@ -86,32 +86,52 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
 
   const tileBase =
     "group relative overflow-hidden rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
-  // The main tile sets the row height; the thumbnails fill whatever that is.
-  const tileClass = `${tileBase} aspect-[4/3]`;
+  // At md and up the grid itself is a definite height (see below) and every
+  // tile fills it. Below md there is one stacked image and the ratio governs.
+  const tileClass = `${tileBase} aspect-[4/3] md:aspect-auto md:h-full md:w-full`;
   const thumbClass = `${tileBase} h-full w-full`;
   const imgClass =
     "h-full w-full object-cover transition-transform duration-300 group-hover:scale-105";
-  // A full-width single image still needs a ceiling: at 21/9 across a 1360px
-  // container it ran ~580px tall and pushed the venue name, price and booking
-  // panel below the fold.
+  // One hero height for every venue, at md and up.
   //
-  // But `aspect-[21/9] max-h-96` was the wrong ceiling, and measuring showed
-  // why: an aspect ratio plus a max height is satisfied by shrinking the
-  // *width*, so the tile came out 896px inside a 1360px column with 464px of
-  // background beside it. Same circularity as the `h-full` thumbnail attempt.
-  // A plain height with object-cover crops instead, which is what was meant.
-  const soloTileClass = "md:aspect-auto md:h-96 md:w-full";
+  // It used to depend on the photo count: a venue with a single image got
+  // `md:h-96` (384px), while one with thumbnails got a two-column grid of
+  // `aspect-[4/3]` tiles, which at a 1360px container is 672px per column and
+  // so 504px tall. The single most prominent element in the catalogue changed
+  // height by 120px depending on how many photos an owner happened to upload,
+  // and no loading skeleton could be right for both — which is how this was
+  // found, by a skeleton measuring 69px off the thing it stood in for.
+  //
+  // A definite height here also makes `h-full` on the tiles legitimate. The
+  // earlier attempt at `h-full` was circular *because the row was auto-sized*;
+  // that is a different thing from filling a row whose height is stated.
+  //
+  // A full-width single image still needs a ceiling: at 21/9 across 1360px it
+  // ran ~580px and pushed the venue name, price and booking panel below the
+  // fold. `aspect-[21/9] max-h-96` was the wrong ceiling — an aspect ratio plus
+  // a max height is satisfied by shrinking the *width*, so the tile came out
+  // 896px wide inside a 1360px column with 464px of background beside it. A
+  // plain height with object-cover crops instead, which is what was meant.
+  // `md:grid-rows-1` is not decoration next to `md:h-96`. Tailwind emits
+  // `repeat(1, minmax(0, 1fr))`, and both halves matter: the `1fr` makes the
+  // row take the container's stated height, and the `minmax(0, …)` stops the
+  // content from forcing it larger. Without it the row is `auto`, sizes to its
+  // tallest child, and `h-full` on the tiles resolves against *that* — which
+  // measured 672px tiles inside a 384px gallery at one, three, four and six
+  // photos. Stating the container height is not enough; the row has to be
+  // definite too.
+  const galleryHeight = "md:h-96 md:grid-rows-1";
 
   return (
     <>
-      <div className={cn("grid gap-4", hasThumbnails && "md:grid-cols-2")}>
+      <div className={cn("grid gap-4", galleryHeight, hasThumbnails && "md:grid-cols-2")}>
         {/* A real button, not a click-handled div: the gallery could not be
             reached by keyboard and announced as nothing to a screen reader. */}
         <button
           type="button"
           onClick={() => openLightbox(0)}
           aria-label={`View photos of ${venueName}`}
-          className={cn(tileClass, !hasThumbnails && soloTileClass)}
+          className={tileClass}
         >
           <GalleryImage src={allImages[0].image_url} alt={venueName} className={imgClass} />
         </button>
@@ -121,16 +141,14 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
           // Venues with one extra photo — the common case above zero — got a
           // quarter-filled column: one short 4:3 tile top-left, and roughly
           // 265px of nothing beside and below it, next to a 510px main image.
-          // The column now takes its shape from how many photos there are.
-          // `aspect-[4/3]` on the column, matching the main tile: both are the
-          // same width in this two-column grid, so the same ratio makes them
-          // the same height by construction. The first attempt used `h-full`
-          // on the tiles instead, which is circular in an auto-sized row —
-          // measured, that gave a 672px column beside a 504px image with one
-          // thumbnail, and broke the 3-and-4 cases that had been correct.
+          // The column now takes its shape from how many photos there are, and
+          // its height from the grid row, which is stated rather than derived.
+          // An earlier fix gave it `aspect-[4/3]` to match the main tile by
+          // construction; that was right while the row was auto-sized, and is
+          // now redundant with — and would fight — the row's own height.
           <div
             className={cn(
-              "hidden aspect-[4/3] gap-4 md:grid",
+              "hidden h-full gap-4 md:grid",
               thumbnails.length === 1 ? "grid-cols-1" : "grid-cols-2",
               thumbnails.length > 2 ? "grid-rows-2" : "grid-rows-1",
             )}
