@@ -294,7 +294,35 @@ const listOf = (row) => {
  * missing profile is a different scenario — it redirects to onboarding — and
  * emptying both at once would measure that instead.
  */
+/** The roles the fixtures know how to serve, and the data shapes on top. */
+const ROLES = ['player', 'owner', 'admin', 'anon'];
+const MODES = ['empty', 'error', 'slow'];
+
+/**
+ * Splits `player-empty` into a role and a mode, and refuses anything else.
+ *
+ * The refusal is the point. Parsing by `endsWith` alone, a typo — `player-emty`
+ * — falls through as a *role* named "player-emty", which the profile stub then
+ * serves as `user_type`. The app matches neither player nor owner, renders
+ * something subtly wrong, and every audit reports a clean run against it. That
+ * is the same shape as every real finding in this work: a check that says
+ * nothing because it never saw the thing, not because the thing was fine.
+ */
+export function parseUserType(requested) {
+  const dash = requested.lastIndexOf('-');
+  const role = dash === -1 ? requested : requested.slice(0, dash);
+  const mode = dash === -1 ? null : requested.slice(dash + 1);
+  if (!ROLES.includes(role) || (mode !== null && !MODES.includes(mode))) {
+    throw new Error(
+      `Unknown user type ${JSON.stringify(requested)}. ` +
+        `Expected one of ${ROLES.join(', ')}, optionally suffixed with -${MODES.join(', -')}.`,
+    );
+  }
+  return { role, mode };
+}
+
 export async function newStubbedPage(browser, { userType: requested, width, height }) {
+  const parsed = parseUserType(requested);
   const emptyData = requested.endsWith('-empty');
   // `-error` serves 500 for every content table, which is what a Supabase
   // outage or a tripped RLS policy looks like from the browser. Every fixture
@@ -309,13 +337,7 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
   // measurement. On a real phone on a real network it is where people spend
   // the first second of every page.
   const slowData = requested.endsWith('-slow');
-  const userType = emptyData
-    ? requested.slice(0, -'-empty'.length)
-    : errorData
-      ? requested.slice(0, -'-error'.length)
-      : slowData
-        ? requested.slice(0, -'-slow'.length)
-        : requested;
+  const userType = parsed.role;
   const ctx = await browser.newContext({
     viewport: { width, height },
     permissions: ['geolocation'],

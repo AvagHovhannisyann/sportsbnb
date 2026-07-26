@@ -51,6 +51,8 @@ supabase/
   functions/           Deno edge functions
   functions/_shared/   auth, CORS allowlist, email, payment providers
 docs/payments.md       payments architecture + ops runbooks
+docs/audits.md         the eighteen browser audits, and how to run one
+scripts/               those audits; each header says what it was written for
 ```
 
 ## Security model (summary)
