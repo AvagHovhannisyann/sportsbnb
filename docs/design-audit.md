@@ -2155,3 +2155,42 @@ no row in my `profiles_public` fixture.
 
 Two rounds ago I wrote the rule "when a populated page looks broken, suspect
 the fixture first". This is the third consecutive round where it was right.
+
+---
+
+## Round: the games list, as design rather than defect-hunting
+
+The defect sweep had reached the point of returning capitalisations, so this
+round went back to the thing originally asked for. Two things I had noticed on
+the games list two rounds ago and acted on neither.
+
+**"10 spots" over "of 10 left".** The same figure twice, in different words,
+stacked — it scans as two competing counts rather than one fact. What someone
+choosing between games wants is how many places remain, so that is now the
+emphasised number with an unambiguous label, singular when it is one, and
+"Full" instead of "0 spots left" when there are none.
+
+**The price was on no card at all.** `price_per_player` was never rendered, so
+choosing between a free pickup game and a ֏5,000 tennis ladder meant opening
+both. It now sits in the meta row, with free games saying "Free" in the success
+colour rather than being an absence you have to infer.
+
+Rendered across all three states: 8 spots left, 12 spots left, Full with the
+join button disabled; ֏2,000 per player, Free, ֏5,000 per player.
+
+### The filter that hid the last badge
+
+The skill badge on this card was still lowercase after two rounds of fixing
+exactly that. My widened grep from last round excluded any line mentioning
+`levelColors[` as a known-good use — and this line contains both `levelColors[`
+and the raw `skill_level`, so the exclusion hid the thing it was meant to
+surface.
+
+Removing that one exclusion and re-running confirms nothing else is left: the
+remaining hits are a `.select()` column list, a default assignment, a type
+declaration, and a conditional that is already inside a `capitalize` badge.
+
+Third time the technique has been the limiting factor rather than the code —
+after the too-narrow `{x.skill_level}` pattern and the fixtures. A filter
+written to reduce noise is a filter that can hide signal, and the only way to
+know is to take it off and look.

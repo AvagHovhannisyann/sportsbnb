@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import SEOHead from "@/components/seo/SEOHead";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, LayoutGrid, Map, Navigation, MapPinOff } from "lucide-react";
+import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, LayoutGrid, Map, Navigation, MapPinOff, Banknote } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import GamesMapView from "@/components/games/GamesMapView";
 import { toast } from "sonner";
 import { formatTimeOfDay } from "@/lib/time";
+import { formatPrice } from "@/lib/pricing";
 
 type GameWithDistance = Game & { distance?: number | null };
 
@@ -42,17 +43,29 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary">{game.sport}</Badge>
-            <Badge className={levelColors[game.skill_level] || levelColors.all}>
+            <Badge className={`capitalize ${levelColors[game.skill_level] || levelColors.all}`}>
               {game.skill_level === "all" ? "All levels" : game.skill_level}
             </Badge>
           </div>
           <h3 className="font-semibold text-foreground text-lg">{game.title}</h3>
         </div>
+        {/* One statement, not two numbers.
+            This read "10 spots" over "of 10 left" — the same figure twice in
+            different words, stacked, which scans as two competing counts. What
+            someone deciding actually wants is how many places remain. */}
         <div className="text-right shrink-0">
-          <div className={`text-lg font-semibold ${isFull ? "text-muted-foreground" : "text-primary"}`}>
-            {spotsLeft} spots
-          </div>
-          <div className="text-sm text-muted-foreground">of {game.max_players} left</div>
+          {isFull ? (
+            <div className="text-lg font-semibold text-muted-foreground">Full</div>
+          ) : (
+            <>
+              <div className="stat-numeral text-lg font-semibold tabular-nums text-primary">
+                {spotsLeft}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {spotsLeft === 1 ? "spot left" : "spots left"}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -79,9 +92,25 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
             <span>{formatTimeOfDay(game.game_time)}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Users className="h-4 w-4" />
-          <span>Hosted by {game.host?.full_name || "Anonymous"}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>Hosted by {game.host?.full_name || "Anonymous"}</span>
+          </div>
+          {/* The cost was on no card at all, so deciding between three games
+              meant opening all three. A free game is worth saying out loud
+              rather than leaving as an absence. */}
+          <div className="flex items-center gap-2">
+            <Banknote className="h-4 w-4" />
+            {game.price_per_player ? (
+              <span className="font-medium text-foreground">
+                {formatPrice(game.price_per_player)}
+                <span className="font-normal text-muted-foreground"> per player</span>
+              </span>
+            ) : (
+              <span className="font-medium text-success">Free</span>
+            )}
+          </div>
         </div>
       </div>
 
