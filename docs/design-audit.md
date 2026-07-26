@@ -624,6 +624,43 @@ message as a non-member (blocked). The probe dropped a foreign key to insert
 test rows and rolled the whole transaction back; `venues_owner_id_fkey` was
 confirmed restored and zero probe rows remained.
 
+## Constraint-drift sweep — one bug, then nothing
+
+The venue-chat failure was schema drift: the app sending a value the database's
+CHECK constraint refused. That was found by accident, so this pass looked for
+the rest deliberately.
+
+Method: pull every value-restricting CHECK constraint from the live project
+(22 of them), then cross-reference each against the literals the frontend and
+edge functions actually write to those columns.
+
+**Result: no remaining drift.** Every literal written to a constrained column
+is in range — `ledger_entries.entry_type` (all 7), `profiles.user_type`,
+`teams.visibility`, `payments.provider`, `chat_members.role`, and the rest.
+The one computed value in the set, `newStatus` in `payments-refund`, resolves
+only to `cancelled_by_player` or `cancelled_by_owner`, both allowed.
+
+### The scanner was wrong five times out of five
+
+It flagged five candidates. All five were false positives, and reading each one
+is the only reason they were not written up as bugs:
+
+- `payments-verify` twice — `json(req, { status: "pending" })` is an HTTP
+  response body, not a database write.
+- `calendar-sync` — `.eq("status", "confirmed")` is a filter, not a write.
+- `payments-refund` — writes a variable, not the literal the window caught.
+
+The tool matched literals within a fixed window after each `.from("table")`
+call, so it happily crossed statement boundaries. Useful for narrowing 40k
+lines to five sites; useless as evidence on its own.
+
+### And it would not have caught the original bug
+
+`chat_rooms.type` never appears as a literal beside a `.from("chat_rooms")`
+call — the app passes it as an RPC argument to `get_or_create_chat_room`.
+Checked the other eight client RPCs separately for enum-like arguments;
+`add_chat_member`'s role is the only one, and it is now validated server-side.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
