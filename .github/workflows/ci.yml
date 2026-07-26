@@ -41,8 +41,18 @@ jobs:
   # boot the client. That is the point — `e2e` has never actually run, because
   # it is gated on secrets nobody has set, which left the browser completely
   # uncovered in CI. This runs on every pull request.
+  # Five suites in parallel. This was one step that grew to twenty minutes and
+  # then kept growing; a check nobody waits for is a check nobody keeps. Split
+  # by what each measures, so a red square names its own area. The route lists
+  # they share live in scripts/lib/routes.sh, and each suite is a script you
+  # can run yourself — see docs/audits.md.
   smoke:
     runs-on: ubuntu-latest
+    strategy:
+      # Every suite reports, rather than the first failure hiding the rest.
+      fail-fast: false
+      matrix:
+        suite: [routes, semantics, contrast, surface, states]
     env:
       # Placeholders only. Nothing reaches the network; the project ref just
       # has to agree with the localStorage key the script writes, which it
@@ -76,10 +86,10 @@ jobs:
         if: steps.pw-cache.outputs.cache-hit != 'true'
       - run: npx playwright install-deps chromium
         if: steps.pw-cache.outputs.cache-hit == 'true'
-      # Server and smokes share one step so the dev server's lifetime plainly
-      # covers every run, rather than depending on a backgrounded process
+      # The dev server and the suite share one step, so its lifetime plainly
+      # covers the run rather than depending on a backgrounded process
       # surviving between steps.
-      - name: Smoke every route
+      - name: ${{ matrix.suite }}
         run: |
           set -euo pipefail
           npx vite --host 127.0.0.1 --port 4173 &
@@ -92,284 +102,7 @@ jobs:
           done
           [ "$up" = 1 ] || { echo "dev server did not come up"; exit 1; }
 
-          # `:venue`, `:game`, `:team`, `:booking`, `:payment` and `:slug`
-          # resolve to the stub ids the script serves. Dynamic routes were the
-          # uncovered half of the router until now — /venue/:id and the whole
-          # checkout chain had never loaded in CI once.
-          PLAYER="/ /about /blog /blog/:slug /community /contact /cookies /discover
-            /faq /for-owners /forgot-password /games /game/:game /game/:game/join-status
-            /login /nearby /privacy /reset-password /signup /teams /team/:team
-            /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard
-            /profile /settings /messages /book/:booking /booking/:booking/status
-            /pay/mock/:payment /embed/booking/:venue /auth/callback"
-
-          OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/hours
-            /owner/pricing /owner/policies /owner/settings /owner/widget
-            /owner/earnings /owner/equipment /owner/integrations
-            /owner/integrations/callback /owner/analytics /owner/schedule
-            /my-venues /add-venue /list-venue /venue/:venue/edit
-            /venue/:venue/availability /onboarding/owner"
-
-          ADMIN="/admin /operator /operator/outreach /create-game /create-team
-            /nearby/submit /onboarding/player"
-
-          # The signed-out app, which no check here had ever loaded.
-          #
-          # Every audit runs against a stubbed signed-in session — right for
-          # covering the interior, and it means /login and /signup redirect to
-          # /dashboard before anything can look at them. That hid real defects
-          # on the two forms every user meets first: two unnamed controls, two
-          # AA contrast failures, and an account-type picker whose focus ring
-          # was painted behind an opaque card. The public pages render a
-          # different header signed out, so they are worth the pass too.
-          ANON="/ /login /signup /forgot-password /reset-password /venues /games
-            /community /teams /about /for-owners /faq /contact /nearby
-            /venue/:venue /blog"
-
-          # The other branch of every list page: a signed-in account with no
-          # data. The fixtures here are populated on purpose — an audit
-          # against a page full of em-dashes measures nothing — and the cost is
-          # that the empty branch has never been rendered by any check.
-          #
-          # That is not hypothetical. The h1-to-h3 skip on /teams was found
-          # through the signed-out pass and had nothing to do with being signed
-          # out: its h2s are "Teams I Captain" and "Teams I've Joined", which
-          # only exist once the user has teams, so every new account hit it.
-          # Sweeping the empty state directly then found /owner/equipment
-          # rendering no h1 at all before a first venue exists.
-          #
-          # `-empty` keeps the session and profile and serves no content rows,
-          # so it measures "new account" rather than "broken account".
-          EMPTY_PLAYER="/teams /games /venues /community /messages /dashboard /nearby /profile"
-          EMPTY_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
-            /owner/analytics /owner/schedule /owner/equipment /owner/hours /owner/pricing"
-
-          # And the third state: the request failed. Every fixture here answers
-          # 200, so no check had ever rendered a page whose data did not
-          # arrive — and an empty state shown for a failed fetch is not a blank
-          # screen, it is a false statement. /owner/venues said "No venues yet"
-          # to an owner whose listings had not loaded, with a button offering
-          # to create the first one; /owner/earnings said "No transactions
-          # yet". TeamsPage already carried a comment making this exact
-          # argument about its own error branch.
-          ERROR_PLAYER="/teams /games /venues /community /dashboard /messages"
-          ERROR_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
-            /owner/analytics /owner/equipment"
-
-          node scripts/smoke-routes.mjs player $PLAYER
-          node scripts/smoke-routes.mjs owner  $OWNER
-          node scripts/smoke-routes.mjs admin  $ADMIN
-          node scripts/smoke-routes.mjs anon   $ANON
-          node scripts/smoke-routes.mjs player-empty $EMPTY_PLAYER
-          node scripts/smoke-routes.mjs owner-empty  $EMPTY_OWNER
-
-          # Contrast of every design token against every surface it lands on,
-          # both themes. Cheap — one page load — and it is the only thing that
-          # catches a colour that looks fine and is not: --destructive read as
-          # an ordinary error red while failing AA in both of its roles at
-          # once, and light-theme --warning was 2.18:1 on white.
-          node scripts/contrast-audit.mjs
-          node scripts/contrast-audit.mjs --light
-
-          # Same routes at phone width. Horizontal overflow is already checked
-          # per route, so this costs one extra pass and covers a surface that
-          # had only ever been spot-checked by hand — it found sideways scroll
-          # on the owner dashboard, opening hours, pricing, both admin consoles
-          # and the venue page, none of which reproduce without data on screen.
-          export SMOKE_WIDTH=375 SMOKE_HEIGHT=812
-          node scripts/smoke-routes.mjs player $PLAYER
-          node scripts/smoke-routes.mjs owner  $OWNER
-          node scripts/smoke-routes.mjs admin  $ADMIN
-          node scripts/smoke-routes.mjs anon   $ANON
-          node scripts/smoke-routes.mjs player-empty $EMPTY_PLAYER
-          node scripts/smoke-routes.mjs owner-empty  $EMPTY_OWNER
-
-          # Tap targets at phone width, against WCAG 2.2 SC 2.5.8 including
-          # its spacing exception. The app passes today; this holds the line.
-          # Its value was never the number — it was that measuring boxes led
-          # to twelve sport checkboxes that no keyboard could reach and
-          # twenty-five controls a screen reader could not name.
-          node scripts/tap-targets.mjs player $PLAYER
-          node scripts/tap-targets.mjs owner  $OWNER
-          node scripts/tap-targets.mjs admin  $ADMIN
-
-          # Every control needs a name. Asks Chrome for the accessible name it
-          # actually computes rather than reimplementing the algorithm — 47
-          # controls had none, including the notifications bell on every page,
-          # the venue links on the whole Discover grid, and the five stars a
-          # review is left with.
-          node scripts/a11y-names.mjs player $PLAYER
-          node scripts/a11y-names.mjs owner  $OWNER
-          node scripts/a11y-names.mjs admin  $ADMIN
-          node scripts/a11y-names.mjs anon   $ANON
-          node scripts/a11y-names.mjs player-empty $EMPTY_PLAYER
-          node scripts/a11y-names.mjs owner-empty  $EMPTY_OWNER
-
-          # A skeleton exists to hold the space its content lands in, so a
-          # skeleton of the wrong shape causes the shift it was added to
-          # prevent. Both cases here were already wrong when this was written:
-          # the venues grid held a 5/4 box for a 3/2 card (43px jump per row,
-          # under a comment asserting the two matched) and the venue hero was
-          # 69px out because the gallery's height depended on the photo count.
-          # SMOKE_WIDTH is still 375 from the sweep above; run both.
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/layout-shift.mjs
-          node scripts/layout-shift.mjs
-
-          # `.stat-numeral` is JetBrains Mono, which has no U+058F — so every
-          # price set through it dropped a proportional Armenian dram sign into
-          # a monospaced run. Measured: digits advance 12px, the dram sign
-          # 14.7px, and at 6x it visibly collided with the digit beside it, on
-          # the most important number on a venue card. <Price> splits the mark
-          # out; this keeps it split.
-          # One h1 per page, no skipped levels. Heading level carries no
-          # styling here — the base rule treats h1–h6 alike — so this drifts
-          # invisibly, and did: the footer's h4 columns skipped two levels on
-          # every page at once, and CardTitle's hardcoded h3 skipped one
-          # wherever a card was the first thing under the page h1.
-          #
-          # All three user types. The first run of this covered the public
-          # routes only, because the owner console had thirteen more skips and
-          # wiring a check over routes known to be red only paints CI red.
-          # Those are fixed now — along with six on the admin side, one of
-          # which was a page with no h1 at all — so the check covers what it
-          # should. Every list here was run locally before being added.
-          # $PLAYER minus three routes, each for a stated reason rather than
-          # because it was inconvenient:
-          #   /auth/callback  — a redirect that renders a spinner and leaves.
-          #                     It has no content, so it has no outline.
-          #   /pay/mock/:payment — DEV-only; prod-bundle-check asserts it is
-          #                     stripped from the production build entirely.
-          #   /for-owners     — marketing page, kept in $PLAYER for smoke.
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player \
-            / /about /blog /blog/:slug /community /contact /cookies /discover /faq \
-            /for-owners /forgot-password /games /game/:game /game/:game/join-status \
-            /login /nearby /privacy /reset-password /signup /teams /team/:team \
-            /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard \
-            /profile /settings /messages /book/:booking /booking/:booking/status \
-            /embed/booking/:venue
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs owner  $OWNER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs admin  $ADMIN
-          # The empty branch is where the h1 goes missing — see EMPTY_* above.
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player-empty $EMPTY_PLAYER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs owner-empty  $EMPTY_OWNER
-
-          # Text on the glass header, against what is actually scrolling under
-          # it. contrast-audit checks tokens against declared surfaces and
-          # structurally cannot see this: at --glass-alpha 0.72 the same five
-          # nav links read 7.4:1 over the dark hero and 3.0:1 over a light
-          # section further down the home page, with no colour having changed.
-          # Both themes: which direction is dangerous depends on the tint of
-          # the glass. A dark bar is washed out by light content, a light bar
-          # by dark content, and the light theme failed at 3.55-3.80:1 while
-          # the dark one passed.
-          #
-          # The route list is measured, not guessed. This check costs ~14s a
-          # route per theme, so it cannot run everywhere; glass-risk.mjs ranks
-          # routes by how much the backdrop luminance under the bar actually
-          # varies, which is the only thing that can produce the failure. Over
-          # all 62 routes it came out as / and /for-owners at 0.908,
-          # /owner-dashboard at 0.544, and everything else at 0.083 or below.
-          # The previous hand-picked list had three of those low-variance
-          # routes in it and neither of the two high ones. Re-run glass-risk
-          # after any layout change that adds a light section.
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/glass-contrast.mjs player / /for-owners
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/glass-contrast.mjs --light player / /for-owners
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/glass-contrast.mjs owner  /owner-dashboard
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/glass-contrast.mjs --light owner /owner-dashboard
-
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs player $PLAYER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs owner  $OWNER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs admin  $ADMIN
-
-          # Contrast of what is actually rendered, against the backdrop it
-          # actually lands on — text under WCAG 1.4.3, load-bearing icons
-          # under 1.4.11. The other two contrast checks both pass things this
-          # catches: contrast-audit scores hand-listed (token, surface) pairs,
-          # and palette-contrast scores a raw palette colour against its *best*
-          # surface. On the owner's earnings ledger `text-emerald-600` is
-          # 4.13:1 on the card — under AA, on the one screen where a number is
-          # money — and palette-contrast passed it correctly by its own rule,
-          # because emerald-600 does reach AA on the darkest surface in the
-          # theme. It was not sitting on that one.
-          #
-          # One pass per route rather than two: this was two scripts, each
-          # loading all 62 routes and running its own scroll sweep, at ~4s per
-          # route per audit.
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs player $PLAYER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs owner  $OWNER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs admin  $ADMIN
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs anon   $ANON
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs player-empty $EMPTY_PLAYER
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/rendered-contrast.mjs owner-empty  $EMPTY_OWNER
-
-          # Keyboard focus: WCAG 2.4.7 (an indicator is visible) and 2.2's
-          # 2.4.11 (it is not covered by something else). Both by screenshot
-          # and hit-testing, because a Tailwind ring is invisible to
-          # getComputedStyle — the composed box-shadow reads back as its
-          # transparent fallback while it is painting.
-          #
-          # A SUBSET, deliberately. This is the most expensive check here —
-          # 28 screenshots a route, ~19s — so all 62 routes would add about
-          # 21 minutes. The full sweep was run by hand before this landed and
-          # is clean; what it found is fixed. These ten cover the distinct
-          # shells and layouts, which is where the tab order actually differs:
-          # public marketing, list, detail, auth split-panel, player shell,
-          # owner shell, a data table, admin shell, and the embed widget,
-          # whose date strip is its own layout. Routes sharing a shell share
-          # their header tab order, so the marginal value of the rest is low.
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs player \
-            / /venues /venue/:venue /login /dashboard /nearby /embed/booking/:venue
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs owner  /owner/venues /owner/earnings
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs admin  /admin
-          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/focus-visible.mjs anon   /login /signup
-
-          # WCAG 2.4.2 (Page Titled), Level A. Nothing sets a title in an SPA
-          # unless told to, and the string from index.html sits in the tab
-          # looking like a real one: 17 of the 35 player routes were still
-          # showing "Sportsbnb — Book Sports Venues & Join Games Near You",
-          # /login and /settings and the whole checkout chain among them.
-          # Titles now come from src/lib/routeTitles.ts via RouteMeta.
-          #
-          # Duplicates fail too — a title that does not distinguish the page
-          # does not describe it. Grouped by the pathname the app *lands* on,
-          # so a redirect (/discover to /venues, or /login to /dashboard under
-          # the stubbed session) is not mistaken for two pages sharing a name.
-          node scripts/page-titles.mjs player $PLAYER
-          node scripts/page-titles.mjs owner  $OWNER
-          node scripts/page-titles.mjs admin  $ADMIN
-          node scripts/page-titles.mjs anon   $ANON
-
-          # WCAG 1.3.5 (Identify Input Purpose), Level AA. The app had
-          # autoComplete on nothing at all, which in practice means a password
-          # manager cannot fill or save a login and browser autofill does
-          # nothing — so anyone who finds typing costly retypes their email and
-          # password every time.
-          #
-          # The anon pass is the important one. Every other audit here runs
-          # signed in, which is right for covering the app's interior and
-          # quietly hides its front door: /login and /signup bounce to
-          # /dashboard, so their forms had never been loaded by any check in
-          # this repository. Signed out, they accounted for five of the twelve
-          # failures — the ones on the two forms every user meets first.
-          node scripts/input-purpose.mjs anon   /login /signup /forgot-password /reset-password
-          node scripts/input-purpose.mjs player $PLAYER
-          node scripts/input-purpose.mjs owner  $OWNER
-          node scripts/input-purpose.mjs admin  $ADMIN
-
-          # An empty state on a failed request is a claim about the user's own
-          # account that happens to be untrue. See ERROR_* above.
-          node scripts/error-affordance.mjs player $ERROR_PLAYER
-          node scripts/error-affordance.mjs owner  $ERROR_OWNER
-
-          # And the fourth state: still loading. WCAG 4.1.3 asks that a status
-          # message be programmatically determinable without taking focus, and
-          # a spinner is a status message. Forty-six wrappers held a Loader2
-          # with nothing to announce it — the page simply went quiet for the
-          # length of the request. `-slow` holds every content response open so
-          # the branch stays on screen to be measured.
-          node scripts/loading-status.mjs player /dashboard /teams /games /venues /community /messages
-          node scripts/loading-status.mjs owner  /owner-dashboard /owner/venues /owner/bookings /owner/earnings /owner/analytics /owner/equipment
-          node scripts/loading-status.mjs admin  /admin /operator
+          bash scripts/ci/${{ matrix.suite }}.sh
 
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.

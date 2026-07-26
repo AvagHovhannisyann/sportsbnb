@@ -1,7 +1,7 @@
 # The audits
 
 Eighteen scripts in `scripts/` measure this app in a real browser. They all
-run in CI, in the `smoke` job, and they can all be run by hand.
+run in CI, across five parallel suites, and they can all be run by hand.
 
 Every one of them exists because something was wrong and nothing noticed. The
 header of each script says what that was, with the number it measured. Read
@@ -22,8 +22,27 @@ Placeholders like `:venue`, `:game`, `:team`, `:booking`, `:payment` and
 `:slug` resolve to the stub ids. `SMOKE_WIDTH` / `SMOKE_HEIGHT` change the
 viewport; the mobile passes in CI use `375x812`.
 
-The route lists CI uses live in `.github/workflows/ci.yml` as `$PLAYER`,
-`$OWNER`, `$ADMIN`, `$ANON`, `$EMPTY_*` and `$ERROR_*`.
+The route lists live in `scripts/lib/routes.sh`. Source it and they are
+yours too:
+
+```bash
+source scripts/lib/routes.sh
+node scripts/heading-outline.mjs owner $OWNER
+```
+
+## Running a whole suite
+
+CI runs the audits as five parallel suites, each a script you can run the same
+way it does:
+
+```bash
+bash scripts/ci/semantics.sh
+```
+
+`routes`, `semantics`, `contrast`, `surface`, `states`. They were one step
+until it reached twenty minutes and kept growing — a check nobody waits for is
+a check nobody keeps. Split by what each measures, so a red square names its
+own area, and with `fail-fast: false` so one failure does not hide the rest.
 
 ## Who the page thinks you are
 
