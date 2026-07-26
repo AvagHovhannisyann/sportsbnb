@@ -22,6 +22,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { useState } from "react";
+import { bookingStatusDescriptor, type BookingStatusTone } from "@/features/booking/status";
 
 interface Booking {
   id: string;
@@ -59,11 +60,17 @@ export function BookingDetailDrawer({
   if (!booking) return null;
 
   const bookingDate = parseISO(booking.booking_date);
-  const statusColors: Record<string, string> = {
-    confirmed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    cancelled: "bg-destructive/10 text-destructive",
+  // Keyed by tone, like OwnerBookingsPage. This map knew three statuses out of
+  // the ten the CHECK constraint allows, so everything in-app payment added
+  // fell through to grey — and the label beside it printed the raw column,
+  // giving an owner "Pending_payment" in a drawer they open on every booking.
+  const toneClasses: Record<BookingStatusTone, string> = {
+    positive: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    danger: "bg-destructive/10 text-destructive",
+    neutral: "bg-muted text-muted-foreground",
   };
+  const status = bookingStatusDescriptor(booking.status);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -71,9 +78,7 @@ export function BookingDetailDrawer({
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span>Booking Details</span>
-            <Badge className={statusColors[booking.status] || "bg-muted"}>
-              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-            </Badge>
+            <Badge className={toneClasses[status.tone]}>{status.label}</Badge>
           </SheetTitle>
           <SheetDescription>
             Booking ID: {booking.id.slice(0, 8)}...

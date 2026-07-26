@@ -56,6 +56,7 @@ import { format } from "date-fns";
 import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
 import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
 import { formatTimeOfDay } from "@/lib/time";
+import { bookingStatusDescriptor } from "@/features/booking/status";
 
 // FieldSubmissionsTab and CandidateFieldsTab used to be lazy-imported here and
 // never rendered — no TabsTrigger, no TabsContent, no route. Both components
@@ -274,7 +275,7 @@ const AdminDashboard = () => {
                             <div className="text-right">
                               <p className="font-medium text-foreground">{formatCurrency(booking.total_price)}</p>
                               <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {booking.status}
+                                {bookingStatusDescriptor(booking.status).label}
                               </Badge>
                             </div>
                           </div>
@@ -486,7 +487,7 @@ const AdminDashboard = () => {
                             <TableCell>{formatCurrency(booking.total_price)}</TableCell>
                             <TableCell>
                               <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {booking.status}
+                                {bookingStatusDescriptor(booking.status).label}
                               </Badge>
                             </TableCell>
                           </TableRow>

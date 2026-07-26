@@ -2047,3 +2047,41 @@ missing NOT NULL columns, `venues` absent on `/messages`, and now the payout
 account keys). The pattern is consistent enough to state as a rule: **when a
 populated page looks broken, suspect the fixture first** — it is newer, less
 reviewed, and written by me, whereas the page has at least run before.
+
+---
+
+## Round: the same enum, two places I had missed
+
+Rendering the admin console with a booking in it showed the status badge as
+`pending_payment` — the raw column, on the platform's own bookings table.
+
+I had already built `bookingStatusDescriptor` for exactly this and applied it
+to the owner overview and the owner bookings table. I applied it to two places
+and there were four. The other two:
+
+- **`AdminDashboard`**, twice — `{booking.status}` straight into a Badge, in
+  both the Overview and Bookings tabs.
+- **`BookingDetailDrawer`**, the panel an owner opens on every booking in the
+  schedule, rendering
+  `booking.status.charAt(0).toUpperCase() + booking.status.slice(1)` → literally
+  "Pending_payment", with its own three-entry colour map beside it.
+
+Both now use the shared descriptor, and the drawer's map is keyed by tone like
+`OwnerBookingsPage` so the ten statuses the CHECK constraint allows cannot fall
+through to grey again.
+
+The lesson is about my own fix, not the code: extracting a shared helper is
+only half the job, and the half that feels finished. Grepping for the *symptom*
+(`booking.status` rendered directly) rather than assuming the extraction had
+found every caller is what turned up the remaining two — the same discipline
+as checking a claim against the database instead of a migration file.
+
+### On the CI worry that was not one
+
+I had convinced myself the smoke job might never be completing — every time I
+looked it was `in_progress`, and I kept pushing on top of it. Listing the
+branch's workflow runs settled it: **ten consecutive completed successes**,
+including the run that introduced the contrast audit and the one with the
+expanded route list. I was checking within a minute or two of each push. Worth
+recording as another instance of the same failure mode running in my own
+direction — a worry treated as a finding until measured.
