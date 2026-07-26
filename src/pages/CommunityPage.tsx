@@ -11,8 +11,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useGames, useUserGames } from "@/hooks/useGames";
 import { useVenues } from "@/hooks/useVenues";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
+import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
+import { Price } from "@/components/ui/price";
 import { EmptyState } from "@/components/ui/empty-state";
 
 // Haversine formula for distance calculation
@@ -492,13 +493,27 @@ const CommunityPage = () => {
                                   <MapPin className="h-3 w-3" />
                                   <span className="truncate">{venue.city}</span>
                                 </div>
+                                {/* Price, not "Added 3 days ago".
+                                    The section is headed "Recently Added
+                                    Venues", so every tile repeating its own
+                                    recency said the same thing a fourth time
+                                    while the number people actually choose on
+                                    was missing entirely. A venue tile without
+                                    a price cannot be compared with the one
+                                    beside it. */}
                                 <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    Added {formatDistanceToNow(new Date(venue.created_at), { addSuffix: true })}
-                                  </span>
+                                  <Price
+                                    amount={venue.price_per_hour}
+                                    suffix="/ hr"
+                                    className="text-sm font-semibold text-foreground"
+                                    suffixClassName="text-xs text-muted-foreground"
+                                  />
                                   {venue.rating > 0 && (
                                     <div className="flex items-center gap-1">
-                                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                                      {/* Was fill-amber-500: a hardcoded palette
+                                          colour, and a different star from the
+                                          one every venue card draws. */}
+                                      <Star className="h-3 w-3 fill-primary text-primary" />
                                       <span className="text-xs font-medium">{venue.rating}</span>
                                     </div>
                                   )}

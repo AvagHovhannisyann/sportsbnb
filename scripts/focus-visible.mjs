@@ -26,6 +26,21 @@
  * does not match programmatic focus on a button, so `.focus()` measures a
  * state no user is ever in.
  *
+ * KNOWN LIMITATION — why this is not in CI yet.
+ *
+ * On /community it reports the "View all" link at 0 changed pixels, stably
+ * across runs. That is this script, not the app: focusing each of the three
+ * "View all" links directly and diffing a generous region gives 700, 328 and
+ * 328 changed pixels, so all three ring correctly. The remaining fault is in
+ * how the clip is derived when a Tab stop was off-screen and the browser
+ * scrolled it into view — the second screenshot ends up framing something
+ * other than the first.
+ *
+ * Four measurement bugs have been found in this file so far and each one
+ * produced confident false failures. Until the clip is right, this runs by
+ * hand and its output is read with that in mind; gating a build on it would
+ * mean trusting it more than the evidence supports.
+ *
  * Usage:
  *   node scripts/focus-visible.mjs <player|owner|admin> <route>...
  */
