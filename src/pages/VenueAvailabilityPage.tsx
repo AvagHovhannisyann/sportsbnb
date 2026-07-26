@@ -169,7 +169,7 @@ const VenueAvailabilityPage = () => {
             {/* Operating Hours */}
             <Card>
               <CardHeader>
-                <CardTitle>Operating Hours</CardTitle>
+                <CardTitle as="h2">Operating Hours</CardTitle>
                 <CardDescription>Set your regular weekly schedule</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -242,7 +242,7 @@ const VenueAvailabilityPage = () => {
             {/* Blocked Dates */}
             <Card>
               <CardHeader>
-                <CardTitle>Blocked Dates</CardTitle>
+                <CardTitle as="h2">Blocked Dates</CardTitle>
                 <CardDescription>
                   Block specific dates for holidays or maintenance
                 </CardDescription>

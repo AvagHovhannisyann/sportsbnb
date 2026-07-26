@@ -64,13 +64,20 @@ const HeroSearch = () => {
   const FormBody = (
     <div className="flex flex-col md:flex-row md:items-stretch gap-1 md:gap-0">
       {/* Location */}
-      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
+      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset rounded-lg">
         <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
-          <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block">
+          {/* Same fix the Sport label already carries: without `htmlFor` the
+              visible word labels nothing, and the field falls back to being
+              named by its placeholder. */}
+          <label
+            htmlFor="hero-location"
+            className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block"
+          >
             Location
           </label>
           <input
+            id="hero-location"
             type="text"
             placeholder="City or neighborhood"
             value={location}
@@ -81,7 +88,7 @@ const HeroSearch = () => {
       </div>
 
       {/* Sport */}
-      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
+      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset rounded-lg">
         <Search className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
           {/* The visible label had no htmlFor, so it labelled nothing and
@@ -111,7 +118,7 @@ const HeroSearch = () => {
       </div>
 
       {/* When */}
-      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border">
+      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset rounded-lg">
         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
           {/* The visible label had no htmlFor, so it labelled nothing and
