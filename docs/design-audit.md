@@ -661,6 +661,27 @@ call — the app passes it as an RPC argument to `get_or_create_chat_room`.
 Checked the other eight client RPCs separately for enum-like arguments;
 `add_chat_member`'s role is the only one, and it is now validated server-side.
 
+## Owner listing-health score — coaching toward a removed feature
+
+The score owners are shown and told to optimise had two rules working against
+them.
+
+| Finding | Detail |
+|---|---|
+| **10 points for enabling WhatsApp or phone contact** | With the field unset it told the owner "Enable WhatsApp or phone contact". Players book and pay in-app; the WhatsApp handoff was removed in Phase 2 and `booking_intents` is read-only history. The score was steering owners back toward the flow the product had just abandoned. Replaced with whether the listing is actually live (`is_active`), which is the current make-or-break for getting booked. |
+| **15 points for a review count nothing maintains** | `venues.review_count` is `DEFAULT 0` with no writer anywhere in the codebase. Every venue therefore lost that entire category permanently — a listing that was perfect in every other respect could not score above 85 — and was told "No reviews yet" no matter how many reviews it actually had. |
+
+The second fix needed a structural change rather than a deletion. The function
+accumulated a running total against a hard-coded 100, so a category with no
+usable data silently became a penalty. It now tracks earned against possible
+and omits a category from the denominator when the platform cannot judge it,
+so a venue is measured only on things it can control. Reputation returns to
+the score automatically the moment `review_count` is maintained.
+
+Six tests cover it, including that no advice mentions WhatsApp or phone, that
+a fully-configured venue can reach 100, and that reputation still scores once
+a venue genuinely has reviews.
+
 ## Verified clean
 
 - **No horizontal overflow** at 375px or 768px. `scrollWidth === clientWidth`
