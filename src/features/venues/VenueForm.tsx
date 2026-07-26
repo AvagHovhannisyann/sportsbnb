@@ -515,6 +515,7 @@ export const VenueForm = ({
           <Input
             id="phone"
             type="tel"
+            autoComplete="tel"
             placeholder="+374 99 11 22 33"
             value={formData.phone}
             onChange={(e) => {
@@ -586,6 +587,7 @@ export const VenueForm = ({
             <Input
               id="phone"
               type="tel"
+              autoComplete="tel"
               placeholder="+374 99 123 456"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

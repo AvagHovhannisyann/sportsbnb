@@ -184,6 +184,7 @@ const ResetPasswordPage = () => {
                   <div className="relative">
                     <Input
                       id="password"
+                      autoComplete="new-password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter new password"
                       value={password}
@@ -229,6 +230,7 @@ const ResetPasswordPage = () => {
                   <div className="relative">
                     <Input
                       id="confirmPassword"
+                      autoComplete="new-password"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
                       value={confirmPassword}

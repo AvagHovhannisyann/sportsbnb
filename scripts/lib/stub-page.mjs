@@ -280,6 +280,16 @@ export async function newStubbedPage(browser, { userType, width, height }) {
     geolocation: { latitude: 40.1792, longitude: 44.4991 }, // Yerevan
   });
   const p = await ctx.newPage();
+  // `anon` leaves the session out, so the signed-out surfaces render instead
+  // of redirecting.
+  //
+  // Every audit here runs signed in, which is right for covering the app's
+  // interior and quietly hides its front door: /login and /signup bounce
+  // straight to /dashboard, so their forms have never been loaded by any check
+  // in this directory. The input-purpose audit is where that surfaced — it
+  // reported the login form as having no problems, because it had never seen
+  // one.
+  if (userType !== 'anon')
   await p.addInitScript((authKey)=>{const exp=Math.floor(Date.now()/1000)+3600;
     localStorage.setItem(authKey,JSON.stringify({access_token:'stub',
       token_type:'bearer',expires_at:exp,expires_in:3600,refresh_token:'stub',

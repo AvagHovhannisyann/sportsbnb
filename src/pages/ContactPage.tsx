@@ -116,6 +116,7 @@ const ContactPage = () => {
                     <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
+                      autoComplete="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Your name"
@@ -127,6 +128,7 @@ const ContactPage = () => {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="you@example.com"

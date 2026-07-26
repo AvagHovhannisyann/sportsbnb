@@ -221,6 +221,7 @@ const OwnerSettingsPage = () => {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="email"
                       value={profile?.email || ""}
                       disabled
                       className="pl-10 bg-muted"
@@ -236,6 +237,7 @@ const OwnerSettingsPage = () => {
                     <Input
                       id="phone"
                       type="tel"
+                      autoComplete="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="pl-10"

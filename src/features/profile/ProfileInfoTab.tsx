@@ -76,6 +76,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
+                autoComplete="name"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 placeholder="John Doe"
@@ -111,6 +112,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 value={formData.email}
                 disabled
                 className="bg-muted"
@@ -122,6 +124,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Input
                 id="phone"
                 type="tel"
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+374 XX XXXXXX"
@@ -134,6 +137,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
+                autoComplete="address-level2"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 placeholder="Yerevan"

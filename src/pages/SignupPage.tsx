@@ -405,6 +405,7 @@ const SignupPage = () => {
                   <UserCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="name"
+                    autoComplete="name"
                     name="name"
                     type="text"
                     placeholder={userType === "player" ? "John Doe" : "My Sports Center"}
@@ -427,6 +428,7 @@ const SignupPage = () => {
                     id="email"
                     name="email"
                     type="email"
+                    autoComplete="email"
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -445,6 +447,7 @@ const SignupPage = () => {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="password"
+                    autoComplete="new-password"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a strong password"
@@ -503,6 +506,7 @@ const SignupPage = () => {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="confirmPassword"
+                    autoComplete="new-password"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
