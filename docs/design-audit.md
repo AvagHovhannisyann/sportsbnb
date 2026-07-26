@@ -2759,3 +2759,57 @@ unlike `pending_payment` or `platform_commission`. The only defect was database
 lowercase, so it gets `capitalize` and not a descriptor module. Building one
 here would be ceremony, and the point of naming a pattern is to apply judgement
 to it, not to apply the same fix everywhere it matches.
+
+---
+
+## The charts were the wrong colour, and my fix repainted the donut
+
+`/owner/analytics` drew a cornflower-blue donut and a cornflower bar chart in
+an app whose whole identity is emerald on near-black. The cause was five
+hardcoded blues at the top of the file:
+
+```js
+const COLORS = ["hsl(200, 98%, 39%)", "hsl(213, 93%, 67%)", …];
+```
+
+Literal HSL, so they were also identical in both themes — nothing here could
+respond to a theme change. Meanwhile `--chart-1..5` exist in `index.css`,
+defined per theme, and `GMVTrendChart` already drives every colour through
+tokens. This page was simply the one that did not.
+
+Now on the tokens, along with the axis ticks (a `className` does not colour
+Recharts tick text; it needs `stroke`) and the pie's tooltip, which had no
+`contentStyle` and so rendered as the library's white box on a dark page while
+the bar chart's tooltip beside it was themed.
+
+### The fix broke the thing it was fixing
+
+Styling the slice labels, I put `style={{ fill: "hsl(var(--muted-foreground))" }}`
+on `<Pie>`. Recharts spreads that onto the sector paths as well, and an inline
+style beats an SVG presentation attribute — so every slice silently became
+muted-foreground while its `fill` attribute still read `hsl(var(--chart-1))`.
+
+The rendered page looked *fine*. Pale sage on near-black is perfectly
+presentable, and "it's green now" is what eyeballing would have concluded.
+Sampling the computed fill is what caught it: attribute
+`hsl(var(--chart-1))`, computed `rgb(156, 171, 158)` — which is
+`--muted-foreground`, not `--chart-1`. Label styling moved off `<Pie>` onto the
+label element. After: `rgb(12, 228, 123)`, which is `hsl(151 90% 47%)`, which
+is `--chart-1`.
+
+**One round-trip from writing the bug to catching it, and only because the
+check was a measurement rather than a look.**
+
+### And a thing worth knowing about the light theme
+
+Trying to verify the charts in light mode, I found the app has no light mode:
+`index.html` ships `<html lang="en" class="dark">` and nothing toggles it. The
+light token values are real and the contrast audit checks them, but they are
+latent — no user currently sees them.
+
+So the honest claim about this change is narrower than "theme-aware": the
+charts now *participate* in the token system, which is demonstrably live —
+removing the `dark` class flips `--chart-1` from `151 90% 47%` to
+`158 72% 22%` and the sector fill follows, `rgb(12,228,123)` → `rgb(16,96,67)`.
+Hardcoded HSL could not have done that. Whether anyone ever sees the light
+values is a separate decision, and not one made here.
