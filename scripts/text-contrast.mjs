@@ -56,6 +56,7 @@
  */
 import { chromium } from '@playwright/test';
 import { newStubbedPage, resolveRoute } from '../scripts/lib/stub-page.mjs';
+import { WALK_SOURCE, revealEverything } from '../scripts/lib/contrast-walk.mjs';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
 const WIDTH = Number(process.env.SMOKE_WIDTH ?? 1440);
@@ -72,64 +73,20 @@ if (!userType || routes.length === 0) {
   process.exit(2);
 }
 
-/** Runs in the page. Returns one record per element carrying visible text. */
-const COLLECT = () => {
-  const parse = (c) => {
-    const m = c.match(/rgba?\(([^)]+)\)/);
-    if (!m) return null;
-    const p = m[1].split(/[,/]/).map((v) => parseFloat(v.trim()));
-    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
-  };
-  /** `src` over `dst`, both premultiplied out. `dst` is assumed opaque. */
-  const over = (dst, src) => ({
-    r: src.r * src.a + dst.r * (1 - src.a),
-    g: src.g * src.a + dst.g * (1 - src.a),
-    b: src.b * src.a + dst.b * (1 - src.a),
-    a: 1,
-  });
-  const srgb = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  const lum = (c) =>
-    0.2126 * srgb(c.r / 255) + 0.7152 * srgb(c.g / 255) + 0.0722 * srgb(c.b / 255);
-  const ratio = (a, b) => {
-    const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
-    return Math.round(((x + 0.05) / (y + 0.05)) * 100) / 100;
-  };
-  const hex = (c) =>
-    '#' +
-    [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+/**
+ * Runs in the page. Returns one record per element carrying visible text.
+ *
+ * The compositing helpers come from `scripts/lib/contrast-walk.mjs` as source
+ * text and are rebuilt here with `new Function`, because `page.evaluate`
+ * serialises this callback and drops anything it closed over. One definition,
+ * shared with `icon-contrast.mjs`, so the two audits cannot drift apart.
+ */
+const COLLECT = (walkSource) => {
+  const { backdrop, ratio, hex, parse, over } = new Function(
+    walkSource + '; return { backdrop, ratio, hex, parse, over };',
+  )();
 
   const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TITLE', 'HEAD', 'SVG', 'PATH']);
-
-  /**
-   * Layers ancestor backgrounds until one is opaque.
-   *
-   * Returns `{ bg }` or `{ reason }` — never a guess. The `reason` values are
-   * the four unsound cases in the file header; each is counted separately in
-   * the report so a route that is mostly gradient cannot masquerade as a route
-   * that is mostly passing.
-   */
-  const backdrop = (start) => {
-    const layers = [];
-    for (let el = start; el; el = el.parentElement) {
-      const cs = getComputedStyle(el);
-      if (cs.backgroundImage !== 'none') return { reason: 'background-image' };
-      if (cs.backdropFilter && cs.backdropFilter !== 'none') return { reason: 'backdrop-filter' };
-      // The element's own opacity is what fades it; a parent's fades it too.
-      // Either way the painted result is not the analytic composite.
-      if (parseFloat(cs.opacity) < 1) return { reason: 'opacity' };
-      const c = parse(cs.backgroundColor);
-      if (!c || c.a === 0) continue;
-      layers.push(c);
-      if (c.a === 1) {
-        // Opaque: nothing behind it can show through, so stop climbing and
-        // fold the tints collected on the way down back onto it.
-        let acc = layers.pop();
-        while (layers.length) acc = over(acc, layers.pop());
-        return { bg: acc };
-      }
-    }
-    return { reason: 'no-opaque-backdrop' };
-  };
 
   const out = [];
   for (const el of document.querySelectorAll('*')) {
@@ -224,37 +181,6 @@ const SELFTEST_PROBE = () => {
   document.body.appendChild(host);
 };
 
-/**
- * Scrolls the whole page so that content behind a scroll reveal actually
- * paints, then returns to the top.
- *
- * Not an optimisation — a correctness fix, and the single largest one in this
- * file. The first run reported 48 of 111 text runs on `/` as indeterminate for
- * `opacity`, which read like a limitation of the analytic walk. It was not:
- * those elements were sitting at `opacity: 0` because the page uses
- * framer-motion `whileInView`, and nothing below the fold had ever entered the
- * viewport. Half the home page was being quietly excluded from an audit that
- * would still have printed a pass.
- *
- * `viewport: { once: true }` is what makes this stick — a section revealed on
- * the way down stays revealed when we scroll back up, so one pass is enough.
- */
-const revealEverything = async (page) => {
-  await page.evaluate(async () => {
-    const step = innerHeight * 0.8;
-    const wait = () => new Promise((r) => setTimeout(r, 220));
-    for (let y = 0; y < document.body.scrollHeight; y += step) {
-      scrollTo(0, y);
-      await wait();
-    }
-    scrollTo(0, 0);
-    await wait();
-  });
-  // Transitions run ~600ms; measuring one mid-fade is measuring a frame no
-  // reader ever sits on.
-  await page.waitForTimeout(900);
-};
-
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const failures = [];
 const indeterminate = new Map();
@@ -271,7 +197,7 @@ for (const route of routes) {
 
   if (SELFTEST) await page.evaluate(SELFTEST_PROBE);
 
-  const records = await page.evaluate(COLLECT);
+  const records = await page.evaluate(COLLECT, WALK_SOURCE);
   for (const rec of records) {
     if (rec.indeterminate) {
       indeterminate.set(rec.indeterminate, (indeterminate.get(rec.indeterminate) ?? 0) + 1);

@@ -227,6 +227,19 @@ jobs:
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/text-contrast.mjs owner  $OWNER
           SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/text-contrast.mjs admin  $ADMIN
 
+          # The same backdrop walk against WCAG 1.4.11, for icons that are the
+          # whole control rather than decoration beside a label. 96 of the
+          # app's ~930 icons are load-bearing by that rule; the rest sit next
+          # to their own word and the criterion does not reach them.
+          #
+          # It found the per-venue actions button on /owner/venues at 1.12:1 —
+          # `bg-white/90` (a literal) paired with `text-foreground` (the
+          # theme's ink, near-white here), so the only way into a venue's
+          # actions was a white glyph on a white pill.
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/icon-contrast.mjs player $PLAYER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/icon-contrast.mjs owner  $OWNER
+          SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/icon-contrast.mjs admin  $ADMIN
+
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.
   e2e:

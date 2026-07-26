@@ -99,10 +99,25 @@ const OwnerVenuesPage = () => {
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
+                          {/* `variant="secondary"`, not `bg-white/90 …
+                              text-foreground`. Half of that pair was a literal
+                              and half was a token: `bg-white` means white in
+                              either theme, while `--foreground` is the theme's
+                              ink — near-white here. The result was a white pill
+                              with a near-white glyph on it, measured at 1.12:1
+                              against the 3:1 WCAG 1.4.11 asks of an icon that
+                              is the whole control. It is the only way into a
+                              venue's actions, and on a photo card it was
+                              invisible.
+
+                              `secondary` is the same light-pill-on-a-photo look
+                              as a matched token pair, which `contrast-audit`
+                              already measures, and is what the equivalent
+                              button on MyVenuesPage has always used. */}
                           <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="icon"
-                            className="absolute top-2 right-2 h-8 w-8 bg-white/90 hover:bg-white text-foreground"
+                            className="absolute top-2 right-2 h-8 w-8"
                             aria-label={`Actions for ${venue.name}`}
                           >
                             <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
