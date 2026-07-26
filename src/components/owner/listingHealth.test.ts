@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scoreVenue } from "./ListingHealthCard";
+import { scoreVenue } from "./listingHealth";
 import type { Venue } from "@/hooks/useVenues";
 
 const base = (over: Partial<Venue> = {}): Venue =>
