@@ -192,6 +192,37 @@ const ROWS = {
     early_arrival_minutes: null,
     created_at: NOW, updated_at: NOW,
   },
+  // Owner money surfaces and the notification bell. Column lists taken from
+  // information_schema on the live project, not invented — the last fixture I
+  // guessed at crashed a page and cost a round proving it was my fault.
+  payouts: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000007', owner_id: UID,
+    amount_minor: 720000, currency: 'AMD', status: 'pending',
+    period_start: '2030-01-01', period_end: '2030-01-31',
+    method: 'bank', destination_snapshot: null, reference: null,
+    initiated_by: null, paid_at: null, created_at: NOW, updated_at: NOW,
+  },
+  ledger_entries: {
+    id: 1, entry_type: 'platform_commission', payment_id: IDS.payment,
+    booking_id: IDS.booking, payout_id: null, owner_id: UID,
+    amount_minor: 720000, currency: 'AMD', memo: 'Booking earning',
+    created_at: NOW,
+  },
+  owner_payout_accounts: {
+    owner_id: UID, method: 'bank_transfer', details: { destination: 'AM00 0000 0000 0000', holder: 'Smoke Arena LLC' },
+    verified: false, created_at: NOW, updated_at: NOW,
+  },
+  notifications: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000008', user_id: UID,
+    type: 'booking', title: 'Booking confirmed',
+    message: 'Your booking at Smoke Arena is confirmed.',
+    link: '/dashboard', is_read: false, created_at: NOW,
+  },
+  venue_courts: {
+    id: 'aaaaaaaa-0000-4000-8000-000000000009', venue_id: IDS.venue,
+    name: 'Court 1', sport: 'Football', is_active: true,
+    price_per_hour: 8000, created_at: NOW, updated_at: NOW,
+  },
   payments: {
     id: IDS.payment, user_id: UID, booking_id: IDS.booking, game_id: null,
     provider: 'mock', status: 'pending', order_ref: 1001,

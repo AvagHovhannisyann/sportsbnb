@@ -14,13 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatAmd } from "@/features/booking/hooks/useBookingFlow";
-
-const ENTRY_LABELS: Record<string, string> = {
-  owner_earning: "Booking earning",
-  owner_refund_debit: "Refund reversal",
-  payout: "Payout",
-  adjustment: "Adjustment",
-};
+import { ledgerEntryLabel } from "@/features/booking/ledger";
 
 export default function OwnerEarningsPage() {
   const { user } = useAuth();
@@ -196,7 +190,7 @@ export default function OwnerEarningsPage() {
                       <TableCell className="text-muted-foreground">
                         {format(new Date(entry.created_at), "MMM d, HH:mm")}
                       </TableCell>
-                      <TableCell>{ENTRY_LABELS[entry.entry_type] ?? entry.entry_type}</TableCell>
+                      <TableCell>{ledgerEntryLabel(entry.entry_type)}</TableCell>
                       <TableCell
                         className={`text-right tabular-nums ${entry.amount_minor < 0 ? "text-destructive" : "text-emerald-600"}`}
                       >

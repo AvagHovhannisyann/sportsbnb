@@ -1999,3 +1999,51 @@ participants, members, hours, images and policies actually on the page. The
 remaining 27 unstubbed tables are listed above; they are mostly admin and
 operator surfaces, and each one is a place where "clean" still means "did not
 run".
+
+---
+
+## Round: the owner's money ledger, in the owner's language
+
+Continuing down the unstubbed list to the owner surfaces, since both
+fabricated-data findings this session were on owner pages. Stubbed `payouts`,
+`ledger_entries`, `owner_payout_accounts`, `notifications` and `venue_courts`
+— column lists taken from `information_schema` rather than invented, after the
+last guessed fixture cost a round.
+
+**Three of seven ledger entry types printed as database identifiers.** The
+`CHECK` constraint on `ledger_entries.entry_type` allows
+
+```
+payment_received, owner_earning, platform_commission,
+refund, owner_refund_debit, payout, adjustment
+```
+
+and `ENTRY_LABELS` on the earnings page covered four, falling back to the raw
+column. So `platform_commission` sat directly beneath "Booking earning" — the
+identifier and its human label in the same table, on the page where an owner
+reads what they are owed. `payment_received` and `refund` were the same.
+
+Now `ledgerEntryLabel` in `src/features/booking/ledger.ts`, beside `status.ts`
+which exists for the identical reason on `bookings`, with a test that mirrors
+the constraint and fails if a migration widens it without anyone naming the new
+entry. Rendered: Payment received / Refund to customer / Booking earning /
+Commission / Payout.
+
+### Thirteenth false positive
+
+The payout destination panel showed a "Verified" badge above three empty
+fields — Method, IBAN and Account holder all blank, which reads as a page that
+knows an account exists and refuses to show it. An owner might reasonably
+re-enter it, or save over it with blanks.
+
+The page prefills correctly. It reads `details.destination` and
+`details.holder`, and a method of `bank_transfer` or `idram`. My fixture wrote
+`details.iban` and `method: 'bank'` — wrong keys and a value matching no
+option, so the Select rendered empty. Corrected, it fills in "Bank transfer
+(IBAN)" and the IBAN.
+
+That is three fixture-caused false alarms in two rounds (`venue_policies`
+missing NOT NULL columns, `venues` absent on `/messages`, and now the payout
+account keys). The pattern is consistent enough to state as a rule: **when a
+populated page looks broken, suspect the fixture first** — it is newer, less
+reviewed, and written by me, whereas the page has at least run before.
