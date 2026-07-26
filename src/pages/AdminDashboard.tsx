@@ -337,7 +337,7 @@ const AdminDashboard = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{user.user_type}</Badge>
+                              <Badge variant="outline" className="capitalize">{user.user_type}</Badge>
                             </TableCell>
                             <TableCell>{getRoleBadge(user.role)}</TableCell>
                             <TableCell>{user.city || "-"}</TableCell>

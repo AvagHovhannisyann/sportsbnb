@@ -2085,3 +2085,33 @@ including the run that introduced the contrast audit and the one with the
 expanded route list. I was checking within a minute or two of each push. Worth
 recording as another instance of the same failure mode running in my own
 direction — a worry treated as a finding until measured.
+
+---
+
+## Round: the rest of the enum columns, and how small they turned out to be
+
+Having found two more `booking.status` renders by grepping the symptom rather
+than trusting the extraction, I ran the same grep across every other enum
+column the app displays: `lead_outcome`, `channel_used`, `provider`,
+`skill_level`, `play_mode`, `refund_type`, `cancellation_policy`, `user_type`,
+`entry_type`.
+
+Four hits, and **they are a different and much smaller problem than
+`pending_payment` was.** These are single readable lowercase words, not
+snake_case identifiers — "intermediate" beside "Football" on a game card looks
+inconsistent, but nobody is confused about what it means. Worth saying plainly:
+this round is polish, not a defect.
+
+- `skill_level` on the matchmaking card and `user_type` in the admin user
+  table: CSS `capitalize`, which invents nothing and is exactly right for
+  single lowercase words.
+- `CommunityPage` already had `capitalize`. My grep flagged it; looking is what
+  stopped me "fixing" something already correct.
+- `channel_used` in the admin lead table needed a map instead. Its CHECK
+  constraint allows `whatsapp | sms | call`, and CSS would render those as
+  "Whatsapp" and "Sms" — both wrong. Now WhatsApp / SMS / Phone call.
+
+The remaining columns — `provider`, `play_mode`, `refund_type`,
+`cancellation_policy`, `lead_outcome` — are never rendered raw; each already
+goes through a label map or is used only in logic. That is the useful half of
+the result: the sweep is complete, and the answer is mostly "already fine".

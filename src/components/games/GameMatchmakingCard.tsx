@@ -57,7 +57,7 @@ const GameMatchmakingCard = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="secondary" className="text-xs">{game.sport}</Badge>
-                        <Badge variant="outline" className="text-xs">{game.skill_level}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">{game.skill_level}</Badge>
                       </div>
                       <h4 className="font-medium text-sm text-foreground">{game.title}</h4>
                     </div>

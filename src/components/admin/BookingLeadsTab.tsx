@@ -52,6 +52,14 @@ const CHANNEL_ICONS = {
   call: Phone,
 };
 
+// A map rather than CSS `capitalize`, which would render "Whatsapp" and "Sms".
+// The CHECK constraint allows exactly these three.
+const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  sms: "SMS",
+  call: "Phone call",
+};
+
 export default function BookingLeadsTab() {
   const { data: intents, isLoading } = useAllBookingIntents();
   const updateIntent = useUpdateBookingIntent();
@@ -197,7 +205,7 @@ export default function BookingLeadsTab() {
                         <TableCell>
                           <Badge variant="outline" className="gap-1">
                             <ChannelIcon className="h-3 w-3" />
-                            {intent.channel_used}
+                            {CHANNEL_LABELS[intent.channel_used] ?? intent.channel_used}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
