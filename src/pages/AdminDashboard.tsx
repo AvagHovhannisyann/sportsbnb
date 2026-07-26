@@ -5,7 +5,6 @@ import {
   Building2,
   Calendar,
   Gamepad2,
-  Banknote,
   TrendingUp,
   Shield,
   AlertTriangle,
@@ -14,9 +13,7 @@ import {
   Loader2,
   MoreHorizontal,
   Eye,
-  Trash2,
-  UserCog,
-} from "lucide-react";
+  } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,35 +42,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import Layout from "@/components/layout/Layout";
 import {
   useAdminStats,
   useAllUsers,
   useAllVenues,
   useAllBookings,
-  useAllGames,
   useUpdateUserRole,
   useApproveVenue,
-  useDeleteGame,
   type AppRole,
 } from "@/hooks/useAdmin";
 import { format } from "date-fns";
 import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
 import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
 
-const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissionsTab"));
-const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
+// FieldSubmissionsTab and CandidateFieldsTab used to be lazy-imported here and
+// never rendered — no TabsTrigger, no TabsContent, no route. Both components
+// still exist and still work; they simply have no way in. Whether to wire them
+// up or delete them is a product call, so the dead imports go and the question
+// is written down in docs/handover.md rather than answered here.
 const BlogPostsTab = lazy(() => import("@/components/admin/BlogPostsTab"));
 const BookingLeadsTab = lazy(() => import("@/components/admin/BookingLeadsTab"));
 const PayoutsTab = lazy(() => import("@/components/admin/PayoutsTab"));
@@ -85,11 +72,9 @@ const AdminDashboard = () => {
   const { data: users, isLoading: usersLoading } = useAllUsers();
   const { data: venues, isLoading: venuesLoading } = useAllVenues();
   const { data: bookings, isLoading: bookingsLoading } = useAllBookings();
-  const { data: games, isLoading: gamesLoading } = useAllGames();
   
   const updateRole = useUpdateUserRole();
   const approveVenue = useApproveVenue();
-  const deleteGame = useDeleteGame();
 
   const formatCurrency = (amount: number) => {
     return `֏${amount.toLocaleString()}`;

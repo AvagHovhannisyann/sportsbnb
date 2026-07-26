@@ -2,7 +2,6 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -55,7 +54,17 @@ export function BlockTimeDialog({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [reason, setReason] = useState("");
-  const [blockType, setBlockType] = useState<"time" | "full_day">("time");
+  // Full day, not "time".
+  //
+  // Blocking is stored in `blocked_dates`, which holds a date and nothing else,
+  // and `get_available_slots` returns zero rows for any date it finds there.
+  // A partial block is therefore not something the backend can express — yet
+  // this dialog offered "Specific Time Range" *by default*, and the handler
+  // dropped the range into the free-text `reason` column as
+  // "Blocked: 18:00 - 20:00" before blocking the whole day anyway. An owner
+  // closing two hours for maintenance lost every booking slot that day and was
+  // told "Time blocked successfully".
+  const [blockType, setBlockType] = useState<"time" | "full_day">("full_day");
 
   const handleSubmit = () => {
     if (!date) return;
@@ -69,7 +78,7 @@ export function BlockTimeDialog({
     onOpenChange(false);
     // Reset form
     setReason("");
-    setBlockType("time");
+    setBlockType("full_day");
   };
 
   return (
@@ -94,10 +103,18 @@ export function BlockTimeDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="time">Specific Time Range</SelectItem>
                 <SelectItem value="full_day">Full Day</SelectItem>
+                {/* Disabled rather than removed: an owner who has used this
+                    before should see where it went, not wonder. */}
+                <SelectItem value="time" disabled>
+                  Specific time range — not yet supported
+                </SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              A block closes the venue for the whole day. Blocking part of a day
+              is not available yet.
+            </p>
           </div>
 
           {/* Date Picker */}

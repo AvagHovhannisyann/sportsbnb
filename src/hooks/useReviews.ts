@@ -120,7 +120,6 @@ export const useUpdateReview = () => {
       reviewId,
       rating,
       comment,
-      venueId,
     }: {
       reviewId: string;
       rating: number;
@@ -153,7 +152,7 @@ export const useDeleteReview = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ reviewId, venueId }: { reviewId: string; venueId: string }) => {
+    mutationFn: async ({ reviewId }: { reviewId: string; venueId: string }) => {
       const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
       if (error) throw error;
     },

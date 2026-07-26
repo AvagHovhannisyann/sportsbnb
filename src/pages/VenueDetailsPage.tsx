@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useEffect, useState } from "react";
-import { MapPin, Star, Clock, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2, WifiOff } from "lucide-react";
+import { MapPin, Star, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -401,7 +401,11 @@ const VenueDetailsPage = () => {
                   order, it took the clicks. A floating helper must not
                   intercept the primary booking control. */}
               <div className="sticky top-24 z-[60] space-y-4">
-                <BookingPanel venueId={venue.id} pricePerHour={venue.price_per_hour} />
+                <BookingPanel
+                  venueId={venue.id}
+                  pricePerHour={venue.price_per_hour}
+                  blockedDates={blockedDates}
+                />
 
                 <VenueChatButton
                   venueId={venue.id}

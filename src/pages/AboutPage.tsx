@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import SEOHead from "@/components/seo/SEOHead";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Target, Users, Globe, ArrowRight, Eye, Heart, Shield, Sparkles } from "lucide-react";
+import { Target, Users, Globe, Eye, Shield, Sparkles } from "lucide-react";
 
 const AboutPage = () => {
   const values = [

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useVerifiedFields, VerifiedField } from "@/hooks/useVerifiedFields";
+import { useVerifiedFields } from "@/hooks/useVerifiedFields";
 import { useVenues } from "@/hooks/useVenues";
 import { useRegion } from "@/hooks/useRegion";
 import Layout from "@/components/layout/Layout";
@@ -44,7 +44,7 @@ const NearbyFieldsPage: React.FC = () => {
   // to render. On CI, where no Maps key is set, that threw
   // "ReferenceError: google is not defined" and took the page down.
   const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMaps();
-  const { fields, isLoading, checkIn, fetchFields } = useVerifiedFields();
+  const { fields, isLoading, checkIn } = useVerifiedFields();
   const { data: venues } = useVenues();
   const { defaultCenter, regionLabel } = useRegion();
   const [view, setView] = useState<"map" | "list">("map");

@@ -6,12 +6,10 @@ import {
   User,
   MapPin,
   MessageCircle,
-  X,
   CheckCircle,
   XCircle,
   RefreshCw,
-  FileText,
-} from "lucide-react";
+  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

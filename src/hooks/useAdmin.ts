@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export type AppRole = "admin" | "moderator" | "user";
 
-interface UserRole {
+interface _UnusedUserRole {
   id: string;
   user_id: string;
   role: AppRole;

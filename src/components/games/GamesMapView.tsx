@@ -1,5 +1,4 @@
-import React, { useRef, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
+import React, { useCallback } from "react";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
 import { MapsReady } from "@/components/maps/GoogleMapsProvider";
 import { format } from "date-fns";

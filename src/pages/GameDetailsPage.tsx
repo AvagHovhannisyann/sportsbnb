@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
-  MapPin, Calendar, Clock, Users, ArrowLeft, Loader2, 
+  MapPin, Calendar, Clock, ArrowLeft, Loader2, 
   Share2, Banknote, AlertTriangle, CreditCard, Check, X, UserPlus, CalendarX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, Filter, MapPin, X, Loader2, Navigation, SearchX, WifiOff } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Filter, MapPin, X, Loader2, Navigation, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, MapPin, Loader2, Edit, Calendar, MoreHorizontal, Eye, Trash2 } from "lucide-react";
+import { Plus, MapPin, Loader2, Edit, Calendar, MoreHorizontal, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Layout from "@/components/layout/Layout";
@@ -18,7 +17,7 @@ import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 
 const MyVenuesPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const {
     data: myVenues = [],
     isLoading: venuesLoading,

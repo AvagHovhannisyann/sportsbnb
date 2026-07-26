@@ -140,7 +140,7 @@ const LoginPage = () => {
       return;
     }
 
-    const { data: verifyData, error: verifyError } = await verifyMfa({
+    const { error: verifyError } = await verifyMfa({
       factorId: mfaFactorId,
       challengeId: challengeData.id,
       code: totpCode,

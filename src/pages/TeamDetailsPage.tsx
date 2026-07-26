@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Users, Shield, Copy, UserPlus, Crown, Star, LogOut,
-  Trash2, Settings, Calendar, Clock, MapPin, Loader2, MessageCircle, Sparkles, UsersRound,
+  Trash2, Settings, Calendar, Loader2, UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -30,8 +27,6 @@ import {
 } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
-
 const TeamDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();

@@ -73,7 +73,6 @@ const OwnerEquipmentPage = () => {
   const updateEquipment = useUpdateEquipment();
   const deleteEquipment = useDeleteEquipment();
 
-  const selectedVenue = venues.find(v => v.id === selectedVenueId);
   const items = equipment.filter(e => e.equipment_type === 'item');
   const packages = equipment.filter(e => e.equipment_type === 'package');
 

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useReferrals } from "@/hooks/useReferrals";
 
 const ReferralCard = () => {
-  const { referralCode, totalCredits, credits, isLoading, generateCode, copyCode, shareLink } = useReferrals();
+  const { referralCode, totalCredits, isLoading, generateCode, copyCode, shareLink } = useReferrals();
 
   if (isLoading) {
     return (

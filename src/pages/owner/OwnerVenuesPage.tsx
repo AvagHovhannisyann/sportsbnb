@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Loader2, Plus, MapPin, Star, Settings, Calendar, MoreHorizontal, Edit, Trash2, Eye, CreditCard } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Plus, MapPin, Star, Settings, Calendar, MoreHorizontal, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Calendar, Building2 } from "lucide-react";
+import { Loader2, Building2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -83,18 +83,34 @@ const OwnerSchedulePage = () => {
     customer_name: b.customer_name || "Customer",
   }));
 
-  const handleBlockTime = async (data: any) => {
+  const handleBlockTime = async (data: {
+    date: Date;
+    startTime: string;
+    endTime: string;
+    reason: string;
+    blockType: "time" | "full_day";
+  }) => {
     if (!selectedVenueId) return;
+
+    // Guard, not dead code. `blocked_dates` stores a date only, and
+    // `get_available_slots` drops every slot on a date it finds there, so a
+    // partial block cannot be honoured. This used to fall through to a
+    // whole-day block with the requested range pasted into `reason`, and
+    // reported success — the owner lost the day without being told.
+    if (data.blockType !== "full_day") {
+      toast.error("Blocking part of a day isn't supported yet — this would close the whole day.");
+      return;
+    }
 
     try {
       await addBlockedDate.mutateAsync({
         venueId: selectedVenueId,
         blockedDate: format(data.date, "yyyy-MM-dd"),
-        reason: data.reason || `Blocked: ${data.startTime} - ${data.endTime}`,
+        reason: data.reason || "Blocked by owner",
       });
-      toast.success("Time blocked successfully");
+      toast.success(`${format(data.date, "EEE, MMM d")} is now closed for bookings`);
     } catch (error) {
-      toast.error("Failed to block time");
+      toast.error("Failed to block that day");
     }
   };
 

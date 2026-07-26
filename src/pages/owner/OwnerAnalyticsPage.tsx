@@ -3,8 +3,6 @@ import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { formatPrice } from "@/lib/pricing";
-
 const COLORS = ["hsl(200, 98%, 39%)", "hsl(213, 93%, 67%)", "hsl(215, 20%, 65%)", "hsl(215, 16%, 46%)", "hsl(198, 93%, 59%)"];
 
 const OwnerAnalyticsPage = () => {

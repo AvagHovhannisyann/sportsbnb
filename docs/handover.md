@@ -117,7 +117,32 @@ corrected in the code comments and in `docs/design-audit.md`.
 
 ---
 
-## 5. Small, optional
+## 5. Two product calls I did not make for you
+
+Both surfaced from a lint rule that had been switched off. Neither is a bug I
+could fix without deciding something that is yours to decide.
+
+**Partial-day blocking.** The schedule's Block Time dialog offered "Specific
+time range", and it could not work: blocks are stored in `blocked_dates`, which
+holds a date and nothing else, and `get_available_slots` drops every slot on a
+date it finds there. Blocking 18:00–20:00 therefore closed the whole day while
+reporting success. The dialog now says the option is unavailable, so nobody
+loses a day by accident — but owners closing two hours for maintenance is a
+normal thing to want. Supporting it needs a new table (venue, date, start, end),
+RLS on it, and a change to `get_available_slots` to subtract those ranges. That
+touches the availability path the whole booking flow depends on, so I left it
+for you to schedule rather than doing it unprompted.
+
+**Two admin tabs that exist but are unreachable.** `FieldSubmissionsTab` and
+`CandidateFieldsTab` were lazy-imported into the admin dashboard with no tab
+trigger, no content and no route. The components work. Either they were pulled
+deliberately and should be deleted, or they were never finished being wired up —
+I could not tell from the repository, and guessing wrong either adds an
+unfinished surface to the admin console or deletes work you wanted.
+
+---
+
+## 6. Small, optional
 
 - **`e2e` CI job** — gated on an `E2E_ENABLED` repository variable and
   `VITE_SUPABASE_*` secrets that were never set, so it has never once run. The

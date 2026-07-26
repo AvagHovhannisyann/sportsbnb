@@ -56,7 +56,7 @@ const OutlookIcon = ({ className }: { className?: string }) => (
 
 const OwnerIntegrationsPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { data: myVenues = [] } = useOwnerVenues(user?.id);
   
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -64,7 +64,7 @@ const OwnerIntegrationsPage = () => {
   const [externalCalendarUrl, setExternalCalendarUrl] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const { status, isLoading, isConnecting, initiateOAuth, disconnect, refetch } = useCalendarIntegrations(selectedVenueId);
+  const { status, isLoading, isConnecting, initiateOAuth, disconnect } = useCalendarIntegrations(selectedVenueId);
 
   useEffect(() => {
     if (myVenues.length > 0 && !selectedVenueId) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Calendar, Clock, MapPin, Banknote, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Banknote, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import { Card, CardContent } from "@/components/ui/card";

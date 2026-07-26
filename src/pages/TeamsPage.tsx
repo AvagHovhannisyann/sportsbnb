@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SEOHead from "@/components/seo/SEOHead";
 import { Link } from "react-router-dom";
-import { Plus, Search, Users, Filter } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

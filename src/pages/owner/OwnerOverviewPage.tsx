@@ -28,7 +28,6 @@ const OwnerOverviewPage = () => {
   } = useOwnerVenues(user?.id);
   const {
     data: analytics,
-    isLoading: analyticsLoading,
     isError: analyticsError,
     refetch: refetchAnalytics,
     isFetching: analyticsFetching,

@@ -1,0 +1,25 @@
+import { chromium } from '@playwright/test';
+const UID='00000000-0000-0000-0000-000000000001', NOW=new Date(0).toISOString();
+const ID='11111111-1111-1111-1111-111111111111';
+const ROWS={venues:{id:ID,owner_id:'99999999-9999-9999-9999-999999999999',name:'Nairi Arena',description:'A covered five-a-side pitch in Kentron with a full-size 3G surface, floodlights and a heated changing room. Ten minutes from Republic Square, parking on site.',address:'12 Tumanyan St',city:'Yerevan',zip_code:'0001',image_url:null,sports:['Football','Basketball'],price_per_hour:9000,is_indoor:true,amenities:['Parking','Showers','WiFi','Changing rooms','Floodlights'],is_active:true,rating:4.8,review_count:37,latitude:40.1792,longitude:44.4991,location_confirmed:true,phone:'+37410000000',contact_name:'Demo Owner',whatsapp_enabled:false,sms_enabled:false,created_at:NOW,updated_at:NOW}};
+const LIST={venue_hours:Array.from({length:7},(_,i)=>({id:'h'+i,venue_id:ID,day_of_week:i,open_time:'08:00',close_time:'23:00',is_closed:false})),
+ reviews:[1,2,3].map(i=>({id:'r'+i,venue_id:ID,user_id:'u'+i,rating:5-(i%2),comment:['Great surface, lights are excellent for evening games.','Booked twice, both times spotless. Parking is tight after 8pm.','Good pitch. Changing rooms could use more hooks.'][i-1],created_at:NOW}))};
+const single=u=>/[?&](id|slug)=eq\./.test(u);
+const [route,w,h,y,out]=[process.argv[2],Number(process.argv[3]),Number(process.argv[4]),Number(process.argv[5]),process.argv[6]];
+const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+const p=await (await b.newContext({viewport:{width:w,height:h}})).newPage();
+await p.addInitScript(()=>{const exp=Math.floor(Date.now()/1000)+3600;
+  localStorage.setItem('sb-skwzaxqhgrysbsuqkuyp-auth-token',JSON.stringify({access_token:'stub',token_type:'bearer',expires_at:exp,expires_in:3600,refresh_token:'stub',user:{id:'00000000-0000-0000-0000-000000000001',aud:'authenticated',role:'authenticated',email:'u@example.com',app_metadata:{},user_metadata:{},created_at:new Date(0).toISOString()}}));});
+await p.route('**/rest/v1/**', r=>{const u=r.request().url();const t=(u.match(/rest\/v1\/([a-z_]+)/)||[])[1];
+  let body='[]'; if(LIST[t]&&!single(u)) body=JSON.stringify(LIST[t]); else if(ROWS[t]) body=JSON.stringify(single(u)?ROWS[t]:[ROWS[t]]);
+  r.fulfill({status:200,contentType:'application/json',body});});
+await p.route('**/rest/v1/profiles**', r=>{const u=r.request().url();const s=/user_id=eq\./.test(u)&&!/xp=gt/.test(u);
+  const row={id:'p1',user_id:UID,user_type:'player',onboarding_completed:true,full_name:'Demo',username:'demo',xp:120,level:2,created_at:NOW};
+  r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(s?row:[row])});});
+await p.goto('http://127.0.0.1:4173'+route,{waitUntil:'domcontentloaded'});
+await p.waitForTimeout(3000);
+await p.evaluate((yy)=>window.scrollTo(0,yy), y);
+await p.waitForTimeout(600);
+await p.screenshot({path:out});
+console.log(out,'scrolled to',y);
+await b.close();

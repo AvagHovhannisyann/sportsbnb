@@ -41,12 +41,20 @@ const OwnerPricingPage = () => {
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
 
-  // Demo pricing rules
-  const [priceRules, setPriceRules] = useState<PriceRule[]>([
-    { id: "1", name: "Standard Rate", pricePerHour: 10000, dayType: "all", timeRange: "all" },
-    { id: "2", name: "Weekend Premium", pricePerHour: 15000, dayType: "weekend", timeRange: "all" },
-    { id: "3", name: "Morning Special", pricePerHour: 8000, dayType: "weekday", timeRange: "morning" },
-  ]);
+  // Empty, and it has to be.
+  //
+  // This was seeded with three invented rules — "Standard Rate ֏10,000",
+  // "Weekend Premium ֏15,000", "Morning Special ֏8,000" — rendered in a table
+  // with an Actions column, directly beneath the venue's real base rate. They
+  // were identical for every owner and every venue, bore no relation to
+  // `venues.price_per_hour`, and `setPriceRules` was never called, so they
+  // could not be edited or removed either. An owner reading that page would
+  // reasonably conclude their venue charges ֏15,000 at weekends. It does not.
+  //
+  // There is no pricing-rules table in the schema; per-time pricing is not
+  // built. The table and type stay for when it is, but until then this shows
+  // the empty state that was already written and never reachable.
+  const [priceRules] = useState<PriceRule[]>([]);
 
   useEffect(() => {
     if (myVenues.length > 0 && !selectedVenueId) {
@@ -169,7 +177,9 @@ const OwnerPricingPage = () => {
                   Set different prices based on day and time
                 </CardDescription>
               </div>
-              <Button size="sm">
+              {/* Disabled: nothing persists pricing rules yet, and a button
+                  that silently does nothing is worse than one that says so. */}
+              <Button size="sm" disabled title="Pricing rules aren't available yet">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Rule
               </Button>
@@ -178,10 +188,8 @@ const OwnerPricingPage = () => {
               {priceRules.length === 0 ? (
                 <EmptyState
                   icon={Banknote}
-                  title="No pricing rules"
-                  description="Add rules to set different prices for weekends, evenings, or peak hours."
-                  actionLabel="Add Pricing Rule"
-                  onAction={() => {}}
+                  title="Every booking uses your base rate"
+                  description="Different prices for weekends, evenings or peak hours aren't available yet. Change the base rate in venue settings above."
                   className="py-8"
                 />
               ) : (

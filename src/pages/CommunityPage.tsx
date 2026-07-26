@@ -132,7 +132,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
 };
 
 const CommunityPage = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { data: publicGames = [], isLoading: gamesLoading } = useGames({ userLocation });
   const { data: userGamesData, isLoading: userGamesLoading } = useUserGames(user?.id);

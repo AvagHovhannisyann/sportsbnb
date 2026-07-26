@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, FileText, Save, Clock, Ban, Info, Timer, ArrowUpRight } from "lucide-react";
+import { Loader2, FileText, Save, Clock, Ban, Info, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

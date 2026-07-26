@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useOwnerVenues, type Venue } from "@/hooks/useVenues";
+import { useOwnerVenues } from "@/hooks/useVenues";
 import { useOwnerLeads, summarizeLeads } from "@/hooks/useLeads";
 
 /**

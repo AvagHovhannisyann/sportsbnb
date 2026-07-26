@@ -1272,9 +1272,82 @@ Fifth false positive of this kind; the pattern is always the same, which is
 that a discrepancy on screen is evidence of a discrepancy somewhere, not
 evidence of which side is wrong.
 
-### Left alone on purpose
+### Correction: the right rail is not empty
 
-The right rail is empty below the sticky booking card — roughly 1,100px of
-nothing on a 2,256px page. That is a real weakness and a real opportunity
-(location map, owner card, similar venues), but it is a design decision about
-what belongs there rather than a defect, and it wants the seed data.
+An earlier version of this section said the rail was "roughly 1,100px of
+nothing" below the sticky booking card, and called it an opportunity for a map,
+an owner card and similar venues.
+
+**That was wrong, and it is the same mistake as the rating one two paragraphs
+up.** The card is `sticky top-24`; it follows the scroll. A `fullPage`
+screenshot composites the page at scroll offset 0, which is exactly where a
+sticky element looks abandoned at the top of a long column. Scrolled to
+y=1100 in a real 900px viewport, the card is beside the reviews where it
+belongs and the rail is doing its job.
+
+Sixth false positive of the session, and the second in the same round. The
+tell, every time, is that I read a rendering as evidence of a defect without
+first asking what else could produce that rendering. Recorded here rather than
+quietly deleted, because the pattern is the finding.
+
+---
+
+## Round: what a disabled lint rule was hiding
+
+Deleting the dead `nextMove` object from `PlayerDashboard` should have dropped
+the lint warning count by one. It did not move — 166 before, 166 after. That is
+because `@typescript-eslint/no-unused-vars` was set to `"off"`.
+
+Turned on, it reported **132 violations**. Most were unused imports. Six were
+not.
+
+**The owner's pricing page showed invented numbers.** `OwnerPricingPage` seeded
+its Dynamic Pricing table with three hardcoded rules — "Standard Rate ֏10,000",
+"Weekend Premium ֏15,000", "Morning Special ֏8,000" — rendered in a table with
+an Actions column, directly beneath the venue's *real* base rate. Identical for
+every owner and every venue, unrelated to `venues.price_per_hour`, and
+`setPriceRules` was never called so they could not be edited or deleted either.
+An owner reading that page would reasonably conclude their venue charges
+֏15,000 at weekends. There is no pricing-rules table in the schema; the feature
+does not exist. The page now shows the empty state that was already written and
+never reachable, and the "Add Rule" button says it is unavailable instead of
+doing nothing silently.
+
+**Blocking two hours closed the venue for the whole day.** `BlockTimeDialog`
+offers `blockType: "time" | "full_day"` and defaulted to `"time"`.
+`handleBlockTime` ignored the field entirely: every block went to
+`addBlockedDate`, which writes a row to `blocked_dates` — a table holding a date
+and nothing else — with the requested range pasted into the free-text `reason`
+column as `"Blocked: 18:00 - 20:00"`. `get_available_slots` returns zero rows
+for any date it finds in that table. So an owner closing 18:00–20:00 for
+maintenance lost every bookable hour that day, was told "Time blocked
+successfully", and left no machine-readable record of what they actually meant.
+
+`WeekCalendar` accepted a `blockedSlots` prop, defaulted it, never read it, and
+no caller ever passed it — the residue of the partial-day feature that was
+never built. Partial blocking now needs a schema change to support, so it is
+written down in the handover; meanwhile the dialog says so rather than
+destroying a day.
+
+**Two admin tabs with no way in.** `FieldSubmissionsTab` and
+`CandidateFieldsTab` were lazy-imported into `AdminDashboard` with no
+`TabsTrigger`, no `TabsContent` and no route. Both components exist and work.
+Wiring them up or deleting them is a product call, so the dead imports went and
+the question is in the handover.
+
+**Two queries whose results were thrown away.** `AdminDashboard` called
+`useAllGames()` — every game in the system — on every load and read nothing
+from it. `ai-game-matchmaking` fetched the caller's past games "for pattern
+matching" and never referenced them, one round trip per invocation.
+
+### The bug this round introduced, and caught
+
+Wiring `blockedDates` — fetched by `VenueDetailsPage` and, per the same lint
+rule, never used — exposed that the "Fully booked on this date" copy added
+earlier *today* was wrong for owner-blocked dates. Weekly hours say open, slots
+come back empty, so it confidently reported the wrong reason. There are now
+three distinct messages for three distinct causes: closed that weekday, closed
+by the owner on that date, and genuinely full.
+
+The rule is now `"error"` rather than `"off"`, so the next one fails CI. 132 →
+0. Prefix with `_` to keep something deliberately unused.

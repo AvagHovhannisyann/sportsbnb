@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Calendar, Clock, MapPin, Users, Loader2, Plus, Flame, Trophy, Sparkles } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Loader2, Plus, Flame, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,36 +38,14 @@ const PlayerDashboard = () => {
     (g) => new Date(g.game_date) >= new Date(new Date().toDateString()) && g.status === "open"
   ).slice(0, 3);
 
-  const nextGame = upcomingGames[0];
   const pendingInquiries = myLeads.filter((l) => l.lead_outcome === "pending").length;
   const confirmedCount = myLeads.filter((l) => l.lead_outcome === "confirmed").length;
 
-  // Build the "Next Move" — the single most relevant action
-  const nextMove = (() => {
-    if (nextGame) {
-      return {
-        title: `${nextGame.sport} · ${nextGame.title}`,
-        subtitle: `${format(new Date(nextGame.game_date), "EEE, MMM d")} at ${nextGame.game_time} · ${nextGame.location}`,
-        cta: "Open game",
-        href: `/game/${nextGame.id}`,
-      };
-    }
-    if (pendingInquiries > 0) {
-      const lead = myLeads.find((l) => l.lead_outcome === "pending")!;
-      return {
-        title: `Awaiting reply from ${lead.venue_name}`,
-        subtitle: `Sent ${format(new Date(lead.created_at), "MMM d, p")} via WhatsApp · code ${lead.booking_code}`,
-        cta: "View venue",
-        href: `/venue/${lead.venue_id}`,
-      };
-    }
-    return {
-      title: "Find your next match",
-      subtitle: "Browse venues nearby or join an open game.",
-      cta: "Find a venue",
-      href: "/venues",
-    };
-  })();
+  // Removed: a `nextMove` object built here from nextGame / pending leads and
+  // then never rendered — the visible suggestion comes from NextMoveCard's
+  // edge function. Dead since that card landed, and it had gone stale in the
+  // meantime: one branch read "Sent … via WhatsApp · code {booking_code}",
+  // describing a handoff flow that no longer exists.
 
   if (authLoading) {
     return (
@@ -99,10 +77,11 @@ const PlayerDashboard = () => {
             </div>
           </div>
 
-          {/* AI-powered Next Move */}
-          <NextMoveCard />
-
-          {/* Lightweight signal strip (no payments) */}
+          {/* The player's own numbers first. These come from queries that are
+              usually already cached; the AI suggestion below is an edge
+              function call measured in seconds, and it used to sit here — so
+              the top of the logged-in dashboard was a spinner while everything
+              real waited underneath it. */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Awaiting reply", value: pendingInquiries.toString() },
@@ -118,6 +97,9 @@ const PlayerDashboard = () => {
               </Card>
             ))}
           </div>
+
+          {/* AI-powered Next Move — supplementary, so it follows the facts. */}
+          <NextMoveCard />
 
           {/* Upcoming Plans + Games */}
           <div className="grid lg:grid-cols-2 gap-6">

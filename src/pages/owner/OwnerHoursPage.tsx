@@ -148,7 +148,6 @@ const OwnerHoursPage = () => {
     }
   };
 
-  const selectedVenue = myVenues.find((v) => v.id === selectedVenueId);
 
   return (
     <OwnerLayout title="Opening Hours" subtitle="Set your weekly schedule and manage exceptions">

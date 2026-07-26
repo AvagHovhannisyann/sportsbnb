@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Eye, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";

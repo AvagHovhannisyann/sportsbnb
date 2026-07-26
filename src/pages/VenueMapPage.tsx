@@ -1,7 +1,5 @@
-import { useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { MapPin, Star, Loader2, Layers } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback } from "react";
+import { Star, Loader2, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
@@ -13,7 +11,6 @@ import { formatPrice, getCustomerPrice } from "@/lib/pricing";
 import { useRegion } from "@/hooks/useRegion";
 
 const VenueMapPage = () => {
-  const navigate = useNavigate();
   const { data: venues = [], isLoading } = useVenues();
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [selectedVenue, setSelectedVenue] = useState<any>(null);

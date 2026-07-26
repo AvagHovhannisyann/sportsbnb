@@ -144,8 +144,6 @@ const OwnerSettingsPage = () => {
     }
   };
 
-  const selectedVenue = myVenues.find((v) => v.id === selectedVenueId);
-  const selectedCurrency = currencies.find((c) => c.code === currency);
 
   return (
     <OwnerLayout title="Settings" subtitle="Update your venue's basic information and settings">

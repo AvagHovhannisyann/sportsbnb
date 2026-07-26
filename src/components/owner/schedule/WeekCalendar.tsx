@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   format,
   startOfWeek,
@@ -8,8 +8,7 @@ import {
   isSameDay,
   parseISO,
   setHours,
-  setMinutes,
-} from "date-fns";
+  } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,7 @@ interface Booking {
   customer_name?: string;
 }
 
-interface BlockedSlot {
+interface _RemovedBlockedSlot {
   id: string;
   date: string;
   start_time: string;
@@ -36,7 +35,10 @@ interface BlockedSlot {
 
 interface WeekCalendarProps {
   bookings: Booking[];
-  blockedSlots?: BlockedSlot[];
+  // No `blockedSlots`. It was declared, defaulted and never read, and no caller
+  // ever passed it — the residue of partial-day blocking, which the schema
+  // cannot store (see BlockTimeDialog). Leaving the prop in place advertised a
+  // capability this component does not have.
   blockedDates?: { blocked_date: string; reason?: string | null }[];
   openingHours?: { day_of_week: number; open_time: string; close_time: string; is_closed: boolean }[];
   onBookingClick?: (booking: Booking) => void;
@@ -49,7 +51,6 @@ const HOURS = Array.from({ length: 15 }, (_, i) => i + 6); // 6 AM to 8 PM
 
 export function WeekCalendar({
   bookings,
-  blockedSlots = [],
   blockedDates = [],
   openingHours = [],
   onBookingClick,
@@ -89,11 +90,6 @@ export function WeekCalendar({
 
   const isDayBlocked = (day: Date) => {
     return getBlockedForDay(day).length > 0;
-  };
-
-  const parseTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    return hours + minutes / 60;
   };
 
   return (

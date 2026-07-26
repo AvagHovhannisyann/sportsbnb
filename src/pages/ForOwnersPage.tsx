@@ -3,7 +3,6 @@ import SEOHead from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Building,
   Calendar,
   BarChart3,
   Globe,
@@ -13,12 +12,9 @@ import {
   Users,
   CheckCircle,
   Smartphone,
-  Zap,
   MessageCircle,
   Settings,
   Star,
-  TrendingUp,
-  Code,
   CalendarSync,
 } from "lucide-react";
 import { motion } from "framer-motion";

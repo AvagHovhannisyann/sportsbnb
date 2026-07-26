@@ -15,13 +15,17 @@ interface BookingPanelProps {
   venueId: string;
   pricePerHour: number;
   currencySymbol?: string;
+  /** Dates the owner has closed. Distinct from the weekly opening hours, and
+      distinct again from every slot being taken — all three produce an empty
+      slot list and mean different things to whoever is trying to book. */
+  blockedDates?: { blocked_date: string }[];
 }
 
 /**
  * Airbnb-style booking card: pick a date, pick a free hour slot, reserve.
  * Reserving creates a 20-minute payment hold and moves to checkout.
  */
-export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
+export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: BookingPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -54,6 +58,10 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
   // correctly. Same query key the page already uses, so React Query serves it
   // from cache rather than fetching twice.
   const { data: venueHours = [] } = useVenueHours(venueId);
+  const blockedToday = useMemo(
+    () => blockedDates.some((b) => b.blocked_date === selectedDate),
+    [blockedDates, selectedDate],
+  );
   const closedToday = useMemo(() => {
     const dow = new Date(`${selectedDate}T00:00:00`).getDay();
     const row = venueHours.find((h) => h.day_of_week === dow);
@@ -189,9 +197,11 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
           </div>
         ) : !slots || slots.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
-            {closedToday === false
-              ? "Fully booked on this date — try another day."
-              : "Closed on this day."}
+            {blockedToday
+              ? "The owner has closed this date."
+              : closedToday === false
+                ? "Fully booked on this date — try another day."
+                : "Closed on this day."}
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-2">
