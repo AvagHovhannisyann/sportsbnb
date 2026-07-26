@@ -93,7 +93,12 @@ const VenueMapPage = () => {
                     </p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
                       <strong>{formatPrice(getCustomerPrice(selectedVenue.price_per_hour))}/hr</strong>
-                      <span>⭐ {selectedVenue.rating}</span>
+                      {selectedVenue.rating > 0 && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden="true" />
+                          {selectedVenue.rating}
+                        </span>
+                      )}
                     </div>
                     <a
                       href={`/venue/${selectedVenue.id}`}

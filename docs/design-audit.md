@@ -524,7 +524,7 @@ line and "Secure payment via Ameriabank / Idram" all render correctly.
 
 | Finding | Detail |
 |---|---|
-| **Header rating contradicted the reviews below it** | The header read `venues.rating` / `venues.review_count`; the section below counts rows from the `reviews` table. **Nothing derives those two columns from actual reviews** — the only writers are `outreach-enrich` and `outreach-prepare`, which store *Google Places* counts for prospecting targets. A venue could therefore show "4.7 (23 reviews)" directly above "Reviews (0)" — and would, for any venue whose row came from outreach. The header now derives both from the reviews already fetched on the page, and shows nothing when there are none. |
+| **Header rating contradicted the reviews below it** | The header read `venues.rating` / `venues.review_count`; the section below counts rows from the `reviews` table. **Nothing writes those two columns at all.** (An earlier draft of this entry said the outreach functions wrote them; they do not — they write Google Places counts to `outreach_targets`, a different table. Corrected after grepping every `from("venues")` write in the codebase and finding none that touches `rating` or `review_count`.) Both are `DEFAULT 0` and stay 0 for the life of the row, so the header stated a rating derived from nothing. The header now derives both from the reviews already fetched on the page, and shows nothing when there are none. |
 | AI launcher overlaps the Reserve button | Measured 7px at 1440 and 27px at 1024. The launcher is `fixed z-50`; the sticky panel had no stacking context, so the launcher sat on top. Panel raised to `z-[60]`. |
 
 ### Two corrections to my own findings
@@ -543,6 +543,41 @@ component was reading the right field all along. And a "Reserve is not
 clickable" result was the button's legitimate `disabled` state with no slot
 selected, which a trial click waits out. Both checked against the migration
 and the component before being written down.
+
+## Phantom ratings across the rest of the app
+
+Following the venue-header fix: if `venues.rating` and `venues.review_count`
+are never written, every other surface reading them is showing a number that
+means nothing. Seven readers, and the split turned out to matter.
+
+**Already safe — four of them guard on a truthy rating**, so with the column
+at 0 they render nothing: `SEOHead` (so no fabricated `aggregateRating` ever
+reached search engines — the outcome that would have been worst),
+`CommunityPage`, `AIRecommendations`, and `OwnerVenuesPage` (which shows an
+em-dash).
+
+**Three did not**, and rendered `⭐ 0` on every venue — which reads as
+"customers rated this zero", strictly worse than showing nothing:
+
+| File | Surface |
+|---|---|
+| `NearbyFieldsPage` | venue list row |
+| `NearbyFieldsPage` | bookable-venue map info window |
+| `VenueMapPage` | selected-venue info window |
+
+All three now render the rating only when there is one. All three also used a
+`⭐` emoji while importing lucide's `Star` in the same file — replaced, so the
+star matches every other rating in the app.
+
+### Left alone deliberately
+
+`condition_rating` on the community-fields feature has the same shape — a
+`DEFAULT 3.0` column with no writer — so those surfaces always show "3/5".
+Lower harm than a false zero (a neutral default rather than a damning one) and
+it belongs to a different feature, so it is recorded here rather than changed.
+The decorative `⭐` in two `NearbyFieldsPage` headings and one SVG map marker
+are also untouched: the SVG cannot host a React icon, and the headings are
+ornament, not data.
 
 ## Verified clean
 

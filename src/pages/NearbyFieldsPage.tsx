@@ -249,7 +249,12 @@ const NearbyFieldsPage: React.FC = () => {
                       ⭐ {selectedMarker.name} <span style={{ color: "#2563eb", fontSize: 12 }}>BOOKABLE</span>
                     </h3>
                     <p style={{ fontSize: 12 }}>{selectedMarker.sports?.join(", ")} • ֏{selectedMarker.price_per_hour}/hr</p>
-                    <p style={{ fontSize: 12 }}>⭐ {selectedMarker.rating || 0} ({selectedMarker.review_count || 0} reviews)</p>
+                    {selectedMarker.rating > 0 && (
+                      <p style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                        <Star className="h-3 w-3 fill-primary text-primary" aria-hidden="true" />
+                        {selectedMarker.rating} ({selectedMarker.review_count || 0} reviews)
+                      </p>
+                    )}
                     <p style={{ fontSize: 11, color: "gray" }}>{selectedMarker.address || selectedMarker.city}</p>
                     <a href={`/venue/${selectedMarker.id}`} style={{ display: "block", textAlign: "center", padding: 6, background: "#2563eb", color: "white", borderRadius: 6, textDecoration: "none", marginTop: 6, fontSize: 13 }}>
                       Book Now →
@@ -282,7 +287,14 @@ const NearbyFieldsPage: React.FC = () => {
                             <Badge variant="secondary" className="text-xs">Bookable</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {venue.sports?.join(", ")} • ֏{venue.price_per_hour}/hr • ⭐ {venue.rating || 0}
+                            {venue.sports?.join(", ")} • ֏{venue.price_per_hour}/hr
+                            {venue.rating > 0 && (
+                              <>
+                                {" • "}
+                                <Star className="inline h-3 w-3 fill-primary text-primary" aria-hidden="true" />{" "}
+                                {venue.rating}
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
