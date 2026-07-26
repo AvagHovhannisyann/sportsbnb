@@ -35,6 +35,17 @@ export const useLeaderboard = () => {
   return useQuery({
     queryKey: ["leaderboard"],
     queryFn: async () => {
+      // KNOWN BROKEN — see docs/handover.md.
+      //
+      // `profiles` is own-row-only since the Phase 1 policy change, so this
+      // returns at most one row: yours. The leaderboard shows a table of one.
+      //
+      // It cannot be fixed by switching to `profiles_public` like the other
+      // social lookups were, because that view deliberately omits `xp` and
+      // `level`. Making a player's score publicly readable is a decision about
+      // what the platform exposes, not a bug fix, so it needs a migration and
+      // an owner — widening a security view unilaterally is exactly the kind
+      // of change that should not arrive inside a UI commit.
       const { data, error } = await supabase
         .from("profiles")
         .select("user_id, full_name, avatar_url, xp, level, city")

@@ -31,10 +31,12 @@ export const useVenueReviews = (venueId: string | undefined) => {
 
       if (reviewsError) throw reviewsError;
 
-      // Then get profile info for each review
+      // Then get profile info for each review, from the public view — the
+      // `profiles` table is own-row-only, so this returned nothing and every
+      // review on every venue page was attributed to "Anonymous".
       const userIds = [...new Set(reviews.map(r => r.user_id))];
       const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", userIds);
 

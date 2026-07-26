@@ -1739,3 +1739,62 @@ The **Armenian spelling of Yerevan** looked like an obvious omission from a
 keyword list written in Latin script. It is there — `"երևան"` — along with
 eleven district names. Checked before touching it, which is the only reason
 this is a sentence rather than a commit that added something already present.
+
+---
+
+## Round: everyone in the app was called Anonymous
+
+Rendering the games list turned up "Hosted by Anonymous" on all three cards. My
+first read was that the stub was answering every `profiles` query with the
+logged-in user's row, which it was. Checking the policy anyway is what found
+the real one.
+
+`useGames` fetches host names with
+`supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", hostIds)`.
+The SELECT policy on `profiles` was deliberately narrowed in Phase 1:
+
+```sql
+-- Update profiles RLS - restrict public SELECT to own profile only
+DROP POLICY IF EXISTS "Public profiles are viewable" ON public.profiles;
+CREATE POLICY "Users can view their own profile"
+ON public.profiles FOR SELECT USING (auth.uid() = user_id);
+```
+
+`profiles_public` was created in the same migration for exactly this purpose —
+a column-whitelisted view granted to `anon` and `authenticated`. Four places
+never moved to it:
+
+| | what it shows | what it showed |
+|---|---|---|
+| `useGames` list | game hosts | Anonymous, every card |
+| `useGames` details | host | Anonymous |
+| `useGames` details | participants | nameless |
+| `useReviews` | review authors | Anonymous, every review |
+
+That last one explains something I had already seen and misfiled. Every review
+on the venue page read "Anonymous" hours ago and I attributed it entirely to my
+stub. It was the stub *and* this — a venue's reviews are unattributed in
+production, on the surface where social proof is the entire point.
+
+All four now read `profiles_public`.
+
+### The one that cannot be fixed the same way
+
+`useLeaderboard` reads `profiles` ordered by `xp`, so under own-row-only RLS it
+returns at most one row: yours. A leaderboard of one, since that migration.
+
+Switching it to `profiles_public` does not work — the view deliberately omits
+`xp` and `level`. Making a player's score readable by every other player is a
+decision about what the platform exposes, not a bug fix. It needs a migration
+and an owner, so it is written up in the handover with the two options
+(publish the columns, or drop a leaderboard that cannot work) and a comment at
+the call site pointing there. Widening a security view is not a change that
+should arrive inside a UI commit.
+
+### Tenth false positive
+
+"Hosted by Anonymous" was, in the rendering I was looking at, entirely my
+stub's doing. The production bug underneath it is real and was found by
+checking the policy rather than by trusting the screenshot — which is the same
+sequence as every other time this has gone right, and the opposite of the nine
+occasions it did not.

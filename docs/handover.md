@@ -142,7 +142,32 @@ unfinished surface to the admin console or deletes work you wanted.
 
 ---
 
-## 6. Small, optional
+## 6. The leaderboard needs a decision from you
+
+`useLeaderboard` reads `profiles` directly, ordered by `xp`. That table has
+been own-row-only since the Phase 1 policy change, so the query returns at
+most one row — yours. The leaderboard is a table of one, and has been since
+that migration.
+
+The other four social lookups that had the same problem are fixed: game hosts
+on the games list, the host and participants on game details, and review
+authors on every venue page all read `profiles_public` now, which is the view
+created for exactly this. That view deliberately does **not** expose `xp` or
+`level`, so the leaderboard cannot be fixed the same way.
+
+**The decision is whether a player's XP and level are public.** They are
+already shown on your own profile and in the dashboard header; showing them on
+a leaderboard means every user can read every other user's score. If that is
+what you want, the fix is a one-line migration adding `xp, level` to
+`profiles_public`. If it is not, the leaderboard should be removed rather than
+left rendering a single row.
+
+I did not make that call, because widening a security view is not something
+that should arrive inside a UI commit.
+
+---
+
+## 7. Small, optional
 
 - **`e2e` CI job** — gated on an `E2E_ENABLED` repository variable and
   `VITE_SUPABASE_*` secrets that were never set, so it has never once run. The

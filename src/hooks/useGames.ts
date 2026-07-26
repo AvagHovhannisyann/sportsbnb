@@ -93,10 +93,16 @@ export const useGames = (filters?: {
 
       if (!games || games.length === 0) return [];
 
-      // Get host profiles
+      // Get host profiles.
+      //
+      // profiles_public, not profiles. The public SELECT policy on `profiles`
+      // was dropped in favour of own-profile-only (plus admin), and the view
+      // exists precisely so other people can be looked up — so this returned
+      // nothing for anyone but yourself, and every game on the list read
+      // "Hosted by Anonymous".
       const hostIds = [...new Set(games.map(g => g.host_id))];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", hostIds);
 
@@ -160,9 +166,9 @@ export const useGameById = (gameId: string | undefined) => {
       if (error) throw error;
       if (!game) return null;
 
-      // Get host profile
+      // Get host profile — public view, same reason as the list above.
       const { data: hostProfile } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .eq("user_id", game.host_id)
         .maybeSingle();
@@ -181,7 +187,7 @@ export const useGameById = (gameId: string | undefined) => {
       
       if (allUserIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("user_id, full_name, avatar_url")
           .in("user_id", allUserIds);
         
