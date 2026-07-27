@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sportTypes } from "@/data/constants";
+import { orIlike } from "@/lib/postgrest";
 
 // Browser-callable geocoder key. It is necessarily public — it ships in the
 // bundle — but it was hardcoded here, which meant it could not be swapped per
@@ -90,14 +91,14 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
           .from("venues")
           .select("id, name, city, address")
           .eq("is_active", true)
-          .or(`name.ilike.%${query}%,city.ilike.%${query}%,address.ilike.%${query}%`)
+          .or(orIlike(["name", "city", "address"], query))
           .limit(3),
         supabase
           .from("games")
           .select("id, title, sport, location")
           .eq("status", "open")
           .gte("game_date", new Date().toISOString().split("T")[0])
-          .or(`title.ilike.%${query}%,sport.ilike.%${query}%,location.ilike.%${query}%`)
+          .or(orIlike(["title", "sport", "location"], query))
           .limit(3),
         supabase.functions.invoke("geosuggest", {
           body: {
@@ -110,6 +111,14 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
           },
         }).then(({ data, error }) => error ? { results: [] } : data).catch(() => ({ results: [] })),
       ]);
+
+      // Errors used to be dropped here, so a 400 and a genuine no-match drew
+      // the same empty dropdown. They are still not shown to the user — a
+      // suggestion list is the wrong place for an error panel — but they reach
+      // the console, which is the difference between a reproducible bug and an
+      // invisible one.
+      if (venuesRes.error) console.error("SmartSearch venue lookup failed", venuesRes.error);
+      if (gamesRes.error) console.error("SmartSearch game lookup failed", gamesRes.error);
 
       venuesRes.data?.forEach(venue => {
         allSuggestions.push({

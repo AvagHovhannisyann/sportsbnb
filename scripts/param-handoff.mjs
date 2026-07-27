@@ -60,6 +60,31 @@ const INBOUND_ONLY = new Set([
   'error_description',
 ]);
 
+/**
+ * Parameters whose reader is missing because the feature behind them is
+ * unfinished, and which are written up rather than quietly fixed.
+ *
+ * Reported on every run, not failed. The distinction the rest of this
+ * directory draws: a check that cannot honestly score something says so in its
+ * own column instead of folding it into a pass or a fail. Failing the build
+ * here would be demanding that someone invent a product decision to get CI
+ * green; passing silently would let a whole dead feature look healthy.
+ *
+ * Each entry has to say what is missing and where the decision is recorded. An
+ * entry without that is just an exemption, and exemption lists are how checks
+ * rot.
+ */
+const UNFINISHED = new Map([
+  [
+    'ref',
+    'The referral programme has no backend at all: `referral_credits` has two ' +
+      'SELECT policies and no INSERT policy, no SECURITY DEFINER function ever ' +
+      'writes it, `referral_codes.uses_count` is never incremented, and nothing ' +
+      'at checkout can spend a credit. Reading the parameter at signup without ' +
+      'any of that would record nothing. See docs/handover.md §5.',
+  ],
+]);
+
 function walk(dir) {
   const out = [];
   for (const entry of readdirSync(dir)) {
@@ -76,8 +101,35 @@ const SET_CALL = /\b(?:params|searchParams|newParams|nextParams|query|qs)\.set\(
 const SET_DYNAMIC = /\b(?:params|searchParams|newParams|nextParams|query|qs)\.set\(\s*(?!["'`])/g;
 /** `setSearchParams({ lat: …, lng: … })` — object literal keys. */
 const SET_OBJECT = /setSearchParams\(\s*\{([^}]*)\}/g;
-/** A query string inside an app-internal path literal: `/venues?sport=…`. */
-const PATH_QUERY = /["'`]\/[^"'`\s]*\?([^"'`\s]*)["'`]/g;
+/**
+ * A query string inside an app-internal URL literal.
+ *
+ * Two shapes, because matching only the first left a real bug on the floor.
+ * `"/venues?sport=…"` is the obvious one. The other is a template literal
+ * building an absolute URL back to this same app —
+ * `${window.location.origin}/venue/${id}?date=…&time=…` — which is exactly
+ * what the embeddable widget's Book Now button does. It starts with `${`, not
+ * `/`, so a pattern anchored on the leading slash walked straight past a
+ * control writing two parameters nothing reads: pick a slot in the widget,
+ * press the button, and land on the venue page with nothing selected.
+ *
+ * Scanned by walking whole string and template literals rather than by
+ * pattern-matching their insides. A regex that stops at the first quote or
+ * space cannot read `…?date=${format(d, "yyyy-MM-dd")}&time=${t}` — the
+ * interpolation contains both — so the narrower version reported a clean run
+ * over the very bug it was widened to catch.
+ *
+ * URLs to other hosts stay excluded: a query aimed somewhere else is not this
+ * app's to read.
+ */
+const LITERALS = /`(?:[^`\\]|\\.)*`|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g;
+
+/** Does this literal address this app, rather than another host? */
+function isInternalUrl(body) {
+  if (body.startsWith("/")) return true;
+  return /^\$\{[^}]*location\.origin[^}]*\}\//.test(body);
+}
+
 /** `searchParams.get("sport")`. */
 const GET_CALL = /\b(?:params|searchParams|url)\.searchParams\.get\(\s*["'`]([\w-]+)["'`]|\b(?:params|searchParams)\.get\(\s*["'`]([\w-]+)["'`]/g;
 
@@ -120,18 +172,27 @@ for (const file of walk(SRC)) {
     for (const k of m[1].matchAll(/([\w-]+)\s*:/g)) note(written, k[1], `${rel}:${lineOf(m.index)}`);
   }
 
-  for (const m of text.matchAll(PATH_QUERY)) {
+  for (const m of text.matchAll(LITERALS)) {
+    const body = m[0].slice(1, -1);
+    if (!isInternalUrl(body)) continue;
+    const query = body.slice(body.indexOf('?') + 1);
+    if (!body.includes('?')) continue;
     // `${params.toString()}` carries keys recorded by SET_CALL already; the
-    // literal keys are the ones only visible here.
-    for (const k of m[1].matchAll(/[?&]?([\w-]+)=/g)) note(written, k[1], `${rel}:${lineOf(m.index)}`);
+    // literal keys are the ones only visible here. Anchored on `?` or `&` so
+    // an `=` inside an interpolated expression is not read as a parameter.
+    for (const k of query.matchAll(/(?:^|[?&])([\w-]+)=/g)) {
+      note(written, k[1], `${rel}:${lineOf(m.index)}`);
+    }
   }
 
   for (const m of text.matchAll(GET_CALL)) read.add(m[1] ?? m[2]);
 }
 
-const orphans = [...written.keys()]
+const unread = [...written.keys()]
   .filter((p) => !read.has(p) && !INBOUND_ONLY.has(p))
   .sort();
+const orphans = unread.filter((p) => !UNFINISHED.has(p));
+const unfinished = unread.filter((p) => UNFINISHED.has(p));
 
 console.log(`\nURL parameter handoff — ${written.size} written, ${read.size} read\n`);
 
@@ -139,6 +200,14 @@ for (const p of orphans) {
   console.log(`  ORPHAN  ?${p}=  written by ${[...written.get(p)].join(', ')}`);
   console.log(`          Nothing calls searchParams.get(${JSON.stringify(p)}). The control that`);
   console.log(`          sets it looks like it works and does nothing.`);
+}
+
+for (const p of unfinished) {
+  console.log(`  UNFINISHED (reported, not failed)  ?${p}=  written by ${[...written.get(p)].join(', ')}`);
+  for (const line of UNFINISHED.get(p).match(/.{1,72}(\s|$)/g) ?? []) {
+    console.log(`    ${line.trim()}`);
+  }
+  console.log('');
 }
 
 if (dynamic.length) {

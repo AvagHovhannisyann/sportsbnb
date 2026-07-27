@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatTimeOfDay } from "@/lib/time";
+import { atVenue } from "@/lib/venueTime";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { CreditCard, Loader2, ShieldCheck, Timer, Wallet } from "lucide-react";
@@ -230,7 +231,7 @@ export default function CheckoutPage() {
               <p className="font-semibold text-base">{booking.venue_name}</p>
               <p className="text-muted-foreground">
                 {booking.starts_at
-                  ? `${format(new Date(booking.starts_at), "EEEE, MMM d")} · ${format(new Date(booking.starts_at), "HH:mm")}–${format(new Date(booking.ends_at!), "HH:mm")}`
+                  ? `${format(atVenue(booking.starts_at), "EEEE, MMM d")} · ${format(atVenue(booking.starts_at), "HH:mm")}–${format(atVenue(booking.ends_at!), "HH:mm")}`
                   : `${booking.booking_date} · ${formatTimeOfDay(booking.booking_time)}`}
               </p>
             </div>

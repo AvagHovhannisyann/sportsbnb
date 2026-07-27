@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { formatTimeOfDay } from "@/lib/time";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useEffect, useState } from "react";
@@ -26,6 +26,9 @@ import { cn } from "@/lib/utils";
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
+  // `?date=` and `?time=`, which the embeddable widget's Book Now button has
+  // always written and nothing has ever read. See BookingPanel's props.
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   
   const {
@@ -405,6 +408,8 @@ const VenueDetailsPage = () => {
                   venueId={venue.id}
                   pricePerHour={venue.price_per_hour}
                   blockedDates={blockedDates}
+                  initialDate={searchParams.get("date")}
+                  initialTime={searchParams.get("time")}
                 />
 
                 <VenueChatButton

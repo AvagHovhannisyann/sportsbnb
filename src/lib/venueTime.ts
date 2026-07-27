@@ -101,3 +101,45 @@ export function addHoursToInstant(instant: string, hours: number): string | null
   if (Number.isNaN(start.valueOf()) || !Number.isFinite(hours)) return null;
   return new Date(start.getTime() + hours * 3600_000).toISOString();
 }
+
+/**
+ * The same instant, as a Date whose *local* getters read the venue's clock.
+ *
+ * This exists so the booking chain can keep its `date-fns` format patterns and
+ * still tell the truth. Five surfaces printed booking times with
+ * `format(new Date(starts_at), "HH:mm")`, which renders in whatever zone the
+ * browser is in — so a player in London picking an 18:00 court in Yerevan saw
+ * the slot as 14:00, was charged for "14:00" at checkout, got a confirmation
+ * saying 14:00, and was expected at the venue four hours later. Every screen
+ * agreed with every other screen and all of them disagreed with the venue.
+ *
+ * Wrapping each call in `atVenue(...)` fixes the whole chain without rewriting
+ * a single format string.
+ *
+ * **The returned Date is for formatting only.** Its epoch value is deliberately
+ * wrong — shifted by the venue's offset so that `getHours()` and friends read
+ * the venue's wall clock. Never compare two of these to each other unless both
+ * came through here, never send one to the database, and never do arithmetic
+ * on one and expect a real duration. `isUpcoming` in features/booking/upcoming
+ * compares true instants, which is why it does not use this.
+ */
+export function atVenue(instant: string | Date): Date {
+  const source = typeof instant === "string" ? new Date(instant) : instant;
+  if (Number.isNaN(source.valueOf())) return source;
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: VENUE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(source);
+
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  // `hour12: false` renders midnight as 24 in some ICU versions; `% 24` keeps
+  // it on the right day rather than rolling into the next one.
+  return new Date(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+}

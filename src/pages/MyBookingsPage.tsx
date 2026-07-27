@@ -17,6 +17,7 @@ import { isUpcoming } from "@/features/booking/upcoming";
 import { bookingStatusDescriptor } from "@/features/booking/status";
 import { formatAmd } from "@/features/booking/hooks/useBookingFlow";
 import { format } from "date-fns";
+import { atVenue } from "@/lib/venueTime";
 
 const toneClasses = TONE_CHIP;
 
@@ -24,14 +25,16 @@ const toneClasses = TONE_CHIP;
 function bookingDay(booking: MyBooking): string {
   const source = booking.starts_at ?? booking.booking_date;
   if (!source) return "Date unknown";
-  const date = new Date(booking.starts_at ? source : `${source}T00:00:00`);
+  // `atVenue` for a real instant; the legacy date-only column is already a
+  // venue-local calendar date, so it is read as civil time rather than shifted.
+  const date = booking.starts_at ? atVenue(source) : new Date(`${source}T00:00:00`);
   return Number.isNaN(date.valueOf()) ? "Date unknown" : format(date, "EEE d MMM yyyy");
 }
 
 function bookingTime(booking: MyBooking): string {
   if (booking.starts_at) {
     const start = new Date(booking.starts_at);
-    if (!Number.isNaN(start.valueOf())) return format(start, "HH:mm");
+    if (!Number.isNaN(start.valueOf())) return format(atVenue(start), "HH:mm");
   }
   return formatTimeOfDay(booking.booking_time) || "—";
 }

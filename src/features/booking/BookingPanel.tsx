@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addDays, format } from "date-fns";
 import { CalendarDays, Clock, Loader2, ShieldCheck } from "lucide-react";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAvailableSlots, useCreateBookingHold, formatAmd } from "./hooks/useBookingFlow";
 import { useVenueHours } from "@/hooks/useAvailability";
 import { useVenuePolicy } from "@/hooks/useVenuePolicies";
+import { VENUE_TIME_ZONE, atVenue } from "@/lib/venueTime";
 
 interface BookingPanelProps {
   venueId: string;
@@ -19,16 +20,42 @@ interface BookingPanelProps {
       distinct again from every slot being taken — all three produce an empty
       slot list and mean different things to whoever is trying to book. */
   blockedDates?: { blocked_date: string }[];
+  /**
+   * A date and wall-clock time to arrive pre-selected on, from `?date=` and
+   * `?time=`.
+   *
+   * The embeddable widget's Book Now button has always put those in the URL and
+   * nothing has ever read them: a customer picked Saturday 18:00 inside an
+   * owner's embedded widget, pressed the button, and landed here with no date
+   * and no time chosen, to do it again. On the surface whose entire job is to
+   * turn a slot choice into a booking.
+   */
+  initialDate?: string | null;
+  initialTime?: string | null;
 }
 
 /**
  * Airbnb-style booking card: pick a date, pick a free hour slot, reserve.
  * Reserving creates a 20-minute payment hold and moves to checkout.
  */
-export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: BookingPanelProps) {
+export function BookingPanel({
+  venueId,
+  pricePerHour,
+  blockedDates = [],
+  initialDate = null,
+  initialTime = null,
+}: BookingPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  // Only a date this strip actually offers. A stale link to last month would
+  // otherwise select a date with no button to show it as selected, and no way
+  // back to today.
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    if (!initialDate || !/^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return today;
+    const last = format(addDays(new Date(), 13), "yyyy-MM-dd");
+    return initialDate >= today && initialDate <= last ? initialDate : today;
+  });
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const dates = useMemo(
@@ -122,6 +149,36 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
       toast.error(e instanceof Error ? e.message : "Could not reserve this slot");
     }
   };
+
+  /**
+   * Match `?time=18:00` to a slot once the slots for that date have arrived.
+   *
+   * The parameter is a venue-local wall clock — that is what the widget
+   * displayed and what the customer chose — while a slot is an instant, so the
+   * comparison has to be made in the venue's zone rather than the browser's.
+   *
+   * Applies once. `appliedInitialTime` stops it re-selecting the slot after
+   * someone has deliberately picked a different one and the query refetches.
+   */
+  const appliedInitialTime = useRef(false);
+  useEffect(() => {
+    if (appliedInitialTime.current || !initialTime || !slots?.length) return;
+    if (!/^\d{2}:\d{2}$/.test(initialTime)) {
+      appliedInitialTime.current = true;
+      return;
+    }
+    const fmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: VENUE_TIME_ZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const match = slots.find(
+      (slot) => slot.available && fmt.format(new Date(slot.slot_start)) === initialTime,
+    );
+    if (match) setSelectedSlot(match.slot_start);
+    appliedInitialTime.current = true;
+  }, [slots, initialTime]);
 
   const selected = slots?.find((s) => s.slot_start === selectedSlot);
 
@@ -217,7 +274,10 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {slots.map((slot) => {
-              const label = format(new Date(slot.slot_start), "HH:mm");
+              // `atVenue`, not the raw instant: date-fns formats in the browser's zone,
+              // so this printed 14:00 for an 18:00 Yerevan slot to anyone outside
+              // UTC+4 — the number the whole booking decision is made on.
+              const label = format(atVenue(slot.slot_start), "HH:mm");
               return (
                 <button
                   key={slot.slot_start}

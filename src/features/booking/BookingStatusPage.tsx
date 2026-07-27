@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
+import { atVenue } from "@/lib/venueTime";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -121,7 +122,7 @@ export default function BookingStatusPage() {
               <p className="text-muted-foreground mb-6">
                 {booking.venue_name} ·{" "}
                 {booking.starts_at
-                  ? `${format(new Date(booking.starts_at), "EEE, MMM d")} at ${format(new Date(booking.starts_at), "HH:mm")}`
+                  ? `${format(atVenue(booking.starts_at), "EEE, MMM d")} at ${format(atVenue(booking.starts_at), "HH:mm")}`
                   : `${booking.booking_date} at ${formatTimeOfDay(booking.booking_time)}`}
               </p>
               {/* What was charged, and something to quote.

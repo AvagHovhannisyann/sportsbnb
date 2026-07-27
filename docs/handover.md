@@ -153,7 +153,7 @@ corrected in the code comments and in `docs/design-audit.md`.
 
 ---
 
-## 5. Seven product calls I did not make for you
+## 5. Nine product calls I did not make for you
 
 None of these is a bug I could fix without deciding something that is yours to
 decide.
@@ -246,6 +246,34 @@ hardcoded list of five while the profile page offered fifteen, and both write
 the same column, so an owner who chose Georgian Lari found the field blank —
 measured: `/profile` read "₾ Georgian Lari (GEL)", `/owner/settings` read "".
 Both now derive from one list.
+
+**The referral programme has no backend.** The dashboard's Referral card offers
+"Share link", which copies `/signup?ref=CODE`, and nothing anywhere reads `ref`.
+That is the visible half. The rest: `referral_credits` has two SELECT policies
+and **no INSERT policy**, no SECURITY DEFINER function ever writes it,
+`referral_codes.uses_count` is never incremented, and nothing at checkout can
+spend a credit. So the feature is inert end to end — a player shares their link,
+a friend signs up, and nothing is recorded for anyone, forever.
+
+I did not wire it up, because "read the parameter at signup" would record
+nothing without a writer, and building the writer means deciding things that are
+yours: whether credit vests at signup or at the referee's first booking, how
+self-referral and duplicate-referee abuse are prevented, and how a credit is
+actually applied to a payment that settles through Ameria or Idram. The schema
+already suggests an answer to one of them — `credit_amount numeric DEFAULT 2000`
+— but a default in a table nobody writes to is not a decision.
+`scripts/param-handoff.mjs` reports `?ref=` as UNFINISHED on every run, with
+that reasoning, rather than failing the build or passing in silence.
+
+**Manual bookings are outside the money accounting.** Fixing the double-booking
+bug (see the commit for `ManualBookingDialog`) filled in `venue_uuid`,
+`starts_at` and `ends_at`, which is what availability and the overlap constraint
+need. It left `amount_minor`, `platform_fee_minor` and `owner_amount_minor`
+NULL, so an owner's walk-in booking still appears in no payout or commission
+figure. That is deliberate: whether the platform takes its 5% on a cash booking
+the owner arranged and collected themselves is a commercial decision, not a
+missing line of code. If the answer is yes, the fields are a one-line addition
+alongside the ones I did fill in.
 
 ---
 

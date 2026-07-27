@@ -8,6 +8,7 @@ import { parseHexColor, hslTriplet, readableForeground } from "@/lib/color";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { VENUE_TIME_ZONE } from "@/lib/venueTime";
 
 interface VenueData {
   id: string;
@@ -121,51 +122,46 @@ const EmbedBookingPage = () => {
     
     setLoadingSlots(true);
     try {
-      const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const dayOfWeek = selectedDate.getDay();
+      /**
+       * The same RPC the site itself uses, replacing a second implementation
+       * of availability that disagreed with it three ways.
+       *
+       * 1. `.single()` on `venue_hours` for one day. Zero rows is the *normal*
+       *    state — most venues never set hours — and `.single()` treats it as
+       *    an error, so `hours` came back null and the widget rendered "no
+       *    slots" forever. `get_available_slots` defaults to 09:00–22:00 when
+       *    it finds no row, so the same venue on the same day offered a full
+       *    day of slots on the site and nothing at all in the owner's own
+       *    embedded widget. For a newly listed venue that is every day.
+       * 2. It matched bookings on `status IN ('confirmed','pending')`. The
+       *    status a hold actually carries is `pending_payment`, so a slot
+       *    someone was in the middle of paying for still showed as free here.
+       * 3. It ignored `blocked_dates` entirely, which the RPC checks — a day
+       *    the owner had closed was bookable through their own widget.
+       *
+       * The RPC is SECURITY DEFINER with no REVOKE, and the public venue page
+       * already calls it unauthenticated, so an embed on someone else's site
+       * can call it too.
+       */
+      const { data: rpcSlots, error: slotsError } = await supabase.rpc("get_available_slots", {
+        p_venue_id: venueId,
+        p_date: format(selectedDate, "yyyy-MM-dd"),
+        p_court_id: null,
+      });
 
-      // Get venue hours
-      const { data: hours } = await supabase
-        .from("venue_hours")
-        .select("*")
-        .eq("venue_id", venueId)
-        .eq("day_of_week", dayOfWeek)
-        .single();
+      if (slotsError) throw slotsError;
 
-      if (!hours || hours.is_closed) {
-        setAvailability([]);
-        return;
-      }
-
-      // Get existing bookings
-      const { data: bookings } = await supabase
-        .from("bookings")
-        .select("booking_time, duration_hours")
-        .eq("venue_id", venueId)
-        .eq("booking_date", dateStr)
-        .in("status", ["confirmed", "pending"]);
-
-      // Generate time slots
-      const slots: TimeSlot[] = [];
-      const [openHour, openMin] = hours.open_time.split(":").map(Number);
-      const [closeHour, closeMin] = hours.close_time.split(":").map(Number);
-      const openMinutes = openHour * 60 + openMin;
-      const closeMinutes = closeHour * 60 + closeMin;
-
-      for (let time = openMinutes; time < closeMinutes - 60; time += 60) {
-        const h = Math.floor(time / 60);
-        const m = time % 60;
-        const slotTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-
-        const isBooked = bookings?.some(b => {
-          const [bH, bM] = b.booking_time.split(":").map(Number);
-          const bStart = bH * 60 + bM;
-          const bEnd = bStart + b.duration_hours * 60;
-          return time >= bStart && time < bEnd;
-        });
-
-        slots.push({ time: slotTime, available: !isBooked });
-      }
+      // The RPC returns instants; the widget shows venue-local wall clock,
+      // which is what the site shows and what the owner wrote on their door.
+      const slots: TimeSlot[] = (rpcSlots ?? []).map((slot) => ({
+        time: new Intl.DateTimeFormat("en-GB", {
+          timeZone: VENUE_TIME_ZONE,
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(new Date(slot.slot_start)),
+        available: slot.available,
+      }));
 
       setAvailability(slots);
     } catch (error) {

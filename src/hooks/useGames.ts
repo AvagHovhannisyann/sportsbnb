@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { orIlike } from "@/lib/postgrest";
 
 export interface Game {
   id: string;
@@ -85,7 +86,7 @@ export const useGames = (filters?: {
         query = query.eq("skill_level", filters.level);
       }
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,location.ilike.%${filters.search}%`);
+        query = query.or(orIlike(["title", "location"], filters.search));
       }
 
       const { data: games, error: gamesError } = await query;

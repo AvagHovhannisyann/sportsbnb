@@ -465,6 +465,39 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
     r.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify(isSingleLookup(r.request().url())?row:[row])});
   });
+  /**
+   * `get_available_slots`, the RPC the whole booking flow turns on.
+   *
+   * It was answered by the generic `[]` catch-all, so every audit that loaded
+   * a venue page or the embeddable widget saw a booking panel with no slots in
+   * it — and the slot buttons are controls. `a11y-names`, `tap-targets`,
+   * `focus-visible` and `rendered-contrast` have never once seen the thing a
+   * customer actually clicks to book.
+   *
+   * Hours match the RPC's own default for a venue with no `venue_hours` row:
+   * 09:00 to 22:00, Yerevan. One slot is returned unavailable, because
+   * "available" and "taken" render differently and only one of them was ever
+   * going to be covered by a fixture that made them all alike.
+   */
+  await p.route('**/rest/v1/rpc/get_available_slots**', async r=>{
+    if (errorData) return r.fulfill({status:500,contentType:'application/json',
+      body:JSON.stringify({message:'stubbed failure',code:'XX000',details:null,hint:null})});
+    if (slowData) await new Promise(res=>setTimeout(res, SLOW_MS));
+    if (emptyData) return r.fulfill({status:200,contentType:'application/json',body:'[]'});
+    let date = new Date().toISOString().slice(0,10);
+    try { date = JSON.parse(r.request().postData() ?? '{}').p_date ?? date; } catch { /* keep today */ }
+    const slots = [];
+    for (let hour = 9; hour < 22; hour += 1) {
+      // Yerevan is UTC+4 and has had no DST since 2012, which is the same
+      // assumption src/lib/venueTime.ts documents.
+      const start = `${date}T${String(hour).padStart(2,'0')}:00:00+04:00`;
+      const end = `${date}T${String(hour+1).padStart(2,'0')}:00:00+04:00`;
+      slots.push({slot_start:new Date(start).toISOString(),
+        slot_end:new Date(end).toISOString(), available: hour !== 13});
+    }
+    r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(slots)});
+  });
+
   // In `-empty` mode these are simply not registered, so the generic `[]`
   // above answers every content query.
   if (!emptyData && !errorData)

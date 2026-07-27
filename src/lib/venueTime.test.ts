@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { venueLocalToInstant, addHoursToInstant, venueUtcOffset } from "./venueTime";
+import { venueLocalToInstant, addHoursToInstant, venueUtcOffset, atVenue } from "./venueTime";
 
 /**
  * The bug these exist for: `ManualBookingDialog` wrote a booking with
@@ -70,5 +70,44 @@ describe("venueUtcOffset", () => {
     for (const iso of ["2026-01-01T00:00:00Z", "2026-06-30T23:59:59Z", "2030-12-25T12:00:00Z"]) {
       expect(venueUtcOffset(new Date(iso))).toMatch(/^[+-]\d{2}:\d{2}$/);
     }
+  });
+});
+
+describe("atVenue", () => {
+  it("reads back the venue's wall clock, not the runtime's", () => {
+    const d = atVenue("2026-07-27T14:00:00.000Z"); // 18:00 in Yerevan
+    expect(d.getHours()).toBe(18);
+    expect(d.getMinutes()).toBe(0);
+    expect(d.getDate()).toBe(27);
+  });
+
+  it("puts a late-evening slot on the right day", () => {
+    // 22:00Z is 02:00 the next day in Yerevan. Formatting the raw instant in a
+    // UTC runtime would print the 27th; the venue's calendar says the 28th.
+    const d = atVenue("2026-07-27T22:00:00.000Z");
+    expect(d.getDate()).toBe(28);
+    expect(d.getHours()).toBe(2);
+  });
+
+  it("keeps midnight on its own day rather than rolling to hour 24", () => {
+    const d = atVenue("2026-07-27T20:00:00.000Z"); // 00:00 on the 28th
+    expect(d.getHours()).toBe(0);
+    expect(d.getDate()).toBe(28);
+  });
+
+  it("round-trips with venueLocalToInstant", () => {
+    // The two halves of the same idea: local -> instant -> local.
+    const instant = venueLocalToInstant("2026-07-27", "18:00")!;
+    const back = atVenue(instant);
+    expect(back.getHours()).toBe(18);
+    expect(back.getDate()).toBe(27);
+  });
+
+  it("accepts a Date as well as a string", () => {
+    expect(atVenue(new Date("2026-07-27T14:00:00.000Z")).getHours()).toBe(18);
+  });
+
+  it("passes an unusable date straight through rather than inventing one", () => {
+    expect(Number.isNaN(atVenue("not-a-date").valueOf())).toBe(true);
   });
 });
