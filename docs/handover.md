@@ -15,6 +15,11 @@ of its items are live exposures rather than tidy-ups.
 The sections below accumulated as I found things, which is not the order to do
 them in. This is:
 
+**Sending this to Ameriabank?** Read `docs/ameriabank-readiness.md` first. The
+short version: the live site serves `main` and has none of this work, so the
+pull request has to be merged before the bank is shown anything, and the vPOS
+adapter has never made a request against their sandbox.
+
 **Do first — everything else waits on these**
 
 1. **Revoke the Supabase PAT** (§1a). One click, and it currently carries full
