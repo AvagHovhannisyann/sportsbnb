@@ -96,20 +96,30 @@ search are skipped; venue and game suggestions keep working.
 The schema, RLS, extensions and migration-inserted seed rows are already
 applied to `skwzaxqhgrysbsuqkuyp` (eu-central-1). What remains:
 
-1. **Blog posts** — run `migration-bundle/seed.sql` (5 rows) in the SQL editor.
+1. **One new migration** —
+   `supabase/migrations/20260727060000_field_checkins_two_kinds_of_field.sql`.
+   Everything else in `supabase/migrations/` is already applied; this one is
+   not, and a code change depends on it. `field_checkins.field_id` is
+   `NOT NULL REFERENCES public_fields(id)`, and a check-in on a *verified*
+   field has no legal value for it, so every check-in from `/nearby` failed
+   with a foreign-key violation. The client now writes only
+   `verified_field_id`; until this runs, that insert fails on NOT NULL instead
+   — a different error, same broken button. Regenerate `types.ts` afterwards
+   and the one cast in `useVerifiedFields.ts` can come out.
+2. **Blog posts** — run `migration-bundle/seed.sql` (5 rows) in the SQL editor.
    The only seed data no migration creates.
-2. **Edge functions** — `supabase link --project-ref skwzaxqhgrysbsuqkuyp &&
+3. **Edge functions** — `supabase link --project-ref skwzaxqhgrysbsuqkuyp &&
    supabase functions deploy`. Deploys all of them in one shot.
-3. **Function secrets** — set per `migration-bundle/SECRETS.md`. Includes
+4. **Function secrets** — set per `migration-bundle/SECRETS.md`. Includes
    `OPENROUTER_API_KEY`, and confirming `TELEGRAM_API_KEY` / `SLACK_API_KEY`
    are real bot tokens rather than Lovable connection keys.
-4. **Auth → URL Configuration** — site URL and redirect allow-list.
-5. **Vercel environment variables** — `VITE_SUPABASE_URL`,
+5. **Auth → URL Configuration** — site URL and redirect allow-list.
+6. **Vercel environment variables** — `VITE_SUPABASE_URL`,
    `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`, plus the two
    rotated keys above.
-6. **Delete the Montreal project** `ozdaobjemfakaclgrzkd`, created before the
+7. **Delete the Montreal project** `ozdaobjemfakaclgrzkd`, created before the
    region was reconsidered and never used.
-7. **Detach from Lovable** — a Lovable-dashboard action, once the new project
+8. **Detach from Lovable** — a Lovable-dashboard action, once the new project
    is serving.
 
 ---
@@ -312,6 +322,16 @@ that should arrive inside a UI commit.
 `/nearby` shows "N playing now" from `active_checkins` on `public_fields` and
 `verified_fields`. Checking in inserts a row into `field_checkins` — and
 nothing ever updates that counter.
+
+**Correction to what this section used to say.** Until now the insert did not
+happen either. `field_checkins.field_id` is `NOT NULL REFERENCES
+public_fields(id)`, the client was writing a `verified_fields` id into it to
+satisfy the NOT NULL, and Postgres rejected every one with a foreign-key
+violation — so a check-in on the map failed outright and said "Failed to check
+in". Fixed on this branch, but it needs the migration in §2 item 1 applied.
+What is written below still stands and is the remaining half: even with rows
+landing correctly, no trigger or function moves them into `active_checkins`, so
+the number on screen stays at zero.
 
 Verified against the live database rather than by reading code: no trigger on
 `field_checkins`, no function in `pg_proc` whose body mentions either
