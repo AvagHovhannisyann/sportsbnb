@@ -17,16 +17,31 @@ import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
+import { CURRENCIES } from "@/lib/currencies";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const currencies = [
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "€", name: "Euro" },
-  { code: "GBP", symbol: "£", name: "British Pound" },
-  { code: "AMD", symbol: "֏", name: "Armenian Dram" },
-  { code: "RUB", symbol: "₽", name: "Russian Ruble" },
-];
+/**
+ * The currencies this picker offers — the same list the profile page offers.
+ *
+ * It was a second, hardcoded list of five, and both pickers write the same
+ * `profiles.preferred_currency` column. The profile page offers all fifteen,
+ * so an owner who chose, say, Georgian Lari there came here and found the
+ * Currency field *blank*: a controlled Radix `Select` whose value matches no
+ * item renders neither the value nor its placeholder. Measured — /profile read
+ * "₾ Georgian Lari (GEL)" and /owner/settings read "". They could not see what
+ * their currency was set to, and touching the control at all would have forced
+ * them down to one of five.
+ *
+ * Deriving it from `CURRENCIES` is what stops the two lists diverging again;
+ * `currencies.test.ts` asserts it structurally rather than trusting this
+ * comment.
+ */
+const currencies = Object.entries(CURRENCIES).map(([code, info]) => ({
+  code,
+  symbol: info.symbol,
+  name: info.name,
+}));
 
 const OwnerSettingsPage = () => {
   const navigate = useNavigate();

@@ -153,7 +153,7 @@ corrected in the code comments and in `docs/design-audit.md`.
 
 ---
 
-## 5. Six product calls I did not make for you
+## 5. Seven product calls I did not make for you
 
 None of these is a bug I could fix without deciding something that is yours to
 decide.
@@ -222,6 +222,30 @@ things. Pointing it at `bookings` is a one-line change I did not make blind:
 which statuses count as "confirmed" for a headline number (does an unpaid hold?
 a completed game from last year?) is a question about what you want the tile to
 say.
+
+**The display-currency picker does not change any price.** The profile page
+offers fifteen currencies under the words "Choose your preferred currency for
+displaying prices", saves the choice to `profiles.preferred_currency`, and
+every price on the site goes on rendering in dram. Nothing reads the preference
+for display — `src/lib/pricing.ts` formats from the *region*, deliberately, and
+that file carries a long comment about the 400x overstatement that happened the
+last time a viewer's location picked the currency symbol.
+
+I removed the dead `formatPrice` that sat in `useCurrency`, because it was that
+same bug loaded and waiting: `Intl.NumberFormat(locale, { style: "currency" })`
+relabels without converting, and there is no FX layer here to convert with. I
+did not remove the picker. Doing this properly needs a rate source, a rule for
+what happens when rates are stale, and a decision that the *charge* is still
+shown in the currency it will settle in — Ameria and Idram settle in dram
+whatever the viewer prefers. Until then the control makes a promise the app
+does not keep. Removing it is a layout change and belongs to Fabel; making it
+work is the product call.
+
+What I did fix is that the two pickers disagreed. Owner settings had its own
+hardcoded list of five while the profile page offered fifteen, and both write
+the same column, so an owner who chose Georgian Lari found the field blank —
+measured: `/profile` read "₾ Georgian Lari (GEL)", `/owner/settings` read "".
+Both now derive from one list.
 
 ---
 
