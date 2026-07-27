@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/SplashScreen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CurrencyProvider } from "@/hooks/useCurrency";
 import { RegionProvider } from "@/hooks/useRegion";
@@ -93,6 +93,20 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * `/game/:id/join-success` → `/game/:id/join-status`, keeping both halves.
+ *
+ * The id, because `<Navigate to>` takes a literal and would send everyone to
+ * `/game/:id/join-status`. The query string, because `GameJoinStatusPage`
+ * reads `?paymentId=` — dropping it would turn a payment return into a status
+ * page that cannot say which payment it is about.
+ */
+const JoinSuccessRedirect = () => {
+  const { id } = useParams<{ id: string }>();
+  const { search } = useLocation();
+  return <Navigate to={`/game/${id}/join-status${search}`} replace />;
+};
+
 // Minimal loading fallback
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -141,7 +155,16 @@ const App = () => {
                     <Route path="/create-game" element={<ProtectedRoute><CreateGamePage /></ProtectedRoute>} />
                     <Route path="/game/:id" element={<GameDetailsPage />} />
                     <Route path="/game/:id/join-status" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
-                    <Route path="/game/:id/join-success" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
+                    {/* An alias, not a second page. Both paths mounted the same
+                        component, so the app had one screen under two URLs with
+                        one title between them — a WCAG 2.4.2 duplicate, which
+                        nothing noticed because no audit list contained this
+                        route and none had ever loaded it. Nothing in the app
+                        links here and the Ameria callback builds
+                        `/join-status`, so it is redirected rather than removed:
+                        a provider configured to it outside this repository
+                        keeps working, and there is one canonical page again. */}
+                    <Route path="/game/:id/join-success" element={<JoinSuccessRedirect />} />
                     {/* Teams */}
                     <Route path="/teams" element={<TeamsPage />} />
                     <Route path="/create-team" element={<ProtectedRoute><CreateTeamPage /></ProtectedRoute>} />

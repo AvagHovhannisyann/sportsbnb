@@ -82,6 +82,14 @@ for (const file of walk(SRC)) {
     // `${venue.id}` is one segment, and routing never sees a query or hash.
     const target = raw.split(/[?#]/)[0].replace(/\$\{[^}]*\}/g, 'X');
     if (patterns.some((p) => p.test(target))) continue;
+    // An interpolation at the very end may be a query string rather than part
+    // of the path — `` `/game/${id}/join-status${search}` `` is a real link in
+    // App.tsx, and routing ignores everything from the "?" onwards. So a
+    // target that resolves once a trailing interpolation is dropped is not
+    // dead. Deliberately only the trailing one: `/game/${id}/edit` has none,
+    // which is why removing that route still fails this check.
+    const withoutTrailing = raw.split(/[?#]/)[0].replace(/\$\{[^}]*\}$/, '').replace(/\$\{[^}]*\}/g, 'X');
+    if (withoutTrailing !== target && patterns.some((p) => p.test(withoutTrailing))) continue;
     const line = text.slice(0, m.index).split('\n').length;
     if (!dead.has(raw)) dead.set(raw, new Set());
     dead.get(raw).add(`${rel}:${line}`);

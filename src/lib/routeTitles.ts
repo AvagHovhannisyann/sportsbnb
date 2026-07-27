@@ -49,7 +49,8 @@ export const ROUTE_TITLES: RouteTitle[] = [
   { path: '/venues/map', title: 'Venue Map' },
   { path: '/game/:id', title: 'Game Details' },
   { path: '/game/:id/join-status', title: 'Game Join Status', noIndex: true },
-  { path: '/game/:id/join-success', title: 'Game Join Status', noIndex: true },
+  // /game/:id/join-success has no entry: it redirects to join-status, which
+  // has one. A title here would be a title for a page nobody lands on.
   { path: '/team/:id', title: 'Team Details' },
   { path: '/team/:id/edit', title: 'Edit Team', noIndex: true },
 

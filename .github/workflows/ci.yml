@@ -38,6 +38,12 @@ jobs:
       # perfectly good button and served the 404 page — including the "View my
       # bookings" escape hatch on the checkout error panel. Static too.
       - run: node scripts/dead-routes.mjs
+      # And the check on the checks: a route in src/App.tsx that appears in no
+      # audit list is not partly covered, it is covered by nothing, while five
+      # suites report green beside it. It caught /game/:id/join-success — the
+      # screen a player lands on after paying to join a game, never once loaded
+      # by anything here, which turned out to be a duplicate-title violation.
+      - run: node scripts/route-coverage.mjs
       - run: npm run build
       # Every browser check in this repo runs against `npx vite` — the dev
       # server — so import.meta.env.DEV is true for all of them and DEV-gated

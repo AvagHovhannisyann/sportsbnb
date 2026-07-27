@@ -1,7 +1,7 @@
 # The audits
 
-Twenty-one scripts in `scripts/` measure this app: sixteen drive a real
-browser, across five parallel CI suites, and five are static and run with the
+Twenty-two scripts in `scripts/` measure this app: sixteen drive a real
+browser, across five parallel CI suites, and six are static and run with the
 lint job. They can all be run by hand.
 
 Every one of them exists because something was wrong and nothing noticed. The
@@ -120,6 +120,7 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `prod-bundle-check` | the production shape of DEV-gated code, which every other check sees only in its development form |
 | `param-handoff` | a URL parameter one part of the app writes and no part of it reads |
 | `dead-routes` | an internal link pointing at a route `src/App.tsx` does not declare |
+| `route-coverage` | a route that appears in no audit list, so nothing here has ever loaded it |
 
 ### Structure and semantics
 
@@ -157,12 +158,13 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `numeral-glyphs` | that nothing in a monospaced numeral run reaches outside the font's repertoire |
 | `search-handoff` | that the home page's search bar actually searches — the values it emits, and the results the next page shows |
 
-## The three that span two pages
+## The four that span two places
 
 Everything else in this directory reads one page and asks whether it is
-correct. `param-handoff`, `dead-routes` and `search-handoff` ask whether two
-parts of the app agree, because that is where seven live bugs were hiding — in
-the space between files that were each fine on their own.
+correct. `param-handoff`, `dead-routes`, `route-coverage` and `search-handoff`
+ask whether two parts of the app agree, because that is where eight live bugs
+were hiding — in the space between files that were each fine on their own. The
+last of them asks it about this directory rather than about `src`.
 
 ### `param-handoff`, and why it is worth its four hundred milliseconds
 
@@ -220,6 +222,32 @@ WhatsApp handoff retired when in-app payment landed, and linked to `/profile`,
 which has no bookings on it. A player could pay for a court and have nowhere in
 the app that listed it. `MyBookingsPage` is that page. The broken link was the
 symptom; the missing page was the defect.
+
+### `route-coverage`, the check on the checks
+
+Every browser check here takes a list of routes, those lists are maintained by
+hand in `scripts/lib/routes.sh`, and a route added to `src/App.tsx` and not to
+them is not partly covered or covered later. It is covered by nothing, for as
+long as nobody notices, while five parallel suites report green beside it.
+
+That is this document's own recurring lesson one level up — a check reports
+nothing because it never saw the thing, not because the thing was fine — and
+it is worse than the fixture version, because a missing fixture at least leaves
+the page loading in CI.
+
+Sixty-four of sixty-five routes were listed, which is better than expected. The
+sixty-fifth was `/game/:id/join-success`, the screen a player lands on after
+paying to join a game. Loading it found the reason it mattered: it mounted the
+same component as `/game/:id/join-status`, so the app had one screen under two
+URLs sharing one title — a WCAG 2.4.2 duplicate. Nothing in the app links to
+it and the Ameria callback builds `/join-status`, so it is now a redirect
+rather than a second mount: anything configured to it outside this repository
+keeps working, and the payment's `?paymentId=` is carried across, which is the
+part that would have been easy to drop and expensive to lose.
+
+Comment lines in the shell file are excluded from the match. An example route
+in a comment standing in for real coverage is precisely the way this check
+would quietly stop meaning anything.
 
 ### `search-handoff`
 

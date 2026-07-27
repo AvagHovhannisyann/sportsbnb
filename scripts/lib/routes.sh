@@ -17,7 +17,7 @@
 # uncovered half of the router until now — /venue/:id and the whole
 # checkout chain had never loaded in CI once.
 PLAYER="/ /about /blog /blog/:slug /community /contact /cookies /discover
-  /faq /for-owners /forgot-password /games /game/:game /game/:game/join-status
+  /faq /for-owners /forgot-password /games /game/:game /game/:game/join-status /game/:game/join-success
   /login /nearby /privacy /reset-password /signup /teams /team/:team
   /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard
   /my-bookings /team/:team/edit
