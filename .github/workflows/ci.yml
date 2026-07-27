@@ -33,6 +33,11 @@ jobs:
       # nothing, and does nothing. No single page was wrong, so every browser
       # audit here passed all of them. Static and sub-second.
       - run: node scripts/param-handoff.mjs
+      # Its sibling: an internal link pointing at a route that does not exist.
+      # React Router has a `path="*"` catch-all, so three of these rendered a
+      # perfectly good button and served the 404 page — including the "View my
+      # bookings" escape hatch on the checkout error panel. Static too.
+      - run: node scripts/dead-routes.mjs
       - run: npm run build
       # Every browser check in this repo runs against `npx vite` — the dev
       # server — so import.meta.env.DEV is true for all of them and DEV-gated

@@ -276,7 +276,7 @@ const AdminDashboard = () => {
                             <div className="text-right">
                               <p className="font-medium text-foreground">{formatCurrency(booking.total_price)}</p>
                               <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {bookingStatusDescriptor(booking.status).label}
+                                {bookingStatusDescriptor(booking.status, "admin").label}
                               </Badge>
                             </div>
                           </div>
@@ -488,7 +488,7 @@ const AdminDashboard = () => {
                             <TableCell>{formatCurrency(booking.total_price)}</TableCell>
                             <TableCell>
                               <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {bookingStatusDescriptor(booking.status).label}
+                                {bookingStatusDescriptor(booking.status, "admin").label}
                               </Badge>
                             </TableCell>
                           </TableRow>

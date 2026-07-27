@@ -27,6 +27,8 @@ const CreateGamePage = lazy(() => import("./pages/CreateGamePage"));
 const GameDetailsPage = lazy(() => import("./pages/GameDetailsPage"));
 const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const CreateTeamPage = lazy(() => import("./pages/CreateTeamPage"));
+const EditTeamPage = lazy(() => import("./pages/EditTeamPage"));
+const MyBookingsPage = lazy(() => import("./pages/MyBookingsPage"));
 const TeamDetailsPage = lazy(() => import("./pages/TeamDetailsPage"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
 const GameJoinStatusPage = lazy(() => import("./features/booking/GameJoinStatusPage"));
@@ -144,11 +146,13 @@ const App = () => {
                     <Route path="/teams" element={<TeamsPage />} />
                     <Route path="/create-team" element={<ProtectedRoute><CreateTeamPage /></ProtectedRoute>} />
                     <Route path="/team/:id" element={<TeamDetailsPage />} />
+                    <Route path="/team/:id/edit" element={<ProtectedRoute><EditTeamPage /></ProtectedRoute>} />
                     <Route path="/join-team/:code" element={<JoinTeamPage />} />
                     {/* Venue Details */}
                     <Route path="/venue/:id" element={<VenueDetailsPage />} />
                     {/* Dashboards */}
                     <Route path="/dashboard" element={<ProtectedRoute><PlayerDashboard /></ProtectedRoute>} />
+                    <Route path="/my-bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
                     <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                     
                     {/* New Owner Dashboard Routes */}

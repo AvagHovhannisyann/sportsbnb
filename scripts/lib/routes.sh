@@ -20,6 +20,7 @@ PLAYER="/ /about /blog /blog/:slug /community /contact /cookies /discover
   /faq /for-owners /forgot-password /games /game/:game /game/:game/join-status
   /login /nearby /privacy /reset-password /signup /teams /team/:team
   /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard
+  /my-bookings /team/:team/edit
   /profile /settings /messages /book/:booking /booking/:booking/status
   /pay/mock/:payment /embed/booking/:venue /auth/callback"
 
@@ -60,7 +61,8 @@ ANON="/ /login /signup /forgot-password /reset-password /venues /games
 #
 # `-empty` keeps the session and profile and serves no content rows,
 # so it measures "new account" rather than "broken account".
-EMPTY_PLAYER="/teams /games /venues /community /messages /dashboard /nearby /profile"
+EMPTY_PLAYER="/teams /games /venues /community /messages /dashboard /nearby /profile
+  /my-bookings"
 EMPTY_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
   /owner/analytics /owner/schedule /owner/equipment /owner/hours /owner/pricing"
 
@@ -72,6 +74,6 @@ EMPTY_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
 # to create the first one; /owner/earnings said "No transactions
 # yet". TeamsPage already carried a comment making this exact
 # argument about its own error branch.
-ERROR_PLAYER="/teams /games /venues /community /dashboard /messages"
+ERROR_PLAYER="/teams /games /venues /community /dashboard /messages /my-bookings"
 ERROR_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
   /owner/analytics /owner/equipment"

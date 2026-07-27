@@ -153,7 +153,7 @@ corrected in the code comments and in `docs/design-audit.md`.
 
 ---
 
-## 5. Four product calls I did not make for you
+## 5. Six product calls I did not make for you
 
 None of these is a bug I could fix without deciding something that is yours to
 decide.
@@ -199,6 +199,29 @@ removing the column. That is a change to the composition of the hero bar, and
 per `CLAUDE.md` the layout belongs to Fabel — so I have left the field in
 place, working exactly as much as it did before, and `search-handoff` names it
 as INERT on every run rather than letting it pass quietly.
+
+**Editing a game.** `GameDetailsPage` offered the host a full-width "Edit Game"
+button pointing at `/game/:id/edit`, and that route has never existed — React
+Router matched its catch-all and served the 404 page. I removed the button
+rather than building the page, which is the one place in this batch I chose
+subtraction, so here is the reasoning. A team has no time-sensitive
+commitments, `useUpdateTeam` already existed unused, and `EditTeamPage` was
+straightforwardly the missing half of something already built. A game is not
+that: people join it on its stated time, price and player count, and changing
+those under them needs a rule about who gets told and what happens to anyone
+who no longer agrees — plus a `useUpdateGame` that does not exist. Cancel is
+the host's honest recourse until that rule is decided. `dead-routes.mjs` will
+fail the build if the button comes back before the page does.
+
+**What "Confirmed bookings" counts.** The player dashboard tile has always
+counted `booking_intents` — the WhatsApp handoff, retired when in-app payment
+landed — and linked to `/profile`, which has no bookings on it. The link now
+goes to the new `/my-bookings` page, but the *count* is still of legacy leads,
+so the number beside the label and the list behind it are measuring different
+things. Pointing it at `bookings` is a one-line change I did not make blind:
+which statuses count as "confirmed" for a headline number (does an unpaid hold?
+a completed game from last year?) is a question about what you want the tile to
+say.
 
 ---
 

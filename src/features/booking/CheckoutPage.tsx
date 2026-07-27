@@ -137,7 +137,11 @@ export default function CheckoutPage() {
             onRetry={() => refetch()}
             isRetrying={isFetching}
           >
-            <Button variant="outline" onClick={() => navigate("/my-activity")}>
+            {/* Was `/my-activity`, which is a tab id inside CommunityPage and
+                has never been a route — so the one escape hatch offered to
+                someone just told "your hold has not been cancelled, don't book
+                again until this loads" took them to the 404 page. */}
+            <Button variant="outline" onClick={() => navigate("/my-bookings")}>
               View my bookings
             </Button>
           </ErrorPanel>

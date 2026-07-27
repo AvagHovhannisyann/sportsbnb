@@ -51,6 +51,7 @@ export const ROUTE_TITLES: RouteTitle[] = [
   { path: '/game/:id/join-status', title: 'Game Join Status', noIndex: true },
   { path: '/game/:id/join-success', title: 'Game Join Status', noIndex: true },
   { path: '/team/:id', title: 'Team Details' },
+  { path: '/team/:id/edit', title: 'Edit Team', noIndex: true },
 
   // Auth
   { path: '/login', title: 'Log In', noIndex: true },
@@ -61,6 +62,7 @@ export const ROUTE_TITLES: RouteTitle[] = [
 
   // Player, signed in
   { path: '/dashboard', title: 'Your Dashboard', noIndex: true },
+  { path: '/my-bookings', title: 'My Bookings', noIndex: true },
   { path: '/profile', title: 'Your Profile', noIndex: true },
   { path: '/settings', title: 'Settings', noIndex: true },
   { path: '/messages', title: 'Messages', noIndex: true },

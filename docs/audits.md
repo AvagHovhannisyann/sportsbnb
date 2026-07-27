@@ -1,8 +1,8 @@
 # The audits
 
-Twenty scripts in `scripts/` measure this app: sixteen drive a real browser,
-across five parallel CI suites, and four are static and run with the lint job.
-They can all be run by hand.
+Twenty-one scripts in `scripts/` measure this app: sixteen drive a real
+browser, across five parallel CI suites, and five are static and run with the
+lint job. They can all be run by hand.
 
 Every one of them exists because something was wrong and nothing noticed. The
 header of each script says what that was, with the number it measured. Read
@@ -119,6 +119,7 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `no-emoji-icons` | emoji used where a Lucide icon belongs |
 | `prod-bundle-check` | the production shape of DEV-gated code, which every other check sees only in its development form |
 | `param-handoff` | a URL parameter one part of the app writes and no part of it reads |
+| `dead-routes` | an internal link pointing at a route `src/App.tsx` does not declare |
 
 ### Structure and semantics
 
@@ -156,12 +157,12 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `numeral-glyphs` | that nothing in a monospaced numeral run reaches outside the font's repertoire |
 | `search-handoff` | that the home page's search bar actually searches — the values it emits, and the results the next page shows |
 
-## The two that span two pages
+## The three that span two pages
 
 Everything else in this directory reads one page and asks whether it is
-correct. `param-handoff` and `search-handoff` ask whether two pages agree,
-because that is where four live bugs were hiding — in the space between files
-that were each fine on their own.
+correct. `param-handoff`, `dead-routes` and `search-handoff` ask whether two
+parts of the app agree, because that is where seven live bugs were hiding — in
+the space between files that were each fine on their own.
 
 ### `param-handoff`, and why it is worth its four hundred milliseconds
 
@@ -192,6 +193,33 @@ A post-login destination that arrives in a URL is attacker controlled, and
 and someone else's landing page the moment the password is accepted. Reading
 the parameter without validating it would have traded a lost booking for a
 phishing primitive.
+
+### `dead-routes`
+
+The same question about the other half of a URL. Every `path=` in
+`src/App.tsx` becomes a pattern; every internal link target in `src/` is tested
+against them. Three were dead:
+
+| target | linked from | what happened |
+| --- | --- | --- |
+| `/game/:id/edit` | the host's "Edit Game" button | 404 |
+| `/team/:id/edit` | the captain's "Edit Team" menu item | 404 |
+| `/my-activity` | "View my bookings" on the checkout error panel | 404 |
+
+React Router's `path="*"` catch-all is why none of them threw, and why the
+browser suites loaded all three screens and passed. `path="*"` is excluded from
+the patterns on purpose: matching against it would make every link valid and
+the check would pass forever without measuring anything.
+
+The third one was the interesting one. `my-activity` is a tab id inside
+`CommunityPage`, navigated to as though it were a route — but fixing the link
+meant finding out where a player's bookings actually live, and the answer was
+nowhere. `/booking/:id/status` shows one booking to whoever already has its id;
+the dashboard tile reading "Confirmed bookings" counts `booking_intents`, the
+WhatsApp handoff retired when in-app payment landed, and linked to `/profile`,
+which has no bookings on it. A player could pay for a court and have nowhere in
+the app that listed it. `MyBookingsPage` is that page. The broken link was the
+symptom; the missing page was the defect.
 
 ### `search-handoff`
 

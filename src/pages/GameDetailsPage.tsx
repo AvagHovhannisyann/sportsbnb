@@ -492,9 +492,16 @@ const GameDetailsPage = () => {
                     </Button>
                   ) : isHost ? (
                     <div className="space-y-2">
-                      <Button asChild variant="outline" className="w-full">
-                        <Link to={`/game/${game.id}/edit`}>Edit Game</Link>
-                      </Button>
+                      {/* "Edit Game" used to be here, linking to
+                          /game/:id/edit — a route that has never existed, so
+                          the host's most prominent control served the 404
+                          page. Removed rather than built: unlike a team, a
+                          game has people who joined on its stated time, price
+                          and player count, and changing those under them needs
+                          a rule about who is told and what happens to anyone
+                          who no longer agrees. That is a product decision, not
+                          a missing page — see §5 of docs/handover.md. Cancel,
+                          below, is the honest recourse in the meantime. */}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" className="w-full">

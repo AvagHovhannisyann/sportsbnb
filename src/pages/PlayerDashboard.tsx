@@ -87,7 +87,13 @@ const PlayerDashboard = () => {
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
             {[
               { label: "Awaiting reply", value: pendingInquiries, icon: MessageCircle, to: "/messages" },
-              { label: "Confirmed bookings", value: confirmedCount, icon: CalendarCheck, to: "/profile" },
+              // Pointed at /profile, which has three tabs — profile,
+              // notifications, security — and no bookings anywhere on it. The
+              // count is of `booking_intents`, the retired WhatsApp handoff,
+              // so the tile named a thing the app could not show you. /my-bookings
+              // is now that page; the count still comes from the legacy rows
+              // until someone decides whether it should count real bookings.
+              { label: "Confirmed bookings", value: confirmedCount, icon: CalendarCheck, to: "/my-bookings" },
               { label: "Games hosted", value: userGames?.hosted?.length ?? 0, icon: Flag, to: "/games" },
               { label: "Games joined", value: userGames?.joined?.length ?? 0, icon: Users, to: "/games" },
             ].map((s) => (
