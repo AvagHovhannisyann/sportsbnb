@@ -1,4 +1,6 @@
 import { useState } from "react";
+import SEOHead, { createSportsEventJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
+import { venueLocalToInstant, addHoursToInstant } from "@/lib/venueTime";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   MapPin, Calendar, Clock, ArrowLeft, Loader2, 
@@ -225,8 +227,48 @@ const GameDetailsPage = () => {
     .join("")
     .toUpperCase() || "H";
 
+  // Venue-local wall clock to a real instant, so the Event carries the hour the
+  // game actually starts rather than the browser's reading of it.
+  const startsAt = venueLocalToInstant(game.game_date, game.game_time);
+  const endsAt = startsAt ? addHoursToInstant(startsAt, game.duration_hours) : null;
+
   return (
     <Layout>
+      {/* This page had no SEOHead, so every game shared the route table's
+          "Game Details" — one title across every game on the platform. */}
+      <SEOHead
+        title={`${game.title} — ${game.sport} in ${game.location}`}
+        description={
+          game.description ||
+          `Join this ${game.sport.toLowerCase()} game at ${game.location}. ${
+            isCancelled ? "This game has been cancelled." : `${Math.max(0, spotsLeft)} of ${game.max_players} places left.`
+          }`
+        }
+        canonical={`/game/${id}`}
+        type="article"
+        jsonLd={[
+          createSportsEventJsonLd({
+            id: id!,
+            title: game.title,
+            sport: game.sport,
+            description: game.description,
+            location: game.location,
+            startsAt,
+            endsAt,
+            pricePerPlayer: game.price_per_player ?? 0,
+            maxPlayers: game.max_players,
+            spotsLeft,
+            isCancelled,
+            latitude: game.latitude,
+            longitude: game.longitude,
+          }),
+          createBreadcrumbJsonLd([
+            { name: "Home", url: "/" },
+            { name: "Games", url: "/games" },
+            { name: game.title, url: `/game/${id}` },
+          ]),
+        ]}
+      />
       <div className="bg-background min-h-screen">
         {/* Back Navigation */}
         <div className="container py-4">

@@ -277,6 +277,53 @@ for (const p of pages) {
   }
 }
 
+// ------------------------------------------------------------------- DOMAIN
+
+/**
+ * One domain, everywhere.
+ *
+ * Two domain errors turned up in one afternoon and neither was visible from
+ * any single file. The canonicals pointed at `sportsbnb.org` while production
+ * serves `www.sportsbnb.org`; and the FAQ answered "How do I contact support?"
+ * with an address at `sportsbnb.com` — the only `.com` in the repository,
+ * against twelve `.org` ones — so anyone who followed it emailed a domain the
+ * company does not own.
+ *
+ * Both are the same shape: a string that looks right on its own line and
+ * disagrees with every other line like it. Counting them is the cheapest
+ * possible check, so it lives here rather than waiting for a third one.
+ */
+{
+  const roots = ['src', 'public', 'supabase/functions', 'index.html'];
+  const files = [];
+  const walk = (p) => {
+    if (!existsSync(p)) return;
+    if (statSync(p).isDirectory()) {
+      for (const e of readdirSync(p)) walk(join(p, e));
+    } else if (/\.(tsx?|html|txt|xml|json|md)$/.test(p)) {
+      files.push(p);
+    }
+  };
+  for (const r of roots) walk(join(ROOT, r));
+
+  const wrong = [];
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+      // Comments explaining a past mistake legitimately quote the wrong
+      // domain. Blanking them is what stops this reporting its own docs.
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+    for (const m of text.matchAll(/sportsbnb\.(com|net|io|co)\b/g)) {
+      wrong.push(`${relative(ROOT, file)}: sportsbnb.${m[1]}`);
+    }
+  }
+  if (wrong.length) {
+    fail(`DOMAIN      ${wrong.length} reference(s) to a domain this company does not use: ${wrong.slice(0, 5).join(', ')}`);
+  } else {
+    notes.push(`DOMAIN      every domain reference across ${files.length} file(s) is sportsbnb.org`);
+  }
+}
+
 // ------------------------------------------------------------------- report
 
 console.log(`\nCrawlable — ${pages.length} prerendered page(s) in dist/, read as bytes with no JavaScript\n`);

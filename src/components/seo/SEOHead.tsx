@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { useLocation } from "react-router-dom";
 
 /**
  * The host production actually serves, with the www.
@@ -46,15 +47,33 @@ const SEOHead = ({
   noIndex = false,
   jsonLd,
 }: SEOHeadProps) => {
+  const { pathname } = useLocation();
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Book Sports Venues & Join Games Near You`;
-  const canonicalUrl = canonical ? `${SITE_URL}${canonical}` : undefined;
+  /**
+   * Always a canonical, defaulting to the page's own path.
+   *
+   * It used to be emitted only when a caller passed one, and most did not — so
+   * most pages declared none, in an app where every URL serves the same shell.
+   * That was survivable while `index.html` carried a static one; it stopped
+   * being survivable the moment those static tags were handed to Helmet with
+   * `data-rh`, because Helmet removes what it owns and the home page ended up
+   * with no canonical at all. Measured, then fixed here rather than by passing
+   * the prop at forty call sites.
+   *
+   * `pathname` only — no query string. `/venues?sport=Football&sort=price` and
+   * `/venues?sport=Football` are the same inventory in a different order, and
+   * consolidating them onto `/venues` is what stops the filter permutations
+   * competing with each other. A page that genuinely wants a different
+   * canonical passes one.
+   */
+  const canonicalUrl = `${SITE_URL}${canonical ?? pathname}`;
 
   return (
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
 
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      <link rel="canonical" href={canonicalUrl} />
 
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
@@ -64,7 +83,7 @@ const SEOHead = ({
       <meta property="og:type" content={type} />
       <meta property="og:image" content={image} />
       <meta property="og:site_name" content={SITE_NAME} />
-      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+      <meta property="og:url" content={canonicalUrl} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -250,6 +269,80 @@ export const createLocalBusinessJsonLd = (venue: {
     },
   },
   "url": `${SITE_URL}/venue/${venue.id}`,
+});
+
+/**
+ * A pickup game, as a `SportsEvent`.
+ *
+ * `GameDetailsPage` had no `SEOHead` at all — no title of its own, no
+ * description, no canonical and no structured data. Every game on the platform
+ * shared one title, "Game Details", inherited from the route table, so a
+ * hundred games were a hundred URLs with one name between them. `page-titles`
+ * passed throughout, because it checks that each *route* has a distinct title
+ * and `/game/:id` is one route; a route-level table cannot see that one route
+ * serves many pages. Venue pages avoid this by rendering their own `SEOHead`,
+ * and games simply never did.
+ *
+ * Everything an Event needs was already on the record: a title, a sport, a
+ * date, a start time, a duration, a location, a price per player and a
+ * capacity. `startDate` and `endDate` go through `venueLocalToInstant` and
+ * `addHoursToInstant` rather than `new Date(...)`, because `game_date` and
+ * `game_time` are venue-local wall-clock values and reading them in the
+ * browser's zone is the bug that was fixed across the booking chain earlier.
+ * An offset-less timestamp here would tell Google the wrong hour.
+ *
+ * `eventStatus` and `availability` are derived, not assumed: a cancelled game
+ * says so, and a full one is `SoldOut` rather than silently still open.
+ */
+export const createSportsEventJsonLd = (game: {
+  id: string;
+  title: string;
+  sport: string;
+  description?: string | null;
+  location: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  pricePerPlayer: number;
+  maxPlayers: number;
+  spotsLeft: number;
+  isCancelled: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+}) => ({
+  "@context": "https://schema.org",
+  "@type": "SportsEvent",
+  "name": game.title,
+  "url": `${SITE_URL}/game/${game.id}`,
+  "description":
+    game.description || `A ${game.sport.toLowerCase()} game at ${game.location}, open to join on Sportsbnb.`,
+  "sport": game.sport,
+  ...(game.startsAt ? { startDate: game.startsAt } : {}),
+  ...(game.endsAt ? { endDate: game.endsAt } : {}),
+  "eventStatus": game.isCancelled
+    ? "https://schema.org/EventCancelled"
+    : "https://schema.org/EventScheduled",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "location": {
+    "@type": "Place",
+    "name": game.location,
+    "address": { "@type": "PostalAddress", "addressLocality": game.location, "addressCountry": "AM" },
+    ...(game.latitude && game.longitude
+      ? { geo: { "@type": "GeoCoordinates", latitude: game.latitude, longitude: game.longitude } }
+      : {}),
+  },
+  "maximumAttendeeCapacity": game.maxPlayers,
+  "remainingAttendeeCapacity": Math.max(0, game.spotsLeft),
+  "organizer": { "@type": "Organization", "name": SITE_NAME, "url": `${SITE_URL}/` },
+  "offers": {
+    "@type": "Offer",
+    "price": game.pricePerPlayer,
+    "priceCurrency": "AMD",
+    "url": `${SITE_URL}/game/${game.id}`,
+    "availability":
+      game.isCancelled || game.spotsLeft <= 0
+        ? "https://schema.org/SoldOut"
+        : "https://schema.org/InStock",
+  },
 });
 
 export const createBreadcrumbJsonLd = (items: { name: string; url: string }[]) => ({

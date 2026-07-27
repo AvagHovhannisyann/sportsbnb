@@ -79,7 +79,12 @@ const FAQPage = () => {
         },
         {
           q: "How do I contact support?",
-          a: "You can reach our support team via the Contact page or by emailing support@sportsbnb.com. We typically respond within 24 hours.",
+          // .org. This was the one `sportsbnb.com` string in the repository, against
+    // twelve `.org` ones — and it is the answer to "How do I contact
+    // support?", so anyone who followed it emailed a domain the company does
+    // not own and heard nothing back. The contact function both sends from
+    // and delivers to support@sportsbnb.org.
+    a: "You can reach our support team via the Contact page or by emailing support@sportsbnb.org. We typically respond within 24 hours.",
         },
       ],
     },

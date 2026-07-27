@@ -250,28 +250,28 @@ for (const page of PAGES) {
   html = replaceOne(html, /<title>[\s\S]*?<\/title>/, `<title>${esc(page.title)}</title>`, '<title>');
   html = replaceOne(
     html,
-    /<meta name="description" content="[^"]*"\s*\/?>/,
-    `<meta name="description" content="${esc(page.description)}">`,
+    /<meta name="description" content="[^"]*"[^>]*>/,
+    `<meta name="description" content="${esc(page.description)}" data-rh="true">`,
     'description meta',
   );
   html = replaceOne(
     html,
-    /<link rel="canonical" href="[^"]*"\s*\/?>/,
-    `<link rel="canonical" href="${url}" />`,
+    /<link rel="canonical" href="[^"]*"[^>]*>/,
+    `<link rel="canonical" href="${url}" data-rh="true" />`,
     'canonical link',
   );
   html = html
-    .replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${esc(page.title)}">`)
-    .replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${esc(page.title)}">`)
+    .replace(/<meta property="og:title" content="[^"]*"[^>]*>/, `<meta property="og:title" content="${esc(page.title)}" data-rh="true">`)
+    .replace(/<meta name="twitter:title" content="[^"]*"[^>]*>/, `<meta name="twitter:title" content="${esc(page.title)}" data-rh="true">`)
     .replace(
-      /<meta property="og:description" content="[^"]*"\s*\/?>/,
-      `<meta property="og:description" content="${esc(page.description)}">`,
+      /<meta property="og:description" content="[^"]*"[^>]*>/,
+      `<meta property="og:description" content="${esc(page.description)}" data-rh="true">`,
     )
     .replace(
-      /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
-      `<meta name="twitter:description" content="${esc(page.description)}">`,
+      /<meta name="twitter:description" content="[^"]*"[^>]*>/,
+      `<meta name="twitter:description" content="${esc(page.description)}" data-rh="true">`,
     )
-    .replace(/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${url}" />`);
+    .replace(/<meta property="og:url" content="[^"]*"[^>]*>/, `<meta property="og:url" content="${url}" data-rh="true" />`);
 
   // The prose, inside #root. React throws it away on mount; a crawler keeps it.
   const content =
