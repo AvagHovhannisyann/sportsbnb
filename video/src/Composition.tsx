@@ -1,6 +1,8 @@
 import { CalculateMetadataFunction, Composition } from "remotion";
 
-type Props = {};
+// No props yet. `Record<string, never>` rather than `{}`, which is the
+// "any non-nullish value" type and is rejected by no-empty-object-type.
+type Props = Record<string, never>;
 
 const calculateMetadata: CalculateMetadataFunction<Props> = () => {
   return {};
