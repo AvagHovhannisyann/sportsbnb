@@ -91,8 +91,22 @@ for (const { label, route, stall, box } of CASES) {
     await r.fallback();
   });
 
-  page.goto(`${BASE}${route}`, { waitUntil: 'commit' }).catch(() => {});
+  // The navigation is deliberately not awaited — the point is to look at the
+  // page mid-flight — but its failure must not be swallowed. With the dev
+  // server down this reported "could not measure the skeleton", which reads
+  // as a finding about the app rather than as "there was nothing to load".
+  // I misdiagnosed my own run on exactly that message.
+  let navError = null;
+  page.goto(`${BASE}${route}`, { waitUntil: 'commit' }).catch((e) => {
+    navError = String(e).split('\n')[0];
+  });
   await page.waitForTimeout(2000);
+  if (navError) {
+    failures.push(`${label}: could not reach the page — ${navError}`);
+    rows.push(`  FAIL  ${label} — ${navError}`);
+    await page.context().close();
+    continue;
+  }
   const before = await page.evaluate(box);
 
   release();

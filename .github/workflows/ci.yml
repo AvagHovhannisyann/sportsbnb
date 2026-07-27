@@ -102,6 +102,16 @@ jobs:
           done
           [ "$up" = 1 ] || { echo "dev server did not come up"; exit 1; }
 
+          # Answering on the port is not the same as being ready: Vite
+          # transforms modules on demand, so the first browser through waits
+          # for the whole graph. layout-shift.mjs grabs a skeleton 2s after
+          # navigating — ample against a warm server, not nearly enough
+          # against a cold one — and it failed the first time this job was
+          # split, because in one long step it had always run fifteen minutes
+          # in behind everything else. Warming here is what makes a suite
+          # independent of the order it runs in.
+          node scripts/ci/_warm.mjs
+
           bash scripts/ci/${{ matrix.suite }}.sh
 
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
