@@ -31,6 +31,28 @@ source scripts/lib/routes.sh
 node scripts/heading-outline.mjs owner $OWNER
 ```
 
+When a check legitimately cannot look at a page, say so by subtracting, not by
+writing a second list:
+
+```bash
+PLAYER_OUTLINE="$(without "$PLAYER" /auth/callback /pay/mock/:payment)"
+```
+
+That is not a style preference. `heading-outline` used to take a hand-copied
+`$PLAYER` with the exclusions edited out, inline in `scripts/ci/semantics.sh`,
+and by the time anyone looked it had drifted: three routes added to `$PLAYER`
+never reached the check, and the copy's own comment said "minus three routes"
+while excluding two. `route-coverage.mjs` could not catch it either, because it
+reads `routes.sh` and the second list lived somewhere else — a check with a
+blind spot exactly the shape of the thing it exists to prevent.
+
+The other inline lists in the suite scripts are not copies of anything.
+`focus-visible` samples ten routes because it costs ~19s each and the shells
+repeat; `loading-status` takes the routes that have a loading state;
+`glass-contrast` takes what `glass-risk` ranks. Those are purpose-built and
+say so. The test is whether a list *claims* to be another list minus
+something — if it does, subtract it.
+
 ## Running a whole suite
 
 CI runs the audits as five parallel suites, each a script you can run the same

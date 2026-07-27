@@ -77,3 +77,50 @@ EMPTY_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
 ERROR_PLAYER="/teams /games /venues /community /dashboard /messages /my-bookings"
 ERROR_OWNER="/owner-dashboard /owner/venues /owner/bookings /owner/earnings
   /owner/analytics /owner/equipment"
+
+# --------------------------------------------------------------------------
+# Subtracting routes from a list.
+#
+# Some checks legitimately cannot look at some pages. The way that was
+# expressed was a second copy of $PLAYER with the exclusions edited out,
+# hardcoded inline in scripts/ci/semantics.sh — and by the time anyone looked,
+# it had already drifted: three routes added to $PLAYER were missing from it,
+# so `heading-outline` was silently not checking them. The copy's own comment
+# said "$PLAYER minus three routes" while excluding two.
+#
+# That is the same failure `route-coverage.mjs` exists to catch one level up,
+# and route-coverage could not see it, because it reads this file and the
+# second list was somewhere else. So the exclusion is now a named subtraction:
+# there is one list, and what a check skips is stated rather than diffed.
+# Written with `if` rather than `[ … ] && …`, and the reason is worth stating
+# because the obvious worry turns out to be wrong. Every suite runs under
+# `set -euo pipefail`, so `[ -z "$skip" ] && out="$out $route"` looks like it
+# would kill the suite on the first excluded route. It does not: `set -e`
+# exempts any command in an AND-list except the one after the final `&&`, and
+# the failing test is the one before it. Checked, not assumed — the AND form
+# returns the right list and exits 0.
+#
+# `if` is used anyway because it says what it means, and `return 0` keeps the
+# function's own status off the caller's `set -e` whatever the last branch did.
+without() {
+  local list="$1"; shift
+  local out="" route exclude skip
+  for route in $list; do
+    skip=""
+    for exclude in "$@"; do
+      if [ "$route" = "$exclude" ]; then skip=1; fi
+    done
+    if [ -z "$skip" ]; then out="$out $route"; fi
+  done
+  echo "$out"
+  return 0
+}
+
+# $PLAYER minus the two routes with no outline to check, each for a stated
+# reason rather than because it was inconvenient:
+#
+#   /auth/callback     a redirect that renders a spinner and leaves. It has no
+#                      content, so it has no outline.
+#   /pay/mock/:payment DEV-only; prod-bundle-check asserts it is stripped from
+#                      the production build entirely.
+PLAYER_OUTLINE="$(without "$PLAYER" /auth/callback /pay/mock/:payment)"

@@ -445,7 +445,14 @@ export async function newStubbedPage(browser, { userType: requested, width, heig
     const u=r.request().url();
     const single = /user_id=eq\./.test(u) && !/xp=gt/.test(u);
     const row={id:'p1',user_id:UID,user_type:userType,onboarding_completed:true,
-      full_name:'Demo',username:'demo',xp:120,level:2,created_at:new Date(0).toISOString()};
+      full_name:'Demo',username:'demo',xp:120,level:2,
+      // `city` and `preferred_currency` are read by real behaviour that no
+      // audit could reach without them: DiscoverPage auto-applies the profile
+      // city as a filter (and must not, when the URL carried a search), and
+      // both currency pickers seed from the preference. An absent column here
+      // means those branches never ran in CI.
+      city:'Yerevan',preferred_currency:'AMD',
+      created_at:new Date(0).toISOString()};
     r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(single?row:[row])});
   });
   await p.route('**/rest/v1/user_roles**', r=>r.fulfill({status:200,contentType:'application/json',

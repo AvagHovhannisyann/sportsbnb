@@ -42,20 +42,11 @@ node scripts/a11y-names.mjs owner-empty  $EMPTY_OWNER
 # Those are fixed now — along with six on the admin side, one of
 # which was a page with no h1 at all — so the check covers what it
 # should. Every list here was run locally before being added.
-# $PLAYER minus three routes, each for a stated reason rather than
-# because it was inconvenient:
-#   /auth/callback  — a redirect that renders a spinner and leaves.
-#                     It has no content, so it has no outline.
-#   /pay/mock/:payment — DEV-only; prod-bundle-check asserts it is
-#                     stripped from the production build entirely.
-#   /for-owners     — marketing page, kept in $PLAYER for smoke.
-SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player \
-  / /about /blog /blog/:slug /community /contact /cookies /discover /faq \
-  /for-owners /forgot-password /games /game/:game /game/:game/join-status \
-  /login /nearby /privacy /reset-password /signup /teams /team/:team \
-  /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard \
-  /profile /settings /messages /book/:booking /booking/:booking/status \
-  /embed/booking/:venue
+# The list is $PLAYER minus the routes with no outline to check, subtracted
+# in scripts/lib/routes.sh rather than copied out and edited here. It was a
+# copy, and it had drifted: three routes added to $PLAYER never reached this
+# check, and the comment claimed three exclusions while making two.
+SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player $PLAYER_OUTLINE
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs owner  $OWNER
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs admin  $ADMIN
 

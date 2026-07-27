@@ -31,6 +31,13 @@
  * `path="*"` is excluded: the catch-all is reached by every wrong URL and is
  * not a page anyone navigates to on purpose.
  *
+ * One blind spot, stated rather than left to be found. A path that appears
+ * only as an argument to `without()` — the helper that subtracts routes a
+ * given check cannot look at — still reads as listed here. Today every such
+ * path is also in `$PLAYER`, so nothing is hidden; if a route were deleted
+ * from `$PLAYER` while its exclusion stayed behind, this would call it
+ * covered. A check about blind spots should name its own.
+ *
  * Usage — no dev server needed:
  *   node scripts/route-coverage.mjs
  */

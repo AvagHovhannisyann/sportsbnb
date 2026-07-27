@@ -27,6 +27,25 @@ export interface PaymentInitResult {
   currency: string;
 }
 
+/**
+ * Minor units to a dram string.
+ *
+ * The hardcoded ֏ is an assumption, and it is worth writing down rather than
+ * leaving for someone to find: every money column in this schema is
+ * `currency text NOT NULL DEFAULT 'AMD'` — `bookings`, `payments`,
+ * `ledger_entries`, `payouts` — and every writer in the payment path pins it,
+ * `payments-init` and `_shared/payments.ts` both falling back to "AMD"
+ * explicitly. The rails settle in dram: Ameria vPOS and Idram do not offer
+ * anything else. So a row with another currency cannot presently exist, and
+ * the twelve call sites that print money with this are correct.
+ *
+ * If that ever stops being true — a second provider, a second region with its
+ * own settlement — this becomes silently wrong everywhere at once, because it
+ * takes the amount and ignores the `currency` column sitting beside it. The
+ * fix at that point is to pass the row's currency in, not to add a second
+ * formatter: `useCurrency` already had one of those, and it was relabelling
+ * dram as dollars without converting. See the note left in its place.
+ */
 export function formatAmd(amountMinor: number): string {
   return `֏${(amountMinor / 100).toLocaleString()}`;
 }
