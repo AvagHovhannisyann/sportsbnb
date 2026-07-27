@@ -15,6 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+    <link rel="canonical" href="https://www.sportsbnb.org/" />
     <title>Sportsbnb — Book Sports Venues &amp; Join Games Near You</title>
     <meta name="description" content="Find and book sports venues near you — courts, fields and pools. Join open games, create teams, and play with your community.">
     <meta name="author" content="Sportsbnb" />
@@ -24,14 +25,14 @@
     
     
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://sportsbnb.org/" />
-    <meta property="og:image" content="https://sportsbnb.org/og-image.png">
+    <meta property="og:url" content="https://www.sportsbnb.org/" />
+    <meta property="og:image" content="https://www.sportsbnb.org/og-image.png">
     <meta property="og:site_name" content="Sportsbnb" />
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://sportsbnb.org/og-image.png">
+    <meta name="twitter:image" content="https://www.sportsbnb.org/og-image.png">
 
     <!-- Additional SEO -->
     <meta name="google-site-verification" content="wtHt7QCsQv1FdG70bEAZwMEE8DoVnEEpmeBoy1DoOFs" />
@@ -39,25 +40,61 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
     <!-- JSON-LD Structured Data -->
+    <!--
+      The fallback structured data, for a crawler that does not execute
+      JavaScript. It is duplicated by SEOHead on the client, and that is
+      deliberate: this is the only copy an AI crawler ever sees, because
+      react-helmet-async writes its tags after React mounts and GPTBot,
+      ClaudeBot and PerplexityBot do not run React.
+
+      Keep it in step with createWebsiteJsonLd in src/components/seo/SEOHead.tsx.
+      scripts/crawlable.mjs fails the build if the two disagree about the site
+      name, the host, or the search URL.
+    -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Sportsbnb",
-      "url": "https://sportsbnb.org",
-      "description": "Find and book sports venues, join open games, and connect with players near you.",
-      "applicationCategory": "SportsApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "creator": {
-        "@type": "Organization",
-        "name": "Sportsbnb",
-        "url": "https://sportsbnb.org"
-      }
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.sportsbnb.org/#website",
+          "name": "Sportsbnb",
+          "url": "https://www.sportsbnb.org/",
+          "publisher": { "@id": "https://www.sportsbnb.org/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.sportsbnb.org/venues?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://www.sportsbnb.org/#organization",
+          "name": "Sportsbnb",
+          "url": "https://www.sportsbnb.org/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.sportsbnb.org/favicon.png"
+          },
+          "description": "Sportsbnb is a sports venue booking marketplace in Armenia. Players find and book courts, pitches and pools by the hour and pay in the app; venue owners list their facilities and manage bookings.",
+          "areaServed": [
+            { "@type": "Country", "name": "Armenia" },
+            { "@type": "AdministrativeArea", "name": "Yerevan" }
+          ]
+        },
+        {
+          "@type": "WebApplication",
+          "name": "Sportsbnb",
+          "url": "https://www.sportsbnb.org/",
+          "description": "Find and book sports venues, join open games, and connect with players near you.",
+          "applicationCategory": "SportsApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "AMD" }
+        }
+      ]
     }
     </script>
     <meta property="og:title" content="Sportsbnb — Book Sports Venues &amp; Join Games Near You">

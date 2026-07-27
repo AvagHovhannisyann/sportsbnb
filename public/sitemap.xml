@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://www.sportsbnb.org/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
-  <url><loc>https://www.sportsbnb.org/venues</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.sportsbnb.org/venues/map</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.sportsbnb.org/nearby</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.sportsbnb.org/games</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.sportsbnb.org/teams</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.sportsbnb.org/community</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.sportsbnb.org/for-owners</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.sportsbnb.org/blog</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.sportsbnb.org/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.sportsbnb.org/faq</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.sportsbnb.org/contact</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://www.sportsbnb.org/signup</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.sportsbnb.org/login</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.sportsbnb.org/subscription</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.sportsbnb.org/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://www.sportsbnb.org/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://www.sportsbnb.org/blog</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.sportsbnb.org/community</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.sportsbnb.org/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.sportsbnb.org/cookies</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://www.sportsbnb.org/faq</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.sportsbnb.org/for-owners</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.sportsbnb.org/games</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.sportsbnb.org/nearby</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.sportsbnb.org/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://www.sportsbnb.org/teams</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.sportsbnb.org/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://www.sportsbnb.org/venues</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.sportsbnb.org/venues/map</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
 </urlset>

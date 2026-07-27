@@ -44,12 +44,21 @@ jobs:
       # screen a player lands on after paying to join a game, never once loaded
       # by anything here, which turned out to be a duplicate-title violation.
       - run: node scripts/route-coverage.mjs
+      # `build` now runs `postbuild` too: the sitemap is regenerated from the
+      # route table (and from the database when the deploy has credentials),
+      # and the public pages are prerendered.
       - run: npm run build
       # Every browser check in this repo runs against `npx vite` — the dev
       # server — so import.meta.env.DEV is true for all of them and DEV-gated
       # code is only ever seen in its development form. This is the only thing
       # that looks at the production shape of those branches.
       - run: node scripts/prod-bundle-check.mjs
+      # What a crawler receives, read as bytes with no JavaScript executed.
+      # Before the prerender step, four different public URLs returned
+      # byte-identical documents with zero body text and no canonical — one
+      # blank page repeated at fifteen URLs for every crawler that does not run
+      # JavaScript, which is all of them except Googlebot.
+      - run: node scripts/crawlable.mjs
 
   # Loads every route in a real browser and fails on a thrown error, a tripped
   # error boundary, a blank render, or horizontal overflow.

@@ -153,6 +153,9 @@ const VenueDetailsPage = () => {
         canonical={`/venue/${id}`}
         jsonLd={[
           createLocalBusinessJsonLd({
+            // The id, not the name. The generator used to build its `url` from
+            // the name and produce a path with spaces in it.
+            id: id!,
             name: venue.name,
             address: venue.address,
             city: venue.city,

@@ -1,7 +1,7 @@
 # The audits
 
-Twenty-two scripts in `scripts/` measure this app: sixteen drive a real
-browser, across five parallel CI suites, and six are static and run with the
+Twenty-three scripts in `scripts/` measure this app: sixteen drive a real
+browser, across five parallel CI suites, and seven are static and run with the
 lint job. They can all be run by hand.
 
 Every one of them exists because something was wrong and nothing noticed. The
@@ -152,6 +152,7 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `param-handoff` | a URL parameter one part of the app writes and no part of it reads |
 | `dead-routes` | an internal link pointing at a route `src/App.tsx` does not declare |
 | `route-coverage` | a route that appears in no audit list, so nothing here has ever loaded it |
+| `crawlable` | what a crawler receives — the bytes in `dist/`, with no JavaScript executed |
 
 ### Structure and semantics
 
@@ -188,6 +189,35 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `loading-status` | WCAG 4.1.3 — that a spinner or skeleton is announced, not just drawn |
 | `numeral-glyphs` | that nothing in a monospaced numeral run reaches outside the font's repertoire |
 | `search-handoff` | that the home page's search bar actually searches — the values it emits, and the results the next page shows |
+
+## The one that reads bytes, not pages
+
+Every other check here drives a browser, so all of them measure the app as a
+*user* meets it. `crawlable` measures it as GPTBot meets it: the files in
+`dist/`, with no JavaScript run at all.
+
+That distinction was worth about the whole site. Measured against production
+before it existed, four different public URLs — `/`, `/venues`, `/faq`,
+`/for-owners` — returned **byte-identical documents**: 3885 bytes, the same
+SHA-256, the home page's title on every one, no canonical link, and **zero
+characters of body text**. Googlebot renders JavaScript on a second pass and
+eventually saw the real pages. GPTBot, OAI-SearchBot, ClaudeBot,
+PerplexityBot, Amazonbot and every social scraper do not, and for all of them
+this marketplace was one blank page repeated at fifteen URLs — no venue, no
+city, no price, nothing to quote and nothing to tell two pages apart.
+
+`scripts/prerender.mjs` fixes it at build time by writing a real
+`dist/<route>/index.html` for each public page. Vercel checks the filesystem
+before applying the SPA rewrite in `vercel.json`, so those files are served
+directly. The prose goes *inside* `#root` on purpose: `main.tsx` uses
+`createRoot().render()` rather than `hydrateRoot()`, so React replaces the
+container outright and a human never sees it, while a crawler that never mounts
+React keeps it. Measured after: 15 pages, 314–1090 characters each, every one a
+different SHA.
+
+It is not server rendering, and the header says so. Venue and game pages are
+per-record and still serve the shell; making those crawlable needs SSR or an
+edge renderer, which is an architecture decision rather than a build step.
 
 ## The four that span two places
 

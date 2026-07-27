@@ -39,9 +39,17 @@ says why at the section
 7. Two admin tabs: wire up or delete (§5).
 8. Check-in counts: the aggregate RPC, which also closes a privacy gap (§7).
 
+**Search visibility — two things only you can do**
+
+9. **Make the apex redirect permanent** (§9). It is a 302 today, which tells
+   Google *not* to consolidate signals onto the host you actually serve.
+10. **Decide how venue pages get rendered for AI crawlers** (§10). The
+    marketing pages are prerendered now; the per-venue pages are not, and they
+    are where every citable fact lives.
+
 **Optional** — §8.
 
-Nothing in the code is waiting on items 5–8. They are written up with the SQL
+Nothing in the code is waiting on items 5–10. They are written up with the SQL
 where SQL is needed, so each is a short job once you have decided.
 
 ---
@@ -391,3 +399,69 @@ inside a UI commit.
   from the repository.
 - **Stray branch** — `claude/supabase-eu-migration-9f2a` cannot be deleted from
   here; the git proxy refuses. Delete it from the GitHub UI.
+
+---
+
+## 9. The apex domain redirects with a 302, and it should be a 301
+
+Measured against production:
+
+```
+https://sportsbnb.org/       302  →  https://www.sportsbnb.org/
+https://www.sportsbnb.org/   200
+```
+
+So `www` is the canonical host. Everything in the repository now agrees with
+that — `SEOHead`, `index.html`, `robots.txt`, the generated sitemap, and every
+`url` in the JSON-LD, all of which previously pointed at the apex domain that
+redirects away.
+
+What is left is the status code, and it is a Vercel domain setting rather than
+anything in this repository. A **302 is temporary**: it tells search engines to
+keep the source URL indexed and *not* to consolidate ranking signals onto the
+target. That is the opposite of what a host redirect is for — the whole purpose
+is to say "this host is not the site, the other one is, permanently". A **301**
+says that.
+
+**Action:** in the Vercel dashboard, under the project's Domains, set
+`sportsbnb.org` to redirect to `www.sportsbnb.org` with a permanent (308/301)
+redirect rather than a temporary one.
+
+While you are in Search Console: the property should be the `www` host, and the
+sitemap to submit is `https://www.sportsbnb.org/sitemap.xml`. If the apex is
+currently the verified property, add the `www` one — the two are separate
+properties to Google.
+
+---
+
+## 10. Venue and game pages are still invisible to AI crawlers
+
+`scripts/prerender.mjs` writes real HTML for the fifteen public marketing and
+listing pages, so those now carry their own title, description, canonical and a
+few hundred words of text. That covers every page whose content is known at
+build time.
+
+It does not cover `/venue/:id` or `/game/:id`, because those are per-record and
+there is nothing to bake. They still serve the empty shell, which means a
+crawler that does not execute JavaScript — GPTBot, ClaudeBot, PerplexityBot,
+and all the social scrapers — sees nothing on them. Googlebot renders them on
+its second pass, so Google search is fine; answer engines are not.
+
+That matters more than it sounds for this business, because the venue page is
+where all the citable facts live: the name, the address, the city, the sports,
+the hourly price in dram, the rating, the review count. An answer engine asked
+"where can I book a football pitch in Yerevan" has nothing to quote.
+
+Fixing it is an architecture decision, not a build step, which is why I have
+not made it:
+
+- **An edge function that renders venue and game pages per request.** Fits the
+  current stack, keeps the SPA, adds one function and a cache policy. Most
+  proportionate option.
+- **Move to a framework with SSR.** Correct in the long run and a large change.
+- **A prerender service** (Prerender.io and similar) that serves a rendered
+  snapshot to bots. Cheapest to adopt, adds a third-party dependency in front
+  of your site and an ongoing cost.
+
+The sitemap already lists every active venue when the build has database
+credentials, so whichever route you take, the URLs are being submitted.

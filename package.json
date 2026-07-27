@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postbuild": "node scripts/generate-sitemap.mjs && node scripts/prerender.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs --out public/sitemap.xml"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
