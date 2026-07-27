@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 
 /**
  * Which third-party sign-in providers the Supabase project actually has
@@ -33,8 +34,11 @@ export const useAuthProviders = (): AuthProviders => {
   const { data } = useQuery({
     queryKey: ["auth-providers"],
     queryFn: async (): Promise<AuthProviders> => {
-      const url = import.meta.env.VITE_SUPABASE_URL;
-      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      // From the client module rather than `import.meta.env`, which is unset in
+      // a build that was not given it — and the `return NONE` below then hides
+      // the Google and Apple buttons on a site whose auth is working fine.
+      const url = SUPABASE_URL;
+      const key = SUPABASE_PUBLISHABLE_KEY;
       if (!url || !key) return NONE;
 
       const res = await fetch(`${url}/auth/v1/settings`, {

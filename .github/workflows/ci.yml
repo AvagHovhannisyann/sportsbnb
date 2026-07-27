@@ -60,6 +60,51 @@ jobs:
       # JavaScript, which is all of them except Googlebot.
       - run: node scripts/crawlable.mjs
 
+  # Does the thing we ship actually start?
+  #
+  # This job exists because nothing here was asking that, and the answer was no.
+  # `src/integrations/supabase/client.ts` builds its client at module scope from
+  # values Vite inlines at build time; built with those unset, the bundle throws
+  # `supabaseUrl is required` before React mounts and every page is dead. The
+  # build still succeeds. Prerendered prose then sits on screen where the app
+  # should be, so it does not even look blank — it looks like a broken website.
+  #
+  # Two things had to be true for that to reach production, and both are
+  # structural rather than bad luck:
+  #
+  #   - the `smoke` job sets VITE_SUPABASE_* as job env, so every browser check
+  #     in this repository has always run with the config present;
+  #   - the `ci` job builds with none of it, producing exactly the broken bundle
+  #     on every single run — and then only greps it for strings.
+  #
+  # So this job is deliberately given **no VITE_ environment at all**. That is
+  # not an oversight to be tidied up later; it is the condition under test. A
+  # deployment that forgets to set them is the case that broke, and this is the
+  # only place that reproduces it.
+  boot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+      - run: npm run build
+      - run: node scripts/boot-check.mjs
+
   # Loads every route in a real browser and fails on a thrown error, a tripped
   # error boundary, a blank render, or horizontal overflow.
   #

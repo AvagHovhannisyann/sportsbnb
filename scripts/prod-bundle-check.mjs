@@ -42,6 +42,23 @@ const FORBIDDEN = [
   },
 ];
 
+/**
+ * Strings that must be *present*, because their absence ships a dead site.
+ *
+ * `boot-check.mjs` is the real test of this — it loads the build in a browser
+ * and watches it start. This is the cheap one that runs in the `ci` job with no
+ * browser, and it exists because the failure it catches is silent, total, and
+ * has happened: built with `VITE_SUPABASE_URL` unset, Vite inlines `undefined`,
+ * `createClient` throws during module evaluation, React never mounts, and every
+ * page of the app is blank. The build succeeds. Nothing else notices.
+ */
+const REQUIRED = [
+  {
+    text: '.supabase.co',
+    why: 'the Supabase URL, inlined at build time — without it createClient throws before React mounts',
+  },
+];
+
 const walk = (dir) =>
   readdirSync(dir).flatMap((name) => {
     const p = join(dir, name);
@@ -63,21 +80,40 @@ if (files.length === 0) {
 }
 
 const findings = [];
+const present = new Set();
 for (const file of files) {
   const src = readFileSync(file, 'utf8');
   for (const { text, why } of FORBIDDEN) {
     if (src.includes(text)) findings.push({ file, text, why });
   }
+  // Only the JavaScript matters here: these are values Vite inlines into the
+  // bundle, and finding one in an HTML comment would prove nothing.
+  if (/\.js$/.test(file)) {
+    for (const { text } of REQUIRED) if (src.includes(text)) present.add(text);
+  }
 }
 
+const missing = REQUIRED.filter(({ text }) => !present.has(text));
+
 console.log(`\nProduction bundle check — ${files.length} asset(s) in ${DIST}/\n`);
+console.log('  must be absent');
 for (const { text, why } of FORBIDDEN) {
   const hit = findings.find((f) => f.text === text);
   console.log(`  ${hit ? 'FAIL' : '  ok'}  ${JSON.stringify(text)} — ${why}`);
   if (hit) console.log(`        found in ${hit.file}`);
 }
+console.log('\n  must be present');
+for (const { text, why } of REQUIRED) {
+  console.log(`  ${present.has(text) ? '  ok' : 'FAIL'}  ${JSON.stringify(text)} — ${why}`);
+}
+
+const failures = findings.length + missing.length;
 console.log(
-  `\n${findings.length === 0 ? 'No development-only strings shipped' : `${findings.length} leaked`}\n`,
+  `\n${
+    failures === 0
+      ? 'No development-only strings shipped, and the build carries its config'
+      : `${findings.length} leaked, ${missing.length} missing`
+  }\n`,
 );
 
-process.exit(findings.length === 0 ? 0 : 1);
+process.exit(failures === 0 ? 0 : 1);
