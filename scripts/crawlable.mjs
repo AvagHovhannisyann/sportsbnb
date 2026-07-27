@@ -277,6 +277,41 @@ for (const p of pages) {
   }
 }
 
+// -------------------------------------------------------------------- SHELL
+
+/**
+ * The document the catch-all rewrite serves must not claim to be a page.
+ *
+ * Writing the home page's prerender to `dist/index.html` was right for `/` and
+ * wrong for everything falling through the rewrite — `/venue/:id`,
+ * `/game/:id`, `/blog/:slug` and every typo'd URL — which then received the
+ * home page's canonical. The served HTML told crawlers that every venue page
+ * was the home page, which is worse than the empty shell they had before: an
+ * absent canonical is a gap, a wrong one is a claim.
+ */
+{
+  const shellName = 'app-shell.html';
+  const shellPath = join(DIST, shellName);
+  if (!existsSync(shellPath)) {
+    fail(`SHELL       dist/${shellName} missing — the catch-all rewrite has nothing neutral to serve`);
+  } else {
+    const html = readFileSync(shellPath, 'utf8');
+    if (/<link rel="canonical"/.test(html)) {
+      fail(`SHELL       ${shellName} declares a canonical. It is served for every unmatched URL, so that canonical is asserted about pages it is not.`);
+    }
+    if (/<meta property="og:url"/.test(html)) {
+      fail(`SHELL       ${shellName} declares an og:url, which every unmatched URL would inherit`);
+    }
+    notes.push(`SHELL       ${shellName} is neutral — no canonical, no og:url`);
+  }
+
+  const vercel = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
+  const dest = vercel.rewrites?.[0]?.destination;
+  if (dest !== `/${shellName}`) {
+    fail(`SHELL       vercel.json rewrites to ${dest}, not /${shellName} — unmatched URLs would get the home page's canonical`);
+  }
+}
+
 // ------------------------------------------------------------------- DOMAIN
 
 /**

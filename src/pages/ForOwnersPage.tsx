@@ -117,14 +117,24 @@ const ForOwnersPage = () => {
     { step: "1", title: "Create your account", description: "Sign up as a venue owner in under 2 minutes. No credit card required." },
     { step: "2", title: "Add your venue", description: "Upload photos, set prices, define hours, and configure your policies." },
     { step: "3", title: "Add your payout details", description: "Your Armenian bank account or Idram wallet — that's where your earnings land." },
-    { step: "4", title: "Go live", description: "Once approved, your venue is visible to thousands of active players." },
+    // "thousands of active players" is the same unmeasured claim, in the
+    // visible copy this time. What is true is that approval is a real
+    // step and that the listing then appears in search and on the map.
+    { step: "4", title: "Go live", description: "Once approved, your venue appears in search, on the map, and is bookable by the hour." },
   ];
 
   return (
     <Layout>
       <SEOHead
-        title="List Your Sports Venue — Grow Revenue"
-        description="List your sports facility on Sportsbnb. Reach thousands of active players, automate bookings, and increase revenue by up to 40%. Free to get started."
+        /* The rule stated forty lines above — every figure traceable to the
+           build — was applied to the stats block and not to this description,
+           which is the copy Google actually shows. It read "Reach thousands of
+           active players... increase revenue by up to 40%": the same
+           placeholder claim the comment says was removed, with no customers
+           and no measurement behind either half of it. Replaced with the four
+           facts the stats block settled on. */
+        title="List Your Sports Venue in Armenia — Sportsbnb for Owners"
+        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card and Idram payments in dram, and keep 100% of your price — players pay a 5% fee on top. No listing fee, no monthly cost."
         canonical="/for-owners"
       />
       {/* ── Hero ── */}

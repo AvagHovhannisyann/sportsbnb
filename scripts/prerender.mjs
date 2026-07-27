@@ -105,7 +105,10 @@ const PAGES = [
     body: [
       'Sportsbnb is a sports venue booking marketplace for Armenia. Search by sport, city and price, see which hours are genuinely free, and pay in the app in Armenian dram — by card through Ameriabank or with Idram.',
       'Venues are listed by their owners with an hourly rate. Sportsbnb adds a 5% platform fee on top of that rate, so a court listed at ֏10,000 an hour costs ֏10,500 and the owner receives ֏10,000. Choosing a time holds it for 20 minutes while you pay.',
-      'Football, basketball, tennis, swimming, volleyball, badminton, cricket, golf, boxing, yoga, gym, table tennis, squash, hockey, baseball, rugby, martial arts, dance, climbing and cycling.',
+      // The twelve in SPORTS_OPTIONS, which is what VenueForm offers an owner —
+      // not the twenty in sportTypes. A venue cannot be listed for the other
+      // eight, so naming them here would advertise inventory that cannot exist.
+      'Football, basketball, tennis, swimming, volleyball, badminton, rugby, gym, cricket, golf, running and cycling.',
     ],
   },
   {
@@ -242,6 +245,36 @@ function replaceOne(html, pattern, replacement, what) {
   return html.replace(pattern, replacement);
 }
 
+/**
+ * The document Vercel's catch-all rewrite serves for everything else.
+ *
+ * This is the fix for a regression this script caused. Writing the home page's
+ * prerender to `dist/index.html` was correct for `/` and wrong for every route
+ * that falls through to the rewrite in `vercel.json` — `/venue/:id`,
+ * `/game/:id`, `/team/:id`, `/blog/:slug` and any typo'd URL. Those started
+ * receiving the home page's prose *and* its canonical, so the served HTML told
+ * a crawler that every venue page in the marketplace was the home page. That
+ * is strictly worse than the empty shell they got before: a wrong canonical
+ * is a claim, an absent one is only a gap.
+ *
+ * So the rewrite now points at this file instead. It is the untouched build
+ * shell — generic title, generic description, **no canonical** — which is
+ * honest about a page whose identity is not known until React resolves the
+ * record. It stays indexable, because the routes it serves are ones we want
+ * indexed; it simply does not assert anything false about them.
+ *
+ * Making those pages genuinely crawlable needs per-request rendering. That is
+ * still deferred, and docs/handover.md §10 says so.
+ */
+const SHELL_FILE = 'app-shell.html';
+{
+  let neutral = shell;
+  // The canonical is the whole point: the shell must not claim to be a page.
+  neutral = neutral.replace(/<link rel="canonical"[^>]*>\n?\s*/, '');
+  neutral = neutral.replace(/<meta property="og:url"[^>]*>\n?\s*/, '');
+  writeFileSync(join(DIST, SHELL_FILE), neutral);
+}
+
 let written = 0;
 for (const page of PAGES) {
   const url = `${SITE}${page.path === '/' ? '/' : page.path}`;
@@ -295,4 +328,7 @@ for (const page of PAGES) {
   written += 1;
 }
 
-console.log(`Prerender — ${written} public page(s) with real titles, canonicals and text`);
+console.log(
+  `Prerender — ${written} public page(s) with real titles, canonicals and text, ` +
+    `plus ${SHELL_FILE} for the catch-all rewrite`,
+);

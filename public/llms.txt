@@ -31,9 +31,10 @@ can create or be invited to.
   that apply are shown before payment and stored with the booking.
 - **Double booking**: prevented in the database by an exclusion constraint on
   the venue, court and time range, so two players cannot hold the same hour.
-- **Sports**: football, basketball, tennis, swimming, volleyball, badminton,
-  cricket, golf, boxing, yoga, gym, table tennis, squash, hockey, baseball,
-  rugby, martial arts, dance, climbing and cycling.
+- **Sports a venue can be listed for**: football, basketball, tennis,
+  swimming, volleyball, badminton, rugby, gym, cricket, golf, running and
+  cycling. (Pickup games and teams can be organised around a wider set, but a
+  bookable venue carries one of these twelve.)
 - **Accounts**: booking requires an account. Browsing venues, games and teams
   does not.
 
@@ -54,8 +55,8 @@ can create or be invited to.
   and when it is, and how to request a place.
 - [Teams](/teams): public teams to join, and the form to create one.
 - [Community](/community): players near you, activity and leaderboards.
-- [For owners](/for-owners): how listing works, what it costs, how payouts run.
-- [List your venue](/list-venue): the owner sign-up path.
+- [For owners](/for-owners): how listing works, what it costs, how payouts
+  run. The sign-up form behind it requires an account.
 - [Blog](/blog): articles on venues, booking and the local sports scene.
 - [About](/about): what Sportsbnb is and who runs it.
 - [FAQ](/faq): the common questions, answered.
@@ -73,10 +74,14 @@ can create or be invited to.
 
 - The canonical host is `https://www.sportsbnb.org`. The apex domain redirects
   to it.
-- Structured data is embedded as JSON-LD: `Organization` and `WebSite` on every
-  page, `SportsActivityLocation` with an hourly `Offer` in AMD on each venue
-  page, `Event` on each game page, `FAQPage` on the FAQ, and `BreadcrumbList`
-  where there is a hierarchy.
+- Structured data is embedded as JSON-LD. `Organization`, `WebSite` and
+  `WebApplication` are in the served HTML of every page and need no JavaScript.
+  The rest — `SportsActivityLocation` with an hourly `Offer` in AMD on a venue
+  page, `SportsEvent` on a game page, `FAQPage` on the FAQ, `BreadcrumbList`
+  where there is a hierarchy — is injected on render, so a crawler that does
+  not execute JavaScript will not see it. That is a known gap, not an
+  oversight; the marketing and listing pages are prerendered with real text,
+  the per-record pages are not yet.
 - Account, checkout and payment pages are disallowed in `/robots.txt`. They
   contain nothing citable.
 - This file is kept accurate deliberately. It previously stated that payments

@@ -31,7 +31,6 @@ import {
 import { describeActiveFilters, type FilterKey } from "@/features/venues/activeFilters";
 import { canonicalSport } from "@/features/venues/sportFilter";
 import { matchesVenueQuery } from "@/features/venues/venueSearch";
-import { sportTypes } from "@/data/constants";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import Layout from "@/components/layout/Layout";
 import { FilterChips } from "@/components/ui/filter-chips";
@@ -115,6 +114,28 @@ const DiscoverPage = () => {
   const cities = useMemo(() => {
     const citySet = new Set(venues.map(v => v.city).filter(Boolean));
     return Array.from(citySet).sort();
+  }, [venues]);
+
+  /**
+   * The sports on offer, taken from the catalogue rather than from a constant.
+   *
+   * This filter was built from `sportTypes` — twenty sports — while a venue can
+   * only be tagged with the twelve in `SPORTS_OPTIONS`, which is what
+   * `VenueForm` offers an owner. The two lists have diverged, and the nine in
+   * the gap (Boxing, Yoga, Table Tennis, Squash, Hockey, Baseball, Martial
+   * Arts, Dance, Climbing) were filter options that could never match anything.
+   * Nearly half the picker was guaranteed to return "no venues found",
+   * whatever inventory existed.
+   *
+   * Deriving it is the same thing this page already does one block above for
+   * cities, and it is better than picking either list: a filter offered is a
+   * filter something matches, and the day a venue is listed for Yoga the option
+   * appears on its own. Which sports an owner may choose is a separate
+   * question, and a product one — see docs/handover.md.
+   */
+  const availableSports = useMemo(() => {
+    const set = new Set(venues.flatMap((v) => v.sports ?? []).filter(Boolean));
+    return Array.from(set).sort();
   }, [venues]);
 
   // Get max price from venues
@@ -389,7 +410,7 @@ const DiscoverPage = () => {
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sportTypes.map((sport) => (
+                    {availableSports.map((sport) => (
                       <SelectItem key={sport} value={sport}>
                         {sport}
                       </SelectItem>
@@ -480,7 +501,7 @@ const DiscoverPage = () => {
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sportTypes.map((sport) => (
+                    {availableSports.map((sport) => (
                       <SelectItem key={sport} value={sport}>
                         {sport}
                       </SelectItem>
