@@ -1,7 +1,8 @@
 # The audits
 
-Nineteen scripts in `scripts/` measure this app in a real browser. They all
-run in CI, across five parallel suites, and they can all be run by hand.
+Twenty scripts in `scripts/` measure this app: sixteen drive a real browser,
+across five parallel CI suites, and four are static and run with the lint job.
+They can all be run by hand.
 
 Every one of them exists because something was wrong and nothing noticed. The
 header of each script says what that was, with the number it measured. Read
@@ -117,6 +118,7 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `palette-contrast` | raw Tailwind palette colours in class strings, against every surface in the theme |
 | `no-emoji-icons` | emoji used where a Lucide icon belongs |
 | `prod-bundle-check` | the production shape of DEV-gated code, which every other check sees only in its development form |
+| `param-handoff` | a URL parameter one part of the app writes and no part of it reads |
 
 ### Structure and semantics
 
@@ -154,11 +156,47 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `numeral-glyphs` | that nothing in a monospaced numeral run reaches outside the font's repertoire |
 | `search-handoff` | that the home page's search bar actually searches — the values it emits, and the results the next page shows |
 
-## The one that spans two pages
+## The two that span two pages
 
-`search-handoff` is the only check here that does not read a single page and
-ask whether it is correct. It exists because a bug lived in the gap between
-two pages that were each fine on their own.
+Everything else in this directory reads one page and asks whether it is
+correct. `param-handoff` and `search-handoff` ask whether two pages agree,
+because that is where four live bugs were hiding — in the space between files
+that were each fine on their own.
+
+### `param-handoff`, and why it is worth its four hundred milliseconds
+
+It collects every URL parameter the app writes into its own links, collects
+every one it reads, and reports the difference. Run against the app as it was,
+it named three:
+
+| parameter | written by | what the user lost |
+| --- | --- | --- |
+| `?location=` | the home page search bar | typing a city returned the whole unfiltered catalogue, as the answer to a search |
+| `?redirect=` | `BookingPanel`, `JoinTeamPage` | the venue they were about to book; the team invite code, which has no other route |
+| `?venue=` | `OwnerVenuesPage` row menu | owner settings opened the *first* venue's form, and saved edits into it |
+
+None threw. None logged. Every browser audit here passed all three routes,
+because every page rendered exactly as designed.
+
+What it cannot claim, and says so in its own header: a parameter read
+*somewhere* counts as read, so it cannot tell that page A writes one only page
+B reads. That needs the router graph and is a rarer bug than writing one nobody
+reads at all. Computed keys are invisible to it and are listed rather than
+skipped. It also blanks comments before scanning — the doc comment explaining
+this very bug quotes `/login?redirect=/venue/:id`, and a check that reports its
+own documentation is one people learn to ignore.
+
+Adding the `?redirect=` reader meant adding `safeRedirect` in the same change.
+A post-login destination that arrives in a URL is attacker controlled, and
+`/login?redirect=https://not-sportsbnb.example/login` is our form, our domain
+and someone else's landing page the moment the password is accepted. Reading
+the parameter without validating it would have traded a lost booking for a
+phishing primitive.
+
+### `search-handoff`
+
+The browser half of the same idea, for the one path where the parameters were
+right and the values in them were not.
 
 `HeroSearch` built its Sport options as `value={s.toLowerCase()}` and put that
 in the URL. `DiscoverPage` filtered with `venue.sports.includes(sport)` — an

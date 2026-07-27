@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthProviders } from "@/hooks/useAuthProviders";
 import { getGenericAuthError } from "@/lib/authErrors";
+import { safeRedirect } from "@/lib/redirect";
 import authHero from "@/assets/auth-hero.jpg";
 
 const signupSchema = z.object({
@@ -26,6 +27,11 @@ const signupSchema = z.object({
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Passed on from the login page's "Create one" link, so the venue or invite
+  // someone was heading for survives the detour through account creation.
+  // Validated, because it arrives in a URL — see src/lib/redirect.ts.
+  const redirectTo = safeRedirect(searchParams.get("redirect"));
   const { user, isLoading: authLoading, signUp, signInWithOAuth } = useAuth();
   const providers = useAuthProviders();
   const [isLoading, setIsLoading] = useState(false);
@@ -44,9 +50,9 @@ const SignupPage = () => {
   // Redirect if already authenticated (but not if we just signed up)
   useEffect(() => {
     if (!authLoading && user && !isSigningUp) {
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate, isSigningUp]);
+  }, [user, authLoading, navigate, isSigningUp, redirectTo]);
 
   // Password strength calculation
   const passwordStrength = useMemo(() => {
@@ -163,10 +169,18 @@ const SignupPage = () => {
     toast.success("Account created successfully!");
     // Redirect to appropriate page with replace to prevent back navigation issues
     if (userType === "player") {
+      // Onboarding wins over `redirectTo` deliberately: a brand-new player
+      // dropped straight onto a checkout has no profile, no city and no sports
+      // yet, which several of the pages they might be heading for read. The
+      // cost is that a signed-out invite link followed all the way through
+      // account creation still loses its destination at this step — see §5 of
+      // docs/handover.md, because carrying it through onboarding is a product
+      // decision about what that flow is allowed to interrupt.
       navigate("/onboarding/player", { replace: true });
     } else {
-      // Owners go directly to dashboard, they can add venues from there
-      navigate("/owner-dashboard", { replace: true });
+      // Owners have no onboarding step, so nothing is in the way of honouring
+      // where they were trying to go.
+      navigate(redirectTo ?? "/owner-dashboard", { replace: true });
     }
     setIsLoading(false);
   };
@@ -581,7 +595,10 @@ const SignupPage = () => {
           {/* Sign In Link */}
           <p className="text-center text-muted-foreground mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary hover:underline font-semibold">
+            <Link
+              to={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
+              className="text-primary hover:underline font-semibold"
+            >
               Sign in
             </Link>
           </p>

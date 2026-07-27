@@ -26,6 +26,13 @@ jobs:
       # 📅 beside a Lucide Clock is a different font at a different baseline,
       # ignores currentColor, and is announced by its CLDR name. Static.
       - run: node scripts/no-emoji-icons.mjs
+      # A URL parameter one part of the app writes and no part of it reads.
+      # Four were live at once — ?location= on the home page search, ?redirect=
+      # on the two paths that send a signed-out user to log in, and ?venue= on
+      # the owner settings link — each a control that renders correctly, throws
+      # nothing, and does nothing. No single page was wrong, so every browser
+      # audit here passed all of them. Static and sub-second.
+      - run: node scripts/param-handoff.mjs
       - run: npm run build
       # Every browser check in this repo runs against `npx vite` — the dev
       # server — so import.meta.env.DEV is true for all of them and DEV-gated

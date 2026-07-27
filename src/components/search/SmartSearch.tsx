@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sportTypes } from "@/data/constants";
 
 // Browser-callable geocoder key. It is necessarily public — it ships in the
 // bundle — but it was hardcoded here, which meant it could not be swapped per
@@ -61,8 +62,15 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
     const allSuggestions: SearchSuggestion[] = [];
 
     try {
-      // Sport matching (local)
-      const sportTypes = ["Football", "Basketball", "Tennis", "Swimming", "Volleyball", "Badminton", "Rugby", "Gym", "Cricket", "Golf", "Running", "Cycling"];
+      // Sport matching (local), against the one list venues are tagged from.
+      //
+      // This was a second copy of it, hardcoded here: twelve entries against
+      // the canonical twenty, and not a subset. It offered "Running", which is
+      // not a sport any venue can be tagged with, so accepting that suggestion
+      // navigated to a filter that could never match anything. And it was
+      // missing Boxing, Yoga, Table Tennis, Squash, Hockey, Baseball, Martial
+      // Arts, Dance and Climbing — nine real sports that a venue can offer and
+      // that this search would never suggest, however far you typed their name.
       sportTypes
         .filter(sport => sport.toLowerCase().includes(query.toLowerCase()))
         .slice(0, 2)

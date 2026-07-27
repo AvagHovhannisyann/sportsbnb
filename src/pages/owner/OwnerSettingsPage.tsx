@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Save, Building2, Mail, Phone, Globe, MapPin, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,7 @@ const currencies = [
 
 const OwnerSettingsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
   const { data: myVenues = [], isLoading: venuesLoading, refetch } = useOwnerVenues(user?.id);
 
@@ -50,12 +51,27 @@ const OwnerSettingsPage = () => {
   // Profile state for currency
   const [currency, setCurrency] = useState("USD");
 
-  // Set default venue
+  /**
+   * Which venue to open, honouring `?venue=` before falling back to the first.
+   *
+   * `OwnerVenuesPage` sends `/owner/settings?venue=${venue.id}` from the row
+   * menu of a specific venue, and nothing here read it. The page opened on
+   * `myVenues[0]` regardless — so an owner with more than one venue picked
+   * "Settings" on their second, got a form pre-filled with their first
+   * venue's name, address and hourly price, and any edit they saved was
+   * written to the wrong record. Nothing on screen contradicted them: the
+   * form looked exactly as it should, just for a different venue.
+   *
+   * Checked against the owner's own venues rather than trusted, so a stale or
+   * hand-edited id falls back rather than selecting nothing and rendering an
+   * empty form over a venue that exists.
+   */
   useEffect(() => {
-    if (myVenues.length > 0 && !selectedVenueId) {
-      setSelectedVenueId(myVenues[0].id);
-    }
-  }, [myVenues, selectedVenueId]);
+    if (myVenues.length === 0 || selectedVenueId) return;
+    const requested = searchParams.get("venue");
+    const match = requested ? myVenues.find((v) => v.id === requested) : undefined;
+    setSelectedVenueId(match?.id ?? myVenues[0].id);
+  }, [myVenues, selectedVenueId, searchParams]);
 
   // Load venue data when venue changes
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthProviders } from "@/hooks/useAuthProviders";
 import { getGenericAuthError } from "@/lib/authErrors";
+import { safeRedirect } from "@/lib/redirect";
 import authHero from "@/assets/auth-hero.jpg";
 
 type AuthMode = "password" | "magic-link";
@@ -17,7 +18,22 @@ type AuthMode = "password" | "magic-link";
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+  const [searchParams] = useSearchParams();
+  /**
+   * The page the user was trying to reach, from either of the two ways the
+   * app asks for one.
+   *
+   * Router state is what the route guards use. `?redirect=` is what
+   * `BookingPanel` and `JoinTeamPage` use, and nothing read it — a signed-out
+   * visitor pressing Reserve, or opening a team invite, was sent here and then
+   * dropped on the dashboard, having lost the venue or the invite code.
+   *
+   * Both go through `safeRedirect`, because one of them arrives in a URL a
+   * stranger can write. See src/lib/redirect.ts.
+   */
+  const redirectTo =
+    safeRedirect(searchParams.get("redirect")) ??
+    safeRedirect((location.state as { from?: { pathname?: string } } | null)?.from?.pathname);
   const {
     user,
     isLoading: authLoading,
@@ -45,12 +61,17 @@ const LoginPage = () => {
   const [totpCode, setTotpCode] = useState("");
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated.
+  //
+  // `redirectTo` here too: arriving at /login?redirect=/join-team/CODE with a
+  // live session is the common case for an invite link opened in a tab that is
+  // still signed in, and sending that to the dashboard threw the code away
+  // just as thoroughly as the signed-out path did.
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -169,8 +190,10 @@ const LoginPage = () => {
         navigate(profile.user_type === "owner" ? "/owner-dashboard" : "/onboarding/player", { replace: true });
         return;
       }
-      // Honor the page the user was trying to reach before login
-      if (redirectTo && redirectTo !== "/login") {
+      // Honor the page the user was trying to reach before login.
+      // `safeRedirect` already excludes /login and /signup, so a destination
+      // that survives it cannot bounce back here.
+      if (redirectTo) {
         navigate(redirectTo, { replace: true });
         return;
       }
@@ -180,7 +203,7 @@ const LoginPage = () => {
         navigate("/dashboard", { replace: true });
       }
     } else {
-      navigate(redirectTo && redirectTo !== "/login" ? redirectTo : "/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     }
   };
 
@@ -594,7 +617,14 @@ const LoginPage = () => {
               {/* Sign Up Link */}
               <p className="text-center text-muted-foreground mt-8">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-semibold">
+                {/* Carries the destination across the hop. Someone who
+                    followed a team invite and does not have an account yet
+                    would otherwise lose the code right here, one click after
+                    the login page was careful to keep it. */}
+                <Link
+                  to={redirectTo ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
+                  className="text-primary hover:underline font-semibold"
+                >
                   Create one
                 </Link>
               </p>
