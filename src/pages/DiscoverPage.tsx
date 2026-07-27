@@ -29,6 +29,8 @@ import {
   type VenueSort,
 } from "@/features/venues/sortVenues";
 import { describeActiveFilters, type FilterKey } from "@/features/venues/activeFilters";
+import { canonicalSport } from "@/features/venues/sportFilter";
+import { matchesVenueQuery } from "@/features/venues/venueSearch";
 import { sportTypes } from "@/data/constants";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import Layout from "@/components/layout/Layout";
@@ -59,7 +61,9 @@ const DiscoverPage = () => {
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>(searchParams.get("sport") || "");
+  // Canonicalised on the way in: the sport has to be one of the strings
+  // venues are tagged with, or nothing. See `canonicalSport`.
+  const [selectedSport, setSelectedSport] = useState<string>(() => canonicalSport(searchParams.get("sport")));
   /**
    * `PRICE_FLOOR_CEILING` is the *starting* ceiling, not the real one.
    *
@@ -142,9 +146,13 @@ const DiscoverPage = () => {
       });
     }
     if (sport) {
-      setSelectedSport(sport);
+      setSelectedSport(canonicalSport(sport));
     }
-    if (q) setSearchQuery(q);
+    // `location` is the hero bar's old parameter name, which this page never
+    // read. Honoured as a fallback so links already shared with it start
+    // working; the sync effect below then rewrites them to `q`.
+    const typedPlace = q ?? searchParams.get("location");
+    if (typedPlace) setSearchQuery(typedPlace);
     if (city) setSelectedCity(city);
     if (maxPrice && /^\d+$/.test(maxPrice)) {
       setPriceRange([0, parseInt(maxPrice)]);
@@ -167,20 +175,35 @@ const DiscoverPage = () => {
     // Only when it differs from the default, so an untouched Discover link
     // stays clean and a shared one carries the order it was shared in.
     setOrDelete("sort", sortBy === DEFAULT_VENUE_SORT ? null : sortBy);
+    // The hero bar's old parameter, read once above and then retired. Without
+    // this it survives every filter change and rides along in whatever the
+    // user copies out of the address bar, still doing nothing.
+    params.delete("location");
     setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSport, searchQuery, selectedCity, priceRange, sortBy]);
 
-  // Auto-set city from user profile on first load
+  // Auto-set city from user profile on first load.
+  //
+  // Skipped when the URL arrived carrying a search, because the city ANDs with
+  // it: a player whose profile says Yerevan, searching the home page for
+  // Gyumri, would land on "no venues found" for venues that exist. The profile
+  // city is a convenience default for someone who asked for nothing in
+  // particular, not a filter to impose on someone who asked for something.
+  //
+  // A `city` or `lat` in the URL is already covered by the two guards below,
+  // which is why only `q` needs capturing — and it is captured at mount
+  // because `cities` arrives with the venues, long after the URL was read.
+  const [urlCarriedSearch] = useState(() => Boolean(searchParams.get("q") || searchParams.get("location")));
   useEffect(() => {
-    if (profile?.city && !selectedCity && !searchLocation) {
+    if (profile?.city && !selectedCity && !searchLocation && !urlCarriedSearch) {
       const profileCity = profile.city.toLowerCase();
       const matchingCity = cities.find(c => c.toLowerCase() === profileCity);
       if (matchingCity) {
         setSelectedCity(matchingCity);
       }
     }
-  }, [profile, selectedCity, cities, searchLocation]);
+  }, [profile, selectedCity, cities, searchLocation, urlCarriedSearch]);
 
   const handleNearMe = () => {
     if (!navigator.geolocation) {
@@ -218,10 +241,10 @@ const DiscoverPage = () => {
   // Filter and sort venues
   const filteredVenues = useMemo(() => {
     let result = venues.filter((venue) => {
-      const location = venue.address || venue.city;
-      const matchesSearch =
-        venue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        location.toLowerCase().includes(searchQuery.toLowerCase());
+      // Name, address *and* city — this used to be `address || city`, which
+      // hid every addressed venue from a search for its own city. See
+      // features/venues/venueSearch.
+      const matchesSearch = matchesVenueQuery(venue, searchQuery);
       const matchesSport = !selectedSport || venue.sports.includes(selectedSport);
       const matchesPrice = venue.price_per_hour >= priceRange[0] && venue.price_per_hour <= priceRange[1];
       const matchesCity = !selectedCity || venue.city === selectedCity;

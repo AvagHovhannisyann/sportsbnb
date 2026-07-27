@@ -68,3 +68,16 @@ node scripts/page-titles.mjs player $PLAYER
 node scripts/page-titles.mjs owner  $OWNER
 node scripts/page-titles.mjs admin  $ADMIN
 node scripts/page-titles.mjs anon   $ANON
+
+# Whether the search bar on the home page actually searches — the one check
+# here that spans two pages rather than reading one. It belongs in this suite
+# because it measures the same thing the two above do: whether the page tells
+# the truth about what just happened. "0 venues found" for a catalogue where
+# three match is the same kind of false claim as "you have no bookings" on a
+# request that failed.
+#
+# It drives the real control, because it has to. Radix puts a SelectItem's
+# value nowhere in the DOM, so no static or DOM-reading check in this
+# directory could see that the hero bar was emitting `?sport=football` at a
+# filter that matches `Football` exactly. Twenty sports, one at a time, ~51s.
+node scripts/search-handoff.mjs

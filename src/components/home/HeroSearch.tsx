@@ -30,7 +30,13 @@ const HeroSearch = () => {
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (sport && sport !== "any") params.set("sport", sport);
-    if (location) params.set("location", location);
+    // `q`, not `location`. Discover reads `q`, `city`, `sport`, `lat`/`lng`
+    // and `maxPrice`; it has never read `location`, so what the user typed
+    // into the field labelled Location was written to the URL and then
+    // ignored — the results were the unfiltered catalogue, presented as the
+    // answer to a search. `q` is the free-text filter, and it matches on
+    // venue name *or* address/city, which is what a typed place name wants.
+    if (location.trim()) params.set("q", location.trim());
     setSheetOpen(false);
     navigate(`/venues?${params.toString()}`);
   };
@@ -107,8 +113,14 @@ const HeroSearch = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Any sport</SelectItem>
+              {/* Not `s.toLowerCase()`. Venues are tagged with these strings
+                  verbatim and Discover filters with a case-sensitive
+                  `sports.includes(...)`, so the lower-cased value travelled
+                  into the URL and matched nothing: this Search button reported
+                  "0 venues" where the category tiles further down the same
+                  page — which send `s` untouched — found three. */}
               {sportTypes.map((s) => (
-                <SelectItem key={s} value={s.toLowerCase()}>
+                <SelectItem key={s} value={s}>
                   {s}
                 </SelectItem>
               ))}

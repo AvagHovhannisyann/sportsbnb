@@ -153,10 +153,10 @@ corrected in the code comments and in `docs/design-audit.md`.
 
 ---
 
-## 5. Three product calls I did not make for you
+## 5. Four product calls I did not make for you
 
-Both surfaced from a lint rule that had been switched off. Neither is a bug I
-could fix without deciding something that is yours to decide.
+None of these is a bug I could fix without deciding something that is yours to
+decide.
 
 **Partial-day blocking.** The schedule's Block Time dialog offered "Specific
 time range", and it could not work: blocks are stored in `blocked_dates`, which
@@ -185,6 +185,20 @@ tabs above: working code with no way in. "Tell me when this slot frees up" is a
 normal thing to want on a venue whose evenings are full, so this may be a
 feature to finish rather than delete — but that is a product call, and the
 table it writes to needs its RLS checked before anything writes to it.
+
+**The "When" column in the home page search bar.** The hero bar has three
+fields. Two of them now work: Sport was emitting a lower-cased value at a
+case-sensitive filter and finding nothing, and Location was being written to a
+URL parameter Discover has never read — both fixed, with `search-handoff`
+guarding them. The third, When, offers Today / Tomorrow / This week / This
+weekend, holds the choice in state and never writes it anywhere. Discover has
+no date filter to receive it either, so making it work is not wiring, it is a
+feature: availability filtering across the whole catalogue, which means asking
+`get_available_slots` about every venue for a date range. The alternative is
+removing the column. That is a change to the composition of the hero bar, and
+per `CLAUDE.md` the layout belongs to Fabel — so I have left the field in
+place, working exactly as much as it did before, and `search-handoff` names it
+as INERT on every run rather than letting it pass quietly.
 
 ---
 

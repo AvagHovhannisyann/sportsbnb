@@ -1,6 +1,6 @@
 # The audits
 
-Eighteen scripts in `scripts/` measure this app in a real browser. They all
+Nineteen scripts in `scripts/` measure this app in a real browser. They all
 run in CI, across five parallel suites, and they can all be run by hand.
 
 Every one of them exists because something was wrong and nothing noticed. The
@@ -152,6 +152,56 @@ simply failed. Slow: forty-six loading spinners with nothing to announce them.
 | `error-affordance` | that a failed request is not reported to the user as "you have nothing" |
 | `loading-status` | WCAG 4.1.3 — that a spinner or skeleton is announced, not just drawn |
 | `numeral-glyphs` | that nothing in a monospaced numeral run reaches outside the font's repertoire |
+| `search-handoff` | that the home page's search bar actually searches — the values it emits, and the results the next page shows |
+
+## The one that spans two pages
+
+`search-handoff` is the only check here that does not read a single page and
+ask whether it is correct. It exists because a bug lived in the gap between
+two pages that were each fine on their own.
+
+`HeroSearch` built its Sport options as `value={s.toLowerCase()}` and put that
+in the URL. `DiscoverPage` filtered with `venue.sports.includes(sport)` — an
+exact, case-sensitive match against the capitalised strings venues are tagged
+with. The primary call to action on the landing page therefore reported **0
+venues found for a catalogue where 3 matched**, while the category tiles a few
+hundred pixels below it, which passed the same strings through untouched,
+found all three. The same bar wrote its Location field to `?location=`, a
+parameter Discover has never read, so typing a city and pressing Search
+returned the whole unfiltered catalogue as the answer to a search.
+
+`a11y-names` saw a labelled control. `smoke-routes` saw a page that loaded.
+`rendered-contrast` saw legible text. Nothing was asking whether the button did
+what it said.
+
+It has to click things, and that is worth knowing before anyone tries to make
+it cheaper. **Radix puts a `SelectItem`'s value nowhere in the DOM** — the
+rendered option carries `role`, `aria-labelledby`, `data-state`,
+`data-radix-collection-item` and its label, and nothing else. The value is in
+React state and is observable only through what the app does after you pick it.
+So the obvious version of this check, comparing the two pickers' option values,
+cannot be written at all. That is precisely why this class of bug is invisible
+to every other check in this directory.
+
+Run against the pre-fix app it reports three failures, and one instructive
+pass: the Sport narrowing case still passed while broken, because a filter that
+matches nothing ever and a filter that correctly excludes look identical from a
+count of zero. The agreement loop is what caught that one.
+
+Two more things fell out of fixing it, both found by the check rather than by
+reading the code:
+
+- A controlled Radix `Select` whose value matches no item renders **neither the
+  value nor its placeholder**. So `?sport=football` emptied the results *and*
+  blanked the picker: the filter doing the damage was invisible to the person
+  it was filtering for. `canonicalSport` returns `""` for anything it does not
+  recognise specifically to make that state unreachable.
+- Discover's own text search read `venue.address || venue.city` — a fallback
+  where the intent was a union. Every venue with a street address was
+  unsearchable by the city it is in. It stayed hidden while the only route to
+  that filter was Discover's own search box, sitting beside a City dropdown
+  that works; wiring the hero bar's Location field to it made a search for your
+  own city the first thing a new user would try.
 
 ## Adding one
 
