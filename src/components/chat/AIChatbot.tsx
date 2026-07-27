@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { X, Send, Sparkles, MapPin, CalendarCheck, CreditCard, Users, Trophy, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 type Message = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+// Not `import.meta.env` directly: unset at build time that interpolates to the
+// string "undefined/functions/v1/ai-chat", which is a request that can only fail.
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
 
 const SUGGESTIONS = [
   { icon: MapPin, label: "Find venues", message: "Help me find sports venues near me" },

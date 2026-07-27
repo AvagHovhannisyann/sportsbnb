@@ -10,6 +10,52 @@ of its items are live exposures rather than tidy-ups.
 
 ---
 
+## 0. The outage after the merge, and what changed because of it
+
+Within minutes of PR #3 merging, the live site rendered as unstyled body text:
+a heading, a few paragraphs, and a run of link words. That was the app **not
+running at all**.
+
+**Cause.** `src/integrations/supabase/client.ts` builds its client at module
+scope from `import.meta.env.VITE_SUPABASE_URL`, and Vite inlines those values
+**at build time**. A `.env` file used to be committed to this repository, so
+production builds picked them up from the working tree by accident. Phase 0
+removed it — correctly; it also held a billable Maps key — and nothing was set
+in the host to replace it. So the first production build after the merge
+shipped `createClient(undefined, undefined)`, which throws `supabaseUrl is
+required` before React mounts.
+
+**Why it looked like a page rather than a blank screen.** The prerendered prose
+for crawlers lives inside `#root` on the reasoning that React discards it the
+moment it mounts. That holds exactly as long as React mounts. It did not, so the
+crawler copy stayed on screen. Prerendering turned a dead app into something
+that looked like a badly broken website instead of an empty one.
+
+**Fixed on this branch**, in three parts:
+
+1. The publishable URL and key are now committed as defaults in `client.ts`, so
+   a build with no environment still produces a bundle that works. Both values
+   are public by design — the key carries no authority of its own, everything it
+   reaches is behind RLS, and it ships inside the JavaScript bundle to every
+   visitor no matter where it is configured. Environment variables still win
+   wherever they are set. The service-role key is not here and never will be.
+2. `scripts/boot-check.mjs` loads the production build in a browser and fails if
+   React does not mount. It runs in a new `boot` CI job that is deliberately
+   given **no** `VITE_` environment, because that is the condition that broke.
+3. `scripts/prod-bundle-check.mjs` now also asserts strings that must be
+   *present*, so a bundle missing its config fails before the browser check.
+
+**What this means for you:** setting `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` in the host (§2 item 6) is now optional rather
+than load-bearing. Still worth doing if you want previews pointing elsewhere.
+
+Two things were silently broken by the same cause and are also fixed: the AI
+chatbot was posting to `undefined/functions/v1/ai-chat`, and `useAuthProviders`
+was taking its "no config" branch, which hides the Google and Apple sign-in
+buttons. Both now read the resolved values from the client module.
+
+---
+
 ## Start here
 
 The sections below accumulated as I found things, which is not the order to do
