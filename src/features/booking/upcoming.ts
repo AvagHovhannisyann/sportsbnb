@@ -22,7 +22,7 @@ const SETTLED = new Set([
 ]);
 
 /** Is this booking still ahead of the person who made it? */
-export function isUpcoming(booking: Pick<MyBooking, "status" | "starts_at" | "booking_date">, now: Date): boolean {
+export function isUpcoming(booking: BookingWhen, now: Date): boolean {
   if (SETTLED.has(booking.status)) return false;
   // `starts_at` is the Phase 2 column and the one to trust. `booking_date` is
   // the legacy TEXT date kept for rows written before it existed; treating a
