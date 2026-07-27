@@ -85,6 +85,43 @@ const ROWS = {
     visibility: 'public', invite_code: 'SMOKE1', logo_url: null,
     created_at: NOW, updated_at: NOW,
   },
+  // Tables whose UI has never been rendered by any audit.
+  //
+  // Cross-checking every `.from("…")` in src against what this file serves
+  // found twenty-two queried tables with no fixture. Each one renders its
+  // section empty in every check here, so the controls inside — accept an
+  // invite, delete a template, remove a blocked date — do not exist for
+  // a11y-names, tap-targets or rendered-contrast to look at. `outreach_targets`
+  // was the first found, by accident, and it was hiding three unnamed buttons.
+  //
+  // These are the ones that drive interactive UI. The rest are read-only or
+  // feed a number, and are left out rather than invented.
+  team_invites: {
+    id: '77777777-7777-7777-7777-777777777777', team_id: IDS.team,
+    invited_user_id: UID, invited_by: UID, status: 'pending', created_at: NOW,
+  },
+  owner_reply_templates: {
+    id: '88888888-8888-8888-8888-888888888888', owner_id: UID,
+    title: 'Availability reply', body: 'Yes, that slot is free — shall I hold it?',
+    created_at: NOW,
+  },
+  user_achievements: {
+    id: '99999999-9999-9999-9999-999999999999', user_id: UID,
+    achievement_id: 'a1', earned_at: NOW,
+    achievements: {
+      id: 'a1', name: 'First booking', description: 'Booked your first venue',
+      icon: 'Trophy', xp_reward: 50, category: 'booking',
+    },
+  },
+  blocked_dates: {
+    id: 'aaaaaaaa-0000-0000-0000-000000000001', venue_id: IDS.venue,
+    blocked_date: '1970-01-02', reason: 'Maintenance', created_at: NOW,
+  },
+  venue_equipment: {
+    id: 'bbbbbbbb-0000-0000-0000-000000000001', venue_id: IDS.venue,
+    name: 'Match ball', description: 'Size 5', price_per_hour: 500,
+    quantity: 10, is_active: true, created_at: NOW,
+  },
   // The operator outreach table. Absent until now, so the generic `[]` answered
   // it, the table rendered empty, and every control inside a row — including a
   // delete button with no accessible name — had never been rendered by any

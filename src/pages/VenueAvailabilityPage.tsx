@@ -296,8 +296,16 @@ const VenueAvailabilityPage = () => {
                             {format(new Date(blocked.blocked_date), "MMM d, yyyy")}
                             {blocked.reason && ` - ${blocked.reason}`}
                           </span>
+                          {/* Named, like the removable chips in filter-chips.tsx. This was a
+                            bare <button> holding a 12px X: a screen reader
+                            announced "button" and nothing else, so with several
+                            blocked dates listed there was no way to tell which
+                            one it would remove. It had never been reported
+                            because `blocked_dates` was missing from the audit
+                            fixtures, so this list always rendered empty. */}
                           <button
                             onClick={() => handleRemoveBlockedDate(blocked.id)}
+                            aria-label={`Remove the block on ${format(new Date(blocked.blocked_date), "MMM d, yyyy")}`}
                             className="hover:text-destructive"
                           >
                             <X className="h-3 w-3" />
