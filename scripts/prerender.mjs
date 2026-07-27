@@ -33,6 +33,24 @@
  * bundle from the same `<script>` tag, so a browser boots the SPA exactly as
  * before.
  *
+ * That precedence is the assumption this whole file rests on, so it was
+ * checked against the deployed config rather than taken from documentation.
+ * The rewrite source is `/((?!api/).*)`, which matches `/assets/index-*.js` as
+ * readily as it matches `/faq`. Production serves that asset as
+ * `text/javascript`, not as the rewritten HTML:
+ *
+ *   $ curl -I https://www.sportsbnb.org/assets/index-B3ePScqx.js
+ *   200  content-type: text/javascript
+ *
+ * If rewrites ran first, that request would return `index.html` and the app
+ * would not boot at all. It boots, so the filesystem wins.
+ *
+ * One thing that cannot be checked before merging: the Vercel *preview*
+ * deployments for this project sit behind SSO deployment protection and answer
+ * 302 to `vercel.com/sso-api` for an unauthenticated request, so a preview URL
+ * cannot be used to verify crawler-facing output. The artefacts in `dist/` and
+ * the SPA booting from them were both verified locally instead.
+ *
  * ## Why the prose is inside #root
  *
  * `src/main.tsx` uses `createRoot().render()`, not `hydrateRoot()`. React
