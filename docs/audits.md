@@ -120,6 +120,15 @@ the number:
   `achievements`, `booking_intents`. Each is a candidate for the same treatment
   that found nine unnamed controls in an afternoon.
 
+RPCs have the same problem and it is easier to miss, because there is no table
+to count. `get_available_slots` — the function the entire booking flow turns on
+— was answered by the generic `[]` catch-all, so every audit that loaded a venue
+page or the embeddable widget saw a booking panel with **no slots in it**.
+`a11y-names`, `tap-targets`, `focus-visible` and `rendered-contrast` had never
+once seen the control a customer clicks to book. Giving it a fixture made the
+widget and the venue page disagree by four hours within a minute, which is how
+the timezone bug in the booking chain was found.
+
 Adding a fixture is cheap and the payoff is disproportionate. It is the first
 thing to try when an audit is suspiciously quiet about a screen.
 
@@ -202,6 +211,17 @@ it named three:
 
 None threw. None logged. Every browser audit here passed all three routes,
 because every page rendered exactly as designed.
+
+It has a third outcome besides pass and fail. `?ref=` is written by the
+referral card's "Share link" and read by nothing — but the referral programme
+has no backend at all: `referral_credits` has two SELECT policies and no INSERT
+policy, no function writes it, and nothing at checkout can spend a credit.
+Reading the parameter would record nothing. Failing the build there would
+demand that someone invent a product decision to get CI green; passing silently
+would let a dead feature look healthy. So it prints as **UNFINISHED** every run,
+with what is missing and a pointer to `docs/handover.md` §5. Entries in that
+list have to say both — an entry without them is just an exemption, and
+exemption lists are how checks rot.
 
 What it cannot claim, and says so in its own header: a parameter read
 *somewhere* counts as read, so it cannot tell that page A writes one only page
