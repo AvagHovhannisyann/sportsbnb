@@ -12,15 +12,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 source scripts/lib/routes.sh
-# Tap targets at phone width, against WCAG 2.2 SC 2.5.8 including
-# its spacing exception. The app passes today; this holds the line.
-# Its value was never the number — it was that measuring boxes led
-# to twelve sport checkboxes that no keyboard could reach and
-# twenty-five controls a screen reader could not name.
-node scripts/tap-targets.mjs player $PLAYER
-node scripts/tap-targets.mjs owner  $OWNER
-node scripts/tap-targets.mjs admin  $ADMIN
-
 # Every control needs a name. Asks Chrome for the accessible name it
 # actually computes rather than reimplementing the algorithm — 47
 # controls had none, including the notifications bell on every page,
@@ -71,22 +62,6 @@ SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs admin  $ADMIN
 # The empty branch is where the h1 goes missing — see EMPTY_* above.
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs player-empty $EMPTY_PLAYER
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/heading-outline.mjs owner-empty  $EMPTY_OWNER
-
-# WCAG 2.4.2 (Page Titled), Level A. Nothing sets a title in an SPA
-# unless told to, and the string from index.html sits in the tab
-# looking like a real one: 17 of the 35 player routes were still
-# showing "Sportsbnb — Book Sports Venues & Join Games Near You",
-# /login and /settings and the whole checkout chain among them.
-# Titles now come from src/lib/routeTitles.ts via RouteMeta.
-#
-# Duplicates fail too — a title that does not distinguish the page
-# does not describe it. Grouped by the pathname the app *lands* on,
-# so a redirect (/discover to /venues, or /login to /dashboard under
-# the stubbed session) is not mistaken for two pages sharing a name.
-node scripts/page-titles.mjs player $PLAYER
-node scripts/page-titles.mjs owner  $OWNER
-node scripts/page-titles.mjs admin  $ADMIN
-node scripts/page-titles.mjs anon   $ANON
 
 # WCAG 1.3.5 (Identify Input Purpose), Level AA. The app had
 # autoComplete on nothing at all, which in practice means a password

@@ -47,3 +47,24 @@ node scripts/error-affordance.mjs owner  $ERROR_OWNER
 node scripts/loading-status.mjs player /dashboard /teams /games /venues /community /messages
 node scripts/loading-status.mjs owner  /owner-dashboard /owner/venues /owner/bookings /owner/earnings /owner/analytics /owner/equipment
 node scripts/loading-status.mjs admin  /admin /operator
+
+# Moved here from `semantics` to balance the matrix. The fit is looser than
+# tap-targets-into-surface and worth naming: this suite is about what a page
+# reports about itself — that a request failed, that it is still loading — and
+# its title is the same kind of claim. Measured, not guessed: semantics was
+# 17m48s, states 3m18s.
+# WCAG 2.4.2 (Page Titled), Level A. Nothing sets a title in an SPA
+# unless told to, and the string from index.html sits in the tab
+# looking like a real one: 17 of the 35 player routes were still
+# showing "Sportsbnb — Book Sports Venues & Join Games Near You",
+# /login and /settings and the whole checkout chain among them.
+# Titles now come from src/lib/routeTitles.ts via RouteMeta.
+#
+# Duplicates fail too — a title that does not distinguish the page
+# does not describe it. Grouped by the pathname the app *lands* on,
+# so a redirect (/discover to /venues, or /login to /dashboard under
+# the stubbed session) is not mistaken for two pages sharing a name.
+node scripts/page-titles.mjs player $PLAYER
+node scripts/page-titles.mjs owner  $OWNER
+node scripts/page-titles.mjs admin  $ADMIN
+node scripts/page-titles.mjs anon   $ANON

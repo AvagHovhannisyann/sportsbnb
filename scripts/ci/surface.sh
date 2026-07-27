@@ -48,3 +48,16 @@ SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/glass-contrast.mjs --light owner 
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs player $PLAYER
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs owner  $OWNER
 SMOKE_WIDTH=1440 SMOKE_HEIGHT=900 node scripts/numeral-glyphs.mjs admin  $ADMIN
+
+# Moved here from `semantics` to balance the matrix. It belongs: this suite is
+# the geometry one — what is painted where, and whether it moves — and 2.5.8 is
+# a measurement of box sizes. Before the move `semantics` ran 17m48s against
+# 2m59s here, and the whole matrix waited on it.
+# Tap targets at phone width, against WCAG 2.2 SC 2.5.8 including
+# its spacing exception. The app passes today; this holds the line.
+# Its value was never the number — it was that measuring boxes led
+# to twelve sport checkboxes that no keyboard could reach and
+# twenty-five controls a screen reader could not name.
+node scripts/tap-targets.mjs player $PLAYER
+node scripts/tap-targets.mjs owner  $OWNER
+node scripts/tap-targets.mjs admin  $ADMIN
