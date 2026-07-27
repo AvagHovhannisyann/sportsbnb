@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -32,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { useCalendarIntegrations } from "@/hooks/useCalendarIntegrations";
 import { toast } from "sonner";
@@ -56,7 +57,7 @@ const OutlookIcon = ({ className }: { className?: string }) => (
 
 const OwnerIntegrationsPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { data: myVenues = [] } = useOwnerVenues(user?.id);
   
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -64,7 +65,7 @@ const OwnerIntegrationsPage = () => {
   const [externalCalendarUrl, setExternalCalendarUrl] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const { status, isLoading, isConnecting, initiateOAuth, disconnect, refetch } = useCalendarIntegrations(selectedVenueId);
+  const { status, isLoading, isConnecting, initiateOAuth, disconnect } = useCalendarIntegrations(selectedVenueId);
 
   useEffect(() => {
     if (myVenues.length > 0 && !selectedVenueId) {
@@ -81,7 +82,7 @@ const OwnerIntegrationsPage = () => {
   if (authLoading) {
     return (
       <OwnerLayout title="Integrations">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading integrations">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -146,9 +147,12 @@ const OwnerIntegrationsPage = () => {
           {/* Venue Selector */}
           {myVenues.length > 1 && (
             <div>
-              <Label className="mb-2 block">Select Venue</Label>
+              {/* See OwnerSettingsPage: a Label with no `htmlFor` names
+                  nothing. This selector only renders above one venue, which is
+                  why no audit had ever seen it. */}
+              <Label htmlFor="integrations-venue" className="mb-2 block">Select Venue</Label>
               <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger id="integrations-venue" className="w-full max-w-xs">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>
@@ -176,17 +180,17 @@ const OwnerIntegrationsPage = () => {
                         <Icon className="h-8 w-8" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground mb-2">{integration.name}</h3>
+                        <h2 className="font-semibold text-foreground mb-2">{integration.name}</h2>
                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{integration.description}</p>
                         
                         {isLoading ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" role="status" aria-label="Loading integrations">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span className="text-sm text-muted-foreground">Checking status...</span>
                           </div>
                         ) : integration.connected ? (
                           <div className="flex items-center justify-between">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <Badge variant="secondary" className={TONE_CHIP.positive}>
                               <Check className="h-3 w-3 mr-1" />
                               Connected
                             </Badge>
@@ -229,7 +233,7 @@ const OwnerIntegrationsPage = () => {
           {/* iCal Export Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Link2 className="h-5 w-5 text-primary" />
                 Manual Calendar Sync
               </CardTitle>
@@ -244,17 +248,23 @@ const OwnerIntegrationsPage = () => {
                     <Link2 className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-foreground mb-1">Export iCal Feed</h4>
+                    <h3 className="font-medium text-foreground mb-1">Export iCal Feed</h3>
                     <p className="text-sm text-muted-foreground mb-3">
                       Copy this link and add it to any calendar app that supports iCal.
                     </p>
                     <div className="flex items-center gap-2">
                       <Input
+                        aria-label="Calendar feed URL"
                         value={icalFeedUrl}
                         readOnly
                         className="font-mono text-xs bg-background"
                       />
-                      <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Copy calendar feed URL"
+                        onClick={handleCopyLink}
+                      >
                         {copied ? (
                           <Check className="h-4 w-4 text-emerald-600" />
                         ) : (
@@ -289,7 +299,7 @@ const OwnerIntegrationsPage = () => {
           <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10">
             <CardContent className="pt-6">
               <div className="flex gap-4">
-                <AlertCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-medium text-foreground mb-1">Two-way calendar sync</h4>
                   <p className="text-sm text-muted-foreground">
@@ -313,8 +323,9 @@ const OwnerIntegrationsPage = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>iCal URL</Label>
+              <Label htmlFor="external-ical-url">iCal URL</Label>
               <Input
+                id="external-ical-url"
                 placeholder="https://calendar.google.com/calendar/ical/..."
                 value={externalCalendarUrl}
                 onChange={(e) => setExternalCalendarUrl(e.target.value)}

@@ -31,7 +31,7 @@ const Footer = () => {
     <footer className="border-t border-border bg-surface-1 mt-auto">
       <div className="container py-12 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-8">
-          <div className="md:col-span-5 max-w-sm">
+          <div className="md:col-span-4 max-w-sm">
             <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center mb-4 md:mb-5 opacity-90 hover:opacity-100 transition-opacity">
               <Logo variant="full" className="h-8 w-auto" />
             </Link>
@@ -40,18 +40,26 @@ const Footer = () => {
             </p>
           </div>
 
-          <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+          <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
             {linkSections.map((section) => (
               <div key={section.title}>
-                <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-3 md:mb-4 font-semibold">
+                {/* h2, not h4. These are the top-level headings inside the
+                    footer landmark — nothing above them in here is a heading
+                    at all — so h4 skipped two levels from whatever the page
+                    ended on, on every page in the app at once. The size and
+                    weight are set by the utility classes, and the base rule
+                    styles h1–h6 identically, so this is a semantic change with
+                    no visual one: measured before and after, 283x16 at 12px /
+                    600 / Space Grotesk either way. */}
+                <h2 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-3 md:mb-4 font-semibold">
                   {section.title}
-                </h4>
+                </h2>
                 <ul className="space-y-2.5 md:space-y-3">
                   {section.links.map((link) => (
                     <li key={link.href}>
                       <Link
                         to={link.href}
-                        className="text-sm text-foreground-soft hover:text-foreground transition-colors"
+                        className="focus-ring rounded-sm text-sm text-foreground-soft transition-colors hover:text-foreground"
                       >
                         {link.label}
                       </Link>

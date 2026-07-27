@@ -111,6 +111,8 @@ const SecurityTab = () => {
                 className={passwordErrors.currentPassword ? "border-destructive pr-10" : "pr-10"}
               />
               <button
+                      aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showCurrentPassword}
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -134,6 +136,8 @@ const SecurityTab = () => {
                 className={passwordErrors.newPassword ? "border-destructive pr-10" : "pr-10"}
               />
               <button
+                      aria-label={showNewPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showNewPassword}
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -187,6 +191,8 @@ const SecurityTab = () => {
                 className={passwordErrors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
               />
               <button
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showConfirmPassword}
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

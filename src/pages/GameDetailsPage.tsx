@@ -1,8 +1,10 @@
 import { useState } from "react";
+import SEOHead, { createSportsEventJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
+import { venueLocalToInstant, addHoursToInstant } from "@/lib/venueTime";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
-  MapPin, Calendar, Clock, Users, ArrowLeft, Loader2, 
-  Share2, DollarSign, AlertTriangle, CreditCard, Check, X, UserPlus
+  MapPin, Calendar, Clock, ArrowLeft, Loader2, 
+  Share2, Banknote, AlertTriangle, CreditCard, Check, X, UserPlus, CalendarX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   useGameById, 
@@ -35,6 +38,8 @@ import { ChatButton } from "@/components/chat/ChatButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { formatTimeRange } from "@/lib/time";
+import { skillLevelChip, skillLevelLabel } from "@/lib/chips";
 
 const GameDetailsPage = () => {
   const { id } = useParams();
@@ -42,7 +47,13 @@ const GameDetailsPage = () => {
   const { user } = useAuth();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
-  const { data: game, isLoading } = useGameById(id);
+  const {
+    data: game,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useGameById(id);
   const requestToJoin = useRequestToJoinGame();
   const leaveGame = useLeaveGame();
   const cancelGame = useCancelGame();
@@ -52,8 +63,23 @@ const GameDetailsPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading the game">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // A failed request is not evidence that the game is gone.
+  if (isError) {
+    return (
+      <Layout>
+        <div className="container">
+          <ErrorPanel what="this game" onRetry={() => refetch()} isRetrying={isFetching}>
+            <Button variant="outline" asChild>
+              <Link to="/games">Back to games</Link>
+            </Button>
+          </ErrorPanel>
         </div>
       </Layout>
     );
@@ -62,11 +88,16 @@ const GameDetailsPage = () => {
   if (!game) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Game not found</h1>
-          <Link to="/games">
-            <Button>Back to Games</Button>
-          </Link>
+        <div className="container">
+          <StatusPanel
+            icon={CalendarX}
+            title="Game not found"
+            description="This game may have been cancelled by its host, or the link is out of date."
+          >
+            <Button asChild>
+              <Link to="/games">Browse games</Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );
@@ -80,13 +111,6 @@ const GameDetailsPage = () => {
   const isFull = spotsLeft <= 0;
   const isCancelled = game.status === "cancelled";
   const isPaidGame = game.price_per_player > 0;
-
-  const levelColors: Record<string, string> = {
-    beginner: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    intermediate: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    advanced: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    all: "bg-primary/10 text-primary",
-  };
 
   const handleRequestToJoin = async () => {
     if (!user) {
@@ -203,8 +227,48 @@ const GameDetailsPage = () => {
     .join("")
     .toUpperCase() || "H";
 
+  // Venue-local wall clock to a real instant, so the Event carries the hour the
+  // game actually starts rather than the browser's reading of it.
+  const startsAt = venueLocalToInstant(game.game_date, game.game_time);
+  const endsAt = startsAt ? addHoursToInstant(startsAt, game.duration_hours) : null;
+
   return (
     <Layout>
+      {/* This page had no SEOHead, so every game shared the route table's
+          "Game Details" — one title across every game on the platform. */}
+      <SEOHead
+        title={`${game.title} — ${game.sport} in ${game.location}`}
+        description={
+          game.description ||
+          `Join this ${game.sport.toLowerCase()} game at ${game.location}. ${
+            isCancelled ? "This game has been cancelled." : `${Math.max(0, spotsLeft)} of ${game.max_players} places left.`
+          }`
+        }
+        canonical={`/game/${id}`}
+        type="article"
+        jsonLd={[
+          createSportsEventJsonLd({
+            id: id!,
+            title: game.title,
+            sport: game.sport,
+            description: game.description,
+            location: game.location,
+            startsAt,
+            endsAt,
+            pricePerPlayer: game.price_per_player ?? 0,
+            maxPlayers: game.max_players,
+            spotsLeft,
+            isCancelled,
+            latitude: game.latitude,
+            longitude: game.longitude,
+          }),
+          createBreadcrumbJsonLd([
+            { name: "Home", url: "/" },
+            { name: "Games", url: "/games" },
+            { name: game.title, url: `/game/${id}` },
+          ]),
+        ]}
+      />
       <div className="bg-background min-h-screen">
         {/* Back Navigation */}
         <div className="container py-4">
@@ -232,8 +296,8 @@ const GameDetailsPage = () => {
                 
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <Badge variant="secondary">{game.sport}</Badge>
-                  <Badge className={levelColors[game.skill_level] || levelColors.all}>
-                    {game.skill_level === "all" ? "All levels" : game.skill_level}
+                  <Badge className={`capitalize ${skillLevelChip(game.skill_level)}`}>
+                    {skillLevelLabel(game.skill_level)}
                   </Badge>
                   {isFull && !isCancelled && (
                     <Badge variant="outline">Full</Badge>
@@ -256,8 +320,6 @@ const GameDetailsPage = () => {
                   </div>
                 </div>
               </div>
-
-              <Separator />
 
               {/* Game Info */}
               <div className="grid grid-cols-2 gap-4">
@@ -286,7 +348,7 @@ const GameDetailsPage = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Time</p>
                         <p className="font-medium text-foreground">
-                          {game.game_time} ({game.duration_hours}h)
+                          {formatTimeRange(game.game_time, game.duration_hours)}
                         </p>
                       </div>
                     </div>
@@ -311,7 +373,7 @@ const GameDetailsPage = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <DollarSign className="h-5 w-5 text-primary" />
+                        <Banknote className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cost</p>
@@ -326,25 +388,19 @@ const GameDetailsPage = () => {
 
               {/* Description */}
               {game.description && (
-                <>
-                  <Separator />
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-3">About this game</h2>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{game.description}</p>
-                  </div>
-                </>
+                <section className="panel">
+                  <h2 className="section-title">About this game</h2>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{game.description}</p>
+                </section>
               )}
-
-              <Separator />
 
               {/* Pending Requests - Only visible to host */}
               {isHost && pendingParticipants.length > 0 && (
-                <>
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <UserPlus className="h-5 w-5" />
-                      Join Requests ({pendingParticipants.length})
-                    </h2>
+                <section className="panel">
+                  <h2 className="section-title flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Join Requests ({pendingParticipants.length})
+                  </h2>
                     <div className="space-y-3">
                       {pendingParticipants.map((participant: GameParticipant) => {
                         const initials = participant.profile?.full_name
@@ -394,17 +450,15 @@ const GameDetailsPage = () => {
                         );
                       })}
                     </div>
-                  </div>
-                  <Separator />
-                </>
+                </section>
               )}
 
               {/* Participants */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">
+              <section className="panel">
+                <h2 className="section-title">
                   Players ({game.participant_count || 0}/{game.max_players})
                 </h2>
-                
+
                 {game.participants && game.participants.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {game.participants.map((participant) => {
@@ -434,7 +488,7 @@ const GameDetailsPage = () => {
                 ) : (
                   <p className="text-muted-foreground">No players have joined yet. Be the first!</p>
                 )}
-              </div>
+              </section>
             </div>
 
             {/* Sidebar */}
@@ -442,7 +496,11 @@ const GameDetailsPage = () => {
               <Card className="sticky top-24">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Join Game</span>
+                    {/* The panel is headed by what it does *now*. It said
+                        "Join Game" unconditionally, so a player already in the
+                        game read "Join Game" above a "Leave Game" button, and
+                        the host read it above their own management actions. */}
+                    <span>{isHost ? "Your game" : isParticipant ? "You're in" : "Join Game"}</span>
                     <Badge variant={isFull ? "secondary" : "default"}>
                       {spotsLeft} spots left
                     </Badge>
@@ -476,11 +534,16 @@ const GameDetailsPage = () => {
                     </Button>
                   ) : isHost ? (
                     <div className="space-y-2">
-                      <Link to={`/game/${game.id}/edit`} className="block">
-                        <Button variant="outline" className="w-full">
-                          Edit Game
-                        </Button>
-                      </Link>
+                      {/* "Edit Game" used to be here, linking to
+                          /game/:id/edit — a route that has never existed, so
+                          the host's most prominent control served the 404
+                          page. Removed rather than built: unlike a team, a
+                          game has people who joined on its stated time, price
+                          and player count, and changing those under them needs
+                          a rule about who is told and what happens to anyone
+                          who no longer agrees. That is a product decision, not
+                          a missing page — see §5 of docs/handover.md. Cancel,
+                          below, is the honest recourse in the meantime. */}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" className="w-full">

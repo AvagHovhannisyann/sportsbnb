@@ -1,29 +1,61 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addDays, format } from "date-fns";
 import { CalendarDays, Clock, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCreateBookingHold, formatAmd } from "./hooks/useBookingFlow";
+import { useVenueHours } from "@/hooks/useAvailability";
+import { useVenuePolicy } from "@/hooks/useVenuePolicies";
+import { VENUE_TIME_ZONE, atVenue } from "@/lib/venueTime";
 
 interface BookingPanelProps {
   venueId: string;
   pricePerHour: number;
   currencySymbol?: string;
+  /** Dates the owner has closed. Distinct from the weekly opening hours, and
+      distinct again from every slot being taken — all three produce an empty
+      slot list and mean different things to whoever is trying to book. */
+  blockedDates?: { blocked_date: string }[];
+  /**
+   * A date and wall-clock time to arrive pre-selected on, from `?date=` and
+   * `?time=`.
+   *
+   * The embeddable widget's Book Now button has always put those in the URL and
+   * nothing has ever read them: a customer picked Saturday 18:00 inside an
+   * owner's embedded widget, pressed the button, and landed here with no date
+   * and no time chosen, to do it again. On the surface whose entire job is to
+   * turn a slot choice into a booking.
+   */
+  initialDate?: string | null;
+  initialTime?: string | null;
 }
 
 /**
  * Airbnb-style booking card: pick a date, pick a free hour slot, reserve.
  * Reserving creates a 20-minute payment hold and moves to checkout.
  */
-export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
+export function BookingPanel({
+  venueId,
+  pricePerHour,
+  blockedDates = [],
+  initialDate = null,
+  initialTime = null,
+}: BookingPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  // Only a date this strip actually offers. A stale link to last month would
+  // otherwise select a date with no button to show it as selected, and no way
+  // back to today.
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    if (!initialDate || !/^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return today;
+    const last = format(addDays(new Date(), 13), "yyyy-MM-dd");
+    return initialDate >= today && initialDate <= last ? initialDate : today;
+  });
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const dates = useMemo(
@@ -40,22 +72,54 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
     [],
   );
 
-  const { data: slots, isLoading: slotsLoading } = useAvailableSlots(venueId, selectedDate);
+  const {
+    data: slots,
+    isLoading: slotsLoading,
+    isError: slotsError,
+    refetch: refetchSlots,
+    isFetching: slotsFetching,
+  } = useAvailableSlots(venueId, selectedDate);
   const createHold = useCreateBookingHold();
 
-  const { data: policy } = useQuery({
-    queryKey: ["venue-policy", venueId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("venue_policies")
-        .select("cancellation_policy, cancellation_hours, refund_type")
-        .eq("venue_id", venueId)
-        .maybeSingle();
-      return data;
-    },
-  });
+  // The venue's weekly opening hours, so an empty slot list can be read
+  // correctly. Same query key the page already uses, so React Query serves it
+  // from cache rather than fetching twice.
+  const { data: venueHours = [] } = useVenueHours(venueId);
+  const blockedToday = useMemo(
+    () => blockedDates.some((b) => b.blocked_date === selectedDate),
+    [blockedDates, selectedDate],
+  );
+  const closedToday = useMemo(() => {
+    const dow = new Date(`${selectedDate}T00:00:00`).getDay();
+    const row = venueHours.find((h) => h.day_of_week === dow);
+    return row ? row.is_closed : null;
+  }, [venueHours, selectedDate]);
 
+  /**
+   * The shared hook, not a second query under the same cache key.
+   *
+   * This used to be its own `useQuery` with `queryKey: ["venue-policy", venueId]`
+   * — byte for byte the key `useVenuePolicy` uses — but selecting three columns
+   * where that one selects `*`. Same key, different shape: whichever ran first
+   * populated the cache, and the other read it back. An owner who looked at
+   * their own venue page and then opened Policies got the form filled from a
+   * row with three columns in it, every other field reading as undefined; the
+   * reverse order silently worked, which is the worst property a bug can have.
+   *
+   * `select("*")` here costs a few unused columns and removes the collision
+   * entirely. The error is still surfaced rather than swallowed — see below for
+   * why "the lookup failed" and "no custom policy" must not look the same.
+   */
+  const { data: policy, isError: policyError } = useVenuePolicy(venueId);
+
+  // A null row genuinely means "no custom policy, platform default applies",
+  // so the ?? fallbacks are right in that case. A *failed* lookup is different:
+  // it used to land on the same fallbacks and print "Free cancellation until
+  // 24h before start" for a venue that may be non-refundable — a refund promise
+  // the platform invented, shown immediately above the pay button. When the
+  // terms are unknown, say so rather than guess.
   const policyText = (() => {
+    if (policyError) return "Cancellation terms couldn't be loaded — check before you pay.";
     const hours = policy?.cancellation_hours ?? 24;
     const refundType = policy?.refund_type ?? "full";
     if (refundType === "none") return "Non-refundable after payment.";
@@ -86,14 +150,54 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
     }
   };
 
+  /**
+   * Match `?time=18:00` to a slot once the slots for that date have arrived.
+   *
+   * The parameter is a venue-local wall clock — that is what the widget
+   * displayed and what the customer chose — while a slot is an instant, so the
+   * comparison has to be made in the venue's zone rather than the browser's.
+   *
+   * Applies once. `appliedInitialTime` stops it re-selecting the slot after
+   * someone has deliberately picked a different one and the query refetches.
+   */
+  const appliedInitialTime = useRef(false);
+  useEffect(() => {
+    if (appliedInitialTime.current || !initialTime || !slots?.length) return;
+    if (!/^\d{2}:\d{2}$/.test(initialTime)) {
+      appliedInitialTime.current = true;
+      return;
+    }
+    const fmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: VENUE_TIME_ZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const match = slots.find(
+      (slot) => slot.available && fmt.format(new Date(slot.slot_start)) === initialTime,
+    );
+    if (match) setSelectedSlot(match.slot_start);
+    appliedInitialTime.current = true;
+  }, [slots, initialTime]);
+
   const selected = slots?.find((s) => s.slot_start === selectedSlot);
 
   return (
+    // Every figure in this panel goes through formatAmd. Two of them used to
+    // build the string inline — `֏{pricePerHour.toLocaleString()}` — while the
+    // fee and total below used the helper, so one panel converted major to
+    // minor units in two places and hardcoded the symbol in two more. Same
+    // pixels today; a currency or locale change would have landed on half of
+    // the breakdown and left the header quoting the old one.
     <div className="glass rounded-2xl p-6">
       <div className="flex items-baseline justify-between mb-4">
         <div>
-          <span className="stat-numeral text-2xl font-bold">֏{pricePerHour.toLocaleString()}</span>
-          <span className="text-muted-foreground"> / hour</span>
+          <Price
+            amount={pricePerHour}
+            suffix="/ hour"
+            className="text-2xl font-bold"
+            suffixClassName="text-muted-foreground"
+          />
         </div>
       </div>
 
@@ -130,15 +234,50 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
           <Clock className="h-4 w-4" /> Time
         </p>
         {slotsLoading ? (
-          <div className="flex items-center justify-center py-6 text-muted-foreground">
+          <div className="flex items-center justify-center py-6 text-muted-foreground" role="status" aria-label="Loading availability">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
+        ) : slotsError ? (
+          /* Three different things used to print "Closed on this day.": the
+             venue being shut that weekday, every hour already taken, and the
+             availability lookup failing outright. Only the first is true, and
+             the third told a paying customer the place was closed because a
+             request errored — the page even contradicted itself, listing
+             08:00-23:00 under Operating Hours directly beside it. */
+          <div className="py-2 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Couldn&apos;t load available times.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchSlots()}
+              disabled={slotsFetching}
+            >
+              {slotsFetching ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Retrying
+                </>
+              ) : (
+                "Try again"
+              )}
+            </Button>
+          </div>
         ) : !slots || slots.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">Closed on this day.</p>
+          <p className="text-sm text-muted-foreground py-2">
+            {blockedToday
+              ? "The owner has closed this date."
+              : closedToday === false
+                ? "Fully booked on this date — try another day."
+                : "Closed on this day."}
+          </p>
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {slots.map((slot) => {
-              const label = format(new Date(slot.slot_start), "HH:mm");
+              // `atVenue`, not the raw instant: date-fns formats in the browser's zone,
+              // so this printed 14:00 for an 18:00 Yerevan slot to anyone outside
+              // UTC+4 — the number the whole booking decision is made on.
+              const label = format(atVenue(slot.slot_start), "HH:mm");
               return (
                 <button
                   key={slot.slot_start}
@@ -165,7 +304,7 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
         <div className="mb-4 rounded-lg bg-muted/50 p-3 text-sm space-y-1">
           <div className="flex justify-between">
             <span className="text-muted-foreground">1 hour</span>
-            <span>֏{pricePerHour.toLocaleString()}</span>
+            <span>{formatAmd(pricePerHour * 100)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Service fee (5%)</span>
@@ -187,7 +326,9 @@ export function BookingPanel({ venueId, pricePerHour }: BookingPanelProps) {
           <ShieldCheck className="h-3.5 w-3.5" />
           Secure payment via Ameriabank / Idram
         </p>
-        <p className="text-xs text-muted-foreground">{policyText}</p>
+        <p className={policyError ? "text-xs font-medium text-warning" : "text-xs text-muted-foreground"}>
+          {policyText}
+        </p>
       </div>
     </div>
   );

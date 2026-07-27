@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import SEOHead from "@/components/seo/SEOHead";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, LayoutGrid, Map, Navigation, MapPinOff } from "lucide-react";
+import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, LayoutGrid, Map, Navigation, MapPinOff, Banknote } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -15,11 +16,18 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { sportTypes } from "@/data/constants";
 import Layout from "@/components/layout/Layout";
+import { FilterChips } from "@/components/ui/filter-chips";
+import { describeActiveGameFilters } from "@/features/games/activeFilters";
+import { ErrorPanel } from "@/components/common/StatusPanel";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useGames, type Game } from "@/hooks/useGames";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import GamesMapView from "@/components/games/GamesMapView";
 import { toast } from "sonner";
+import { formatTimeOfDay } from "@/lib/time";
+import { formatPrice } from "@/lib/pricing";
+import { skillLevelChip, skillLevelLabel } from "@/lib/chips";
 
 type GameWithDistance = Game & { distance?: number | null };
 
@@ -27,30 +35,35 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
   const spotsLeft = game.max_players - (game.participant_count || 0);
   const isFull = spotsLeft <= 0;
 
-  const levelColors: Record<string, string> = {
-    beginner: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    intermediate: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    advanced: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    all: "bg-primary/10 text-primary",
-  };
-
   return (
-    <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all duration-200">
+    <div className="card-lift rounded-xl border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary">{game.sport}</Badge>
-            <Badge className={levelColors[game.skill_level] || levelColors.all}>
-              {game.skill_level === "all" ? "All levels" : game.skill_level}
+            <Badge className={`capitalize ${skillLevelChip(game.skill_level)}`}>
+              {skillLevelLabel(game.skill_level)}
             </Badge>
           </div>
-          <h3 className="font-semibold text-foreground text-lg">{game.title}</h3>
+          <h2 className="font-semibold text-foreground text-lg">{game.title}</h2>
         </div>
+        {/* One statement, not two numbers.
+            This read "10 spots" over "of 10 left" — the same figure twice in
+            different words, stacked, which scans as two competing counts. What
+            someone deciding actually wants is how many places remain. */}
         <div className="text-right shrink-0">
-          <div className={`text-lg font-semibold ${isFull ? "text-muted-foreground" : "text-primary"}`}>
-            {spotsLeft} spots
-          </div>
-          <div className="text-sm text-muted-foreground">of {game.max_players} left</div>
+          {isFull ? (
+            <div className="text-lg font-semibold text-muted-foreground">Full</div>
+          ) : (
+            <>
+              <div className="stat-numeral text-lg font-semibold tabular-nums text-primary">
+                {spotsLeft}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {spotsLeft === 1 ? "spot left" : "spots left"}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -74,28 +87,82 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            <span>{game.game_time}</span>
+            <span>{formatTimeOfDay(game.game_time)}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Users className="h-4 w-4" />
-          <span>Hosted by {game.host?.full_name || "Anonymous"}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>Hosted by {game.host?.full_name || "Anonymous"}</span>
+          </div>
+          {/* The cost was on no card at all, so deciding between three games
+              meant opening all three. A free game is worth saying out loud
+              rather than leaving as an absence. */}
+          <div className="flex items-center gap-2">
+            <Banknote className="h-4 w-4" />
+            {game.price_per_player ? (
+              <span className="font-medium text-foreground">
+                {formatPrice(game.price_per_player)}
+                <span className="font-normal text-muted-foreground"> per player</span>
+              </span>
+            ) : (
+              <span className="font-medium text-success">Free</span>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <Link to={`/game/${game.id}`} className="flex-1">
-          <Button variant={isFull ? "secondary" : "default"} className="w-full" disabled={isFull}>
-            {isFull ? "Full" : "Request to Join"}
-          </Button>
-        </Link>
-        <Link to={`/game/${game.id}`}>
-          <Button variant="outline">Details</Button>
-        </Link>
+        <Button asChild variant={isFull ? "secondary" : "default"} className="flex-1 w-full" disabled={isFull}>
+          <Link to={`/game/${game.id}`}>{isFull ? "Full" : "Request to Join"}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to={`/game/${game.id}`}>Details</Link>
+        </Button>
       </div>
     </div>
   );
 };
+
+/**
+ * The loading shape of the card above.
+ *
+ * `/games` showed one 32px spinner and the words "Loading games..." in an
+ * otherwise empty page, while `/discover` — one nav click away — showed a full
+ * grid of skeleton cards in the final layout. A spinner says "wait"; a
+ * skeleton says "here is what is arriving, and where".
+ *
+ * Every block mirrors a real element: the two chips, the title, the spots
+ * counter on the right, three rows of metadata, and the two footer buttons.
+ */
+const GameCardSkeleton = () => (
+  <div className="rounded-xl border border-border bg-card p-5">
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-center gap-2">
+          <Skeleton className="h-5 w-16 rounded-full bg-surface-2" />
+          <Skeleton className="h-5 w-20 rounded-full bg-surface-2" />
+        </div>
+        <Skeleton className="h-6 w-3/4 bg-surface-3" />
+      </div>
+      <div className="shrink-0 space-y-1.5 text-right">
+        <Skeleton className="ml-auto h-6 w-8 bg-surface-3" />
+        <Skeleton className="ml-auto h-4 w-16 bg-surface-2" />
+      </div>
+    </div>
+
+    <div className="mb-4 space-y-2">
+      <Skeleton className="h-4 w-2/3 bg-surface-2" />
+      <Skeleton className="h-4 w-1/2 bg-surface-2" />
+      <Skeleton className="h-4 w-3/5 bg-surface-2" />
+    </div>
+
+    <div className="flex items-center gap-3">
+      <Skeleton className="h-10 flex-1 bg-surface-3" />
+      <Skeleton className="h-10 w-20 bg-surface-2" />
+    </div>
+  </div>
+);
 
 const GamesPage = () => {
   const navigate = useNavigate();
@@ -108,7 +175,13 @@ const GamesPage = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  const { data: games = [], isLoading } = useGames({
+  const {
+    data: games = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useGames({
     sport: selectedSport || undefined,
     level: selectedLevel || undefined,
     search: searchQuery || undefined,
@@ -164,6 +237,25 @@ const GamesPage = () => {
   };
 
   const hasActiveFilters = searchQuery || selectedSport || selectedLevel || userLocation;
+
+  const activeFilters = useMemo(
+    () =>
+      describeActiveGameFilters({
+        searchQuery,
+        selectedSport,
+        selectedLevel,
+        hasLocation: !!userLocation,
+      }),
+    [searchQuery, selectedSport, selectedLevel, userLocation],
+  );
+
+  /** Drop one filter, leaving the rest alone. */
+  const clearGameFilter = (key: string) => {
+    if (key === "query") setSearchQuery("");
+    else if (key === "sport") setSelectedSport("");
+    else if (key === "level") setSelectedLevel("");
+    else if (key === "location") setUserLocation(null);
+  };
 
   const handleCreateGame = () => {
     if (!user) {
@@ -222,7 +314,7 @@ const GamesPage = () => {
                 )}
                 
                 <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger className="w-[160px] h-12">
+                  <SelectTrigger aria-label="Sport type" className="w-[160px] h-12">
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -235,7 +327,7 @@ const GamesPage = () => {
                 </Select>
                 
                 <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                  <SelectTrigger className="w-[160px] h-12">
+                  <SelectTrigger aria-label="Skill level" className="w-[160px] h-12">
                     <SelectValue placeholder="Skill level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,7 +395,7 @@ const GamesPage = () => {
                 )}
                 
                 <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger aria-label="Sport type" className="h-12">
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -316,7 +408,7 @@ const GamesPage = () => {
                 </Select>
                 
                 <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger aria-label="Skill level" className="h-12">
                     <SelectValue placeholder="Skill level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -347,7 +439,8 @@ const GamesPage = () => {
         <div className="container py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">Open Games</h1>
+              <p className="eyebrow mb-2">Find a match</p>
+              <h1 className="page-title">Open Games</h1>
               <p className="text-muted-foreground">
                 {games.length} {games.length === 1 ? "game" : "games"} looking for players
               </p>
@@ -362,10 +455,28 @@ const GamesPage = () => {
             </ToggleGroup>
           </div>
 
+          {/* Same gap Discover had: the page filtered on four things and
+              showed a count of them on the Filters button, which says how many
+              are hidden without naming one, and offers no way to drop a single
+              one. */}
+          <FilterChips
+            className="mb-6"
+            chips={activeFilters}
+            onRemove={clearGameFilter}
+            onClearAll={clearFilters}
+          />
+
           {isLoading ? (
-            <div className="text-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading games...</p>
+            // Same grid, same card footprint, so nothing moves when the real
+            // games land in it.
+            <div
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              role="status"
+              aria-label="Loading games"
+            >
+              {Array.from({ length: 6 }, (_, i) => (
+                <GameCardSkeleton key={i} />
+              ))}
             </div>
           ) : games.length > 0 ? (
             viewMode === "map" ? (
@@ -377,30 +488,22 @@ const GamesPage = () => {
                 ))}
               </div>
             )
+          ) : isError ? (
+            <ErrorPanel what="games" onRetry={() => refetch()} isRetrying={isFetching} />
           ) : (
-            <div className="text-center py-16">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Search className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No games found</h3>
-              <p className="text-muted-foreground mb-4">
-                {hasActiveFilters 
+            <EmptyState
+              icon={Search}
+              title="No games found"
+              description={
+                hasActiveFilters
                   ? "Try adjusting your filters or create your own game"
                   : "Be the first to create a game and find players!"
-                }
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters}>
-                    Clear filters
-                  </Button>
-                )}
-                <Button onClick={handleCreateGame}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Game
-                </Button>
-              </div>
-            </div>
+              }
+              actionLabel="Create Game"
+              onAction={handleCreateGame}
+              secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+              onSecondaryAction={clearFilters}
+            />
           )}
         </div>
       </div>

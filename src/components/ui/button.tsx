@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default:
           "bg-primary text-primary-foreground hover:bg-primary/92 shadow-sm hover:shadow",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
+          "bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90 shadow-sm",
         outline:
           "border border-border-strong bg-card text-foreground hover:bg-accent hover:border-foreground/30 shadow-xs",
         secondary:
@@ -27,8 +27,14 @@ const buttonVariants = cva(
           "border border-foreground/15 bg-card/80 backdrop-blur text-foreground hover:bg-card hover:border-foreground/30 shadow-sm",
         subtle:
           "bg-surface-1 text-foreground hover:bg-surface-3 border border-border",
+        // For use on a `bg-secondary` surface, which is where its name points
+        // and its only call site sits. It previously resolved to --foreground,
+        // which on the light secondary panel is the *same colour as the
+        // background* — the button rendered at full size, took its place in
+        // the flex row, and was simply invisible, which read as the adjacent
+        // primary CTA being off-centre.
         secondaryOutline:
-          "border border-foreground/20 text-foreground bg-transparent hover:bg-foreground/5",
+          "border border-secondary-foreground/25 text-secondary-foreground bg-transparent hover:bg-secondary-foreground/5",
         soft:
           "bg-primary-soft text-primary hover:bg-primary-soft/70",
       },

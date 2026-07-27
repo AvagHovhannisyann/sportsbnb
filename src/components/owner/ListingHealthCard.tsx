@@ -1,11 +1,12 @@
 import { useMemo } from "react";
+import { scoreVenue } from "./listingHealth";
 import { Link } from "react-router-dom";
 import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useOwnerVenues, type Venue } from "@/hooks/useVenues";
+import { useOwnerVenues } from "@/hooks/useVenues";
 import { useOwnerLeads, summarizeLeads } from "@/hooks/useLeads";
 
 /**
@@ -16,7 +17,13 @@ export function ListingHealthCard() {
   const { user } = useAuth();
   const { data: venues = [], isLoading } = useOwnerVenues(user?.id);
   const { data: leads = [] } = useOwnerLeads();
-  const responseRate = useMemo(() => summarizeLeads(leads).responseRate, [leads]);
+  // null, not 0, when there is nothing in the window to measure: booking_intents
+  // stopped receiving rows when the WhatsApp handoff was removed, so a 0 here
+  // means "no data", not "this owner ignores people".
+  const responseRate = useMemo(() => {
+    const { total7d, responseRate: rate } = summarizeLeads(leads);
+    return total7d === 0 ? null : rate;
+  }, [leads]);
 
   const scored = useMemo(() => venues.map((v) => scoreVenue(v, responseRate)), [venues, responseRate]);
   const overall = scored.length
@@ -33,7 +40,7 @@ export function ListingHealthCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <div className="py-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          <div className="py-6 flex justify-center" role="status" aria-label="Loading listing health"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : venues.length === 0 ? (
           <p className="text-sm text-muted-foreground">Add a venue to see your listing health score.</p>
         ) : (
@@ -62,9 +69,9 @@ export function ListingHealthCard() {
                             <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
                             <span>{issue.label}</span>
                           </span>
-                          <Link to={issue.fixHref ?? `/venue/${s.id}/edit`}>
-                            <Button variant="link" size="sm" className="h-auto p-0 text-xs">Fix</Button>
-                          </Link>
+                          <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
+                            <Link to={issue.fixHref ?? `/venue/${s.id}/edit`}>Fix</Link>
+                          </Button>
                         </li>
                       ))}
                     </ul>
@@ -85,57 +92,8 @@ export function ListingHealthCard() {
 
 function scoreColor(score: number) {
   if (score >= 80) return "text-emerald-600";
-  if (score >= 50) return "text-amber-600";
-  return "text-rose-600";
+  if (score >= 50) return "text-warning";
+  return "text-destructive";
 }
 
-interface VenueScore {
-  id: string;
-  name: string;
-  score: number;
-  issues: Array<{ label: string; fixHref?: string }>;
-}
 
-function scoreVenue(v: Venue, responseRate: number): VenueScore {
-  const issues: VenueScore["issues"] = [];
-  let score = 0;
-
-  // Photo (25 pts)
-  if (v.image_url) score += 25;
-  else issues.push({ label: "Add a cover photo" });
-
-  // Description (15 pts)
-  const descLen = (v.description ?? "").trim().length;
-  if (descLen >= 80) score += 15;
-  else if (descLen > 0) { score += 7; issues.push({ label: "Expand your description (80+ chars)" }); }
-  else issues.push({ label: "Add a description" });
-
-  // Location confirmed (10 pts)
-  if (v.location_confirmed) score += 10;
-  else issues.push({ label: "Confirm exact location on map" });
-
-  // Contact channels (10 pts)
-  if (v.whatsapp_enabled || v.sms_enabled || v.phone) score += 10;
-  else issues.push({ label: "Enable WhatsApp or phone contact" });
-
-  // Sports (5 pts)
-  if ((v.sports?.length ?? 0) > 0) score += 5;
-  else issues.push({ label: "List supported sports" });
-
-  // Amenities (5 pts)
-  if ((v.amenities?.length ?? 0) >= 3) score += 5;
-  else if ((v.amenities?.length ?? 0) > 0) score += 2;
-  else issues.push({ label: "Add at least 3 amenities" });
-
-  // Reputation (15 pts)
-  if (v.review_count >= 5) score += 15;
-  else if (v.review_count > 0) { score += 8; issues.push({ label: "Get more reviews (5+ unlocks full credit)" }); }
-  else issues.push({ label: "No reviews yet — share your link" });
-
-  // Response rate (15 pts) — pulled from owner-wide signal
-  const rr = Math.max(0, Math.min(100, responseRate));
-  score += Math.round(rr * 0.15);
-  if (rr < 70) issues.push({ label: `Reply faster — ${rr}% response rate` });
-
-  return { id: v.id, name: v.name, score: Math.min(100, score), issues };
-}

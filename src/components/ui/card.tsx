@@ -23,9 +23,27 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h3
+/**
+ * `as` exists because a card title's correct heading level depends on where
+ * the card sits, and this component cannot know that.
+ *
+ * It was a hardcoded `h3`. On a page whose only other heading is its `h1`,
+ * that skips a level — measured across fourteen routes, `/profile`,
+ * `/dashboard` and `/team/:id` all jumped h1 → h3 at their first card. On
+ * `/community`, where cards sit under `h2` section headings, `h3` is exactly
+ * right. One default cannot serve both, so the default stays `h3` — the common
+ * case, and no call site changes — and the pages that need `h2` say so.
+ *
+ * Styling is entirely in the utility classes and the base rule treats h1–h6
+ * alike, so the tag carries no visual weight.
+ */
+type CardTitleProps = React.HTMLAttributes<HTMLHeadingElement> & {
+  as?: "h1" | "h2" | "h3" | "h4";
+};
+
+const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
+  ({ className, as: Tag = "h3", ...props }, ref) => (
+    <Tag
       ref={ref}
       className={cn("font-display text-xl font-semibold leading-tight tracking-extra-tight", className)}
       {...props}

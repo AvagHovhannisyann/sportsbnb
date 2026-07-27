@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import SEOHead from "@/components/seo/SEOHead";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Target, Users, Globe, ArrowRight, Eye, Heart, Shield, Sparkles } from "lucide-react";
+import { Target, Users, Globe, Eye, Shield, Sparkles } from "lucide-react";
 
 const AboutPage = () => {
   const values = [
@@ -114,7 +114,7 @@ const AboutPage = () => {
         </section>
 
         {/* CTA */}
-        <section className="py-16 md:py-24 bg-secondary">
+        <section className="surface-invert py-16 md:py-24 bg-secondary">
           <div className="container">
             <div className="max-w-2xl mx-auto text-center">
               <h2 className="text-3xl font-bold text-secondary-foreground mb-4">
@@ -124,16 +124,12 @@ const AboutPage = () => {
                 Join players and venue owners on Sportsbnb.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/signup">
-                  <Button size="lg" variant="hero">
-                    Get started free
-                  </Button>
-                </Link>
-                <Link to="/contact">
-                  <Button size="lg" variant="hero" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-secondary">
-                    Contact us
-                  </Button>
-                </Link>
+                <Button asChild size="lg" variant="hero">
+                  <Link to="/signup">Get started free</Link>
+                </Button>
+                <Button asChild size="lg" variant="hero" className="border-2 border-foreground/30 bg-transparent text-foreground hover:bg-foreground hover:text-background">
+                  <Link to="/contact">Contact us</Link>
+                </Button>
               </div>
             </div>
           </div>

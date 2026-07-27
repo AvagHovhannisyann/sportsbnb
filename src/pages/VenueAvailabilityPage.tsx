@@ -132,7 +132,7 @@ const VenueAvailabilityPage = () => {
   if (authLoading || venueLoading || hoursLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading availability">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       </Layout>
@@ -156,8 +156,8 @@ const VenueAvailabilityPage = () => {
         <div className="container py-8 max-w-3xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Availability Settings</h1>
@@ -169,38 +169,49 @@ const VenueAvailabilityPage = () => {
             {/* Operating Hours */}
             <Card>
               <CardHeader>
-                <CardTitle>Operating Hours</CardTitle>
+                <CardTitle as="h2">Operating Hours</CardTitle>
                 <CardDescription>Set your regular weekly schedule</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {hours.map((hour) => (
                   <div
                     key={hour.day_of_week}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+                    /* Same wrap as OwnerHoursPage: label + toggle + two
+                       128px time inputs never fitted 375px on one line. */
+                    className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50 sm:gap-4"
                   >
-                    <div className="w-28 font-medium text-foreground">
+                    <div className="w-24 font-medium text-foreground sm:w-28">
                       {DAYS_OF_WEEK[hour.day_of_week]}
                     </div>
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2 sm:flex-1">
+                      {/* Same anonymous day switches as /owner/hours had, in
+                          a second copy of the opening-hours editor. The day is
+                          the switch's name; Open/Closed is its state, and is
+                          now a label so the word is a hit target too. */}
                       <Switch
+                        id={`availability-open-${hour.day_of_week}`}
+                        aria-label={DAYS_OF_WEEK[hour.day_of_week]}
                         checked={!hour.is_closed}
                         onCheckedChange={(checked) =>
                           handleHourChange(hour.day_of_week, "is_closed", !checked)
                         }
                       />
-                      <span className="text-sm text-muted-foreground">
+                      <Label
+                        htmlFor={`availability-open-${hour.day_of_week}`}
+                        className="cursor-pointer py-1 text-sm font-normal text-muted-foreground"
+                      >
                         {hour.is_closed ? "Closed" : "Open"}
-                      </span>
+                      </Label>
                     </div>
                     {!hour.is_closed && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex w-full items-center gap-2 sm:w-auto">
                         <Input
                           type="time"
                           value={hour.open_time}
                           onChange={(e) =>
                             handleHourChange(hour.day_of_week, "open_time", e.target.value)
                           }
-                          className="w-32"
+                          className="flex-1 sm:w-32 sm:flex-none"
                         />
                         <span className="text-muted-foreground">to</span>
                         <Input
@@ -209,7 +220,7 @@ const VenueAvailabilityPage = () => {
                           onChange={(e) =>
                             handleHourChange(hour.day_of_week, "close_time", e.target.value)
                           }
-                          className="w-32"
+                          className="flex-1 sm:w-32 sm:flex-none"
                         />
                       </div>
                     )}
@@ -231,7 +242,7 @@ const VenueAvailabilityPage = () => {
             {/* Blocked Dates */}
             <Card>
               <CardHeader>
-                <CardTitle>Blocked Dates</CardTitle>
+                <CardTitle as="h2">Blocked Dates</CardTitle>
                 <CardDescription>
                   Block specific dates for holidays or maintenance
                 </CardDescription>
@@ -285,8 +296,16 @@ const VenueAvailabilityPage = () => {
                             {format(new Date(blocked.blocked_date), "MMM d, yyyy")}
                             {blocked.reason && ` - ${blocked.reason}`}
                           </span>
+                          {/* Named, like the removable chips in filter-chips.tsx. This was a
+                            bare <button> holding a 12px X: a screen reader
+                            announced "button" and nothing else, so with several
+                            blocked dates listed there was no way to tell which
+                            one it would remove. It had never been reported
+                            because `blocked_dates` was missing from the audit
+                            fixtures, so this list always rendered empty. */}
                           <button
                             onClick={() => handleRemoveBlockedDate(blocked.id)}
+                            aria-label={`Remove the block on ${format(new Date(blocked.blocked_date), "MMM d, yyyy")}`}
                             className="hover:text-destructive"
                           >
                             <X className="h-3 w-3" />

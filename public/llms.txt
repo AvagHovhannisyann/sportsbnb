@@ -1,26 +1,90 @@
 # Sportsbnb
 
-> Find and book sports venues near you — courts, fields and pools. Join open games, create teams, and play with your community.
+> Book sports venues by the hour in Armenia. Find a court, pitch or pool near
+> you, see live availability, and pay in the app in Armenian dram.
 
-Sportsbnb is a sports venue booking marketplace serving Armenia and California (USD/AMD). Players discover and book courts, fields, and pools; venue owners list facilities and accept payments via Stripe.
+Sportsbnb is a sports venue booking marketplace based in Armenia, serving
+Yerevan and other Armenian cities. Players search venues by sport, city and
+price, pick an hour from live availability, and pay by card or Idram. Venue
+owners list their facilities, set hourly rates and cancellation terms, manage
+bookings, and are paid out from an internal ledger.
+
+The site also hosts open pickup games that players can join, and teams players
+can create or be invited to.
+
+## Facts
+
+- **Currency**: all prices and payments are in Armenian dram (AMD, ֏). Prices
+  are quoted per hour.
+- **Payment methods**: card via Ameriabank vPOS, or Idram. Payment is taken in
+  the app at the time of booking; there is no cash-on-arrival flow.
+- **Platform fee**: 5%, added on top of the rate the venue owner sets. A venue
+  listed at ֏10,000/hour costs the player ֏10,500; the owner receives ֏10,000.
+  The rate is a platform setting (`commission_bps`, default 500) rather than a
+  per-venue negotiation.
+- **Holding a slot**: selecting a time creates a 20-minute hold. If payment is
+  not completed in that window the hold expires and the slot returns to the
+  calendar.
+- **Cancellation**: set per venue by its owner. The default is a full refund up
+  to 24 hours before the booking starts. Owners may instead choose a partial
+  (50%) refund after that cut-off, or make bookings non-refundable. The terms
+  that apply are shown before payment and stored with the booking.
+- **Double booking**: prevented in the database by an exclusion constraint on
+  the venue, court and time range, so two players cannot hold the same hour.
+- **Sports a venue can be listed for**: football, basketball, tennis,
+  swimming, volleyball, badminton, rugby, gym, cricket, golf, running and
+  cycling. (Pickup games and teams can be organised around a wider set, but a
+  bookable venue carries one of these twelve.)
+- **Accounts**: booking requires an account. Browsing venues, games and teams
+  does not.
 
 ## Pages
-- [Home](/): Platform overview, search, featured venues.
-- [Venues](/venues): Browse and filter all sports venues.
-- [Venues Map](/venues/map): Map-based venue discovery.
-- [Nearby Fields](/nearby): Community-submitted public fields near you.
-- [Games](/games): Open pickup games to join.
-- [Teams](/teams): Find or create teams.
-- [Community](/community): Players, leaderboards, social.
-- [For Owners](/for-owners): Pitch and onboarding for venue owners.
-- [Blog](/blog): Articles on sports, booking tips, and community.
-- [About](/about): Company mission and values.
-- [FAQ](/faq): Common questions answered.
-- [Contact](/contact): Reach the Sportsbnb team.
+
+- [Home](/): what the platform does, search, featured venues.
+- [Venues](/venues): browse and filter every listed venue. Accepts `q` (free
+  text, matched against venue name, address and city), `sport`, `city` and
+  `maxPrice` as query parameters — for example `/venues?sport=Football&q=Yerevan`.
+- [Venue detail](/venue/{id}): one venue — photos, sports, amenities, hourly
+  price, reviews, live availability and the booking panel.
+- [Venues map](/venues/map): the same inventory on a map.
+- [Nearby fields](/nearby): free public pitches submitted by the community.
+  Not bookable; listed so people can find somewhere to play for nothing.
+- [Games](/games): open pickup games with a date, time, sport, skill level and
+  price per player.
+- [Game detail](/game/{id}): one game — who is hosting, who has joined, where
+  and when it is, and how to request a place.
+- [Teams](/teams): public teams to join, and the form to create one.
+- [Community](/community): players near you, activity and leaderboards.
+- [For owners](/for-owners): how listing works, what it costs, how payouts
+  run. The sign-up form behind it requires an account.
+- [Blog](/blog): articles on venues, booking and the local sports scene.
+- [About](/about): what Sportsbnb is and who runs it.
+- [FAQ](/faq): the common questions, answered.
+- [Contact](/contact): how to reach the team.
 
 ## Optional
-- [Privacy Policy](/privacy)
-- [Terms of Service](/terms)
-- [Cookie Policy](/cookies)
-- [Signup](/signup)
-- [Login](/login)
+
+- [Privacy policy](/privacy)
+- [Terms of service](/terms)
+- [Cookie policy](/cookies)
+- [Sign up](/signup)
+- [Log in](/login)
+
+## Notes for machine readers
+
+- The canonical host is `https://www.sportsbnb.org`. The apex domain redirects
+  to it.
+- Structured data is embedded as JSON-LD. `Organization`, `WebSite` and
+  `WebApplication` are in the served HTML of every page and need no JavaScript.
+  The rest — `SportsActivityLocation` with an hourly `Offer` in AMD on a venue
+  page, `SportsEvent` on a game page, `FAQPage` on the FAQ, `BreadcrumbList`
+  where there is a hierarchy — is injected on render, so a crawler that does
+  not execute JavaScript will not see it. That is a known gap, not an
+  oversight; the marketing and listing pages are prerendered with real text,
+  the per-record pages are not yet.
+- Account, checkout and payment pages are disallowed in `/robots.txt`. They
+  contain nothing citable.
+- This file is kept accurate deliberately. It previously stated that payments
+  ran through Stripe, which was never true of the shipped product and is not
+  true now — Stripe cannot serve Armenian businesses, which is why the
+  marketplace settles through Ameriabank and Idram.

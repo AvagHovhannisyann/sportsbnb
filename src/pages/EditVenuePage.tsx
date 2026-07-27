@@ -65,7 +65,7 @@ const EditVenuePage = () => {
   if (authLoading || venueLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading the venue">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       </Layout>
@@ -89,23 +89,25 @@ const EditVenuePage = () => {
       <div className="bg-background min-h-screen">
         <div className="container py-8 max-w-3xl">
           {/* Header */}
-          <div className="flex items-center justify-between gap-4 mb-8">
+          {/* flex-wrap: the title block and the two-button action group are
+              a ~486px row that pushed past a 375px screen. */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-5 w-5" />
+              <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" aria-hidden="true" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Edit Venue</h1>
+                <h1 className="page-title">Edit Venue</h1>
                 <p className="text-muted-foreground">Update your venue details</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <Link to={`/venue/${id}/availability`}>
-                <Button variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/venue/${id}/availability`}>
                   <Clock className="h-4 w-4 mr-2" />
                   Hours & Availability
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm">

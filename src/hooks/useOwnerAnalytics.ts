@@ -8,7 +8,7 @@ interface BookingAnalytics {
   totalBookings: number;
   uniqueCustomers: number;
   averageBookingValue: number;
-  revenueByMonth: { month: string; revenue: number }[];
+  revenueByMonth: { month: string; revenue: number; bookings: number }[];
   bookingsByVenue: { venue: string; count: number }[];
   recentBookings: {
     id: string;
@@ -75,8 +75,10 @@ export const useOwnerAnalytics = () => {
       // Average booking value
       const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
-      // Revenue by month (last 6 months)
-      const revenueByMonth: { month: string; revenue: number }[] = [];
+      // Revenue and bookings by month (last 6 months). Counting alongside the
+      // sum costs nothing here and is what lets the overview show a real
+      // month-over-month change instead of a hardcoded one.
+      const revenueByMonth: { month: string; revenue: number; bookings: number }[] = [];
       for (let i = 5; i >= 0; i--) {
         const monthStart = startOfMonth(subMonths(new Date(), i));
         const monthEnd = endOfMonth(subMonths(new Date(), i));
@@ -87,6 +89,7 @@ export const useOwnerAnalytics = () => {
         revenueByMonth.push({
           month: format(monthStart, "MMM"),
           revenue: monthBookings.reduce((sum, b) => sum + Number(b.total_price), 0),
+          bookings: monthBookings.length,
         });
       }
 

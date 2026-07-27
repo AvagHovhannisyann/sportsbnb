@@ -1,10 +1,11 @@
 import { useState, useCallback, lazy, Suspense } from "react";
+import RouteErrorBoundary from "@/components/common/RouteErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/SplashScreen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CurrencyProvider } from "@/hooks/useCurrency";
 import { RegionProvider } from "@/hooks/useRegion";
@@ -12,6 +13,7 @@ import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { RequireRole } from "@/components/auth/RequireRole";
+import RouteMeta from "@/components/seo/RouteMeta";
 import Layout from "./components/layout/Layout";
 
 // Eagerly load HomePage since it's the landing page
@@ -25,6 +27,8 @@ const CreateGamePage = lazy(() => import("./pages/CreateGamePage"));
 const GameDetailsPage = lazy(() => import("./pages/GameDetailsPage"));
 const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const CreateTeamPage = lazy(() => import("./pages/CreateTeamPage"));
+const EditTeamPage = lazy(() => import("./pages/EditTeamPage"));
+const MyBookingsPage = lazy(() => import("./pages/MyBookingsPage"));
 const TeamDetailsPage = lazy(() => import("./pages/TeamDetailsPage"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
 const GameJoinStatusPage = lazy(() => import("./features/booking/GameJoinStatusPage"));
@@ -52,7 +56,6 @@ const OwnerOnboarding = lazy(() => import("./pages/OwnerOnboarding"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
-const MyVenuesPage = lazy(() => import("./pages/MyVenuesPage"));
 const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForOwnersPage = lazy(() => import("./pages/ForOwnersPage"));
@@ -90,6 +93,20 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * `/game/:id/join-success` → `/game/:id/join-status`, keeping both halves.
+ *
+ * The id, because `<Navigate to>` takes a literal and would send everyone to
+ * `/game/:id/join-status`. The query string, because `GameJoinStatusPage`
+ * reads `?paymentId=` — dropping it would turn a payment return into a status
+ * page that cannot say which payment it is about.
+ */
+const JoinSuccessRedirect = () => {
+  const { id } = useParams<{ id: string }>();
+  const { search } = useLocation();
+  return <Navigate to={`/game/${id}/join-status${search}`} replace />;
+};
+
 // Minimal loading fallback
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -113,6 +130,16 @@ const App = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                {/* Sits inside BrowserRouter — it reads the pathname to reset
+                    on navigation — and outside Suspense, so it catches
+                    lazy-chunk load failures as well as render errors. */}
+                <RouteErrorBoundary>
+                {/* Above <Routes>, deliberately. It gives every route a title
+                    from one table (WCAG 2.4.2, Level A — 17 of 35 player
+                    routes were still showing the string from index.html), and
+                    react-helmet-async resolves competing tags in mount order,
+                    so a page rendering its own SEOHead still overrides this. */}
+                <RouteMeta />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Layout showMobileNav={false}><HomePage /></Layout>} />
@@ -128,16 +155,27 @@ const App = () => {
                     <Route path="/create-game" element={<ProtectedRoute><CreateGamePage /></ProtectedRoute>} />
                     <Route path="/game/:id" element={<GameDetailsPage />} />
                     <Route path="/game/:id/join-status" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
-                    <Route path="/game/:id/join-success" element={<ProtectedRoute><GameJoinStatusPage /></ProtectedRoute>} />
+                    {/* An alias, not a second page. Both paths mounted the same
+                        component, so the app had one screen under two URLs with
+                        one title between them — a WCAG 2.4.2 duplicate, which
+                        nothing noticed because no audit list contained this
+                        route and none had ever loaded it. Nothing in the app
+                        links here and the Ameria callback builds
+                        `/join-status`, so it is redirected rather than removed:
+                        a provider configured to it outside this repository
+                        keeps working, and there is one canonical page again. */}
+                    <Route path="/game/:id/join-success" element={<JoinSuccessRedirect />} />
                     {/* Teams */}
                     <Route path="/teams" element={<TeamsPage />} />
                     <Route path="/create-team" element={<ProtectedRoute><CreateTeamPage /></ProtectedRoute>} />
                     <Route path="/team/:id" element={<TeamDetailsPage />} />
+                    <Route path="/team/:id/edit" element={<ProtectedRoute><EditTeamPage /></ProtectedRoute>} />
                     <Route path="/join-team/:code" element={<JoinTeamPage />} />
                     {/* Venue Details */}
                     <Route path="/venue/:id" element={<VenueDetailsPage />} />
                     {/* Dashboards */}
                     <Route path="/dashboard" element={<ProtectedRoute><PlayerDashboard /></ProtectedRoute>} />
+                    <Route path="/my-bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
                     <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                     
                     {/* New Owner Dashboard Routes */}
@@ -168,7 +206,15 @@ const App = () => {
                     <Route path="/add-venue" element={<ProtectedRoute><AddVenuePage /></ProtectedRoute>} />
                     <Route path="/venue/:id/edit" element={<ProtectedRoute><EditVenuePage /></ProtectedRoute>} />
                     <Route path="/venue/:id/availability" element={<ProtectedRoute><VenueAvailabilityPage /></ProtectedRoute>} />
-                    <Route path="/my-venues" element={<ProtectedRoute><MyVenuesPage /></ProtectedRoute>} />
+                    {/* /my-venues was a second, orphaned copy of /owner/venues:
+                        same purpose, same "My Venues" heading on screen, and
+                        linked from nowhere in the app — the only reference to
+                        it in the whole repository was this route. The page
+                        titles check found it as two pages sharing one title,
+                        which is the visible symptom of two pages doing one
+                        job. Redirected rather than deleted so an old bookmark
+                        still lands somewhere sensible. */}
+                    <Route path="/my-venues" element={<Navigate to="/owner/venues" replace />} />
                     {/* Auth */}
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/login" element={<LoginPage />} />
@@ -202,6 +248,7 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
+                </RouteErrorBoundary>
               </BrowserRouter>
             </TooltipProvider>
           </CurrencyProvider>

@@ -2,9 +2,20 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Users, Shield, Copy, UserPlus, Crown, Star, LogOut,
-  Trash2, Settings, Calendar, Clock, MapPin, Loader2, MessageCircle, Sparkles,
+  Trash2, Settings, Calendar, Loader2, UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +25,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useTeamById, useTeamMembers, useInviteToTeam,
@@ -29,8 +38,6 @@ import {
 } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
-
 const TeamDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -132,7 +139,7 @@ const TeamDetailsPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading the team">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       </Layout>
@@ -142,8 +149,17 @@ const TeamDetailsPage = () => {
   if (!team) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h2 className="text-xl font-semibold text-foreground">Team not found</h2>
+        <div className="container">
+          {/* Previously a bare heading with no way out — a dead end. */}
+          <StatusPanel
+            icon={UsersRound}
+            title="Team not found"
+            description="This team may have been disbanded, or the link is out of date."
+          >
+            <Button asChild>
+              <Link to="/teams">Browse teams</Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );
@@ -155,7 +171,7 @@ const TeamDetailsPage = () => {
         <div className="container py-8 max-w-4xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" aria-label="Back" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </div>
@@ -211,16 +227,48 @@ const TeamDetailsPage = () => {
                   {isCaptain && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><Settings className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" aria-label="Team settings"><Settings className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => navigate(`/team/${team.id}/edit`)}>
                           Edit Team
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Team
-                        </DropdownMenuItem>
+                        {/* Confirmed, like deleting a venue on EditVenuePage.
+                            This fired `deleteTeam` straight off the click — an
+                            irreversible action affecting every member, sitting
+                            one row below "Edit Team" in the same menu. The
+                            `onSelect` preventDefault is what stops Radix
+                            closing the menu before the dialog can mount. */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Team
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete team</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Delete &ldquo;{team.name}&rdquo;? Every member loses access and this
+                                cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep team</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDelete}
+                                disabled={deleteTeam.isPending}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {deleteTeam.isPending ? "Deleting…" : "Delete team"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -239,7 +287,8 @@ const TeamDetailsPage = () => {
             <TabsContent value="members">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  {/* Section under the team name (h1): h2. */}
+                  <CardTitle as="h2" className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
                     Team Members ({members.length})
                   </CardTitle>
@@ -347,7 +396,7 @@ const TeamDetailsPage = () => {
                   value={`${window.location.origin}/join-team/${team?.invite_code}`}
                   className="text-xs"
                 />
-                <Button variant="outline" size="icon" onClick={handleCopyInviteLink}>
+                <Button variant="outline" size="icon" aria-label="Copy invite link" onClick={handleCopyInviteLink}>
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>

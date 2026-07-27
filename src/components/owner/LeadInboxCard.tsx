@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Inbox, MessageCircle, Phone, MessageSquare, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOwnerLeads, useUpdateLeadOutcome, type LeadOutcome, type OwnerLead } from "@/hooks/useLeads";
 import { formatDistanceToNow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 const channelIcon = {
   whatsapp: MessageCircle,
@@ -14,8 +16,8 @@ const channelIcon = {
 } as const;
 
 const outcomeBadge: Record<LeadOutcome, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
-  confirmed: { label: "Confirmed", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
+  pending: { label: "Pending", className: TONE_CHIP.warning },
+  confirmed: { label: "Confirmed", className: TONE_CHIP.positive },
   no_show: { label: "No-show", className: "bg-muted text-muted-foreground" },
   lost: { label: "Lost", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
@@ -51,7 +53,7 @@ export const LeadInboxCard = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-12 flex justify-center">
+          <div className="py-12 flex justify-center" role="status" aria-label="Loading your inbox">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : filtered.length === 0 ? (
@@ -97,7 +99,7 @@ const LeadRow = ({
           <div className="text-sm text-muted-foreground mt-0.5">
             {lead.customer_name || "Unknown player"}
             {lead.booking_date && ` · ${lead.booking_date}`}
-            {lead.booking_time && ` ${lead.booking_time}`}
+            {lead.booking_time && ` ${formatTimeOfDay(lead.booking_time)}`}
             {lead.players_count ? ` · ${lead.players_count} players` : ""}
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">

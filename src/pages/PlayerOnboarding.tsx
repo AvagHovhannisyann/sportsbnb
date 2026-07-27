@@ -345,21 +345,25 @@ const PlayerOnboarding = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {SPORTS_OPTIONS.map((sport) => (
-                <div
+                // Same div-with-a-dead-checkbox as the profile tab, on the
+                // step a new player hits before they have used anything else.
+                // Keyboard users could not pick a single sport here.
+                <Label
                   key={sport}
-                  onClick={() => handleSportToggle(sport)}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  htmlFor={`onboarding-sport-${sport.toLowerCase().replace(/\s+/g, "-")}`}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all font-normal ${
                     formData.preferredSports.includes(sport)
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
                   }`}
                 >
                   <Checkbox
+                    id={`onboarding-sport-${sport.toLowerCase().replace(/\s+/g, "-")}`}
                     checked={formData.preferredSports.includes(sport)}
-                    className="pointer-events-none"
+                    onCheckedChange={() => handleSportToggle(sport)}
                   />
                   <span className="font-medium">{sport}</span>
-                </div>
+                </Label>
               ))}
             </div>
 
@@ -379,7 +383,7 @@ const PlayerOnboarding = () => {
                     <RadioGroupItem value={level.value} id={level.value} className="peer sr-only" />
                     <Label
                       htmlFor={level.value}
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-input bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer text-center"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer text-center"
                     >
                       <span className="font-medium">{level.label}</span>
                       <span className="text-xs text-muted-foreground mt-1">{level.desc}</span>

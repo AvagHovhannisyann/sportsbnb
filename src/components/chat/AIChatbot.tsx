@@ -1,13 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bot, X, Send, Loader2, Sparkles, MapPin, CalendarCheck, CreditCard, Users, Trophy, RotateCcw } from "lucide-react";
+import { X, Send, Sparkles, MapPin, CalendarCheck, CreditCard, Users, Trophy, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
@@ -137,7 +135,7 @@ export const AIChatbot = () => {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 md:bottom-6 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center group"
+        className="fixed bottom-[calc(5rem+var(--fab-lift,0px))] md:bottom-[calc(1.5rem+var(--fab-lift,0px))] right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center group"
         aria-label="Open AI assistant"
       >
         <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
@@ -147,7 +145,7 @@ export const AIChatbot = () => {
   }
 
   return (
-    <Card className="fixed bottom-20 md:bottom-6 right-4 z-50 w-[380px] h-[520px] flex flex-col shadow-2xl border overflow-hidden">
+    <Card className="fixed bottom-[calc(5rem+var(--fab-lift,0px))] md:bottom-[calc(1.5rem+var(--fab-lift,0px))] right-4 z-50 w-[380px] h-[520px] flex flex-col shadow-2xl border overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
         <div className="flex items-center gap-2.5">
@@ -163,11 +161,11 @@ export const AIChatbot = () => {
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={handleReset} title="New conversation">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={handleReset} title="New conversation" aria-label="New conversation">
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setOpen(false)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setOpen(false)} aria-label="Close assistant">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -263,10 +261,10 @@ export const AIChatbot = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendMessage())}
             placeholder="Type your question..."
-            className="flex-1 h-10 rounded-full border border-input bg-background px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-shadow"
+            className="flex-1 h-10 rounded-full border border-border-interactive bg-background px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-shadow"
             disabled={isLoading}
           />
-          <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-10 w-10 rounded-full flex-shrink-0 shadow-sm">
+          <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-10 w-10 rounded-full flex-shrink-0 shadow-sm" aria-label="Send message">
             <Send className="h-4 w-4" />
           </Button>
         </div>

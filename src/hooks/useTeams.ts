@@ -133,18 +133,24 @@ export const useUserTeams = () => {
     queryFn: async () => {
       if (!user) return { owned: [], member: [] };
 
-      // Teams user owns
-      const { data: owned } = await supabase
+      // Errors are rethrown rather than coalesced away. Swallowing them here
+      // made the query *succeed* with an empty result, so the Teams page could
+      // not tell "you have no teams" from "we could not load your teams" — it
+      // rendered "No teams yet. Create your first team." to someone who may
+      // already own several, inviting a duplicate.
+      const { data: owned, error: ownedError } = await supabase
         .from("teams")
         .select("*")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
+      if (ownedError) throw ownedError;
 
       // Teams user is a member of (not owner)
-      const { data: memberships } = await supabase
+      const { data: memberships, error: membershipsError } = await supabase
         .from("team_members")
         .select("team_id")
         .eq("user_id", user.id);
+      if (membershipsError) throw membershipsError;
 
       const memberTeamIds = memberships?.map(m => m.team_id).filter(
         id => !(owned || []).some(t => t.id === id)
@@ -152,14 +158,39 @@ export const useUserTeams = () => {
 
       let memberTeams: Team[] = [];
       if (memberTeamIds.length > 0) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("teams")
           .select("*")
           .in("id", memberTeamIds);
+        if (error) throw error;
         memberTeams = (data || []) as Team[];
       }
 
-      return { owned: (owned || []) as Team[], member: memberTeams };
+      // Member counts, the same way useTeams does them.
+      //
+      // Without this, every card on the "My Teams" tab rendered
+      // "—/11 players" — TeamCard falls back to an em-dash when member_count
+      // is undefined, and this hook never set it. Browse Teams showed real
+      // numbers, so your own teams were the only ones missing them.
+      const all = [...(owned || []), ...memberTeams] as Team[];
+      if (all.length === 0) return { owned: [], member: [] };
+
+      const { data: members } = await supabase
+        .from("team_members")
+        .select("team_id")
+        .in("team_id", all.map((t) => t.id));
+
+      const countMap = new Map<string, number>();
+      members?.forEach((m) => {
+        countMap.set(m.team_id, (countMap.get(m.team_id) || 0) + 1);
+      });
+      const withCounts = (teams: Team[]) =>
+        teams.map((t) => ({ ...t, member_count: countMap.get(t.id) || 0 }));
+
+      return {
+        owned: withCounts((owned || []) as Team[]),
+        member: withCounts(memberTeams),
+      };
     },
     enabled: !!user?.id,
   });
@@ -294,7 +325,7 @@ export const useInviteToTeam = () => {
         await supabase.rpc("notify_user", {
           p_user_id: userId,
           p_type: "team",
-          p_title: "Team Invite! 🏆",
+          p_title: "Team Invite!",
           p_message: `You've been invited to join "${team?.name}".`,
           p_link: `/teams`,
         });

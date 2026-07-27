@@ -1,18 +1,20 @@
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Link } from "react-router-dom";
-import { MessageCircle, Loader2, ArrowLeft } from "lucide-react";
+import { MessageCircle, Loader2, ArrowLeft, Gamepad2, MapPin, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Layout from "@/components/layout/Layout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { OwnerChatView } from "@/components/venue/OwnerChatView";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserChatRooms, useUnreadMessageCount } from "@/hooks/useChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
 
 interface ChatRoomWithDetails {
   room_id: string;
@@ -25,6 +27,8 @@ interface ChatRoomWithDetails {
   updated_at: string;
   unread_count: number;
   other_user_id?: string;
+  /** Newest message in the room, for the list preview. */
+  last_message?: { content: string; fromMe: boolean };
 }
 
 const MessagesPage = () => {
@@ -32,7 +36,13 @@ const MessagesPage = () => {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomWithDetails | null>(null);
 
   // Get user's chat rooms with details
-  const { data: chatRoomsWithDetails, isLoading } = useQuery({
+  const {
+    data: chatRoomsWithDetails,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ["user-chat-rooms-details", user?.id],
     queryFn: async () => {
       // Get all rooms where user is a member
@@ -82,7 +92,7 @@ const MessagesPage = () => {
             .single();
           
           title = booking?.venue_name || "Booking Chat";
-          subtitle = booking ? `${booking.booking_date} at ${booking.booking_time}` : "";
+          subtitle = booking ? `${booking.booking_date} at ${formatTimeOfDay(booking.booking_time)}` : "";
         } else if (room.type === "venue") {
           const { data: venue } = await supabase
             .from("venues")
@@ -91,7 +101,9 @@ const MessagesPage = () => {
             .single();
           
           title = venue?.name || "Venue Chat";
-          subtitle = venue ? `📍 ${venue.address || venue.city}` : "Question about venue";
+          // No emoji pin: this is now the fallback line for a room with
+          // no messages, and it reads as prose rather than a fake icon.
+          subtitle = venue ? `${venue.address || venue.city}` : "Question about venue";
         }
 
         // Get the other user in venue chats
@@ -115,6 +127,20 @@ const MessagesPage = () => {
           .eq("room_id", room.id)
           .gt("created_at", membership.last_read_at || "1970-01-01");
 
+        // The newest message, for the list preview. A conversation list whose
+        // second line is the venue's street address tells you where the place
+        // is, not what was said — which is the one thing the list exists to
+        // show. This is one more round trip inside a loop that already makes
+        // two or three per room; the N+1 is pre-existing in kind, and worth
+        // one more call to stop the list being about the wrong subject.
+        const { data: newest } = await supabase
+          .from("chat_messages")
+          .select("message_text, sender_id")
+          .eq("room_id", room.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
         roomsWithDetails.push({
           room_id: room.id,
           last_read_at: membership.last_read_at,
@@ -126,6 +152,9 @@ const MessagesPage = () => {
           updated_at: room.updated_at,
           unread_count: count || 0,
           other_user_id: otherUserId,
+          last_message: newest
+            ? { content: newest.message_text, fromMe: newest.sender_id === user!.id }
+            : undefined,
         });
       }
 
@@ -138,11 +167,17 @@ const MessagesPage = () => {
   if (!user) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Please sign in to view messages</h1>
-          <Link to="/login">
-            <button className="text-primary hover:underline">Sign in</button>
-          </Link>
+        {/* Same `<Link><button>` nesting as the empty state below, and the
+            same job as the sign-in gate on /community — which is already an
+            EmptyState. */}
+        <div className="container">
+          <EmptyState
+            icon={MessageCircle}
+            title="Sign in to view messages"
+            description="Your conversations with game hosts and venue owners live here."
+            actionLabel="Sign in"
+            actionHref="/login"
+          />
         </div>
       </Layout>
     );
@@ -161,13 +196,14 @@ const MessagesPage = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">Messages</h1>
+            <p className="eyebrow mb-2">Your conversations</p>
+            <h1 className="page-title">Messages</h1>
             <p className="text-muted-foreground">Your conversations with game hosts and venue owners</p>
           </div>
 
           {/* Chat List */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center py-16" role="status" aria-label="Loading messages">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : chatRoomsWithDetails && chatRoomsWithDetails.length > 0 ? (
@@ -180,20 +216,44 @@ const MessagesPage = () => {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
+                      {/* Was 🎮 / 📍 / 📅. Emoji as an icon sets in whatever
+                          face the OS supplies, at a size and weight nothing
+                          else on the page shares; every other icon in the app
+                          is lucide. */}
                       <Avatar className="h-12 w-12">
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {room.type === "game" ? "🎮" : room.type === "venue" ? "📍" : "📅"}
+                          {room.type === "game" ? (
+                            <Gamepad2 className="h-5 w-5" aria-hidden="true" />
+                          ) : room.type === "venue" ? (
+                            <MapPin className="h-5 w-5" aria-hidden="true" />
+                          ) : (
+                            <CalendarDays className="h-5 w-5" aria-hidden="true" />
+                          )}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-semibold text-foreground truncate">{room.title}</h3>
+                          <h2 className="font-semibold text-foreground truncate">{room.title}</h2>
                           <span className="text-xs text-muted-foreground shrink-0">
                             {formatDistanceToNow(new Date(room.updated_at), { addSuffix: true })}
                           </span>
                         </div>
+                        {/* The last message, not the venue's street address.
+                            `subtitle` still carries the context line and is
+                            the fallback for a room nobody has written in yet. */}
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-muted-foreground truncate">{room.subtitle}</p>
+                          <p className="truncate text-sm text-muted-foreground">
+                            {room.last_message ? (
+                              <>
+                                {room.last_message.fromMe && (
+                                  <span className="text-muted-foreground/70">You: </span>
+                                )}
+                                {room.last_message.content}
+                              </>
+                            ) : (
+                              room.subtitle || "No messages yet"
+                            )}
+                          </p>
                           {room.unread_count > 0 && (
                             <Badge variant="default" className="shrink-0">
                               {room.unread_count}
@@ -206,25 +266,45 @@ const MessagesPage = () => {
                 </Card>
               ))}
             </div>
-          ) : (
-            <Card className="max-w-md mx-auto">
-              <CardContent className="py-16 text-center">
-                <MessageCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <h2 className="text-lg font-semibold text-foreground mb-2">No messages yet</h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Join a game or make a booking to start chatting
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <Link to="/games">
-                    <button className="text-primary hover:underline text-sm">Find games</button>
-                  </Link>
-                  <span className="text-muted-foreground hidden sm:inline">•</span>
-                  <Link to="/venues">
-                    <button className="text-primary hover:underline text-sm">Browse venues</button>
-                  </Link>
-                </div>
-              </CardContent>
+          ) : isError ? (
+            /* "No messages yet" on a failed fetch reads as "nobody has
+               contacted you", which is a claim about other people's behaviour
+               that we have no basis for. */
+            /* `max-w-2xl`, left, like the list it stands in for. Measured at
+               1440: the list sits at x=40 and so does the page heading, while
+               these two states were centred at x=496 — so emptying your inbox
+               shifted the page content 344px sideways under a heading that had
+               not moved.
+
+               Note the comment form: inside a ternary branch this must be a
+               plain block comment, not `{...}`. A JSX comment container here is
+               a second expression and does not parse — as the line above it
+               already demonstrated, correctly, before I broke it. */
+            <Card className="max-w-2xl">
+              <ErrorPanel
+                what="your messages"
+                onRetry={() => refetch()}
+                isRetrying={isFetching}
+              />
             </Card>
+          ) : (
+            // The ninth hand-rolled empty state, missed when the other eight
+            // were unified because its heading is an h2 rather than an h3.
+            // Its two actions were `<Link><button>` — a link wrapping a
+            // button, which is the same invalid nesting already fixed on
+            // /my-venues — styled as underlined text and separated by a
+            // bullet that vanished below sm.
+            <EmptyState
+              bordered
+              icon={MessageCircle}
+              title="No messages yet"
+              description="Join a game or make a booking to start chatting."
+              actionLabel="Find games"
+              actionHref="/games"
+              secondaryLabel="Browse venues"
+              secondaryHref="/venues"
+              className="max-w-2xl"
+            />
           )}
         </div>
       </div>

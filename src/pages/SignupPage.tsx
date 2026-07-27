@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,9 @@ import { ArrowLeft, User, Building, Eye, EyeOff, Check, X, Mail, Lock, UserCircl
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthProviders } from "@/hooks/useAuthProviders";
 import { getGenericAuthError } from "@/lib/authErrors";
+import { safeRedirect } from "@/lib/redirect";
 import authHero from "@/assets/auth-hero.jpg";
 
 const signupSchema = z.object({
@@ -25,7 +27,13 @@ const signupSchema = z.object({
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Passed on from the login page's "Create one" link, so the venue or invite
+  // someone was heading for survives the detour through account creation.
+  // Validated, because it arrives in a URL — see src/lib/redirect.ts.
+  const redirectTo = safeRedirect(searchParams.get("redirect"));
   const { user, isLoading: authLoading, signUp, signInWithOAuth } = useAuth();
+  const providers = useAuthProviders();
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [userType, setUserType] = useState<"player" | "owner">("player");
@@ -42,9 +50,9 @@ const SignupPage = () => {
   // Redirect if already authenticated (but not if we just signed up)
   useEffect(() => {
     if (!authLoading && user && !isSigningUp) {
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate, isSigningUp]);
+  }, [user, authLoading, navigate, isSigningUp, redirectTo]);
 
   // Password strength calculation
   const passwordStrength = useMemo(() => {
@@ -161,10 +169,18 @@ const SignupPage = () => {
     toast.success("Account created successfully!");
     // Redirect to appropriate page with replace to prevent back navigation issues
     if (userType === "player") {
+      // Onboarding wins over `redirectTo` deliberately: a brand-new player
+      // dropped straight onto a checkout has no profile, no city and no sports
+      // yet, which several of the pages they might be heading for read. The
+      // cost is that a signed-out invite link followed all the way through
+      // account creation still loses its destination at this step — see §5 of
+      // docs/handover.md, because carrying it through onboarding is a product
+      // decision about what that flow is allowed to interrupt.
       navigate("/onboarding/player", { replace: true });
     } else {
-      // Owners go directly to dashboard, they can add venues from there
-      navigate("/owner-dashboard", { replace: true });
+      // Owners have no onboarding step, so nothing is in the way of honouring
+      // where they were trying to go.
+      navigate(redirectTo ?? "/owner-dashboard", { replace: true });
     }
     setIsLoading(false);
   };
@@ -207,11 +223,23 @@ const SignupPage = () => {
         {/* Background Image */}
         <img
           src={authHero}
-          alt="Athletes playing sports"
+          alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+        {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the
+            whole frame — including the middle, where the photo is most
+            legible — so a vivid sports shot read as flat brown. All the text
+            on this panel is left-aligned, so the weight moves horizontally:
+            the left third carries the copy and stays dark, the right third
+            keeps the image. The mild bottom pass is only for the copyright. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25"
+        />
         
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 w-full">
@@ -227,28 +255,35 @@ const SignupPage = () => {
           
           {/* Hero Text */}
           <div className="max-w-lg">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5 leading-tight tracking-tight">
+            <h1 className="auth-hero-title text-white">
               Your game is<br />waiting for you.
             </h1>
             <p className="text-lg text-white/80 leading-relaxed">
-              Join thousands of players discovering new venues, making friends, and staying active every day.
+              Find a court near you, join an open game, and pay for it in the app. No phone calls, no waiting on a reply.
             </p>
             
             {/* Trust Indicators */}
             <div className="flex items-center gap-6 mt-8">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-white/70 text-sm">Growing community</span>
+                <span className="text-white/70 text-sm">Free to join</span>
               </div>
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <span className="text-white/70 text-sm">Join the community</span>
+                <span className="text-white/70 text-sm">No card until you book</span>
               </div>
             </div>
           </div>
           
           {/* Footer */}
-          <div className="text-sm text-white/40">
+          {/* /40 composited to #6c706e on this near-black panel: 3.81:1,
+              under the 4.5:1 body copy needs. /50 measures 5.29:1 and is
+              still far quieter than the headline above it. The same defect on
+              the forgot- and reset-password panels was found and fixed
+              earlier; these two were invisible to every audit here, because
+              /login and /signup redirect to /dashboard under the stubbed
+              signed-in session. */}
+          <div className="text-sm text-white/50">
             © {new Date().getFullYear()} Sportsbnb. All rights reserved.
           </div>
         </div>
@@ -274,15 +309,17 @@ const SignupPage = () => {
 
           {/* Welcome Header */}
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Create your account</h2>
+            <h2 className="auth-form-title">Create your account</h2>
             <p className="text-muted-foreground">
-              Join the growing sports community
+              Free to join — no card needed until you book
             </p>
           </div>
 
           {/* Form Card */}
           <div className="bg-card rounded-2xl border border-border/50 shadow-xl shadow-black/5 p-6 lg:p-8">
-            {/* Google Sign Up Button */}
+            {/* Third-party buttons render only when the project actually has
+                that provider enabled — see useAuthProviders. */}
+            {providers.google && (
             <Button
               type="button"
               variant="outline"
@@ -310,12 +347,13 @@ const SignupPage = () => {
               </svg>
               Continue with Google
             </Button>
+            )}
 
-                {/* Apple Sign Up Button */}
+                {providers.apple && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all mt-3"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.google ? "mt-3" : ""}`}
                   onClick={handleAppleSignIn}
                   disabled={isLoading}
                 >
@@ -324,9 +362,10 @@ const SignupPage = () => {
                   </svg>
                   Continue with Apple
                 </Button>
+                )}
 
-
-            {/* Divider */}
+            {/* Divider only earns its place when something sits above it. */}
+            {providers.anyOAuth && (
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
@@ -337,6 +376,7 @@ const SignupPage = () => {
                 </span>
               </div>
             </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* User Type Selection */}
@@ -347,6 +387,14 @@ const SignupPage = () => {
                   onValueChange={(value) => setUserType(value as "player" | "owner")}
                   className="grid grid-cols-2 gap-3"
                 >
+                  {/* The radios are `peer sr-only` and these labels are the
+                      visible control, so the focus ring the radio paints is
+                      behind an opaque card and changes nothing on screen —
+                      measured at 0 pixels with `:focus-visible` matching and a
+                      composed 4px green box-shadow on the input. The card
+                      already reacts to `peer-data-[state=checked]`; it has to
+                      react to focus too, or tabbing to the first choice on the
+                      signup form shows the user nothing. */}
                   <div>
                     <RadioGroupItem
                       value="player"
@@ -355,7 +403,7 @@ const SignupPage = () => {
                     />
                     <Label
                       htmlFor="player"
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-input bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background cursor-pointer transition-all"
                     >
                       <User className="h-6 w-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-primary" />
                       <span className="font-medium text-sm">Play Sports</span>
@@ -369,7 +417,7 @@ const SignupPage = () => {
                     />
                     <Label
                       htmlFor="owner"
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-input bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-background p-4 hover:bg-accent/50 hover:border-primary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background cursor-pointer transition-all"
                     >
                       <Building className="h-6 w-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-primary" />
                       <span className="font-medium text-sm">List Venues</span>
@@ -386,6 +434,7 @@ const SignupPage = () => {
                   <UserCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="name"
+                    autoComplete="name"
                     name="name"
                     type="text"
                     placeholder={userType === "player" ? "John Doe" : "My Sports Center"}
@@ -408,6 +457,7 @@ const SignupPage = () => {
                     id="email"
                     name="email"
                     type="email"
+                    autoComplete="email"
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -426,6 +476,7 @@ const SignupPage = () => {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="password"
+                    autoComplete="new-password"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a strong password"
@@ -434,7 +485,15 @@ const SignupPage = () => {
                     className={`h-12 pl-11 pr-11 text-base border-2 transition-colors ${errors.password ? "border-destructive focus:border-destructive" : "focus:border-primary"}`}
                     required
                   />
+                  {/* Named, like the identical toggle on ResetPasswordPage.
+                      Both are icon-only buttons; that one carried an aria-label
+                      because a11y-names could reach the page it lives on, and
+                      this one did not because /signup redirects to /dashboard
+                      under the stubbed session every audit here uses. Same
+                      component, same defect, fixed only where it was visible. */}
                   <button
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -484,6 +543,7 @@ const SignupPage = () => {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="confirmPassword"
+                    autoComplete="new-password"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
@@ -493,6 +553,10 @@ const SignupPage = () => {
                     required
                   />
                   <button
+                    aria-label={
+                      showConfirmPassword ? "Hide password confirmation" : "Show password confirmation"
+                    }
+                    aria-pressed={showConfirmPassword}
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -531,7 +595,10 @@ const SignupPage = () => {
           {/* Sign In Link */}
           <p className="text-center text-muted-foreground mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary hover:underline font-semibold">
+            <Link
+              to={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
+              className="text-primary hover:underline font-semibold"
+            >
               Sign in
             </Link>
           </p>

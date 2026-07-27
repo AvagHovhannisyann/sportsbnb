@@ -1,15 +1,16 @@
 import { useState } from "react";
 import SEOHead from "@/components/seo/SEOHead";
 import { Link } from "react-router-dom";
-import { Plus, Search, Users, Filter } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import TeamCard from "@/components/teams/TeamCard";
+import { ErrorPanel } from "@/components/common/StatusPanel";
+import { EmptyState } from "@/components/ui/empty-state";
+import TeamCard, { TeamCardSkeleton } from "@/components/teams/TeamCard";
 import { useTeams, useUserTeams, useUserTeamInvites, useRespondToInvite } from "@/hooks/useTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { sportTypes } from "@/data/constants";
@@ -21,8 +22,20 @@ const TeamsPage = () => {
   const [sportFilter, setSportFilter] = useState("");
   const [activeTab, setActiveTab] = useState(user ? "my-teams" : "browse");
 
-  const { data: publicTeams = [], isLoading: teamsLoading } = useTeams({ sport: sportFilter, search });
-  const { data: userTeams, isLoading: userTeamsLoading } = useUserTeams();
+  const {
+    data: publicTeams = [],
+    isLoading: teamsLoading,
+    isError: teamsError,
+    refetch: refetchTeams,
+    isFetching: teamsFetching,
+  } = useTeams({ sport: sportFilter, search });
+  const {
+    data: userTeams,
+    isLoading: userTeamsLoading,
+    isError: userTeamsError,
+    refetch: refetchUserTeams,
+    isFetching: userTeamsFetching,
+  } = useUserTeams();
   const { data: invites = [] } = useUserTeamInvites();
   const respondToInvite = useRespondToInvite();
 
@@ -47,16 +60,17 @@ const TeamsPage = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Teams</h1>
+              <p className="eyebrow mb-2">Play together</p>
+              <h1 className="page-title">Teams</h1>
               <p className="text-muted-foreground">Create and manage your sports teams</p>
             </div>
             {user && (
-              <Link to="/create-team">
-                <Button className="gap-2">
+              <Button asChild className="gap-2">
+                <Link to="/create-team">
                   <Plus className="h-4 w-4" />
                   Create Team
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </div>
 
@@ -104,16 +118,30 @@ const TeamsPage = () => {
             {/* My Teams Tab */}
             {user && (
               <TabsContent value="my-teams">
+                {/* role="status" + a name on the loading grids below, matching
+                    DiscoverPage and VenueDetailsPage. Skeletons are a status
+                    message under WCAG 4.1.3, and a bare grid of animated grey
+                    boxes is one nobody who is not looking at the screen can
+                    perceive — the page just goes quiet for as long as the
+                    request takes. The label goes on the container, not the
+                    boxes: sixty of them announcing individually would be worse
+                    than silence. */}
                 {userTeamsLoading ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <div
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    role="status"
+                    aria-label="Loading your teams"
+                  >
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <TeamCardSkeleton key={i} />
+                    ))}
                   </div>
                 ) : (
                   <div className="space-y-8">
                     {/* Teams I Own */}
                     {(userTeams?.owned?.length ?? 0) > 0 && (
                       <div>
-                        <h2 className="text-lg font-semibold text-foreground mb-4">Teams I Captain</h2>
+                        <h2 className="section-title">Teams I Captain</h2>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {userTeams!.owned.map(team => (
                             <TeamCard key={team.id} team={team} showRole="captain" />
@@ -125,7 +153,7 @@ const TeamsPage = () => {
                     {/* Teams I'm a member of */}
                     {(userTeams?.member?.length ?? 0) > 0 && (
                       <div>
-                        <h2 className="text-lg font-semibold text-foreground mb-4">Teams I've Joined</h2>
+                        <h2 className="section-title">Teams I've Joined</h2>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {userTeams!.member.map(team => (
                             <TeamCard key={team.id} team={team} showRole="member" />
@@ -134,25 +162,34 @@ const TeamsPage = () => {
                       </div>
                     )}
 
-                    {(userTeams?.owned?.length ?? 0) === 0 && (userTeams?.member?.length ?? 0) === 0 && (
+                    {/* The default tab. "No teams yet" on a failed fetch is a
+                        claim about the user's own memberships, and its call to
+                        action is "create your first team" — which invites a
+                        duplicate of one they already own. */}
+                    {userTeamsError && (
                       <Card>
-                        <CardContent className="py-12 text-center">
-                          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold text-foreground mb-2">No teams yet</h3>
-                          <p className="text-muted-foreground mb-4">Create your first team or browse public teams to join.</p>
-                          <div className="flex gap-3 justify-center">
-                            <Link to="/create-team">
-                              <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Team
-                              </Button>
-                            </Link>
-                            <Button variant="outline" onClick={() => setActiveTab("browse")}>
-                              Browse Teams
-                            </Button>
-                          </div>
-                        </CardContent>
+                        <ErrorPanel
+                          what="your teams"
+                          onRetry={() => refetchUserTeams()}
+                          isRetrying={userTeamsFetching}
+                        />
                       </Card>
+                    )}
+
+                    {!userTeamsError &&
+                      (userTeams?.owned?.length ?? 0) === 0 &&
+                      (userTeams?.member?.length ?? 0) === 0 && (
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={Users}
+                        title="No teams yet"
+                        description="Create your first team or browse public teams to join."
+                        actionLabel="Create Team"
+                        actionHref="/create-team"
+                        secondaryLabel="Browse Teams"
+                        onSecondaryAction={() => setActiveTab("browse")}
+                      />
                     )}
                   </div>
                 )}
@@ -161,6 +198,21 @@ const TeamsPage = () => {
 
             {/* Browse Tab */}
             <TabsContent value="browse">
+              {/* The h2 this tab panel was missing.
+                  Every team name below is a card title, which is an h3, so
+                  with no heading here the outline ran h1 "Teams" straight to
+                  h3 "Smoke FC". The "My Teams" panel does not have the problem
+                  because it renders "Teams I Captain" and "Teams I've Joined"
+                  — but only when the user *has* teams, so a signed-out
+                  visitor and any new account both got the skip. It was found
+                  signed out, and it was never specific to that.
+
+                  `sr-only` because the tab trigger already says "Browse Teams"
+                  on screen and repeating it would be visual noise; the heading
+                  is for someone navigating by heading, who otherwise arrives
+                  at a team name with no idea which list it is in. */}
+              <h2 className="sr-only">Browse teams</h2>
+
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="relative flex-1">
@@ -194,8 +246,14 @@ const TeamsPage = () => {
               </div>
 
               {teamsLoading ? (
-                <div className="text-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                <div
+                  className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  role="status"
+                  aria-label="Loading teams"
+                >
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <TeamCardSkeleton key={i} />
+                  ))}
                 </div>
               ) : publicTeams.length > 0 ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -203,14 +261,20 @@ const TeamsPage = () => {
                     <TeamCard key={team.id} team={team} />
                   ))}
                 </div>
-              ) : (
+              ) : teamsError ? (
                 <Card>
-                  <CardContent className="py-12 text-center">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No teams found</h3>
-                    <p className="text-muted-foreground">Be the first to create a team!</p>
-                  </CardContent>
+                  <ErrorPanel what="teams" onRetry={() => refetchTeams()} isRetrying={teamsFetching} />
                 </Card>
+              ) : (
+                <EmptyState
+                  bordered
+                  compact
+                  icon={Users}
+                  title="No teams found"
+                  description="Be the first to create a team!"
+                  actionLabel="Create Team"
+                  actionHref="/create-team"
+                />
               )}
             </TabsContent>
           </Tabs>

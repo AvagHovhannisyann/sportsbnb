@@ -271,7 +271,7 @@ export const VenueForm = ({
   const basicInfoCard = mode === "create" ? (
     <Card>
       <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
+        <CardTitle as="h2">Basic Information</CardTitle>
         <CardDescription>Provide accurate details to attract more bookings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -318,7 +318,7 @@ export const VenueForm = ({
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
+        <CardTitle as="h2">Basic Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -349,7 +349,7 @@ export const VenueForm = ({
             <Label htmlFor="city">City *</Label>
             <Input
               id="city"
-              placeholder="e.g., New York"
+              placeholder="e.g., Yerevan"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               maxLength={100}
@@ -373,7 +373,7 @@ export const VenueForm = ({
   const imagesCard = mode === "create" ? (
     <Card className={validationErrors.images ? 'border-destructive' : ''}>
       <CardHeader>
-        <CardTitle>
+        <CardTitle as="h2">
           Venue Photos * <span className="text-muted-foreground text-sm font-normal">({imageFiles.length}/{MIN_PHOTOS} minimum)</span>
         </CardTitle>
         <CardDescription>Upload at least 3 high-quality photos showing different areas of your venue</CardDescription>
@@ -430,7 +430,7 @@ export const VenueForm = ({
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle>Venue Image</CardTitle>
+        <CardTitle as="h2">Venue Image</CardTitle>
       </CardHeader>
       <CardContent>
         {imagePreview ? (
@@ -470,7 +470,7 @@ export const VenueForm = ({
   const sportsCard = (
     <Card className={mode === "create" && validationErrors.sports ? 'border-destructive' : ''}>
       <CardHeader>
-        <CardTitle>Sports Offered *</CardTitle>
+        <CardTitle as="h2">Sports Offered *</CardTitle>
         {mode === "create" && (
           <CardDescription>Select all sports available at your venue</CardDescription>
         )}
@@ -487,7 +487,7 @@ export const VenueForm = ({
   const amenitiesCard = (
     <Card>
       <CardHeader>
-        <CardTitle>Amenities</CardTitle>
+        <CardTitle as="h2">Amenities</CardTitle>
         {mode === "create" && (
           <CardDescription>Highlight what makes your venue special</CardDescription>
         )}
@@ -501,7 +501,7 @@ export const VenueForm = ({
   const contactCard = mode === "create" ? (
     <Card className={validationErrors.phone ? 'border-destructive' : ''}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle as="h2" className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-[#25D366]" />
           Booking Contact
         </CardTitle>
@@ -515,6 +515,7 @@ export const VenueForm = ({
           <Input
             id="phone"
             type="tel"
+            autoComplete="tel"
             placeholder="+374 99 11 22 33"
             value={formData.phone}
             onChange={(e) => {
@@ -545,10 +546,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>
-            <Label>Accept WhatsApp messages</Label>
+            <Label htmlFor="venue-whatsapp-messages">Accept WhatsApp messages</Label>
             <p className="text-xs text-muted-foreground">Recommended — most players prefer this</p>
           </div>
           <Switch
+            id="venue-whatsapp-messages"
             checked={formData.whatsappEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
           />
@@ -556,10 +558,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>
-            <Label>Accept SMS as fallback</Label>
+            <Label htmlFor="venue-sms-fallback">Accept SMS as fallback</Label>
             <p className="text-xs text-muted-foreground">Used when WhatsApp isn't available</p>
           </div>
           <Switch
+            id="venue-sms-fallback"
             checked={formData.smsEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
           />
@@ -569,7 +572,7 @@ export const VenueForm = ({
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle as="h2" className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-[#25D366]" />
           Booking Contact
         </CardTitle>
@@ -584,6 +587,7 @@ export const VenueForm = ({
             <Input
               id="phone"
               type="tel"
+              autoComplete="tel"
               placeholder="+374 99 123 456"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -607,10 +611,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <Label>Accept WhatsApp bookings</Label>
+            <Label htmlFor="venue-whatsapp-bookings">Accept WhatsApp bookings</Label>
             <p className="text-sm text-muted-foreground">Primary booking channel</p>
           </div>
           <Switch
+            id="venue-whatsapp-bookings"
             checked={formData.whatsappEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, whatsappEnabled: checked })}
           />
@@ -618,10 +623,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <Label>Accept SMS bookings</Label>
+            <Label htmlFor="venue-sms-bookings">Accept SMS bookings</Label>
             <p className="text-sm text-muted-foreground">Fallback if WhatsApp is off</p>
           </div>
           <Switch
+            id="venue-sms-bookings"
             checked={formData.smsEnabled}
             onCheckedChange={(checked) => setFormData({ ...formData, smsEnabled: checked })}
           />
@@ -633,7 +639,7 @@ export const VenueForm = ({
   const pricingCard = (
     <Card>
       <CardHeader>
-        <CardTitle>Pricing & Settings</CardTitle>
+        <CardTitle as="h2">Pricing & Settings</CardTitle>
         {mode === "create" && (
           <CardDescription>You'll receive 90% of each booking</CardDescription>
         )}
@@ -659,10 +665,11 @@ export const VenueForm = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <Label>Indoor Venue</Label>
+            <Label htmlFor="venue-indoor">Indoor Venue</Label>
             <p className="text-sm text-muted-foreground">Is this an indoor facility?</p>
           </div>
           <Switch
+            id="venue-indoor"
             checked={formData.isIndoor}
             onCheckedChange={(checked) => setFormData({ ...formData, isIndoor: checked })}
           />
@@ -671,10 +678,11 @@ export const VenueForm = ({
         {mode === "edit" && (
           <div className="flex items-center justify-between">
             <div>
-              <Label>Active Listing</Label>
+              <Label htmlFor="venue-active">Active Listing</Label>
               <p className="text-sm text-muted-foreground">Make this venue visible to players</p>
             </div>
             <Switch
+            id="venue-active"
               checked={formData.isActive}
               onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
             />

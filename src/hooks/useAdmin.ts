@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export type AppRole = "admin" | "moderator" | "user";
 
-interface UserRole {
+interface _UnusedUserRole {
   id: string;
   user_id: string;
   role: AppRole;
@@ -130,16 +130,53 @@ export const useAllVenues = () => {
   return useQuery({
     queryKey: ["admin-venues"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      /**
+       * Two queries and a client-side join, because the embed this replaces
+       * could not work.
+       *
+       * It asked for `owner:profiles!venues_owner_id_fkey(full_name, email)`,
+       * and there is no such constraint: `venues` has `Relationships: []` in
+       * the generated types, and `owner_id` points at `auth.users`, not at
+       * `profiles`. PostgREST answers a named relationship it cannot find with
+       * a 400, so this query threw and the admin console's whole Venues tab
+       * showed nothing — with an Owner column that was never going to fill in.
+       *
+       * No audit caught it because the harness intercepts REST calls and
+       * answers the fixture whatever the query says, so an embed that the real
+       * PostgREST rejects looks identical to one it accepts.
+       *
+       * Admins can read every profile — there is a policy for it, made
+       * PERMISSIVE in 20260215172252 — so the names are reachable; only the
+       * embed was wrong.
+       */
+      const { data: venues, error } = await supabase
         .from("venues")
-        .select(`
-          *,
-          owner:profiles!venues_owner_id_fkey(full_name, email)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      type Owner = { user_id: string; full_name: string | null; email: string | null };
+      const rows = venues ?? [];
+      const byUserId = new Map<string, Owner>();
+
+      if (rows.length) {
+        const ownerIds = [...new Set(rows.map((v) => v.owner_id).filter(Boolean))];
+        const { data: owners, error: ownersError } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email")
+          .in("user_id", ownerIds);
+
+        // A failed owner lookup must not empty the venue table. The names are
+        // one column in it, not the point of it, and an admin looking at "-"
+        // where a name should be can still see and act on every venue.
+        if (ownersError) console.error("Admin venues: owner lookup failed", ownersError);
+        else for (const o of owners ?? []) byUserId.set(o.user_id, o);
+      }
+
+      // One return, one shape. Two returns is how the earlier draft of this
+      // ended up with a union type that had `owner` on only half of it.
+      return rows.map((v) => ({ ...v, owner: byUserId.get(v.owner_id) ?? null }));
     },
     enabled: isAdmin === true,
   });

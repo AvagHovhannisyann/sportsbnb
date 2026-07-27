@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Calendar, Clock, MapPin, Users, Loader2, Plus, Flame, Trophy, Sparkles } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Loader2, Plus, Flame, Trophy, MessageCircle, CalendarCheck, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserGames } from "@/hooks/useGames";
 import { useMyLeads } from "@/hooks/useLeads";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { formatTimeOfDay } from "@/lib/time";
 
 const PlayerDashboard = () => {
   const navigate = useNavigate();
@@ -38,36 +40,14 @@ const PlayerDashboard = () => {
     (g) => new Date(g.game_date) >= new Date(new Date().toDateString()) && g.status === "open"
   ).slice(0, 3);
 
-  const nextGame = upcomingGames[0];
   const pendingInquiries = myLeads.filter((l) => l.lead_outcome === "pending").length;
   const confirmedCount = myLeads.filter((l) => l.lead_outcome === "confirmed").length;
 
-  // Build the "Next Move" — the single most relevant action
-  const nextMove = (() => {
-    if (nextGame) {
-      return {
-        title: `${nextGame.sport} · ${nextGame.title}`,
-        subtitle: `${format(new Date(nextGame.game_date), "EEE, MMM d")} at ${nextGame.game_time} · ${nextGame.location}`,
-        cta: "Open game",
-        href: `/game/${nextGame.id}`,
-      };
-    }
-    if (pendingInquiries > 0) {
-      const lead = myLeads.find((l) => l.lead_outcome === "pending")!;
-      return {
-        title: `Awaiting reply from ${lead.venue_name}`,
-        subtitle: `Sent ${format(new Date(lead.created_at), "MMM d, p")} via WhatsApp · code ${lead.booking_code}`,
-        cta: "View venue",
-        href: `/venue/${lead.venue_id}`,
-      };
-    }
-    return {
-      title: "Find your next match",
-      subtitle: "Browse venues nearby or join an open game.",
-      cta: "Find a venue",
-      href: "/venues",
-    };
-  })();
+  // Removed: a `nextMove` object built here from nextGame / pending leads and
+  // then never rendered — the visible suggestion comes from NextMoveCard's
+  // edge function. Dead since that card landed, and it had gone stale in the
+  // meantime: one branch read "Sent … via WhatsApp · code {booking_code}",
+  // describing a handoff flow that no longer exists.
 
   if (authLoading) {
     return (
@@ -84,7 +64,7 @@ const PlayerDashboard = () => {
           {/* Header */}
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-1">
+              <h1 className="page-title">
                 Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
               </h1>
               <p className="text-muted-foreground">Your sports cockpit at a glance.</p>
@@ -99,37 +79,72 @@ const PlayerDashboard = () => {
             </div>
           </div>
 
-          {/* AI-powered Next Move */}
-          <NextMoveCard />
-
-          {/* Lightweight signal strip (no payments) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* The player's own numbers first. These come from queries that are
+              usually already cached; the AI suggestion below is an edge
+              function call measured in seconds, and it used to sit here — so
+              the top of the logged-in dashboard was a spinner while everything
+              real waited underneath it. */}
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
             {[
-              { label: "Awaiting reply", value: pendingInquiries.toString() },
-              { label: "Confirmed bookings", value: confirmedCount.toString() },
-              { label: "Games hosted", value: (userGames?.hosted?.length || 0).toString() },
-              { label: "Games joined", value: (userGames?.joined?.length || 0).toString() },
+              { label: "Awaiting reply", value: pendingInquiries, icon: MessageCircle, to: "/messages" },
+              // Pointed at /profile, which has three tabs — profile,
+              // notifications, security — and no bookings anywhere on it. The
+              // count is of `booking_intents`, the retired WhatsApp handoff,
+              // so the tile named a thing the app could not show you. /my-bookings
+              // is now that page; the count still comes from the legacy rows
+              // until someone decides whether it should count real bookings.
+              { label: "Confirmed bookings", value: confirmedCount, icon: CalendarCheck, to: "/my-bookings" },
+              { label: "Games hosted", value: userGames?.hosted?.length ?? 0, icon: Flag, to: "/games" },
+              { label: "Games joined", value: userGames?.joined?.length ?? 0, icon: Users, to: "/games" },
             ].map((s) => (
-              <Card key={s.label}>
-                <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-foreground mb-1">{s.value}</div>
-                  <div className="text-sm text-muted-foreground">{s.label}</div>
-                </CardContent>
-              </Card>
+              <Link
+                key={s.label}
+                to={s.to}
+                className="group bg-card px-5 py-5 transition-colors hover:bg-surface-1 focus-ring"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <s.icon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+                  {/* A zero is a prompt, not a score. Dimming it stops four
+                      empty counters from reading as the loudest thing on a new
+                      player's dashboard — but it was dimmed with
+                      `text-muted-foreground/50`, which measures 2.68:1 on the
+                      card against the 3:1 that 30px bold text needs. The
+                      intent survives without the alpha: `text-muted-foreground`
+                      is still visibly quieter than `text-foreground`, which is
+                      the whole distinction being drawn. */}
+                  {s.value > 0 && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+                  )}
+                </div>
+                <div
+                  className={cn(
+                    "stat-numeral text-3xl font-bold leading-none tabular-nums",
+                    s.value > 0 ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {s.value}
+                </div>
+                <div className="mt-1.5 text-sm text-muted-foreground">{s.label}</div>
+              </Link>
             ))}
           </div>
+
+          {/* AI-powered Next Move — supplementary, so it follows the facts. */}
+          <NextMoveCard />
 
           {/* Upcoming Plans + Games */}
           <div className="grid lg:grid-cols-2 gap-6">
             <UpcomingPlansCard />
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Your Games</CardTitle>
                 <Link to="/games" className="text-sm text-primary hover:underline">Find more</Link>
               </CardHeader>
               <CardContent className="space-y-3">
                 {gamesLoading ? (
-                  <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+                  <div className="py-8 flex justify-center" role="status" aria-label="Loading your games">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
                 ) : upcomingGames.length > 0 ? (
                   upcomingGames.map((game) => (
                     <Link key={game.id} to={`/game/${game.id}`}>
@@ -149,8 +164,13 @@ const PlayerDashboard = () => {
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(game.game_date), "EEE, MMM d")}</div>
-                          <div className="flex items-center gap-1"><Clock className="h-3 w-3" />{game.game_time}</div>
-                          <div className="flex items-center gap-1 truncate"><MapPin className="h-3 w-3" />{game.location}</div>
+                          <div className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTimeOfDay(game.game_time)}</div>
+                          {/* min-w-0 or `truncate` is decorative: a flex item
+                              defaults to min-width:auto, so the location kept
+                              its full intrinsic width, pushed the card past
+                              the grid track and scrolled the dashboard
+                              sideways at 375px. */}
+                          <div className="flex min-w-0 items-center gap-1 truncate"><MapPin className="h-3 w-3" />{game.location}</div>
                         </div>
                       </div>
                     </Link>
@@ -159,8 +179,12 @@ const PlayerDashboard = () => {
                   <div className="py-8 text-center text-muted-foreground">
                     <p className="mb-3">No upcoming games</p>
                     <div className="flex gap-2 justify-center">
-                      <Link to="/games"><Button size="sm" variant="outline">Find games</Button></Link>
-                      <Link to="/create-game"><Button size="sm"><Plus className="h-4 w-4 mr-1" />Create</Button></Link>
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/games">Find games</Link>
+                      </Button>
+                      <Button asChild size="sm">
+                        <Link to="/create-game"><Plus className="h-4 w-4 mr-1" />Create</Link>
+                      </Button>
                     </div>
                   </div>
                 )}

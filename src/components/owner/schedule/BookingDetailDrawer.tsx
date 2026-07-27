@@ -1,17 +1,17 @@
 import { format, parseISO } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
+import { TONE_CHIP } from "@/lib/chips";
 import {
   Calendar,
   Clock,
-  DollarSign,
+  Banknote,
   User,
   MapPin,
   MessageCircle,
-  X,
   CheckCircle,
   XCircle,
   RefreshCw,
-  FileText,
-} from "lucide-react";
+  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +24,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { useState } from "react";
+import { bookingStatusDescriptor, type BookingStatusTone } from "@/features/booking/status";
 
 interface Booking {
   id: string;
@@ -61,11 +62,17 @@ export function BookingDetailDrawer({
   if (!booking) return null;
 
   const bookingDate = parseISO(booking.booking_date);
-  const statusColors: Record<string, string> = {
-    confirmed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    cancelled: "bg-destructive/10 text-destructive",
+  // Keyed by tone, like OwnerBookingsPage. This map knew three statuses out of
+  // the ten the CHECK constraint allows, so everything in-app payment added
+  // fell through to grey — and the label beside it printed the raw column,
+  // giving an owner "Pending_payment" in a drawer they open on every booking.
+  const toneClasses: Record<BookingStatusTone, string> = {
+    positive: TONE_CHIP.positive,
+    warning: TONE_CHIP.warning,
+    danger: "bg-destructive/10 text-destructive",
+    neutral: "bg-muted text-muted-foreground",
   };
+  const status = bookingStatusDescriptor(booking.status);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -73,9 +80,7 @@ export function BookingDetailDrawer({
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span>Booking Details</span>
-            <Badge className={statusColors[booking.status] || "bg-muted"}>
-              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-            </Badge>
+            <Badge className={toneClasses[status.tone]}>{status.label}</Badge>
           </SheetTitle>
           <SheetDescription>
             Booking ID: {booking.id.slice(0, 8)}...
@@ -131,7 +136,7 @@ export function BookingDetailDrawer({
               <div>
                 <p className="text-sm text-muted-foreground">Time & Duration</p>
                 <p className="font-medium text-foreground">
-                  {booking.booking_time} • {booking.duration_hours} hour
+                  {formatTimeOfDay(booking.booking_time)} • {booking.duration_hours} hour
                   {booking.duration_hours > 1 ? "s" : ""}
                 </p>
               </div>
@@ -139,7 +144,7 @@ export function BookingDetailDrawer({
 
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <Banknote className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Amount</p>
@@ -179,6 +184,12 @@ export function BookingDetailDrawer({
               Contact Customer
             </Button>
 
+            {/* Deliberately not widened to `pending_payment`. That status
+                means the customer has a hold and has not paid; confirming it
+                by hand would hand out a court for free, and Phase 2 revoked
+                the client's UPDATE on booking status anyway — the payment
+                callback is what confirms. Legacy `pending` predates payment
+                and is still an owner decision. */}
             {booking.status === "pending" && (
               <Button
                 className="w-full justify-start"

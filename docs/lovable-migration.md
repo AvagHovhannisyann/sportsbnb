@@ -41,18 +41,32 @@ tooling), and what's still required on your end.
   removed; env vars `VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_*` renamed to
   `VITE_GOOGLE_MAPS_*`.
 
+## Database migration — done
+
+The app now runs on an independent Supabase project:
+
+| | |
+|---|---|
+| Project ref | `skwzaxqhgrysbsuqkuyp` |
+| Name / region | `sportsbnb` · `eu-central-1` (Frankfurt) |
+| Postgres | 17.6 |
+
+Applied via the Supabase connector: all 49 migrations (51 tables, 2 views, 189
+RLS policies, 4 storage buckets), extensions `pg_cron` / `pg_net` /
+`btree_gist` / `pgcrypto`, and the achievements + cancellation-policy seed rows
+that the migrations themselves insert.
+
+Frankfurt was chosen over the default region because the primary market is
+Armenia — it roughly halves round-trip latency for users and for the
+Ameria/Idram payment callbacks compared with a North American region.
+
+`supabase/config.toml` and the local `.env` now point at this project.
+
 ## What still requires you (can't be done from code)
 
-1. **Database migration — copy Lovable Cloud's Supabase project to a new,
-   independent Supabase project.** This needs direct access this session
-   doesn't have: the source project's `service_role` key and database
-   connection string/password (Project Settings → API / Database in the
-   Supabase dashboard). Once provided, the migration is: `pg_dump` schema +
-   data from the source → `pg_restore`/apply into the new project → copy
-   storage buckets/objects → redeploy all edge functions and their secrets →
-   point the app's `.env` at the new project.
-2. **New Supabase org**: only one org (`Ecolingo`) is currently visible to
-   this session. Create/authorize the org you want the new project in.
+1. **Blog posts**: run `migration-bundle/seed.sql` (5 rows) in the SQL editor.
+   It is the only seed data no migration creates. Everything else is loaded.
+2. **Edge functions + secrets**: see "Deploying the functions" below.
 3. **`OPENROUTER_API_KEY`**: set as a secret on the new project's edge
    functions (Project Settings → Edge Functions → Secrets, or `supabase
    secrets set`).
@@ -80,3 +94,48 @@ Frontend (`VITE_` build-time vars, see `.env.example`):
 |---|---|
 | `VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY` | `VITE_GOOGLE_MAPS_BROWSER_KEY` |
 | `VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID` | `VITE_GOOGLE_MAPS_TRACKING_ID` |
+
+## Deploying the functions
+
+The 34 edge functions are best deployed with the Supabase CLI in one shot —
+it uploads them all and is byte-exact, unlike pasting sources one at a time:
+
+```bash
+supabase login                                  # opens a browser
+supabase link --project-ref skwzaxqhgrysbsuqkuyp
+supabase functions deploy                       # deploys all of supabase/functions/
+supabase secrets set OPENROUTER_API_KEY=... RESEND_API_KEY=... # etc, see SECRETS.md
+```
+
+`supabase/config.toml` already carries the correct `project_id` and the
+per-function `verify_jwt` posture set in Phase 1, so the deploy picks up the
+right auth settings automatically.
+
+## Known advisor findings on the new project
+
+`get_advisors` after the migration returned one ERROR and a set of WARNs. All
+of them are inherited from the original schema rather than introduced by the
+move — they would have been reported identically on the Lovable project:
+
+- **`profiles_public` is a SECURITY DEFINER view** (ERROR). Deliberate, from the
+  Phase 1 migration: with `security_invoker = on` the view returned only the
+  caller's own row and silently broke public profile lookups. It projects a
+  non-PII column whitelist, which is what makes the definer form safe here.
+- **`btree_gist` is installed in `public`** (WARN). Moving it means dropping and
+  recreating the `bookings_no_overlap` exclusion constraint that depends on it;
+  not worth the churn.
+- **`booking_intents` INSERT policy is `WITH CHECK (true)`** (WARN). Intentional
+  — the policy is scoped to the `authenticated` role, so the check *is* "must be
+  signed in".
+- **Public buckets allow listing** (WARN ×4). Pre-existing; tightening this is a
+  behaviour change, not a migration step.
+- **`add_chat_member` and `send_system_message` are SECURITY DEFINER with no
+  internal authorization check** (WARN). This one is a real gap worth its own
+  change: both are called from the browser (`src/hooks/useChat.ts`), so they
+  can't simply have EXECUTE revoked — they need the same treatment `notify_user`
+  got in Phase 1, i.e. verifying `auth.uid()` is a member of the target room
+  before writing. Filed here rather than fixed silently during a migration.
+
+Fixed as part of the migration: `enforce_booking_transitions` and
+`protect_profile_xp` had a role-mutable `search_path`
+(`20260725150000_pin_search_path_trigger_functions.sql`).

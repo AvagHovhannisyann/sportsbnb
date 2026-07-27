@@ -82,7 +82,7 @@ const ProfilePage = () => {
   if (authLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading your profile">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
         </div>
       </Layout>
@@ -107,7 +107,7 @@ const ProfilePage = () => {
             />
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="page-title">
                   {formData.fullName || formData.username || "Your Profile"}
                 </h1>
                 {isOwner && (

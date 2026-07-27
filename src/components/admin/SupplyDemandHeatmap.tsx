@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { TONE_CHIP } from "@/lib/chips";
+import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { Activity, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +100,7 @@ export function SupplyDemandHeatmap() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle as="h2" className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
           Supply ↔ Demand Heatmap
         </CardTitle>
@@ -108,7 +110,7 @@ export function SupplyDemandHeatmap() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <div className="py-8 flex justify-center" role="status" aria-label="Loading the heatmap"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : cells.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">
             Not enough lead data yet — heatmap unlocks once inquiries flow in.
@@ -138,7 +140,7 @@ export function SupplyDemandHeatmap() {
                   <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.supply}</div>
                   <div className="col-span-2 text-right">
                     {c.gap > 0 ? (
-                      <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 text-xs">+{c.gap} desert</Badge>
+                      <Badge className={cn(TONE_CHIP.danger, "text-xs")}>+{c.gap} desert</Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs">balanced</Badge>
                     )}

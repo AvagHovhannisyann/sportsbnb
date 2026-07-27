@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Loader2, Plus, MapPin, Star, Settings, Calendar, MoreHorizontal, Edit, Trash2, Eye, CreditCard } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Plus, MapPin, Star, Settings, Calendar, MoreHorizontal, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,29 +11,40 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { Building2 } from "lucide-react";
 
 const OwnerVenuesPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile?.user_type !== "owner") {
+    // isProfileLoading, not just authLoading: authLoading covers the
+    // session only, so without it this reads user_type off a null profile
+    // and bounces the owner. RequireRole already guards this route; keeping
+    // the check correct here means it stays safe if that ever changes.
+    if (!authLoading && !isProfileLoading && user && profile?.user_type !== "owner") {
       navigate("/dashboard");
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, isProfileLoading, navigate]);
 
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="My Venues">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading your venues">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -56,7 +67,20 @@ const OwnerVenuesPage = () => {
         </Button>
       </div>
 
-      {myVenues.length === 0 ? (
+      {/* An owner whose venues failed to load must not be told they have none.
+          "No venues yet" is a claim about their business, and its call to
+          action invites them to re-create a listing that already exists —
+          the same argument TeamsPage makes in a comment on its own error
+          branch. Measured with the content tables serving 500. */}
+      {venuesError ? (
+        <Card>
+          <ErrorPanel
+            what="your venues"
+            onRetry={() => refetchVenues()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
+      ) : myVenues.length === 0 ? (
         <Card>
           <EmptyState
             icon={Building2}
@@ -71,31 +95,52 @@ const OwnerVenuesPage = () => {
           {/* Active Venues */}
           {activeVenues.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Active Venues ({activeVenues.length})
-              </h3>
+              </h2>
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {activeVenues.map((venue) => (
-                  <Card key={venue.id} className="overflow-hidden group hover:shadow-lg transition-all">
+                  <Card key={venue.id} className="card-lift group overflow-hidden">
                     <div className="aspect-video relative">
                       <img
                         src={getVenueImage(venue)}
-                        alt={venue.name}
+                        alt={venue.name} loading="lazy" decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <Badge className="absolute top-3 left-3 bg-emerald-500 text-white border-0">
+                      {/* Was bg-emerald-500 with white text: 2.54:1, and it
+                          sits over a photo where there is no help from the
+                          surface. The app already has an audited solid-fill
+                          pair that means exactly this, and using it makes the
+                          badge match the confirmed tone elsewhere. */}
+                      <Badge className="absolute top-3 left-3 border-0 bg-primary text-primary-foreground">
                         Active
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
+                          {/* `variant="secondary"`, not `bg-white/90 …
+                              text-foreground`. Half of that pair was a literal
+                              and half was a token: `bg-white` means white in
+                              either theme, while `--foreground` is the theme's
+                              ink — near-white here. The result was a white pill
+                              with a near-white glyph on it, measured at 1.12:1
+                              against the 3:1 WCAG 1.4.11 asks of an icon that
+                              is the whole control. It is the only way into a
+                              venue's actions, and on a photo card it was
+                              invisible.
+
+                              `secondary` is the same light-pill-on-a-photo look
+                              as a matched token pair, which `contrast-audit`
+                              already measures, and is what the equivalent
+                              button on MyVenuesPage has always used. */}
                           <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="icon"
-                            className="absolute top-2 right-2 h-8 w-8 bg-white/90 hover:bg-white text-foreground"
+                            className="absolute top-2 right-2 h-8 w-8"
+                            aria-label={`Actions for ${venue.name}`}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -119,7 +164,7 @@ const OwnerVenuesPage = () => {
                       </DropdownMenu>
                     </div>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h4>
+                      <h3 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h3>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                         <MapPin className="h-3 w-3" />
                         <span className="truncate">{venue.address || venue.city}</span>
@@ -159,7 +204,7 @@ const OwnerVenuesPage = () => {
                     <div className="aspect-video relative">
                       <img
                         src={getVenueImage(venue)}
-                        alt={venue.name}
+                        alt={venue.name} loading="lazy" decoding="async"
                         className="w-full h-full object-cover grayscale"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -168,7 +213,7 @@ const OwnerVenuesPage = () => {
                       </Badge>
                     </div>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h4>
+                      <h3 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h3>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                         <MapPin className="h-3 w-3" />
                         <span className="truncate">{venue.address || venue.city}</span>

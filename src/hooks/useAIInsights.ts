@@ -1,14 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { asNextMove, type PlayerNextMove } from "@/lib/aiInsights";
 import { useAuth } from "@/hooks/useAuth";
 
-export interface PlayerNextMove {
-  headline: string;
-  detail: string;
-  cta_label: string;
-  cta_link: string;
-  vibe: "urgent" | "positive" | "neutral" | "discovery";
-}
 
 export interface OwnerNudge {
   title: string;
@@ -33,10 +27,10 @@ export function usePlayerNextMove() {
     queryKey: ["player-next-move", user?.id],
     enabled: !!user?.id,
     staleTime: 60 * 60 * 1000,
-    queryFn: async (): Promise<PlayerNextMove> => {
+    queryFn: async (): Promise<PlayerNextMove | null> => {
       const { data, error } = await supabase.functions.invoke("player-insights");
       if (error) throw error;
-      return data as PlayerNextMove;
+      return asNextMove(data);
     },
   });
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Loader2, Copy, Check, Code, ExternalLink, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
 import { useOwnerVenues } from "@/hooks/useVenues";
@@ -23,7 +23,7 @@ import { toast } from "sonner";
 
 const OwnerWidgetPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
   const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -45,15 +45,19 @@ const OwnerWidgetPage = () => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile?.user_type !== "owner") {
+    // isProfileLoading, not just authLoading: authLoading covers the
+    // session only, so without it this reads user_type off a null profile
+    // and bounces the owner. RequireRole already guards this route; keeping
+    // the check correct here means it stays safe if that ever changes.
+    if (!authLoading && !isProfileLoading && user && profile?.user_type !== "owner") {
       navigate("/dashboard");
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, isProfileLoading, navigate]);
 
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Booking Widget">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading the widget">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -109,7 +113,7 @@ const OwnerWidgetPage = () => {
                 value={selectedVenueId || ""}
                 onValueChange={setSelectedVenueId}
               >
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>
@@ -126,7 +130,7 @@ const OwnerWidgetPage = () => {
           {/* Widget Preview */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Code className="h-5 w-5 text-primary" />
                 Widget Preview
               </CardTitle>
@@ -161,7 +165,7 @@ const OwnerWidgetPage = () => {
           {/* Embed Codes */}
           <Card>
             <CardHeader>
-              <CardTitle>Embed Code</CardTitle>
+              <CardTitle as="h2">Embed Code</CardTitle>
               <CardDescription>
                 Choose how you want to add the booking widget to your website
               </CardDescription>
@@ -176,14 +180,16 @@ const OwnerWidgetPage = () => {
 
                 <TabsContent value="iframe" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>iFrame Embed Code</Label>
+                    <Label htmlFor="widget-code-iframe">iFrame Embed Code</Label>
                     <div className="relative">
                       <Textarea
+                        id="widget-code-iframe"
                         value={iframeCode}
                         readOnly
                         className="font-mono text-xs h-32 bg-muted"
                       />
                       <Button
+                        aria-label="Copy embed code"
                         variant="outline"
                         size="sm"
                         className="absolute top-2 right-2"
@@ -204,14 +210,16 @@ const OwnerWidgetPage = () => {
 
                 <TabsContent value="script" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>JavaScript Embed Code</Label>
+                    <Label htmlFor="widget-code-script">JavaScript Embed Code</Label>
                     <div className="relative">
                       <Textarea
+                        id="widget-code-script"
                         value={scriptCode}
                         readOnly
                         className="font-mono text-xs h-24 bg-muted"
                       />
                       <Button
+                        aria-label="Copy script tag"
                         variant="outline"
                         size="sm"
                         className="absolute top-2 right-2"
@@ -240,6 +248,7 @@ const OwnerWidgetPage = () => {
                         className="font-mono text-xs bg-muted"
                       />
                       <Button
+                        aria-label="Copy booking link"
                         variant="outline"
                         size="icon"
                         onClick={() => handleCopy(`${baseUrl}/venue/${selectedVenueId}`, "link")}
@@ -257,14 +266,16 @@ const OwnerWidgetPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>HTML Link Code</Label>
+                    <Label htmlFor="widget-code-html">HTML Link Code</Label>
                     <div className="relative">
                       <Textarea
+                        id="widget-code-html"
                         value={linkCode}
                         readOnly
                         className="font-mono text-xs h-16 bg-muted"
                       />
                       <Button
+                        aria-label="Copy link HTML"
                         variant="outline"
                         size="sm"
                         className="absolute top-2 right-2"
@@ -286,7 +297,7 @@ const OwnerWidgetPage = () => {
           {/* Customization Options */}
           <Card>
             <CardHeader>
-              <CardTitle>Customization</CardTitle>
+              <CardTitle as="h2">Customization</CardTitle>
               <CardDescription>
                 Customize the look of your booking widget
               </CardDescription>
@@ -294,12 +305,12 @@ const OwnerWidgetPage = () => {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Theme</Label>
+                  <Label htmlFor="widget-theme">Theme</Label>
                   <Select
                     value={widgetSettings.theme}
                     onValueChange={(value) => setWidgetSettings({ ...widgetSettings, theme: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="widget-theme">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -311,15 +322,18 @@ const OwnerWidgetPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Primary Color</Label>
+                  <Label htmlFor="widget-primary-color">Primary Color</Label>
                   <div className="flex gap-2">
                     <Input
+                      id="widget-primary-color"
+                      aria-label="Primary Color swatch"
                       type="color"
                       value={widgetSettings.primaryColor}
                       onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
                       className="w-12 h-10 p-1 cursor-pointer"
                     />
                     <Input
+                      aria-label="Primary Color hex value"
                       value={widgetSettings.primaryColor}
                       onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
                       className="font-mono"

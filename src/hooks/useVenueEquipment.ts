@@ -63,7 +63,7 @@ export const useUpdateEquipment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, venueId, ...updates }: { id: string; venueId: string } & Partial<VenueEquipment>) => {
+    mutationFn: async ({ id, ...updates }: { id: string; venueId: string } & Partial<VenueEquipment>) => {
       const { data, error } = await supabase
         .from('venue_equipment')
         .update(updates)
@@ -89,7 +89,7 @@ export const useDeleteEquipment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, venueId }: { id: string; venueId: string }) => {
+    mutationFn: async ({ id }: { id: string; venueId: string }) => {
       const { error } = await supabase
         .from('venue_equipment')
         .delete()

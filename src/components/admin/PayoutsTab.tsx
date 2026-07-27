@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { formatAmd } from "@/features/booking/hooks/useBookingFlow";
+import { payoutStatusDescriptor } from "@/features/booking/payout";
 import { toast } from "sonner";
 
 interface PayoutRow {
@@ -23,11 +24,18 @@ interface PayoutRow {
   created_at: string;
 }
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  paid: "default",
-  pending: "secondary",
-  processing: "outline",
-  failed: "destructive",
+/**
+ * Badge treatment per payout tone. The labels and tones themselves come from
+ * `payoutStatusDescriptor`, not from here — this file used to carry its own
+ * status map *and* print the raw column beside it, which made it the third
+ * place payout statuses were described and the second that rendered them as
+ * database spelling.
+ */
+const TONE_CLASS: Record<string, string> = {
+  positive: "bg-primary text-primary-foreground",
+  warning: "border-warning/20 bg-warning/10 text-warning",
+  danger: "border-destructive/20 bg-destructive/10 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
 };
 
 /** Admin payout operations: run batches, export for the bank, confirm transfers. */
@@ -145,7 +153,7 @@ const PayoutsTab = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-8" role="status" aria-label="Loading payouts">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : !payouts || payouts.length === 0 ? (
@@ -178,7 +186,12 @@ const PayoutsTab = () => {
                     </TableCell>
                     <TableCell className="stat-numeral">{formatAmd(payout.amount_minor)}</TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[payout.status] ?? "outline"}>{payout.status}</Badge>
+                      <Badge
+                        className={TONE_CLASS[payoutStatusDescriptor(payout.status).tone]}
+                        title={payoutStatusDescriptor(payout.status).hint}
+                      >
+                        {payoutStatusDescriptor(payout.status).label}
+                      </Badge>
                       {payout.reference && (
                         <p className="mt-0.5 text-xs text-muted-foreground">ref: {payout.reference}</p>
                       )}

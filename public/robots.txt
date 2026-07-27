@@ -1,16 +1,97 @@
-User-agent: Googlebot
-Allow: /
+# Sportsbnb — https://www.sportsbnb.org
+#
+# The www host is canonical: sportsbnb.org 302s to www.sportsbnb.org, so every
+# URL here and in the sitemap uses www to match what the pages declare.
 
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# ---------------------------------------------------------------------------
+# Search crawlers
+# ---------------------------------------------------------------------------
 User-agent: *
+Allow: /
+
+# Signed-in surfaces. Every one already carries a noindex meta tag — and a meta
+# tag only reaches a crawler that renders the page. This app is client-rendered,
+# so that tag is written by React after mount, and a crawler that does not run
+# JavaScript never sees it. Disallow is the instruction that does not depend on
+# rendering.
+#
+# None of this is secret; it is all behind auth. The point is crawl budget, and
+# keeping account pages, checkout and one-time payment links out of results.
+Disallow: /dashboard
+Disallow: /owner/
+Disallow: /owner-dashboard
+Disallow: /my-venues
+Disallow: /admin
+Disallow: /operator
+Disallow: /settings
+Disallow: /profile
+Disallow: /messages
+Disallow: /my-bookings
+Disallow: /book/
+Disallow: /booking/
+Disallow: /pay/
+Disallow: /onboarding/
+Disallow: /auth/callback
+Disallow: /reset-password
+Disallow: /join-team/
+Disallow: /add-venue
+Disallow: /embed/
+
+# Filter permutations of the venue list. The canonical listing is /venues, and
+# every sort or price combination is the same inventory in a different order —
+# crawl budget spent on near-duplicates. `q`, `city` and `sport` stay crawlable
+# on purpose: those are real, distinct slices of inventory someone searches for.
+Disallow: /venues?*sort=
+Disallow: /venues?*maxPrice=
+Disallow: /venues?*lat=
+
+# ---------------------------------------------------------------------------
+# Generative and answer engines
+# ---------------------------------------------------------------------------
+# Listed explicitly rather than left to the wildcard, so that being quotable is
+# a decision on the record rather than something inherited by accident. These
+# feed ChatGPT, Claude, Perplexity, Gemini and Bing Copilot; for a local
+# marketplace, an answer engine naming your venues is distribution.
+#
+# None of them execute JavaScript, so what they receive is whatever is in the
+# served HTML — see /llms.txt and the prerendered pages.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: meta-externalagent
 Allow: /
 
 Sitemap: https://www.sportsbnb.org/sitemap.xml

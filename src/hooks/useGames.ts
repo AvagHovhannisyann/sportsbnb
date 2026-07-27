@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { orIlike } from "@/lib/postgrest";
 
 export interface Game {
   id: string;
@@ -85,7 +86,7 @@ export const useGames = (filters?: {
         query = query.eq("skill_level", filters.level);
       }
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,location.ilike.%${filters.search}%`);
+        query = query.or(orIlike(["title", "location"], filters.search));
       }
 
       const { data: games, error: gamesError } = await query;
@@ -93,10 +94,16 @@ export const useGames = (filters?: {
 
       if (!games || games.length === 0) return [];
 
-      // Get host profiles
+      // Get host profiles.
+      //
+      // profiles_public, not profiles. The public SELECT policy on `profiles`
+      // was dropped in favour of own-profile-only (plus admin), and the view
+      // exists precisely so other people can be looked up — so this returned
+      // nothing for anyone but yourself, and every game on the list read
+      // "Hosted by Anonymous".
       const hostIds = [...new Set(games.map(g => g.host_id))];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", hostIds);
 
@@ -160,9 +167,9 @@ export const useGameById = (gameId: string | undefined) => {
       if (error) throw error;
       if (!game) return null;
 
-      // Get host profile
+      // Get host profile — public view, same reason as the list above.
       const { data: hostProfile } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .eq("user_id", game.host_id)
         .maybeSingle();
@@ -181,7 +188,7 @@ export const useGameById = (gameId: string | undefined) => {
       
       if (allUserIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("user_id, full_name, avatar_url")
           .in("user_id", allUserIds);
         
@@ -212,30 +219,36 @@ export const useUserGames = (userId: string | undefined) => {
     queryFn: async () => {
       if (!userId) return { hosted: [], joined: [] };
 
-      // Games user is hosting
-      const { data: hostedGames } = await supabase
+      // Rethrow rather than coalesce: dropping the error made this query
+      // succeed with an empty result, so the dashboard could not tell "no
+      // games" from "could not load games" and told players their schedule
+      // was clear when it was simply unknown.
+      const { data: hostedGames, error: hostedError } = await supabase
         .from("games")
         .select("*")
         .eq("host_id", userId)
         .order("game_date", { ascending: true });
+      if (hostedError) throw hostedError;
 
       // Games user has joined
-      const { data: participations } = await supabase
+      const { data: participations, error: participationsError } = await supabase
         .from("game_participants")
         .select("game_id")
         .eq("user_id", userId)
         .eq("status", "confirmed");
+      if (participationsError) throw participationsError;
 
       const joinedGameIds = participations?.map(p => p.game_id) || [];
       let joinedGames: Game[] = [];
 
       if (joinedGameIds.length > 0) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("games")
           .select("*")
           .in("id", joinedGameIds)
           .neq("host_id", userId)
           .order("game_date", { ascending: true });
+        if (error) throw error;
         joinedGames = data || [];
       }
 
@@ -324,7 +337,7 @@ export const useRequestToJoinGame = () => {
         await supabase.rpc("notify_user", {
           p_user_id: game.host_id,
           p_type: "game",
-          p_title: "New Join Request! 🙋",
+          p_title: "New Join Request!",
           p_message: `${requester?.full_name || "Someone"} wants to join your game "${game.title}". Review their request.`,
           p_link: `/game/${gameId}`,
         });
@@ -391,7 +404,7 @@ export const useApproveParticipant = () => {
       await supabase.rpc("notify_user", {
         p_user_id: userId,
         p_type: "game",
-        p_title: "Request Approved! 🎉",
+        p_title: "Request Approved!",
         p_message: `Your request to join "${game?.title}" has been approved. See you there!`,
         p_link: `/game/${gameId}`,
       });
@@ -492,7 +505,7 @@ export const useCancelGame = () => {
             supabase.rpc("notify_user", {
               p_user_id: p.user_id,
               p_type: "game",
-              p_title: "Game Cancelled 😔",
+              p_title: "Game Cancelled",
               p_message: `The game "${game.title}" has been cancelled by the host.`,
               p_link: `/games`,
             })

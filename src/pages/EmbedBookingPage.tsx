@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Calendar, Clock, MapPin, DollarSign, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Banknote, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
+import { parseHexColor, hslTriplet, readableForeground } from "@/lib/color";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { VENUE_TIME_ZONE } from "@/lib/venueTime";
 
 interface VenueData {
   id: string;
@@ -29,7 +31,26 @@ const EmbedBookingPage = () => {
   const [searchParams] = useSearchParams();
   
   const theme = searchParams.get("theme") || "light";
-  const primaryColor = searchParams.get("color") || "#10b981";
+  /**
+   * The owner's brand colour, resolved into the two tokens the rest of the app
+   * is built on rather than pushed in as a hex.
+   *
+   * `--primary` was being set to `#10b981` directly. Every token in this app
+   * is a bare HSL channel triplet consumed as `hsl(var(--primary))`, so that
+   * became `hsl(#10b981)` — invalid, dropped. Measured in the widget:
+   * `bg-primary` computed to `rgba(0, 0, 0, 0)`. The brand colour was not
+   * being applied, it was deleting the token, and the only colour on screen
+   * came from the handful of places that also set an inline `backgroundColor`.
+   *
+   * `--primary-foreground` has to move with it. Those inline fills were paired
+   * with a hardcoded `text-white`, which measures 2.54:1 on the default
+   * emerald — a colour the owner chooses, so the text on it has to be derived.
+   */
+  const brand = parseHexColor(searchParams.get("color")) ?? parseHexColor("#10b981")!;
+  const brandVars = {
+    "--primary": hslTriplet(brand),
+    "--primary-foreground": hslTriplet(readableForeground(brand)),
+  } as React.CSSProperties;
 
   const [venue, setVenue] = useState<VenueData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,12 +77,17 @@ const EmbedBookingPage = () => {
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("widget-data", {
-        body: null,
-        headers: {},
-      });
-
-      // Since we can't pass query params directly, fetch venue directly
+      // There used to be an `await supabase.functions.invoke("widget-data")`
+      // here whose result was destructured and then never read. It could not
+      // have returned anything useful either: the function takes `venueId`
+      // from the query string, and this called it with `body: null` and no
+      // params, so it answered 400 every time.
+      //
+      // It was not free. Nothing on this page renders until it settles — the
+      // widget shows a bare spinner — and this page is what owners embed in
+      // their own websites, so that round trip sat in front of first paint on
+      // somebody else's domain. The route smoke test caught it as a permanently
+      // blank render once dynamic routes were covered.
       const { data: venueData, error: venueError } = await supabase
         .from("venues")
         .select("id, name, address, city, sports, price_per_hour, image_url, description")
@@ -96,51 +122,46 @@ const EmbedBookingPage = () => {
     
     setLoadingSlots(true);
     try {
-      const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const dayOfWeek = selectedDate.getDay();
+      /**
+       * The same RPC the site itself uses, replacing a second implementation
+       * of availability that disagreed with it three ways.
+       *
+       * 1. `.single()` on `venue_hours` for one day. Zero rows is the *normal*
+       *    state — most venues never set hours — and `.single()` treats it as
+       *    an error, so `hours` came back null and the widget rendered "no
+       *    slots" forever. `get_available_slots` defaults to 09:00–22:00 when
+       *    it finds no row, so the same venue on the same day offered a full
+       *    day of slots on the site and nothing at all in the owner's own
+       *    embedded widget. For a newly listed venue that is every day.
+       * 2. It matched bookings on `status IN ('confirmed','pending')`. The
+       *    status a hold actually carries is `pending_payment`, so a slot
+       *    someone was in the middle of paying for still showed as free here.
+       * 3. It ignored `blocked_dates` entirely, which the RPC checks — a day
+       *    the owner had closed was bookable through their own widget.
+       *
+       * The RPC is SECURITY DEFINER with no REVOKE, and the public venue page
+       * already calls it unauthenticated, so an embed on someone else's site
+       * can call it too.
+       */
+      const { data: rpcSlots, error: slotsError } = await supabase.rpc("get_available_slots", {
+        p_venue_id: venueId,
+        p_date: format(selectedDate, "yyyy-MM-dd"),
+        p_court_id: null,
+      });
 
-      // Get venue hours
-      const { data: hours } = await supabase
-        .from("venue_hours")
-        .select("*")
-        .eq("venue_id", venueId)
-        .eq("day_of_week", dayOfWeek)
-        .single();
+      if (slotsError) throw slotsError;
 
-      if (!hours || hours.is_closed) {
-        setAvailability([]);
-        return;
-      }
-
-      // Get existing bookings
-      const { data: bookings } = await supabase
-        .from("bookings")
-        .select("booking_time, duration_hours")
-        .eq("venue_id", venueId)
-        .eq("booking_date", dateStr)
-        .in("status", ["confirmed", "pending"]);
-
-      // Generate time slots
-      const slots: TimeSlot[] = [];
-      const [openHour, openMin] = hours.open_time.split(":").map(Number);
-      const [closeHour, closeMin] = hours.close_time.split(":").map(Number);
-      const openMinutes = openHour * 60 + openMin;
-      const closeMinutes = closeHour * 60 + closeMin;
-
-      for (let time = openMinutes; time < closeMinutes - 60; time += 60) {
-        const h = Math.floor(time / 60);
-        const m = time % 60;
-        const slotTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-
-        const isBooked = bookings?.some(b => {
-          const [bH, bM] = b.booking_time.split(":").map(Number);
-          const bStart = bH * 60 + bM;
-          const bEnd = bStart + b.duration_hours * 60;
-          return time >= bStart && time < bEnd;
-        });
-
-        slots.push({ time: slotTime, available: !isBooked });
-      }
+      // The RPC returns instants; the widget shows venue-local wall clock,
+      // which is what the site shows and what the owner wrote on their door.
+      const slots: TimeSlot[] = (rpcSlots ?? []).map((slot) => ({
+        time: new Intl.DateTimeFormat("en-GB", {
+          timeZone: VENUE_TIME_ZONE,
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(new Date(slot.slot_start)),
+        available: slot.available,
+      }));
 
       setAvailability(slots);
     } catch (error) {
@@ -160,7 +181,7 @@ const EmbedBookingPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background" role="status" aria-label="Loading availability">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -181,7 +202,7 @@ const EmbedBookingPage = () => {
   return (
     <div 
       className={`min-h-screen p-4 ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}
-      style={{ "--primary": primaryColor } as React.CSSProperties}
+      style={brandVars}
     >
       <Card className="max-w-md mx-auto overflow-hidden">
         {/* Header */}
@@ -195,7 +216,9 @@ const EmbedBookingPage = () => {
         <CardContent className="p-4 space-y-4">
           {/* Venue Info */}
           <div>
-            <h2 className="text-xl font-semibold text-foreground">{venue.name}</h2>
+            {/* An embed is rendered in its own document inside the iframe, so the
+                venue name is that document's h1, not an h2 under nothing. */}
+            <h1 className="text-xl font-semibold text-foreground">{venue.name}</h1>
             <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
               <MapPin className="h-4 w-4" />
               {venue.address}, {venue.city}
@@ -212,10 +235,10 @@ const EmbedBookingPage = () => {
           {/* Price */}
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
             <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
               Starting from
             </span>
-            <span className="text-lg font-semibold" style={{ color: primaryColor }}>
+            <span className="text-lg font-semibold text-primary">
               {formatPrice(getCustomerPrice(venue.pricePerHour))}/hr
             </span>
           </div>
@@ -226,21 +249,24 @@ const EmbedBookingPage = () => {
               <Calendar className="h-4 w-4" />
               Select Date
             </label>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            {/* A seven-column grid, not a horizontal scroll strip. Seven
+                buttons at `min-w-[60px]` plus gaps need 468px; the strip is
+                414px wide inside the embed's `max-w-md` card, so the last day
+                was cut off with 6 of its 60 pixels showing and `scrollLeft`
+                stayed at 0 when it was focused — measured, and reported by
+                focus-visible.mjs as a control entirely covered by the page
+                behind it. A fixed count of items in a fixed-width card is a
+                grid; scrolling was never going to fit them. */}
+            <div className="grid grid-cols-7 gap-1 pb-2">
               {dateOptions.map((date) => (
                 <button
                   key={date.toISOString()}
                   onClick={() => setSelectedDate(date)}
-                  className={`flex-shrink-0 p-2 rounded-lg text-center min-w-[60px] transition-colors ${
+                  className={`min-w-0 rounded-lg p-1.5 text-center transition-colors ${
                     format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-                      ? "text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted hover:bg-muted/80"
                   }`}
-                  style={{
-                    backgroundColor: format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd") 
-                      ? primaryColor 
-                      : undefined
-                  }}
                 >
                   <div className="text-xs">{format(date, "EEE")}</div>
                   <div className="text-lg font-semibold">{format(date, "d")}</div>
@@ -256,7 +282,7 @@ const EmbedBookingPage = () => {
               Available Times
             </label>
             {loadingSlots ? (
-              <div className="flex justify-center py-4">
+              <div className="flex justify-center py-4" role="status" aria-label="Loading availability">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : availability.length === 0 ? (
@@ -274,14 +300,9 @@ const EmbedBookingPage = () => {
                       !slot.available
                         ? "bg-muted text-muted-foreground cursor-not-allowed line-through"
                         : selectedTime === slot.time
-                        ? "text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-muted hover:bg-muted/80"
                     }`}
-                    style={{
-                      backgroundColor: selectedTime === slot.time && slot.available
-                        ? primaryColor 
-                        : undefined
-                    }}
                   >
                     {slot.time}
                   </button>
@@ -295,7 +316,6 @@ const EmbedBookingPage = () => {
             className="w-full" 
             disabled={!selectedTime}
             onClick={handleBookNow}
-            style={{ backgroundColor: primaryColor }}
           >
             {selectedTime 
               ? `Book for ${format(selectedDate, "MMM d")} at ${selectedTime}`

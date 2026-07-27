@@ -18,7 +18,128 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # Static, so it runs here rather than in `smoke` with the browser-based
+      # token audit. It covers what that one structurally cannot see: colours
+      # written straight into a class string, past the token layer.
+      - run: node scripts/palette-contrast.mjs
+      # The app draws its icons with Lucide, and forty-nine lines did not — a
+      # 📅 beside a Lucide Clock is a different font at a different baseline,
+      # ignores currentColor, and is announced by its CLDR name. Static.
+      - run: node scripts/no-emoji-icons.mjs
+      # A URL parameter one part of the app writes and no part of it reads.
+      # Four were live at once — ?location= on the home page search, ?redirect=
+      # on the two paths that send a signed-out user to log in, and ?venue= on
+      # the owner settings link — each a control that renders correctly, throws
+      # nothing, and does nothing. No single page was wrong, so every browser
+      # audit here passed all of them. Static and sub-second.
+      - run: node scripts/param-handoff.mjs
+      # Its sibling: an internal link pointing at a route that does not exist.
+      # React Router has a `path="*"` catch-all, so three of these rendered a
+      # perfectly good button and served the 404 page — including the "View my
+      # bookings" escape hatch on the checkout error panel. Static too.
+      - run: node scripts/dead-routes.mjs
+      # And the check on the checks: a route in src/App.tsx that appears in no
+      # audit list is not partly covered, it is covered by nothing, while five
+      # suites report green beside it. It caught /game/:id/join-success — the
+      # screen a player lands on after paying to join a game, never once loaded
+      # by anything here, which turned out to be a duplicate-title violation.
+      - run: node scripts/route-coverage.mjs
+      # `build` now runs `postbuild` too: the sitemap is regenerated from the
+      # route table (and from the database when the deploy has credentials),
+      # and the public pages are prerendered.
       - run: npm run build
+      # Every browser check in this repo runs against `npx vite` — the dev
+      # server — so import.meta.env.DEV is true for all of them and DEV-gated
+      # code is only ever seen in its development form. This is the only thing
+      # that looks at the production shape of those branches.
+      - run: node scripts/prod-bundle-check.mjs
+      # What a crawler receives, read as bytes with no JavaScript executed.
+      # Before the prerender step, four different public URLs returned
+      # byte-identical documents with zero body text and no canonical — one
+      # blank page repeated at fifteen URLs for every crawler that does not run
+      # JavaScript, which is all of them except Googlebot.
+      - run: node scripts/crawlable.mjs
+
+  # Loads every route in a real browser and fails on a thrown error, a tripped
+  # error boundary, a blank render, or horizontal overflow.
+  #
+  # Unlike `e2e` below, this needs no secrets: the script intercepts every
+  # Supabase REST call and stubs the session, so placeholder env is enough to
+  # boot the client. That is the point — `e2e` has never actually run, because
+  # it is gated on secrets nobody has set, which left the browser completely
+  # uncovered in CI. This runs on every pull request.
+  # Five suites in parallel. This was one step that grew to twenty minutes and
+  # then kept growing; a check nobody waits for is a check nobody keeps. Split
+  # by what each measures, so a red square names its own area. The route lists
+  # they share live in scripts/lib/routes.sh, and each suite is a script you
+  # can run yourself — see docs/audits.md.
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      # Every suite reports, rather than the first failure hiding the rest.
+      fail-fast: false
+      matrix:
+        suite: [routes, semantics, contrast, surface, states]
+    env:
+      # Placeholders only. Nothing reaches the network; the project ref just
+      # has to agree with the localStorage key the script writes, which it
+      # derives from this URL.
+      VITE_SUPABASE_URL: https://smoketest.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_smoke_test_placeholder
+      VITE_SUPABASE_PROJECT_ID: smoketest
+      # Intentionally unset: VITE_YANDEX_GEOCODER_KEY. Leaving it empty
+      # exercises the no-key path in SmartSearch rather than a doomed request.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Playwright re-downloads ~291MB (Chromium + headless shell + ffmpeg) on
+      # every run, which was most of this job's wall time. Keyed on the
+      # installed Playwright version so a version bump invalidates it.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # System deps are not cached, so they are installed either way; the
+      # browser download itself is skipped on a cache hit.
+      - run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+      # The dev server and the suite share one step, so its lifetime plainly
+      # covers the run rather than depending on a backgrounded process
+      # surviving between steps.
+      - name: ${{ matrix.suite }}
+        run: |
+          set -euo pipefail
+          npx vite --host 127.0.0.1 --port 4173 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID 2>/dev/null || true' EXIT
+          up=0
+          for _ in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:4173 >/dev/null; then up=1; break; fi
+            sleep 1
+          done
+          [ "$up" = 1 ] || { echo "dev server did not come up"; exit 1; }
+
+          # Answering on the port is not the same as being ready: Vite
+          # transforms modules on demand, so the first browser through waits
+          # for the whole graph. layout-shift.mjs grabs a skeleton 2s after
+          # navigating — ample against a warm server, not nearly enough
+          # against a cold one — and it failed the first time this job was
+          # split, because in one long step it had always run fifteen minutes
+          # in behind everything else. Warming here is what makes a suite
+          # independent of the order it runs in.
+          node scripts/ci/_warm.mjs
+
+          bash scripts/ci/${{ matrix.suite }}.sh
 
   # Opt-in: set the E2E_ENABLED repository variable to 'true' and add
   # VITE_SUPABASE_* secrets to run the browser smoke pack in CI.

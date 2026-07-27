@@ -73,6 +73,11 @@ const ReviewForm = ({ venueId, userId, existingReview, onSuccess }: ReviewFormPr
               onClick={() => setRating(star)}
               onMouseEnter={() => setHoveredRating(star)}
               onMouseLeave={() => setHoveredRating(0)}
+              /* Five identical unnamed buttons: a screen reader read the
+                 rating control as "button button button button button",
+                 so there was no way to leave a rating without sight. */
+              aria-label={`${star} star${star === 1 ? "" : "s"}`}
+              aria-pressed={rating === star}
               className="p-1 transition-transform hover:scale-110"
             >
               <Star

@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Scan, MapPin, Zap, Search, Play, Square, RotateCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,19 +11,19 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const REGIONS = [
-  { key: "yerevan", label: "Yerevan", emoji: "🏙️" },
-  { key: "gyumri", label: "Gyumri", emoji: "🏘️" },
-  { key: "vanadzor", label: "Vanadzor", emoji: "🏘️" },
-  { key: "kotayk", label: "Kotayk Province", emoji: "🏔️" },
-  { key: "armavir", label: "Armavir Province", emoji: "🌾" },
-  { key: "ararat", label: "Ararat Province", emoji: "🗻" },
-  { key: "aragatsotn", label: "Aragatsotn Province", emoji: "⛰️" },
-  { key: "gegharkunik", label: "Gegharkunik Province", emoji: "🌊" },
-  { key: "lori", label: "Lori Province", emoji: "🌲" },
-  { key: "tavush", label: "Tavush Province", emoji: "🌿" },
-  { key: "syunik", label: "Syunik Province", emoji: "🏔️" },
-  { key: "vayots_dzor", label: "Vayots Dzor Province", emoji: "🍇" },
-  { key: "shirak", label: "Shirak Province", emoji: "❄️" },
+  { key: "yerevan", label: "Yerevan" },
+  { key: "gyumri", label: "Gyumri" },
+  { key: "vanadzor", label: "Vanadzor" },
+  { key: "kotayk", label: "Kotayk Province" },
+  { key: "armavir", label: "Armavir Province" },
+  { key: "ararat", label: "Ararat Province" },
+  { key: "aragatsotn", label: "Aragatsotn Province" },
+  { key: "gegharkunik", label: "Gegharkunik Province" },
+  { key: "lori", label: "Lori Province" },
+  { key: "tavush", label: "Tavush Province" },
+  { key: "syunik", label: "Syunik Province" },
+  { key: "vayots_dzor", label: "Vayots Dzor Province" },
+  { key: "shirak", label: "Shirak Province" },
 ];
 
 interface BatchProgress {
@@ -147,7 +146,7 @@ const DiscoveryControls: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ["verified-fields"] });
 
     toast.success(
-      `🏁 Full scan complete! ${accumulated.totalFound} fields found, ${accumulated.autoApproved} auto-approved across ${accumulated.batchesCompleted} batches`
+      `Full scan complete! ${accumulated.totalFound} fields found, ${accumulated.autoApproved} auto-approved across ${accumulated.batchesCompleted} batches`
     );
   }, [scanMode, maxTiles, queryClient]);
 
@@ -247,7 +246,7 @@ const DiscoveryControls: React.FC = () => {
         {/* Completed summary */}
         {!progress.isRunning && progress.batchesCompleted > 0 && (
           <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20 text-sm">
-            <span className="font-medium text-green-700">✅ Last scan complete:</span>{" "}
+            <span className="font-medium text-success">Last scan complete:</span>{" "}
             {progress.totalFound} fields found, {progress.autoApproved} auto-approved
             across {progress.batchesCompleted} batches ({progress.tilesScanned} tiles)
           </div>
@@ -264,7 +263,7 @@ const DiscoveryControls: React.FC = () => {
               <SelectContent>
                 {REGIONS.map(r => (
                   <SelectItem key={r.key} value={r.key}>
-                    {r.emoji} {r.label}
+                    {r.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -319,7 +318,7 @@ const DiscoveryControls: React.FC = () => {
                 handleAutoScan(r.key);
               }}
             >
-              {r.emoji} {r.label}
+              {r.label}
             </Button>
           ))}
         </div>

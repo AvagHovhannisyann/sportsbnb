@@ -314,7 +314,7 @@ export const useReportMessage = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ messageId, roomId }: { messageId: string; roomId: string }) => {
+    mutationFn: async ({ messageId }: { messageId: string; roomId: string }) => {
       const { error } = await supabase
         .from("chat_messages")
         .update({

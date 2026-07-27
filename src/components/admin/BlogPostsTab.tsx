@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import {
   useAllBlogPosts,
   useCreateBlogPost,
@@ -39,7 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Eye, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -171,7 +172,7 @@ const BlogPostsTab = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex justify-center py-8" role="status" aria-label="Loading posts">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : posts && posts.length > 0 ? (
@@ -203,7 +204,7 @@ const BlogPostsTab = () => {
                   </TableCell>
                   <TableCell>
                     {post.is_published ? (
-                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                      <Badge className={TONE_CHIP.positive}>
                         Published
                       </Badge>
                     ) : (
@@ -224,12 +225,12 @@ const BlogPostsTab = () => {
                           </Link>
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(post)}>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(post)} aria-label="Edit post">
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label="Delete post">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>

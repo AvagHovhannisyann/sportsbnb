@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
+import { atVenue } from "@/lib/venueTime";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useVerifyPayment, useCancelBooking, formatAmd } from "./hooks/useBookingFlow";
+import { formatTimeOfDay } from "@/lib/time";
 
 /**
  * Landing page after returning from the payment provider.
@@ -103,7 +105,7 @@ export default function BookingStatusPage() {
   const renderBody = () => {
     if (!finalStatus) {
       return (
-        <div className="text-center py-8">
+        <div className="text-center py-8" role="status" aria-label="Loading your booking">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-1">Confirming your payment…</h1>
           <p className="text-muted-foreground text-sm">This usually takes a few seconds.</p>
@@ -116,12 +118,36 @@ export default function BookingStatusPage() {
           <CheckCircle2 className="h-14 w-14 text-green-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-1">Booking confirmed!</h1>
           {booking && (
-            <p className="text-muted-foreground mb-6">
-              {booking.venue_name} ·{" "}
-              {booking.starts_at
-                ? `${format(new Date(booking.starts_at), "EEE, MMM d")} at ${format(new Date(booking.starts_at), "HH:mm")}`
-                : `${booking.booking_date} at ${booking.booking_time}`}
-            </p>
+            <>
+              <p className="text-muted-foreground mb-6">
+                {booking.venue_name} ·{" "}
+                {booking.starts_at
+                  ? `${format(atVenue(booking.starts_at), "EEE, MMM d")} at ${format(atVenue(booking.starts_at), "HH:mm")}`
+                  : `${booking.booking_date} at ${formatTimeOfDay(booking.booking_time)}`}
+              </p>
+              {/* What was charged, and something to quote.
+                  This screen confirmed a payment without stating its amount or
+                  giving any reference — and an email receipt is not guaranteed,
+                  since the sending domain is still unverified. Someone querying
+                  a charge on their card statement had nothing on this page to
+                  point at. */}
+              <dl className="mx-auto mb-6 max-w-xs space-y-1 rounded-xl bg-surface-1 px-4 py-3 text-sm">
+                {booking.amount_minor != null && (
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-muted-foreground">Paid</dt>
+                    <dd className="stat-numeral font-semibold tabular-nums text-foreground">
+                      {formatAmd(booking.amount_minor)}
+                    </dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-muted-foreground">Reference</dt>
+                  <dd className="font-mono text-xs uppercase text-foreground-soft">
+                    {booking.id.slice(0, 8)}
+                  </dd>
+                </div>
+              </dl>
+            </>
           )}
           <div className="flex justify-center gap-3">
             <Button asChild>
@@ -144,7 +170,8 @@ export default function BookingStatusPage() {
                     <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
                     <AlertDialogDescription>
                       Your refund is calculated from the venue's cancellation policy that applied
-                      when you booked. Refunds to cards usually arrive within a few business days.
+                      when you booked. Card refunds usually arrive within a few business days;
+                      Idram has no refund API, so those are processed by hand and can take longer.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

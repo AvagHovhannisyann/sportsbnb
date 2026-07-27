@@ -9,7 +9,14 @@ const Progress = React.forwardRef<
 >(({ className, value, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
-    className={cn("relative h-4 w-full overflow-hidden rounded-full bg-secondary", className)}
+    /* The track, not a secondary button.
+       shadcn defaults this to `bg-secondary` because in its palette secondary
+       is a muted grey. This design system defines --secondary as the inverted
+       near-white surface that secondary buttons use for their dark text, so
+       the unfilled part of every progress bar rendered as a bright white
+       stripe on a near-black page — in ten places, including level progress,
+       listing health, password strength and owner occupancy. */
+    className={cn("relative h-4 w-full overflow-hidden rounded-full bg-surface-3", className)}
     {...props}
   >
     <ProgressPrimitive.Indicator

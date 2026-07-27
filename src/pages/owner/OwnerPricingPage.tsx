@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, DollarSign, Plus, Trash2, Edit } from "lucide-react";
+import { Banknote, Edit, Lightbulb, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 
@@ -36,17 +36,25 @@ interface PriceRule {
 
 const OwnerPricingPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
   const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
 
-  // Demo pricing rules
-  const [priceRules, setPriceRules] = useState<PriceRule[]>([
-    { id: "1", name: "Standard Rate", pricePerHour: 10000, dayType: "all", timeRange: "all" },
-    { id: "2", name: "Weekend Premium", pricePerHour: 15000, dayType: "weekend", timeRange: "all" },
-    { id: "3", name: "Morning Special", pricePerHour: 8000, dayType: "weekday", timeRange: "morning" },
-  ]);
+  // Empty, and it has to be.
+  //
+  // This was seeded with three invented rules — "Standard Rate ֏10,000",
+  // "Weekend Premium ֏15,000", "Morning Special ֏8,000" — rendered in a table
+  // with an Actions column, directly beneath the venue's real base rate. They
+  // were identical for every owner and every venue, bore no relation to
+  // `venues.price_per_hour`, and `setPriceRules` was never called, so they
+  // could not be edited or removed either. An owner reading that page would
+  // reasonably conclude their venue charges ֏15,000 at weekends. It does not.
+  //
+  // There is no pricing-rules table in the schema; per-time pricing is not
+  // built. The table and type stay for when it is, but until then this shows
+  // the empty state that was already written and never reachable.
+  const [priceRules] = useState<PriceRule[]>([]);
 
   useEffect(() => {
     if (myVenues.length > 0 && !selectedVenueId) {
@@ -58,15 +66,19 @@ const OwnerPricingPage = () => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile?.user_type !== "owner") {
+    // isProfileLoading, not just authLoading: authLoading covers the
+    // session only, so without it this reads user_type off a null profile
+    // and bounces the owner. RequireRole already guards this route; keeping
+    // the check correct here means it stays safe if that ever changes.
+    if (!authLoading && !isProfileLoading && user && profile?.user_type !== "owner") {
       navigate("/dashboard");
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, isProfileLoading, navigate]);
 
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Pricing">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading pricing">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -93,7 +105,7 @@ const OwnerPricingPage = () => {
       {myVenues.length === 0 ? (
         <Card>
           <EmptyState
-            icon={DollarSign}
+            icon={Banknote}
             title="No venues to price"
             description="Add a venue first to set up pricing."
             actionLabel="Add Your First Venue"
@@ -109,7 +121,7 @@ const OwnerPricingPage = () => {
               value={selectedVenueId || ""}
               onValueChange={setSelectedVenueId}
             >
-              <SelectTrigger className="w-full max-w-xs">
+              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a venue" />
               </SelectTrigger>
               <SelectContent>
@@ -125,8 +137,8 @@ const OwnerPricingPage = () => {
           {/* Base Price */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
+              <CardTitle as="h2" className="flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-primary" />
                 Base Price
               </CardTitle>
               <CardDescription>
@@ -134,11 +146,17 @@ const OwnerPricingPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-xs">
+              {/* Wraps: the input, the "per hour" label and a 220px button
+                  were one non-wrapping row, which put the button 3px past the
+                  right edge of a 375px screen and scrolled the page. */}
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div className="relative min-w-0 flex-1 max-w-xs">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">֏</span>
+                  {/* The ֏ prefix is decorative text, not a label, so this
+                      field announced as an unnamed spinbutton. */}
                   <Input
                     type="number"
+                    aria-label="Hourly rate in Armenian dram"
                     value={selectedVenue?.price_per_hour || 0}
                     className="pl-8"
                     readOnly
@@ -157,12 +175,14 @@ const OwnerPricingPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Dynamic Pricing Rules</CardTitle>
+                <CardTitle as="h2">Dynamic Pricing Rules</CardTitle>
                 <CardDescription>
                   Set different prices based on day and time
                 </CardDescription>
               </div>
-              <Button size="sm">
+              {/* Disabled: nothing persists pricing rules yet, and a button
+                  that silently does nothing is worse than one that says so. */}
+              <Button size="sm" disabled title="Pricing rules aren't available yet">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Rule
               </Button>
@@ -170,11 +190,9 @@ const OwnerPricingPage = () => {
             <CardContent>
               {priceRules.length === 0 ? (
                 <EmptyState
-                  icon={DollarSign}
-                  title="No pricing rules"
-                  description="Add rules to set different prices for weekends, evenings, or peak hours."
-                  actionLabel="Add Pricing Rule"
-                  onAction={() => {}}
+                  icon={Banknote}
+                  title="Every booking uses your base rate"
+                  description="Different prices for weekends, evenings or peak hours aren't available yet. Change the base rate in venue settings above."
                   className="py-8"
                 />
               ) : (
@@ -222,7 +240,10 @@ const OwnerPricingPage = () => {
           {/* Pricing Tips */}
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-6">
-              <h4 className="font-medium text-foreground mb-3">💡 Pricing Tips</h4>
+              <h3 className="mb-3 flex items-center gap-1.5 font-medium text-foreground">
+                <Lightbulb className="h-4 w-4 text-primary" aria-hidden="true" />
+                Pricing tips
+              </h3>
               <ul className="text-sm text-muted-foreground space-y-2">
                 <li>• Set higher prices for peak hours (evenings and weekends) to maximize revenue</li>
                 <li>• Offer discounts for early morning slots to fill less popular times</li>

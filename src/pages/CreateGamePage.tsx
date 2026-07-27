@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Users, DollarSign } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -135,7 +135,7 @@ const CreateGamePage = () => {
   if (authLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading the game form">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       </Layout>
@@ -148,11 +148,11 @@ const CreateGamePage = () => {
         <div className="container py-8 max-w-2xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Create a Game</h1>
+              <h1 className="page-title">Create a Game</h1>
               <p className="text-muted-foreground">Find players for your next match</p>
             </div>
           </div>
@@ -161,7 +161,7 @@ const CreateGamePage = () => {
             {/* Game Details */}
             <Card>
               <CardHeader>
-                <CardTitle>Game Details</CardTitle>
+                <CardTitle as="h2">Game Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -194,7 +194,7 @@ const CreateGamePage = () => {
                       value={formData.sport}
                       onValueChange={(value) => setFormData({ ...formData, sport: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Sport">
                         <SelectValue placeholder="Select sport" />
                       </SelectTrigger>
                       <SelectContent>
@@ -213,7 +213,7 @@ const CreateGamePage = () => {
                       value={formData.skillLevel}
                       onValueChange={(value) => setFormData({ ...formData, skillLevel: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Skill level">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -271,7 +271,7 @@ const CreateGamePage = () => {
                         value={formData.teamId}
                         onValueChange={(value) => setFormData({ ...formData, teamId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger aria-label="Team">
                           <SelectValue placeholder="Choose your team" />
                         </SelectTrigger>
                         <SelectContent>
@@ -301,7 +301,7 @@ const CreateGamePage = () => {
                   <div className="space-y-2">
                     <Label>Select a Venue (optional)</Label>
                     <Select value={formData.venueId} onValueChange={handleVenueSelect}>
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Venue">
                         <SelectValue placeholder="Choose from listed venues" />
                       </SelectTrigger>
                       <SelectContent>
@@ -317,7 +317,12 @@ const CreateGamePage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Location Address *</Label>
+                  {/* The id has to reach the inner input. Without it this label
+                      pointed at nothing and the field was named by its
+                      placeholder — a different string from the one printed
+                      beside it, which is WCAG 2.5.3. */}
                   <LocationAutocomplete
+                    id="location"
                     value={formData.location}
                     onSelect={handleLocationSelect}
                     onClear={() => setFormData(prev => ({ 
@@ -351,7 +356,7 @@ const CreateGamePage = () => {
                       value={formData.gameDate}
                       onValueChange={(value) => setFormData({ ...formData, gameDate: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Date">
                         <SelectValue placeholder="Select date" />
                       </SelectTrigger>
                       <SelectContent>
@@ -370,7 +375,7 @@ const CreateGamePage = () => {
                       value={formData.gameTime}
                       onValueChange={(value) => setFormData({ ...formData, gameTime: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Time">
                         <SelectValue placeholder="Select time" />
                       </SelectTrigger>
                       <SelectContent>
@@ -390,7 +395,7 @@ const CreateGamePage = () => {
                     value={formData.durationHours}
                     onValueChange={(value) => setFormData({ ...formData, durationHours: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Duration">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -419,7 +424,7 @@ const CreateGamePage = () => {
                       value={formData.maxPlayers}
                       onValueChange={(value) => setFormData({ ...formData, maxPlayers: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Max players">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

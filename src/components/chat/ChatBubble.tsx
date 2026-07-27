@@ -98,6 +98,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Message actions"
                   className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <MoreVertical className="h-3 w-3" />
@@ -134,6 +135,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Message actions"
                   className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <MoreVertical className="h-3 w-3" />

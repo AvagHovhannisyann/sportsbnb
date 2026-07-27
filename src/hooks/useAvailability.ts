@@ -138,7 +138,7 @@ export const useRemoveBlockedDate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, venueId }: { id: string; venueId: string }) => {
+    mutationFn: async ({ id }: { id: string; venueId: string }) => {
       const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
       if (error) throw error;
     },

@@ -24,6 +24,18 @@ interface Prediction {
 }
 
 interface LocationAutocompleteProps {
+  /**
+   * Put on the inner `<input>`, so a `<Label htmlFor=…>` outside this
+   * component can actually reach it.
+   *
+   * Without it the label pointed at nothing — `CreateGamePage` rendered
+   * `<Label htmlFor="location">Location Address *</Label>` above a component
+   * that had no element with that id — so Chrome fell back to naming the field
+   * by its placeholder. `a11y-names` passed it, correctly: the control did have
+   * an accessible name. It was just not the one printed beside it, which is
+   * what WCAG 2.5.3 is about and what a speech-input user says out loud.
+   */
+  id?: string;
   value: string;
   onSelect: (place: LocationPlace) => void;
   onClear?: () => void;
@@ -36,6 +48,7 @@ interface LocationAutocompleteProps {
 }
 
 export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
+  id,
   value,
   onSelect,
   onClear,
@@ -216,6 +229,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          id={id}
           ref={inputRef}
           type="text"
           value={inputValue}
@@ -231,6 +245,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         )}
         {!isLoading && inputValue && (
           <button
+            aria-label="Clear location"
             type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

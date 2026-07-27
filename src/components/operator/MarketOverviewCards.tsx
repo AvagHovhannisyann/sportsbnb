@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { TONE_CHIP } from "@/lib/chips";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, DollarSign, Users, Gamepad2, TrendingUp } from "lucide-react";
+import { Building2, Calendar, Banknote, Users, Gamepad2, TrendingUp } from "lucide-react";
 import { MarketMetrics, formatMoney } from "@/hooks/useOperatorMetrics";
 
 const flagFor = (market: string) => {
@@ -20,15 +21,15 @@ export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{flagFor(m.market)}</span>
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground">{m.market}</h3>
+                  <h2 className="text-lg font-semibold text-foreground">{m.market}</h2>
                   <p className="text-xs text-muted-foreground">{m.currency} market</p>
                 </div>
               </div>
               <Badge
                 className={
                   m.liquidityHealthy
-                    ? "bg-green-500/10 text-green-500 border-green-500/20"
-                    : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                    ? TONE_CHIP.positive
+                    : TONE_CHIP.warning
                 }
               >
                 {m.liquidityHealthy ? "Healthy liquidity" : "Below target"}
@@ -36,7 +37,7 @@ export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <Metric icon={DollarSign} label="GMV (30d)" value={formatMoney(m.gmv30d, m.currency)} />
+              <Metric icon={Banknote} label="GMV (30d)" value={formatMoney(m.gmv30d, m.currency)} />
               <Metric icon={Calendar} label="Bookings" value={m.bookings30d.toString()} />
               <Metric icon={Users} label="New users" value={m.newUsers30d.toString()} />
             </div>

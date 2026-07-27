@@ -29,8 +29,12 @@ export const VenueChatButton = ({ venueId, venueName, ownerId }: VenueChatButton
     setIsOpen(true);
   };
 
+  // The card chrome lives here rather than at the call site. It used to wrap
+  // this component in VenueDetailsPage, which meant the owner-viewing-their-own
+  // -listing case above returned null into a bordered box that still rendered —
+  // an empty grey card sitting under the booking panel with nothing in it.
   return (
-    <>
+    <div className="rounded-2xl border bg-card p-4">
       <Button
         variant="outline"
         className="w-full gap-2"
@@ -49,6 +53,6 @@ export const VenueChatButton = ({ venueId, venueName, ownerId }: VenueChatButton
           ownerId={ownerId}
         />
       )}
-    </>
+    </div>
   );
 };

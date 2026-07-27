@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import {
@@ -33,7 +33,7 @@ import { format } from "date-fns";
 
 const OwnerHoursPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
   const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -77,15 +77,19 @@ const OwnerHoursPage = () => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile?.user_type !== "owner") {
+    // isProfileLoading, not just authLoading: authLoading covers the
+    // session only, so without it this reads user_type off a null profile
+    // and bounces the owner. RequireRole already guards this route; keeping
+    // the check correct here means it stays safe if that ever changes.
+    if (!authLoading && !isProfileLoading && user && profile?.user_type !== "owner") {
       navigate("/dashboard");
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, isProfileLoading, navigate]);
 
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Opening Hours">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading opening hours">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -144,7 +148,6 @@ const OwnerHoursPage = () => {
     }
   };
 
-  const selectedVenue = myVenues.find((v) => v.id === selectedVenueId);
 
   return (
     <OwnerLayout title="Opening Hours" subtitle="Set your weekly schedule and manage exceptions">
@@ -167,7 +170,7 @@ const OwnerHoursPage = () => {
               value={selectedVenueId || ""}
               onValueChange={setSelectedVenueId}
             >
-              <SelectTrigger className="w-full max-w-xs">
+              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
                 <SelectValue placeholder="Select a venue" />
               </SelectTrigger>
               <SelectContent>
@@ -183,7 +186,7 @@ const OwnerHoursPage = () => {
           {/* Weekly Hours */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
                 Weekly Schedule
               </CardTitle>
@@ -193,7 +196,7 @@ const OwnerHoursPage = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {hoursLoading ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-8" role="status" aria-label="Loading opening hours">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
@@ -201,40 +204,63 @@ const OwnerHoursPage = () => {
                   {hours.map((hour) => (
                     <div
                       key={hour.day_of_week}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors"
+                      /* Wraps below sm. A day row is a fixed 112px label, a
+                         toggle, and two 128px time inputs on one line — about
+                         520px that never fitted a 375px phone, so the whole
+                         opening-hours page scrolled sideways. Below sm the
+                         time range drops to its own full-width line. */
+                      className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors sm:gap-4"
                     >
-                      <div className="w-28 font-medium text-foreground">
+                      <div className="w-24 font-medium text-foreground sm:w-28">
                         {DAYS_OF_WEEK[hour.day_of_week]}
                       </div>
+                      {/* All seven switches were anonymous: no id, no label,
+                          no aria-label, so a screen reader read this page as
+                          "switch, on" seven times with nothing to say which
+                          day it was closing. The day name is the switch's
+                          name; "Open"/"Closed" is its state, and is now a
+                          label so tapping the word works too — the switch
+                          alone is a 16px-tall target. */}
                       <div className="flex items-center gap-3">
                         <Switch
+                          id={`day-open-${hour.day_of_week}`}
+                          aria-label={DAYS_OF_WEEK[hour.day_of_week]}
                           checked={!hour.is_closed}
                           onCheckedChange={(checked) =>
                             handleHourChange(hour.day_of_week, "is_closed", !checked)
                           }
                         />
-                        <span className={`text-sm ${hour.is_closed ? "text-destructive" : "text-emerald-600"}`}>
+                        <Label
+                          htmlFor={`day-open-${hour.day_of_week}`}
+                          /* text-emerald-600 was off the token system, and the
+                             one beside it was already on it. */
+                          className={`cursor-pointer py-1 text-sm font-normal ${
+                            hour.is_closed ? "text-destructive" : "text-success"
+                          }`}
+                        >
                           {hour.is_closed ? "Closed" : "Open"}
-                        </span>
+                        </Label>
                       </div>
                       {!hour.is_closed && (
-                        <div className="flex items-center gap-2 ml-auto">
+                        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
                           <Input
                             type="time"
+                            aria-label={`${DAYS_OF_WEEK[hour.day_of_week]} opening time`}
                             value={hour.open_time}
                             onChange={(e) =>
                               handleHourChange(hour.day_of_week, "open_time", e.target.value)
                             }
-                            className="w-32"
+                            className="flex-1 sm:w-32 sm:flex-none"
                           />
                           <span className="text-muted-foreground">to</span>
                           <Input
                             type="time"
+                            aria-label={`${DAYS_OF_WEEK[hour.day_of_week]} closing time`}
                             value={hour.close_time}
                             onChange={(e) =>
                               handleHourChange(hour.day_of_week, "close_time", e.target.value)
                             }
-                            className="w-32"
+                            className="flex-1 sm:w-32 sm:flex-none"
                           />
                         </div>
                       )}
@@ -266,7 +292,7 @@ const OwnerHoursPage = () => {
           {/* Exceptions / Blocked Dates */}
           <Card>
             <CardHeader>
-              <CardTitle>Date Exceptions</CardTitle>
+              <CardTitle as="h2">Date Exceptions</CardTitle>
               <CardDescription>
                 Block specific dates for holidays, maintenance, or special events
               </CardDescription>
@@ -320,8 +346,16 @@ const OwnerHoursPage = () => {
                           {format(new Date(blocked.blocked_date), "MMM d, yyyy")}
                           {blocked.reason && ` — ${blocked.reason}`}
                         </span>
+                        {/* Named, like the removable chips in filter-chips.tsx. This was a
+                            bare <button> holding a 12px X: a screen reader
+                            announced "button" and nothing else, so with several
+                            blocked dates listed there was no way to tell which
+                            one it would remove. It had never been reported
+                            because `blocked_dates` was missing from the audit
+                            fixtures, so this list always rendered empty. */}
                         <button
                           onClick={() => handleRemoveBlockedDate(blocked.id)}
+                          aria-label={`Remove the block on ${format(new Date(blocked.blocked_date), "MMM d, yyyy")}`}
                           className="hover:text-destructive transition-colors"
                         >
                           <X className="h-3 w-3" />

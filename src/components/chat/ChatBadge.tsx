@@ -14,7 +14,7 @@ export const ChatBadge = ({ className }: ChatBadgeProps) => {
     <span
       className={cn(
         "absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center",
-        "bg-destructive text-destructive-foreground text-xs font-medium rounded-full",
+        "bg-destructive-solid text-destructive-foreground text-xs font-medium rounded-full",
         className
       )}
     >

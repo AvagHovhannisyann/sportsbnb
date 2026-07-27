@@ -3,7 +3,6 @@ import SEOHead from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Building,
   Calendar,
   BarChart3,
   Globe,
@@ -13,12 +12,9 @@ import {
   Users,
   CheckCircle,
   Smartphone,
-  Zap,
   MessageCircle,
   Settings,
   Star,
-  TrendingUp,
-  Code,
   CalendarSync,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -51,7 +47,7 @@ const ForOwnersPage = () => {
     {
       icon: CreditCard,
       title: "Instant Booking & Payments",
-      description: "Players book and pay online instantly. Funds go directly to your Stripe account. No cash handling, no invoicing, no delays.",
+      description: "Players book and pay online instantly by card or Idram. We collect, then pay out to your account — no cash handling, no invoicing, no chasing.",
     },
     {
       icon: BarChart3,
@@ -105,43 +101,40 @@ const ForOwnersPage = () => {
     },
   ];
 
+  // Every figure here has to be traceable to the build. "40% more bookings on
+  // average" and "24/7 customer support" were placeholder claims with no
+  // customers and no support rota behind them; they are replaced with the
+  // payout cadence (payouts-run cron) and the settlement currency, both of
+  // which are facts about the system rather than promises about outcomes.
   const stats = [
-    { value: "40%", label: "More bookings on average" },
-    { value: "5%", label: "Simple platform commission" },
+    { value: "5%", label: "Platform commission — the only fee" },
     { value: "0", label: "Monthly fees or hidden costs" },
-    { value: "24/7", label: "Customer support" },
+    { value: "Weekly", label: "Payouts, every booking itemised" },
+    { value: "AMD", label: "Settled in dram — card or Idram" },
   ];
 
   const onboardingSteps = [
     { step: "1", title: "Create your account", description: "Sign up as a venue owner in under 2 minutes. No credit card required." },
     { step: "2", title: "Add your venue", description: "Upload photos, set prices, define hours, and configure your policies." },
-    { step: "3", title: "Connect payments", description: "Link your Stripe account to receive payouts directly to your bank." },
-    { step: "4", title: "Go live", description: "Once approved, your venue is visible to thousands of active players." },
-  ];
-
-  const testimonials = [
-    {
-      quote: "We went from managing bookings on paper to a fully automated system. Revenue is up 35% in three months.",
-      name: "Arena Sports Complex",
-      role: "Football & Basketball Venue",
-    },
-    {
-      quote: "The calendar sync alone saves us hours every week. Our staff can focus on the facility instead of phone calls.",
-      name: "City Tennis Club",
-      role: "Tennis & Padel Venue",
-    },
-    {
-      quote: "The booking widget on our website has been a game-changer. Players book directly without any friction.",
-      name: "Olympic Swimming Center",
-      role: "Aquatics Facility",
-    },
+    { step: "3", title: "Add your payout details", description: "Your Armenian bank account or Idram wallet — that's where your earnings land." },
+    // "thousands of active players" is the same unmeasured claim, in the
+    // visible copy this time. What is true is that approval is a real
+    // step and that the listing then appears in search and on the map.
+    { step: "4", title: "Go live", description: "Once approved, your venue appears in search, on the map, and is bookable by the hour." },
   ];
 
   return (
     <Layout>
       <SEOHead
-        title="List Your Sports Venue — Grow Revenue"
-        description="List your sports facility on Sportsbnb. Reach thousands of active players, automate bookings, and increase revenue by up to 40%. Free to get started."
+        /* The rule stated forty lines above — every figure traceable to the
+           build — was applied to the stats block and not to this description,
+           which is the copy Google actually shows. It read "Reach thousands of
+           active players... increase revenue by up to 40%": the same
+           placeholder claim the comment says was removed, with no customers
+           and no measurement behind either half of it. Replaced with the four
+           facts the stats block settled on. */
+        title="List Your Sports Venue in Armenia — Sportsbnb for Owners"
+        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card and Idram payments in dram, and keep 100% of your price — players pay a 5% fee on top. No listing fee, no monthly cost."
         canonical="/for-owners"
       />
       {/* ── Hero ── */}
@@ -172,9 +165,14 @@ const ForOwnersPage = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease, delay: 0.35 }}
-              className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-[0.95] tracking-tighter mb-6 md:mb-8"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.95] tracking-tighter mb-6 md:mb-8"
             >
-              Your venue.{" "}
+              {/* Explicit break: left to flow, "Your venue. Our" filled line one
+                  and stranded "platform." on line two, splitting the phrase in
+                  the wrong place. Also brought down from text-8xl (96px) to
+                  match the scale the rebuilt home page settled on. */}
+              Your venue.
+              <br />
               <span className="text-primary">Our platform.</span>
             </motion.h1>
 
@@ -193,21 +191,19 @@ const ForOwnersPage = () => {
               transition={{ duration: 0.7, ease, delay: 0.7 }}
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
             >
-              <Link to="/list-venue">
-                <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold shadow-2xl">
+              <Button asChild size="xl" className="w-full sm:w-auto rounded-full font-semibold shadow-2xl">
+                <Link to="/list-venue">
                   List your venue free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button
+                </Link>
+              </Button>
+              <Button asChild
                   variant="ghost"
                   size="xl"
                   className="w-full sm:w-auto rounded-full font-semibold text-white/90 hover:text-white hover:bg-white/10 border border-white/20"
                 >
-                  Talk to our team
-                </Button>
-              </Link>
+                <Link to="/contact">Talk to our team</Link>
+              </Button>
             </motion.div>
           </div>
         </div>
@@ -216,10 +212,17 @@ const ForOwnersPage = () => {
       {/* ── Stats ── */}
       <section className="py-16 md:py-24 bg-background border-b border-border/50">
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
               <motion.div key={stat.label} {...stagger(index * 0.1)} className="text-center">
-                <p className="text-3xl md:text-5xl lg:text-6xl font-bold text-primary tracking-tighter mb-2">{stat.value}</p>
+                {/* Sized down from lg:text-6xl: the band was built for short
+                    numerals, and a word-length value ("Weekly") ran straight
+                    into its neighbour at 60px. The dram sign also left the
+                    value slot — U+058F has no coverage in either bundled font,
+                    so it is not a glyph to hang a headline number on. */}
+                <p className="mb-2 text-3xl font-bold tracking-tighter text-primary md:text-4xl lg:text-5xl">
+                  {stat.value}
+                </p>
                 <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
               </motion.div>
             ))}
@@ -228,9 +231,9 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── All Features ── */}
-      <section className="py-20 md:py-40 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Everything You Need
             </p>
@@ -249,7 +252,7 @@ const ForOwnersPage = () => {
                 <motion.div
                   key={feature.title}
                   {...stagger(index * 0.05)}
-                  className="group bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl md:rounded-3xl p-6 md:p-8"
+                  className="group bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl md:rounded-3xl p-5 md:p-6"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-5">
                     <Icon className="h-6 w-6" strokeWidth={1.5} />
@@ -264,7 +267,7 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Pricing Model ── */}
-      <section className="py-20 md:py-40 bg-secondary">
+      <section className="surface-invert py-16 md:py-24 bg-secondary">
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center max-w-6xl mx-auto">
             <motion.div {...fadeUp}>
@@ -280,9 +283,9 @@ const ForOwnersPage = () => {
               <div className="space-y-4">
                 {[
                   "You set your own prices — we add 5% on top for the player",
-                  "You receive 100% of your listed price directly to your bank",
+                  "You receive 100% of your listed price — the 5% is what the player pays on top",
                   "Players see the final price upfront — no surprises",
-                  "Payouts processed automatically via Stripe",
+                  "Weekly payouts to your bank account or Idram wallet",
                   "No minimum commitment — cancel anytime",
                 ].map((item, i) => (
                   <motion.div key={i} {...stagger(i * 0.08)} className="flex items-start gap-3">
@@ -300,32 +303,32 @@ const ForOwnersPage = () => {
               <div className="border-t border-secondary-foreground/10 pt-6 space-y-3">
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Monthly fee</span>
-                  <span className="text-secondary-foreground font-semibold">$0</span>
+                  <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Setup fee</span>
-                  <span className="text-secondary-foreground font-semibold">$0</span>
+                  <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Hidden costs</span>
-                  <span className="text-secondary-foreground font-semibold">$0</span>
+                  <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
               </div>
-              <Link to="/list-venue" className="block mt-8">
-                <Button size="lg" className="w-full rounded-full font-semibold">
+              <Button asChild size="lg" className="mt-8 w-full rounded-full font-semibold">
+                <Link to="/list-venue">
                   Get started free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* ── How to Get Started ── */}
-      <section className="py-20 md:py-40 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Getting Started
             </p>
@@ -337,7 +340,7 @@ const ForOwnersPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-4 gap-6 md:gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-5 md:gap-6 max-w-5xl mx-auto">
             {onboardingSteps.map((item, index) => (
               <motion.div key={item.step} {...stagger(index * 0.12)} className="text-center">
                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary text-primary-foreground text-xl md:text-2xl font-bold flex items-center justify-center mx-auto mb-5 md:mb-6">
@@ -352,9 +355,9 @@ const ForOwnersPage = () => {
       </section>
 
       {/* ── Showcase Image ── */}
-      <section className="py-20 md:py-40 bg-muted/20 overflow-hidden">
+      <section className="py-16 md:py-24 bg-muted/20 overflow-hidden">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
+          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
             <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
               Built for facilities<br className="hidden md:block" /> <span className="text-primary">of every size.</span>
             </h2>
@@ -367,7 +370,7 @@ const ForOwnersPage = () => {
               { img: venueBasketball, label: "Multi-Sport Complexes" },
             ].map((item, index) => (
               <motion.div key={item.label} {...stagger(index * 0.12)} className="relative aspect-[4/5] rounded-2xl md:rounded-3xl overflow-hidden group">
-                <img src={item.img} alt={item.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={item.img} alt={item.label} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8">
                   <h3 className="text-white text-lg md:text-2xl font-semibold tracking-tight">{item.label}</h3>
@@ -378,45 +381,7 @@ const ForOwnersPage = () => {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <section className="py-20 md:py-40 bg-background">
-        <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12 md:mb-20">
-            <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-              Trusted by Venues
-            </p>
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
-              What owners say.
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-            {testimonials.map((t, index) => (
-              <motion.div
-                key={t.name}
-                {...stagger(index * 0.12)}
-                className="bg-muted/20 rounded-2xl md:rounded-3xl p-6 md:p-10 flex flex-col"
-              >
-                <div className="flex gap-1 mb-4 md:mb-6">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 md:h-5 md:w-5 fill-primary text-primary" />
-                  ))}
-                </div>
-                <p className="text-foreground text-sm md:text-lg leading-relaxed mb-6 md:mb-8 flex-1">
-                  "{t.quote}"
-                </p>
-                <div>
-                  <p className="font-semibold text-foreground text-sm md:text-base">{t.name}</p>
-                  <p className="text-muted-foreground text-xs md:text-sm">{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Partnership CTA ── */}
-      <section className="py-20 md:py-40 bg-secondary">
+      <section className="surface-invert py-16 md:py-24 bg-secondary">
         <div className="container">
           <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
@@ -429,21 +394,19 @@ const ForOwnersPage = () => {
               We're not just a booking platform — we're your growth partner. More visibility, more players, more revenue. No risk, no commitment.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Link to="/list-venue">
-                <Button size="xl" className="w-full sm:w-auto rounded-full font-semibold">
+              <Button asChild size="xl" className="w-full sm:w-auto rounded-full font-semibold">
+                <Link to="/list-venue">
                   List your venue free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button
+                </Link>
+              </Button>
+              <Button asChild
                   variant="secondaryOutline"
                   size="xl"
                   className="w-full sm:w-auto rounded-full font-semibold"
                 >
-                  Contact partnerships
-                </Button>
-              </Link>
+                <Link to="/contact">Contact partnerships</Link>
+              </Button>
             </div>
           </motion.div>
         </div>

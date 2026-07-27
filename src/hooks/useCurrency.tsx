@@ -1,62 +1,37 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { CURRENCIES, COUNTRY_CURRENCY_MAP } from "@/lib/currencies";
 
-// Currency configurations with symbols and locale info
-export const CURRENCIES: Record<string, { symbol: string; name: string; locale: string }> = {
-  USD: { symbol: "$", name: "US Dollar", locale: "en-US" },
-  EUR: { symbol: "€", name: "Euro", locale: "de-DE" },
-  GBP: { symbol: "£", name: "British Pound", locale: "en-GB" },
-  AMD: { symbol: "֏", name: "Armenian Dram", locale: "hy-AM" },
-  RUB: { symbol: "₽", name: "Russian Ruble", locale: "ru-RU" },
-  GEL: { symbol: "₾", name: "Georgian Lari", locale: "ka-GE" },
-  TRY: { symbol: "₺", name: "Turkish Lira", locale: "tr-TR" },
-  AED: { symbol: "د.إ", name: "UAE Dirham", locale: "ar-AE" },
-  INR: { symbol: "₹", name: "Indian Rupee", locale: "hi-IN" },
-  JPY: { symbol: "¥", name: "Japanese Yen", locale: "ja-JP" },
-  CNY: { symbol: "¥", name: "Chinese Yuan", locale: "zh-CN" },
-  KRW: { symbol: "₩", name: "South Korean Won", locale: "ko-KR" },
-  BRL: { symbol: "R$", name: "Brazilian Real", locale: "pt-BR" },
-  CAD: { symbol: "CA$", name: "Canadian Dollar", locale: "en-CA" },
-  AUD: { symbol: "A$", name: "Australian Dollar", locale: "en-AU" },
-};
-
-// Country to currency mapping for auto-detection
-const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  US: "USD",
-  GB: "GBP",
-  DE: "EUR",
-  FR: "EUR",
-  IT: "EUR",
-  ES: "EUR",
-  NL: "EUR",
-  BE: "EUR",
-  AT: "EUR",
-  PT: "EUR",
-  IE: "EUR",
-  FI: "EUR",
-  GR: "EUR",
-  AM: "AMD",
-  RU: "RUB",
-  GE: "GEL",
-  TR: "TRY",
-  AE: "AED",
-  IN: "INR",
-  JP: "JPY",
-  CN: "CNY",
-  KR: "KRW",
-  BR: "BRL",
-  CA: "CAD",
-  AU: "AUD",
-};
+export { CURRENCIES, COUNTRY_CURRENCY_MAP } from "@/lib/currencies";
 
 interface CurrencyContextType {
   currency: string;
   setCurrency: (currency: string) => void;
-  formatPrice: (amount: number) => string;
   isLoading: boolean;
   detectedCurrency: string | null;
 }
+/**
+ * There was a `formatPrice` here and it is gone. Nothing imported it, and it
+ * was a loaded gun:
+ *
+ *   new Intl.NumberFormat(locale, { style: "currency", currency })
+ *     .format(amount)
+ *
+ * `amount` is `price_per_hour`, stored in Armenian dram. That call relabels
+ * without converting — there is no FX layer in this app to convert with — so a
+ * 13,000 dram pitch renders as "$13,000" to anyone whose currency is dollars,
+ * and the default here is USD unless the timezone happens to be one of
+ * seventeen in a hardcoded map. That is roughly a 400x overstatement on the
+ * number the entire booking decision turns on.
+ *
+ * It is not hypothetical: `src/lib/pricing.ts` carries a long comment about
+ * having had exactly this bug and fixing it, which is the version every price
+ * on screen now goes through. Leaving a second, broken formatter in the
+ * codebase for someone to wire up later is how that gets undone. If display
+ * currency is ever wanted for real it needs rates, a staleness policy, and the
+ * charge still shown in the currency it will settle in — see docs/handover.md.
+ */
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
@@ -152,29 +127,11 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     localStorage.setItem("preferred_currency", newCurrency);
   };
 
-  // Format price with currency
-  const formatPrice = (amount: number): string => {
-    const currencyInfo = CURRENCIES[currency] || CURRENCIES.USD;
-    
-    try {
-      return new Intl.NumberFormat(currencyInfo.locale, {
-        style: "currency",
-        currency: currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(amount);
-    } catch {
-      // Fallback formatting
-      return `${currencyInfo.symbol}${amount.toLocaleString()}`;
-    }
-  };
-
   return (
     <CurrencyContext.Provider
       value={{
         currency,
         setCurrency,
-        formatPrice,
         isLoading,
         detectedCurrency,
       }}

@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { subDays, format, startOfDay } from "date-fns";
+import { classifyMarket, currencyFor, type Market, type Currency } from "@/lib/market";
 
-export type Market = "Yerevan" | "Los Angeles" | "Other";
-export type Currency = "AMD" | "USD";
+// Re-exported so existing importers of this hook keep working; the
+// definitions and the classifier now live in src/lib/market.ts, which is
+// testable without pulling in the Supabase client.
+export type { Market, Currency };
 
 export interface MarketMetrics {
   market: Market;
@@ -47,21 +50,6 @@ export interface OperatorMetrics {
   neighborhoods: NeighborhoodRow[];
   gmvTrend: GMVPoint[];
   retention: RetentionMetrics;
-}
-
-const LA_KEYWORDS = ["los angeles", "la", "santa monica", "pasadena", "hollywood", "venice", "west la", "beverly", "culver"];
-const YEREVAN_KEYWORDS = ["yerevan", "երևան", "kentron", "arabkir", "ajapnyak", "davtashen", "malatia", "shengavit", "erebuni", "nor nork", "nork", "kanaker"];
-
-function classifyMarket(city: string | null | undefined): Market {
-  if (!city) return "Other";
-  const c = city.toLowerCase().trim();
-  if (YEREVAN_KEYWORDS.some((k) => c.includes(k))) return "Yerevan";
-  if (LA_KEYWORDS.some((k) => c.includes(k))) return "Los Angeles";
-  return "Other";
-}
-
-function currencyFor(market: Market): Currency {
-  return market === "Yerevan" ? "AMD" : "USD";
 }
 
 export const useOperatorMetrics = () => {

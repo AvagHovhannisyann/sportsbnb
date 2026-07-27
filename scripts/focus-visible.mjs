@@ -1,0 +1,296 @@
+#!/usr/bin/env node
+/**
+ * Every keyboard-focusable control must show a visible focus indicator.
+ *
+ * WCAG 2.4.7, Level AA — an actual success criterion rather than a best
+ * practice. Someone navigating by keyboard needs to know where they are.
+ *
+ * This measures **pixels**, and that is the whole point of the script.
+ *
+ * The obvious implementation is to read `getComputedStyle(el).outline` and
+ * `.boxShadow` while the element is focused and check that something appeared.
+ * I wrote that first, ran it over seven routes, and it reported thirteen
+ * controls with no focus ring — including the primary button on the games
+ * page. Every one of them was wrong. The custom properties were correct at the
+ * same moment (`--tw-ring-shadow: 0 0 0 calc(2px + 2px) hsl(151 90% 47%)`),
+ * but the composed `box-shadow` shorthand read back as the transparent
+ * fallback, so a Tailwind ring is invisible to that method even while it is
+ * painting. Screenshotting the same button focused and unfocused showed 16% of
+ * the surrounding pixels changing.
+ *
+ * So: tab to a control, screenshot it, blur, screenshot again, and count
+ * pixels that differ. That is what a person actually sees, and it is immune to
+ * however the indicator is implemented — outline, ring, border, background.
+ *
+ * Real keyboard `Tab` presses, not `.focus()`: `:focus-visible` deliberately
+ * does not match programmatic focus on a button, so `.focus()` measures a
+ * state no user is ever in.
+ *
+ * IT ALSO CHECKS WCAG 2.2 SC 2.4.11, Focus Not Obscured (Minimum), AA.
+ *
+ * A ring that is painted and then covered is not a visible indicator. The
+ * pixel diff catches that case only by accident — the covered ring changes
+ * nothing on screen, so the count is zero — and a zero that means "obscured"
+ * looks exactly like a zero that means "no ring at all". So obscuring is
+ * asked about directly: sample a grid of points across the focused element
+ * and see whether any of them resolves back to it. If none do, something is
+ * painted over the whole thing.
+ *
+ * That check is here because this file found the case. Tabbing to the "View
+ * all" link on /community reported 0 changed pixels, stably, and I wrote it
+ * up as a fault in how the clip is derived after a scroll. That explanation
+ * was wrong, and it was wrong in a way the number itself contradicted: a
+ * mis-framed clip gives *many* changed pixels, not none. Measuring instead of
+ * re-reading my own note: the link sat at y=6 with the sticky header
+ * occupying y=0–65 at z-50, and `elementFromPoint` at its centre returned the
+ * header. The ring was correct and hidden behind the bar — and not only
+ * there, but for every element the browser scrolls to the top of the
+ * viewport, on every page, for want of a `scroll-padding-top`.
+ *
+ * Known limitation: `elementFromPoint` skips `pointer-events: none`, so a
+ * decorative overlay that covers an element without capturing clicks is
+ * invisible to this. The bar that prompted the check does capture them.
+ *
+ * Usage:
+ *   node scripts/focus-visible.mjs <player|owner|admin> <route>...
+ */
+import { chromium } from '@playwright/test';
+import { newStubbedPage, resolveRoute, waitForAppReady } from '../scripts/lib/stub-page.mjs';
+
+const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
+const WIDTH = Number(process.env.SMOKE_WIDTH ?? 1440);
+/** Tab stops to sample per route. The header alone is a dozen. */
+const STOPS = Number(process.env.FOCUS_STOPS ?? 14);
+/**
+ * Changed pixels required, as an absolute count rather than a share of the box.
+ *
+ * A percentage was the first choice and it is wrong here: the sampled box
+ * spans the control *and its parent*, so the same 2px ring is 17% of a small
+ * button measured alone and 0.76% of the same button inside a wide toolbar.
+ * The indicator did not change; the denominator did. An absolute count does
+ * not care how much furniture is in shot.
+ *
+ * A 2px ring around even a 40x40 control is several hundred pixels. With focus
+ * styling suppressed the count is exactly 0, so there is no antialiasing floor
+ * to clear; 100 is a wide margin either way.
+ */
+const MIN_CHANGED_PX = 100;
+
+const [userType, ...routes] = process.argv.slice(2);
+if (!userType || routes.length === 0) {
+  console.error('usage: node scripts/focus-visible.mjs <player|owner|admin> <route>...');
+  process.exit(2);
+}
+
+const changedPixels = async (probe, a, b) =>
+  probe.evaluate(async ({ a, b }) => {
+    const load = (s) =>
+      new Promise((res, rej) => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = rej;
+        i.src = 'data:image/png;base64,' + s;
+      });
+    const [ia, ib] = await Promise.all([load(a), load(b)]);
+    const c = document.createElement('canvas');
+    c.width = ia.width;
+    c.height = ia.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(ia, 0, 0);
+    const da = ctx.getImageData(0, 0, c.width, c.height).data;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(ib, 0, 0);
+    const db = ctx.getImageData(0, 0, c.width, c.height).data;
+    let changed = 0;
+    for (let i = 0; i < da.length; i += 4) {
+      const d = Math.abs(da[i] - db[i]) + Math.abs(da[i + 1] - db[i + 1]) + Math.abs(da[i + 2] - db[i + 2]);
+      if (d > 24) changed += 1;
+    }
+    return changed;
+  }, { a, b });
+
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
+const probe = await browser.newPage();
+const failures = [];
+const obscured = [];
+let measured = 0;
+let transient = 0;
+
+for (const route of routes) {
+  const url = resolveRoute(route);
+  const page = await newStubbedPage(browser, { userType, width: WIDTH, height: 900 });
+  await page.goto(`${BASE}${url}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  // Without this the 2.4.11 check reports the logo link "entirely covered" on
+  // 27 routes. It is covered — by the splash screen, which is still up at
+  // 1500ms. Measuring a state no reader navigates in.
+  await waitForAppReady(page);
+
+  const seen = new Set();
+  for (let i = 0; i < STOPS; i++) {
+    await page.keyboard.press('Tab');
+    // Tabbing to something below the fold scrolls it into view, and the rect
+    // is only correct once that settles. Reading immediately gave a clip
+    // computed from the pre-scroll position, which cropped the footer links
+    // and reported 88 changed pixels for a 4px ring that was plainly drawn.
+    await page.waitForTimeout(150);
+    const target = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el || el === document.body || el === document.documentElement) return null;
+      const r = el.getBoundingClientRect();
+      // Off-screen or collapsed: nothing to look at.
+      if (r.width < 6 || r.height < 6) return null;
+      if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) return null;
+      const name = (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 30);
+      // WCAG 2.2 SC 2.4.11: is any part of the focused element actually on
+      // top? A 3x3 grid inset from the edges, because a control can be
+      // clipped at one corner by a scroll container and still be perfectly
+      // visible. `entirelyObscured` only when every sample lands on
+      // something that is neither the element nor inside it.
+      const visibleSomewhere = [0.15, 0.5, 0.85].some((fy) =>
+        [0.15, 0.5, 0.85].some((fx) => {
+          const hit = document.elementFromPoint(r.x + r.width * fx, r.y + r.height * fy);
+          return hit ? el === hit || el.contains(hit) : false;
+        }),
+      );
+      const coveredBy = visibleSomewhere
+        ? null
+        : (() => {
+            const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+            const box = hit?.closest('header,[role="dialog"],[data-obscures]') ?? hit;
+            return box
+              ? `${box.tagName.toLowerCase()}${typeof box.className === 'string' && box.className ? '.' + box.className.trim().split(/\s+/)[0] : ''}`
+              : 'unknown';
+          })();
+      return {
+        entirelyObscured: !visibleSomewhere,
+        coveredBy,
+        key: `${el.tagName}|${name}|${Math.round(r.x)},${Math.round(r.y)}`,
+        name,
+        tag: el.tagName.toLowerCase(),
+        // The union of the control and its parent, plus a margin.
+        //
+        // Clipping to the control alone was not enough: a composed field —
+        // the home page's search bar, where a transparent input sits inside a
+        // bordered segment — draws its indicator with `focus-within` on the
+        // wrapper, outside the input's own box. The check reported 0.04% for
+        // a ring that was plainly on screen, which would have made every
+        // focus-within pattern in the app a false positive.
+        clip: (() => {
+          const p = el.parentElement?.getBoundingClientRect();
+          const x = Math.max(0, Math.min(r.x, p?.x ?? r.x) - 8);
+          const y = Math.max(0, Math.min(r.y, p?.y ?? r.y) - 8);
+          const right = Math.max(r.right, p?.right ?? r.right) + 8;
+          const bottom = Math.max(r.bottom, p?.bottom ?? r.bottom) + 8;
+          return {
+            x,
+            y,
+            // `innerWidth`/`innerHeight`, not the Node-side constants — this
+            // runs in the page, where those names do not exist.
+            width: Math.min(right - x, innerWidth - x),
+            height: Math.min(bottom - y, innerHeight - y),
+          };
+        })(),
+      };
+    });
+    if (!target || seen.has(target.key)) continue;
+    seen.add(target.key);
+
+    const focused = (await page.screenshot({ clip: target.clip })).toString('base64');
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(120);
+    const blurred = (await page.screenshot({ clip: target.clip })).toString('base64');
+
+    // A control that vanished between the two shots cannot be scored, and
+    // must not be reported as failing. Sonner toasts are the case: they are
+    // `tabindex="0"`, so they are a legitimate tab stop, and they auto-dismiss
+    // about four seconds after they appear — which lands squarely inside a
+    // fourteen-stop sweep. The geolocation toast on /nearby was reported at 0
+    // changed pixels for exactly that reason: it was gone by the second
+    // screenshot, so both frames showed the same static region. Zero here
+    // means "nothing to see", which reads identically to "no focus ring" and
+    // is not the same claim at all.
+    const stillThere = await page.evaluate((k) => {
+      const els = [...document.querySelectorAll('a[href],button,input,select,textarea,[tabindex]')];
+      return els.some((e) => {
+        const r = e.getBoundingClientRect();
+        return `${e.tagName}|${(e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 30)}|${Math.round(r.x)},${Math.round(r.y)}` === k;
+      });
+    }, target.key);
+    if (!stillThere) {
+      transient += 1;
+      continue;
+    }
+
+    measured += 1;
+    const changed = await changedPixels(probe, focused, blurred);
+    // Two criteria, told apart by two pieces of evidence.
+    //
+    // `entirelyObscured` comes from `elementFromPoint`, which answers a
+    // hit-testing question, not a painting one. Those differ: on /signup the
+    // radio buttons are overlapped by their own `<label>`, so the label is
+    // "on top" at every sampled point — and it is transparent, so the ring
+    // underneath is perfectly visible. Reported on hit-testing alone that was
+    // a false failure on a control with a working indicator.
+    //
+    // The pixel diff already knows. A ring that is covered changes nothing on
+    // screen; a ring under a transparent overlap changes hundreds of pixels.
+    // So obscuring is only claimed when *both* agree, and the hit test then
+    // serves its real purpose: distinguishing why the pixels did not change.
+    // An absent ring is a component's styling, an obscured one is the page's
+    // scroll or stacking, and calling both "no focus indicator" sends the next
+    // person to the wrong file.
+    if (changed < MIN_CHANGED_PX) {
+      if (target.entirelyObscured) {
+        obscured.push({ route: url, name: target.name, tag: target.tag, by: target.coveredBy, changed });
+      } else {
+        failures.push({ route: url, name: target.name, tag: target.tag, changed });
+      }
+    }
+
+    // Focus was dropped to take the second shot; put the caret back where the
+    // tab order was, so the next Tab continues rather than restarting.
+    await page.evaluate((k) => {
+      const els = [...document.querySelectorAll('a[href],button,input,select,textarea,[tabindex]')];
+      const el = els.find((e) => {
+        const r = e.getBoundingClientRect();
+        return `${e.tagName}|${(e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 30)}|${Math.round(r.x)},${Math.round(r.y)}` === k;
+      });
+      el?.focus();
+    }, target.key);
+  }
+
+  await page.context().close();
+}
+
+await browser.close();
+
+console.log(
+  `\nFocus visibility — ${measured} control(s) across ${routes.length} route(s) at ${WIDTH}px` +
+    (transient ? `, ${transient} skipped for disappearing mid-measurement` : '') +
+    '\n',
+);
+if (measured === 0) {
+  console.error('  No focusable controls reached — refusing to report a pass.\n');
+  process.exit(1);
+}
+for (const f of obscured) {
+  console.log(
+    `  FAIL  ${f.route}  ${f.tag} ${JSON.stringify(f.name)} — entirely covered by ${f.by}` +
+      ` (${f.changed} pixel(s) changed)`,
+  );
+}
+if (obscured.length) {
+  console.log(`\n${obscured.length} control(s) hidden behind other content when focused (WCAG 2.4.11)\n`);
+}
+for (const f of failures) {
+  console.log(`  FAIL  ${f.route}  ${f.tag} ${JSON.stringify(f.name)} — ${f.changed} pixel(s) changed`);
+}
+if (failures.length) {
+  console.log(`\n${failures.length} control(s) with no visible focus indicator (WCAG 2.4.7)\n`);
+}
+if (failures.length + obscured.length === 0) {
+  console.log('  Every control repainted visibly when focused, and none was covered\n');
+}
+
+process.exit(failures.length + obscured.length === 0 ? 0 : 1);

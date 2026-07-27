@@ -1,17 +1,24 @@
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useBlogPostBySlug } from "@/hooks/useBlogPosts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, ArrowLeft, User } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, User, FileQuestion } from "lucide-react";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { data: post, isLoading, error } = useBlogPostBySlug(slug || "");
+  const {
+    data: post,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useBlogPostBySlug(slug || "");
 
   const estimateReadTime = (content: string) => {
     const words = content.split(/\s+/).length;
@@ -35,19 +42,40 @@ const BlogPostPage = () => {
     );
   }
 
-  if (error || !post) {
+  // `error || !post` used to collapse into a single "Article not found" — and
+  // noIndex'd it, telling crawlers the article was gone on the strength of a
+  // transient 500. A failed fetch says nothing about whether the post exists.
+  if (error) {
+    return (
+      <Layout>
+        <div className="container max-w-3xl">
+          <ErrorPanel what="this article" onRetry={() => refetch()} isRetrying={isFetching}>
+            <Button variant="outline" asChild>
+              <Link to="/blog">Back to blog</Link>
+            </Button>
+          </ErrorPanel>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!post) {
     return (
       <Layout>
         <SEOHead title="Post Not Found" noIndex />
-        <div className="container max-w-3xl py-20 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Article not found</h1>
-          <p className="text-muted-foreground mb-6">The article you're looking for doesn't exist or has been removed.</p>
-          <Button asChild>
-            <Link to="/blog">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Blog
-            </Link>
-          </Button>
+        <div className="container max-w-3xl">
+          <StatusPanel
+            icon={FileQuestion}
+            title="Article not found"
+            description="The article you're looking for doesn't exist or has been removed."
+          >
+            <Button asChild>
+              <Link to="/blog">
+                <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                Back to blog
+              </Link>
+            </Button>
+          </StatusPanel>
         </div>
       </Layout>
     );
@@ -128,24 +156,48 @@ const BlogPostPage = () => {
         </header>
 
         {/* Cover image */}
+        {/* `w-full h-auto` in a plain div reserves no height, so the article
+            body sat directly under the header until the cover arrived and
+            then jumped down by the image's full height. This is the only
+            image in the app not already inside a sized box — every venue
+            card, gallery tile and owner thumbnail has one. 16/9 matches the
+            blog index cards, so a post opens at the ratio its card showed. */}
         {post.cover_image_url && (
-          <div className="rounded-xl overflow-hidden mb-10">
+          <div className="mb-10 aspect-[16/9] overflow-hidden rounded-xl bg-surface-2">
             <img
               src={post.cover_image_url}
               alt={post.title}
-              className="w-full h-auto"
+              className="h-full w-full object-cover"
             />
           </div>
         )}
 
         {/* Content */}
         <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-a:text-primary prose-strong:text-foreground">
-          <ReactMarkdown>{post.content}</ReactMarkdown>
+          {/* Markdown headings shift down one level.
+              A post is written as a document — it starts at `#` — but here it
+              is nested inside a page that already has an `h1` for the title.
+              Rendered as-is that gives every blog post two `h1`s, one of them
+              the post title and one the author's first section. Shifting the
+              whole scale down keeps the author's structure intact and makes it
+              a subtree of the page instead of a rival document. */}
+          <ReactMarkdown
+            components={{
+              h1: ({ node: _node, ...props }) => <h2 {...props} />,
+              h2: ({ node: _node, ...props }) => <h3 {...props} />,
+              h3: ({ node: _node, ...props }) => <h4 {...props} />,
+              h4: ({ node: _node, ...props }) => <h5 {...props} />,
+              h5: ({ node: _node, ...props }) => <h6 {...props} />,
+              h6: ({ node: _node, ...props }) => <h6 {...props} />,
+            }}
+          >
+            {post.content}
+          </ReactMarkdown>
         </div>
 
         {/* Footer CTA */}
         <div className="mt-16 p-8 bg-primary/5 rounded-2xl text-center border border-primary/10">
-          <h3 className="text-xl font-semibold text-foreground mb-2">Ready to get started?</h3>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Ready to get started?</h2>
           <p className="text-muted-foreground mb-4">Find and book sports venues near you, or list your facility today.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild>

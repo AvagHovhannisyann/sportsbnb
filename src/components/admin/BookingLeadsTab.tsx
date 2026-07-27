@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Loader2, MessageCircle, Phone, MessageSquare, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,12 +37,13 @@ import {
   type BookingIntent,
   type IntentStatus,
 } from "@/hooks/useBookingIntents";
+import { formatTimeOfDay } from "@/lib/time";
 
 const STATUS_LABELS: Record<IntentStatus, { label: string; className: string }> = {
-  clicked: { label: "Clicked", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
-  owner_contacted: { label: "Owner Contacted", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  confirmed_booking: { label: "Confirmed", className: "bg-green-500/10 text-green-500 border-green-500/20" },
-  no_booking: { label: "No Booking", className: "bg-red-500/10 text-red-500 border-red-500/20" },
+  clicked: { label: "Clicked", className: TONE_CHIP.info },
+  owner_contacted: { label: "Owner Contacted", className: TONE_CHIP.warning },
+  confirmed_booking: { label: "Confirmed", className: TONE_CHIP.positive },
+  no_booking: { label: "No Booking", className: TONE_CHIP.danger },
   no_response: { label: "No Response", className: "bg-muted text-muted-foreground" },
 };
 
@@ -49,6 +51,14 @@ const CHANNEL_ICONS = {
   whatsapp: MessageCircle,
   sms: MessageSquare,
   call: Phone,
+};
+
+// A map rather than CSS `capitalize`, which would render "Whatsapp" and "Sms".
+// The CHECK constraint allows exactly these three.
+const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  sms: "SMS",
+  call: "Phone call",
 };
 
 export default function BookingLeadsTab() {
@@ -157,7 +167,7 @@ export default function BookingLeadsTab() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-8" role="status" aria-label="Loading booking leads">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filtered.length === 0 ? (
@@ -196,14 +206,14 @@ export default function BookingLeadsTab() {
                         <TableCell>
                           <Badge variant="outline" className="gap-1">
                             <ChannelIcon className="h-3 w-3" />
-                            {intent.channel_used}
+                            {CHANNEL_LABELS[intent.channel_used] ?? intent.channel_used}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
                           {intent.booking_date ? (
                             <>
                               {format(new Date(intent.booking_date), "MMM d")}
-                              {intent.booking_time && ` • ${intent.booking_time}`}
+                              {intent.booking_time && ` • ${formatTimeOfDay(intent.booking_time)}`}
                               {intent.players_count && ` • ${intent.players_count}p`}
                             </>
                           ) : (

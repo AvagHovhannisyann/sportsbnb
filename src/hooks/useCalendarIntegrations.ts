@@ -97,7 +97,7 @@ export function useCalendarIntegrations(venueId: string | null) {
     }
   };
 
-  const handleOAuthCallback = async (code: string, state: string) => {
+  const handleOAuthCallback = async (code: string, _state: string) => {
     try {
       const savedState = localStorage.getItem("calendar_oauth_state");
       if (!savedState) {
@@ -107,7 +107,7 @@ export function useCalendarIntegrations(venueId: string | null) {
 
       const { provider, venueId: storedVenueId, redirectUri } = JSON.parse(savedState);
 
-      const { data, error } = await supabase.functions.invoke("calendar-auth", {
+      const { error } = await supabase.functions.invoke("calendar-auth", {
         body: {
           action: "exchange-code",
           provider,

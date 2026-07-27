@@ -1,7 +1,5 @@
-import { useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { MapPin, Star, Loader2, Layers } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback } from "react";
+import { Star, Loader2, Layers, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
@@ -13,7 +11,6 @@ import { formatPrice, getCustomerPrice } from "@/lib/pricing";
 import { useRegion } from "@/hooks/useRegion";
 
 const VenueMapPage = () => {
-  const navigate = useNavigate();
   const { data: venues = [], isLoading } = useVenues();
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [selectedVenue, setSelectedVenue] = useState<any>(null);
@@ -40,10 +37,15 @@ const VenueMapPage = () => {
   return (
     <Layout>
       <div className="h-[calc(100vh-64px)] flex flex-col">
+        {/* The page is a full-bleed map with a filter bar and deliberately no
+            visible title, so it had no h1 and its outline began at h2. A
+            visually-hidden heading gives the document a top level without
+            putting anything on screen. */}
+        <h1 className="sr-only">Venues on a map</h1>
         <div className="bg-card border-b p-3 flex items-center gap-3 z-10">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <Select value={selectedSport} onValueChange={setSelectedSport}>
-            <SelectTrigger className="w-[160px] h-9">
+            <SelectTrigger aria-label="Sport" className="w-[160px] h-9">
               <SelectValue placeholder="All sports" />
             </SelectTrigger>
             <SelectContent>
@@ -56,9 +58,11 @@ const VenueMapPage = () => {
           <Badge variant="secondary">{filteredVenues.length} venues</Badge>
         </div>
 
-        <div className="flex-1 relative">
+        {/* Named region, for the same reason as /nearby: the map area had
+            no name, so it read as an anonymous block of the page. */}
+        <div role="region" aria-label="Map of venues" className="flex-1 relative">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full" role="status" aria-label="Loading the map">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
@@ -88,12 +92,18 @@ const VenueMapPage = () => {
                       style={{ width: "100%", height: 96, objectFit: "cover", borderRadius: 8, marginBottom: 8 }}
                     />
                     <h3 style={{ fontWeight: 600 }}>{selectedVenue.name}</h3>
-                    <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0" }}>
-                      📍 {selectedVenue.address || selectedVenue.city}
+                    <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0", display: "flex", alignItems: "center", gap: 4 }}>
+                      <MapPin size={12} aria-hidden="true" />
+                      {selectedVenue.address || selectedVenue.city}
                     </p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
                       <strong>{formatPrice(getCustomerPrice(selectedVenue.price_per_hour))}/hr</strong>
-                      <span>⭐ {selectedVenue.rating}</span>
+                      {selectedVenue.rating > 0 && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden="true" />
+                          {selectedVenue.rating}
+                        </span>
+                      )}
                     </div>
                     <a
                       href={`/venue/${selectedVenue.id}`}

@@ -4,23 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  MessageSquare, 
-  Flag, 
-  Ban, 
-  MoreVertical,
-  DollarSign,
-  FileText,
-  Dumbbell,
-  Car,
-  XCircle,
-  HelpCircle
-} from "lucide-react";
+import { Ban, Banknote, Building2, Car, Dumbbell, FileText, Flag, HelpCircle, MapPin, MessageSquare, MoreVertical, XCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,7 +26,7 @@ interface VenueChatDialogProps {
 }
 
 const QUICK_QUESTIONS = [
-  { icon: DollarSign, label: "Price", message: "Hi! I have a question about pricing." },
+  { icon: Banknote, label: "Price", message: "Hi! I have a question about pricing." },
   { icon: FileText, label: "Rules", message: "Hi! Could you tell me about the venue rules?" },
   { icon: Dumbbell, label: "Equipment", message: "Hi! What equipment is available at the venue?" },
   { icon: Car, label: "Parking", message: "Hi! Is parking available at the venue?" },
@@ -135,7 +123,9 @@ export const VenueChatDialog = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary/10 text-primary">📍</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  <MapPin className="h-5 w-5" aria-hidden="true" />
+                </AvatarFallback>
               </Avatar>
               <div>
                 <DialogTitle className="text-base font-semibold">Message Owner</DialogTitle>
@@ -161,8 +151,9 @@ export const VenueChatDialog = ({
         {/* Context Header */}
         <div className="px-4 py-2 bg-muted/50 border-b">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              🏟️ {venueName}
+            <Badge variant="secondary" className="gap-1 text-xs">
+              <Building2 className="h-3 w-3" aria-hidden="true" />
+              {venueName}
             </Badge>
           </div>
         </div>

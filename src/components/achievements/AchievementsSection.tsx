@@ -1,18 +1,65 @@
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useAchievements, useUserAchievements, useLeaderboard } from "@/hooks/useAchievements";
+import { cn } from "@/lib/utils";
+import {
+  useAchievements,
+  useUserAchievements,
+  useLeaderboard,
+  useCheckAndAwardAchievements,
+} from "@/hooks/useAchievements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Star, Medal } from "lucide-react";
+import { Trophy, Medal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const AchievementsSection = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { data: achievements = [], isLoading: achLoading } = useAchievements();
   const { data: userAchievements = [], isLoading: uaLoading } = useUserAchievements(user?.id);
   const { data: leaderboard = [], isLoading: lbLoading } = useLeaderboard();
+
+  /**
+   * Ask the server to award anything that has been earned.
+   *
+   * `check_and_award_achievements` is the only thing in the entire system that
+   * can write `user_achievements` or raise `profiles.xp` — the client INSERT
+   * policy was dropped in Phase 1 and `protect_profile_xp` rejects any other
+   * writer — and nothing had ever called it. Not once, in any version of this
+   * file: the mutation was defined and imported nowhere. So a player could book
+   * venues, host games and write reviews and their card would read Level 1,
+   * 0 XP, 0 badges, every tile greyed out, permanently. The leaderboard was
+   * empty for a second, independent reason, since it filters `xp > 0` and no
+   * profile's XP could ever leave 0.
+   *
+   * On mount is the modest version of the fix and it is enough to make the
+   * feature exist. The RPC is idempotent — it skips achievements already held
+   * and inserts ON CONFLICT DO NOTHING — so calling it whenever this card is
+   * opened is safe. Awarding at the moment a badge is *earned* (after a
+   * booking confirms, after a game is joined) would be better and is a
+   * separate change to those flows.
+   */
+  const checkAchievements = useCheckAndAwardAchievements();
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!user?.id || asked.current) return;
+    asked.current = true;
+    // `refreshProfile`, not a query invalidation: useAuth holds the profile in
+    // React state, so the Level and XP figures at the top of this card come
+    // from there and nothing in TanStack Query can refresh them. Only when the
+    // RPC actually awarded something — otherwise this is a wasted round trip on
+    // every visit to the dashboard.
+    checkAchievements.mutate(undefined, {
+      onSuccess: (awarded) => {
+        if (Array.isArray(awarded) && awarded.length > 0) void refreshProfile();
+      },
+    });
+    // `checkAchievements` is a new object each render; keying on the user id is
+    // what makes this once per player rather than once per render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const earnedIds = new Set(userAchievements.map((ua: any) => ua.achievement_id));
   const xp = (profile as any)?.xp || 0;
@@ -23,7 +70,7 @@ const AchievementsSection = () => {
   if (achLoading || uaLoading) {
     return (
       <Card>
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-6 space-y-4" role="status" aria-label="Loading achievements">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-20 w-full" />
         </CardContent>
@@ -96,7 +143,7 @@ const AchievementsSection = () => {
             </CardHeader>
             <CardContent>
               {lbLoading ? (
-                <div className="space-y-3">
+                <div className="space-y-3" role="status" aria-label="Loading the leaderboard">
                   {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                 </div>
               ) : leaderboard.length === 0 ? (
@@ -105,8 +152,23 @@ const AchievementsSection = () => {
                 <div className="space-y-3">
                   {leaderboard.map((player: any, i: number) => (
                     <div key={player.user_id} className="flex items-center gap-3">
-                      <div className="w-7 text-center font-bold text-sm text-muted-foreground">
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                      {/* Was 🥇🥈🥉 for the top three and `#4` onward — four
+                          ranks in one column drawn in two different fonts at
+                          two different sizes, so the medals sat a few pixels
+                          off the numerals' baseline. Every rank is a numeral
+                          now; the top three get a tinted disc instead, which
+                          reads at a glance without depending on colour alone
+                          since the number is right there. */}
+                      <div
+                        className={cn(
+                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
+                          i === 0 && "bg-warning/15 text-warning",
+                          i === 1 && "bg-muted-foreground/15 text-foreground",
+                          i === 2 && "bg-chart-4/15 text-chart-4",
+                          i > 2 && "text-muted-foreground",
+                        )}
+                      >
+                        {i + 1}
                       </div>
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={player.avatar_url || undefined} />

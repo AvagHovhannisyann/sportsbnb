@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Package, Plus, Trash2, Edit, Loader2, DollarSign } from "lucide-react";
+import { Package, Plus, Trash2, Edit, Loader2, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
+
+const PAGE_TITLE = "Equipment Rentals";
+const PAGE_SUBTITLE = "Manage rental items and packages for your venues";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { 
@@ -48,7 +52,13 @@ import { formatPrice } from "@/lib/pricing";
 
 const OwnerEquipmentPage = () => {
   const { user } = useAuth();
-  const { data: venues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const {
+    data: venues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
   const [selectedVenueId, setSelectedVenueId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<VenueEquipment | null>(null);
@@ -73,7 +83,6 @@ const OwnerEquipmentPage = () => {
   const updateEquipment = useUpdateEquipment();
   const deleteEquipment = useDeleteEquipment();
 
-  const selectedVenue = venues.find(v => v.id === selectedVenueId);
   const items = equipment.filter(e => e.equipment_type === 'item');
   const packages = equipment.filter(e => e.equipment_type === 'package');
 
@@ -133,17 +142,31 @@ const OwnerEquipmentPage = () => {
 
   if (venuesLoading) {
     return (
-      <OwnerLayout>
-        <div className="flex items-center justify-center py-16">
+      <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
+        <div className="flex items-center justify-center py-16" role="status" aria-label="Loading equipment">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
     );
   }
 
+  if (venuesError) {
+    return (
+      <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
+        {/* Not "No venues yet". That sends an owner whose venue list failed to
+            load off to /add-venue to re-create something they already own. */}
+        <ErrorPanel
+          what="your venues"
+          onRetry={() => refetchVenues()}
+          isRetrying={venuesFetching}
+        />
+      </OwnerLayout>
+    );
+  }
+
   if (venues.length === 0) {
     return (
-      <OwnerLayout>
+      <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
         <EmptyState
           icon={Package}
           title="No venues yet"
@@ -156,24 +179,29 @@ const OwnerEquipmentPage = () => {
   }
 
   return (
-    <OwnerLayout>
+    <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Equipment Rentals</h1>
-            <p className="text-muted-foreground">Manage rental items and packages for your venues</p>
-          </div>
+        {/* The h1 and the strapline come from OwnerLayout now, as they do on
+            every other owner page. They used to be written out here instead,
+            which meant the two early returns above — "still loading" and "no
+            venues yet" — rendered no h1 at all. Measured with an empty owner
+            account, the page's outline started at h2: a new owner arriving at
+            this screen got a document with no heading for the page they were
+            on. */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4 mr-2" />
             Add Equipment
           </Button>
         </div>
 
-        {/* Venue Selector */}
+        {/* Venue Selector. This one sits alone in a toolbar row with no
+            visible label, so the name is spelled out rather than borrowed
+            from one. The placeholder is not a name: it disappears the moment
+            a venue is chosen, which is when it would matter most. */}
         {venues.length > 1 && (
           <Select value={selectedVenueId} onValueChange={setSelectedVenueId}>
-            <SelectTrigger className="w-full sm:w-64">
+            <SelectTrigger aria-label="Select venue" className="w-full sm:w-64">
               <SelectValue placeholder="Select a venue" />
             </SelectTrigger>
             <SelectContent>
@@ -187,30 +215,30 @@ const OwnerEquipmentPage = () => {
         )}
 
         {equipmentLoading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-16" role="status" aria-label="Loading equipment">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : equipment.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No equipment added</h3>
-              <p className="text-muted-foreground mb-4">
-                Add rental items like balls, rackets, or packages for customers to add to their booking.
-              </p>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Equipment
-              </Button>
-            </CardContent>
-          </Card>
+          /* A ninth hand-rolled empty state, on a page that already imports
+             the shared one for its no-venues case. The unification pass caught
+             the eight on the player side and missed this because it sits
+             behind `equipment.length === 0`, which no fixture had ever
+             produced. Found by measuring heading levels, of all things. */
+          <EmptyState
+            bordered
+            icon={Package}
+            title="No equipment added"
+            description="Add rental items like balls, rackets, or packages for customers to add to their booking."
+            actionLabel="Add First Equipment"
+            onAction={() => handleOpenDialog()}
+          />
         ) : (
           <div className="space-y-6">
             {/* Individual Items */}
             {items.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Individual Items</CardTitle>
+                  <CardTitle as="h2" className="text-lg">Individual Items</CardTitle>
                   <CardDescription>Single items customers can rent</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -273,7 +301,7 @@ const OwnerEquipmentPage = () => {
             {packages.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Equipment Packages</CardTitle>
+                  <CardTitle as="h2" className="text-lg">Equipment Packages</CardTitle>
                   <CardDescription>Bundled equipment sets at a discounted price</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -358,7 +386,11 @@ const OwnerEquipmentPage = () => {
                   setFormData(prev => ({ ...prev, equipment_type: value }))
                 }
               >
-                <SelectTrigger>
+                {/* `id="type"`, which the label above has always named and
+                    nothing has ever carried. Unlabelled, the trigger is
+                    announced as whatever it currently reads — "Item" — so the
+                    field's name changed every time its value did. */}
+                <SelectTrigger id="type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -394,7 +426,7 @@ const OwnerEquipmentPage = () => {
             <div className="space-y-2">
               <Label htmlFor="price">Rental Price (֏)</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="price"
                   type="number"

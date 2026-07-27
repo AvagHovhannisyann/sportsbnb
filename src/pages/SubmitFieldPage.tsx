@@ -107,7 +107,9 @@ const SubmitFieldPage: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              {/* The page had no h1 at all — its only heading was this card title, so
+                  that is what the page is called. */}
+              <CardTitle as="h1" className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
                 Submit a Public Field
               </CardTitle>
@@ -160,8 +162,11 @@ const SubmitFieldPage: React.FC = () => {
                         {location ? "Re-capture" : "Use My Location"}
                       </Button>
                       {location && (
-                        <span className="text-sm text-muted-foreground">
-                          📍 {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span className="tabular-nums">
+                            {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                          </span>
                         </span>
                       )}
                     </div>

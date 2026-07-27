@@ -63,7 +63,9 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
+          {/* First heading under the page h1, so h2 — the CardTitle default
+              of h3 skipped a level here. */}
+          <CardTitle as="h2">Personal Information</CardTitle>
           <CardDescription>
             Update your personal details and public profile.
           </CardDescription>
@@ -74,6 +76,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
+                autoComplete="name"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 placeholder="John Doe"
@@ -109,6 +112,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 value={formData.email}
                 disabled
                 className="bg-muted"
@@ -120,9 +124,10 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Input
                 id="phone"
                 type="tel"
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+1 (555) 000-0000"
+                placeholder="+374 XX XXXXXX"
               />
             </div>
           </div>
@@ -132,9 +137,10 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
+                autoComplete="address-level2"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="New York"
+                placeholder="Yerevan"
               />
             </div>
             {!isOwner && (
@@ -211,19 +217,31 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
               const isSelected = isOwner
                 ? formData.sportsOffered.includes(sport)
                 : formData.preferredSports.includes(sport);
+              // Was a plain <div onClick> holding a `pointer-events-none`
+              // checkbox: the card looked like a checkbox, reported itself to
+              // assistive tech as an unnamed one, and could not be reached or
+              // toggled by keyboard at all — twelve sports, none selectable
+              // without a mouse. A <Label> wrapping a real Checkbox keeps the
+              // whole card as the hit area, gives the control its name from
+              // the sport, and restores Tab and Space for free.
+              const id = `sport-${sport.toLowerCase().replace(/\s+/g, "-")}`;
               return (
-                <div
+                <Label
                   key={sport}
-                  onClick={() => handleSportToggle(sport)}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  htmlFor={id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all font-normal ${
                     isSelected
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
                   }`}
                 >
-                  <Checkbox checked={isSelected} className="pointer-events-none" />
+                  <Checkbox
+                    id={id}
+                    checked={isSelected}
+                    onCheckedChange={() => handleSportToggle(sport)}
+                  />
                   <span className="text-sm font-medium">{sport}</span>
-                </div>
+                </Label>
               );
             })}
           </div>
@@ -245,7 +263,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                     <RadioGroupItem value={level.value} id={`skill-${level.value}`} className="peer sr-only" />
                     <Label
                       htmlFor={`skill-${level.value}`}
-                      className="flex items-center justify-center rounded-lg border-2 border-input bg-card p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                      className="flex items-center justify-center rounded-lg border-2 border-border-interactive bg-card p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
                     >
                       <span className="font-medium">{level.label}</span>
                     </Label>

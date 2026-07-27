@@ -117,7 +117,7 @@ const ResetPasswordPage = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
+      <div className="surface-invert hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
         <div>
           <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
             <Logo variant="full" className="h-8 w-auto" />
@@ -125,7 +125,7 @@ const ResetPasswordPage = () => {
         </div>
         
         <div className="max-w-md">
-          <h1 className="text-4xl font-bold text-secondary-foreground mb-4">
+          <h1 className="auth-hero-title text-secondary-foreground">
             Create new password
           </h1>
           <p className="text-lg text-secondary-foreground/70">
@@ -133,7 +133,11 @@ const ResetPasswordPage = () => {
           </p>
         </div>
         
-        <div className="text-sm text-secondary-foreground/50">
+        {/* /50 composited to #808582 on this near-white panel: 3.48:1,
+            under the 4.5:1 body copy needs. /60 measures 4.80:1 and is
+            still quieter than the /70 lede above it, so the hierarchy the
+            alpha was drawing survives. */}
+        <div className="text-sm text-secondary-foreground/60">
           © {new Date().getFullYear()} Sportsbnb
         </div>
       </div>
@@ -146,15 +150,13 @@ const ResetPasswordPage = () => {
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto mb-6">
                 <CheckCircle className="h-8 w-8" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Password updated!</h2>
+              <h2 className="auth-form-title">Password updated!</h2>
               <p className="text-muted-foreground mb-6">
                 Your password has been successfully reset. You'll be redirected to login shortly.
               </p>
-              <Link to="/login">
-                <Button className="w-full">
-                  Go to login
-                </Button>
-              </Link>
+              <Button asChild className="w-full">
+                <Link to="/login">Go to login</Link>
+              </Button>
             </div>
           ) : (
             <>
@@ -171,7 +173,7 @@ const ResetPasswordPage = () => {
                   <Lock className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Set new password</h2>
+                  <h2 className="auth-form-title">Set new password</h2>
                   <p className="text-muted-foreground">Must be at least 8 characters</p>
                 </div>
               </div>
@@ -182,6 +184,7 @@ const ResetPasswordPage = () => {
                   <div className="relative">
                     <Input
                       id="password"
+                      autoComplete="new-password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter new password"
                       value={password}
@@ -193,6 +196,8 @@ const ResetPasswordPage = () => {
                       required
                     />
                     <button
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -225,6 +230,7 @@ const ResetPasswordPage = () => {
                   <div className="relative">
                     <Input
                       id="confirmPassword"
+                      autoComplete="new-password"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
                       value={confirmPassword}
@@ -236,6 +242,8 @@ const ResetPasswordPage = () => {
                       required
                     />
                     <button
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showConfirmPassword}
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

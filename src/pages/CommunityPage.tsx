@@ -11,7 +11,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useGames, useUserGames } from "@/hooks/useGames";
 import { useVenues } from "@/hooks/useVenues";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
+import { format, parseISO, isToday, isTomorrow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
+import { Price } from "@/components/ui/price";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 
 // Haversine formula for distance calculation
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -32,30 +36,38 @@ const formatGameDate = (dateStr: string): string => {
   return format(date, "EEE, MMM d");
 };
 
-const formatGameTime = (timeStr: string): string => {
-  const [hours, minutes] = timeStr.split(':');
-  const hour = parseInt(hours);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 || 12;
-  return `${hour12}:${minutes} ${ampm}`;
-};
+interface PlayerFace {
+  user_id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+}
 
 interface GameCardProps {
   game: any;
   participantCount: number;
+  /** The first few people actually confirmed for this game. */
+  faces?: PlayerFace[];
   distance?: number;
   showParticipants?: boolean;
 }
 
-const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, showParticipants = true }) => {
+const faceInitial = (p: PlayerFace) =>
+  (p.full_name || p.username || "P").charAt(0).toUpperCase();
+
+const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [], distance, showParticipants = true }) => {
   const spotsLeft = game.max_players - participantCount;
   const isFilling = spotsLeft <= 3 && spotsLeft > 0;
   const isFull = spotsLeft <= 0;
+  // Anyone joined but not drawn — either past the four we show, or a profile
+  // that came back empty. Counted from the real total, never assumed to be
+  // `count - 4`.
+  const hiddenPlayers = participantCount - faces.length;
 
   return (
-    <Link to={`/game/${game.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] group">
-        <CardContent className="p-4">
+    <Link to={`/game/${game.id}`} className="block h-full">
+      <Card className="card-lift group h-full overflow-hidden">
+        <CardContent className="flex h-full flex-col p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-medium">
@@ -68,8 +80,13 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
               )}
             </div>
             {isFilling && !isFull && (
-              <Badge className="bg-amber-500 text-white animate-pulse">
-                {spotsLeft} spots left
+              // Was `bg-amber-500 text-white`: white on amber-500 measures
+              // 2.15:1, against 4.5:1 for text this size. The tinted-chip
+              // pattern the rest of the app already uses keeps the urgency
+              // without the hardcoded fill. `animate-pulse` went with it —
+              // scarcity is the message, a throbbing badge is pressure.
+              <Badge className="border-warning/20 bg-warning/10 text-warning">
+                {spotsLeft === 1 ? "1 spot left" : `${spotsLeft} spots left`}
               </Badge>
             )}
             {isFull && (
@@ -88,7 +105,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
               <Calendar className="h-3.5 w-3.5 text-primary" />
               <span>{formatGameDate(game.game_date)}</span>
               <Clock className="h-3.5 w-3.5 ml-2 text-primary" />
-              <span>{formatGameTime(game.game_time)}</span>
+              <span>{formatTimeOfDay(game.game_time)}</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5 text-primary" />
@@ -102,24 +119,25 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
           </div>
 
           {showParticipants && (
-            <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="mt-auto flex min-h-7 items-center justify-between border-t border-border pt-3">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  {participantCount}/{game.max_players} joined
+                  <span className="tabular-nums">{participantCount}/{game.max_players}</span> joined
                 </span>
               </div>
               <div className="flex -space-x-2">
-                {[...Array(Math.min(participantCount, 4))].map((_, i) => (
-                  <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                {faces.map((person) => (
+                  <Avatar key={person.user_id} className="h-6 w-6 border-2 border-background">
+                    <AvatarImage src={person.avatar_url ?? undefined} alt="" />
                     <AvatarFallback className="text-xs bg-primary/10">
-                      {String.fromCharCode(65 + i)}
+                      {faceInitial(person)}
                     </AvatarFallback>
                   </Avatar>
                 ))}
-                {participantCount > 4 && (
-                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
-                    +{participantCount - 4}
+                {hiddenPlayers > 0 && (
+                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium tabular-nums">
+                    +{hiddenPlayers}
                   </div>
                 )}
               </div>
@@ -132,12 +150,25 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, distance, s
 };
 
 const CommunityPage = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const { data: publicGames = [], isLoading: gamesLoading } = useGames({ userLocation });
+  const {
+    data: publicGames = [],
+    isLoading: gamesLoading,
+    isError: gamesError,
+    isFetching: gamesFetching,
+    refetch: refetchGames,
+  } = useGames({ userLocation });
   const { data: userGamesData, isLoading: userGamesLoading } = useUserGames(user?.id);
-  const { data: venues = [], isLoading: venuesLoading } = useVenues();
+  const {
+    data: venues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useVenues();
   const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
+  const [participantFaces, setParticipantFaces] = useState<Record<string, PlayerFace[]>>({});
   const [playedWith, setPlayedWith] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("discover");
 
@@ -159,17 +190,41 @@ const CommunityPage = () => {
 
       const { data } = await supabase
         .from('game_participants')
-        .select('game_id')
+        .select('game_id, user_id')
         .in('game_id', gameIds)
         .eq('status', 'confirmed');
 
-      if (data) {
-        const counts: Record<string, number> = {};
-        data.forEach(p => {
-          counts[p.game_id] = (counts[p.game_id] || 0) + 1;
-        });
-        setParticipantCounts(counts);
-      }
+      if (!data) return;
+
+      const counts: Record<string, number> = {};
+      // Only four circles are ever drawn, so only four ids per game are worth
+      // resolving — a fifty-player game should not fetch fifty profiles to
+      // render four letters.
+      const idsPerGame: Record<string, string[]> = {};
+      data.forEach(p => {
+        counts[p.game_id] = (counts[p.game_id] || 0) + 1;
+        const shown = idsPerGame[p.game_id] || (idsPerGame[p.game_id] = []);
+        if (shown.length < 4) shown.push(p.user_id);
+      });
+      setParticipantCounts(counts);
+
+      const wanted = [...new Set(Object.values(idsPerGame).flat())];
+      if (wanted.length === 0) return;
+
+      const { data: profiles } = await supabase
+        .from('profiles_public')
+        .select('user_id, full_name, username, avatar_url')
+        .in('user_id', wanted);
+
+      const byUser = new Map((profiles || []).map(p => [p.user_id, p as PlayerFace]));
+      setParticipantFaces(
+        Object.fromEntries(
+          Object.entries(idsPerGame).map(([gameId, ids]) => [
+            gameId,
+            ids.map(id => byUser.get(id)).filter((p): p is PlayerFace => Boolean(p)),
+          ])
+        )
+      );
     };
 
     fetchParticipantCounts();
@@ -252,6 +307,22 @@ const CommunityPage = () => {
     .slice(0, 4);
 
   const isLoading = gamesLoading || venuesLoading;
+  /**
+   * Every section on the Discover tab is derived from these two queries, and
+   * every one of them falls back to an EmptyState that says the app has
+   * nothing — "No trending games yet", "No venues added yet". Those are claims
+   * about the world, and on a failed request they are false ones: measured
+   * with the content tables serving 500, /community told the user there were
+   * no trending games and offered to let them create the first.
+   *
+   * TeamsPage already makes this argument in a comment on its own error
+   * branch. This is the same bug on a different page.
+   */
+  const loadFailed = gamesError || venuesError;
+  const retryFeed = () => {
+    if (gamesError) refetchGames();
+    if (venuesError) refetchVenues();
+  };
 
   return (
     <Layout>
@@ -259,7 +330,8 @@ const CommunityPage = () => {
         <div className="container py-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Community</h1>
+            <p className="eyebrow mb-2">Who is playing</p>
+            <h1 className="page-title">Community</h1>
             <p className="text-muted-foreground">
               Discover games, connect with players, and join the action near you.
             </p>
@@ -279,10 +351,16 @@ const CommunityPage = () => {
 
             <TabsContent value="discover" className="space-y-8">
               {isLoading ? (
-                <div className="text-center py-12">
+                <div className="text-center py-12" role="status" aria-label="Loading the community">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                   <p className="text-muted-foreground mt-2">Loading community...</p>
                 </div>
+              ) : loadFailed ? (
+                <ErrorPanel
+                  what="the community feed"
+                  onRetry={retryFeed}
+                  isRetrying={gamesFetching || venuesFetching}
+                />
               ) : (
                 <>
                   {/* Nearby Open Games */}
@@ -296,11 +374,11 @@ const CommunityPage = () => {
                           </h2>
                           <p className="text-sm text-muted-foreground">Games happening close to you</p>
                         </div>
-                        <Link to="/games">
-                          <Button variant="ghost" size="sm">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/games">
                             View all <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       </div>
                       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {nearbyGames.map(game => (
@@ -308,6 +386,7 @@ const CommunityPage = () => {
                             key={game.id}
                             game={game}
                             participantCount={participantCounts[game.id] || 0}
+                            faces={participantFaces[game.id] || []}
                             distance={game.distance}
                           />
                         ))}
@@ -323,31 +402,47 @@ const CommunityPage = () => {
                           <TrendingUp className="h-5 w-5 text-primary" />
                           Trending Games
                         </h2>
-                        <p className="text-sm text-muted-foreground">Popular games filling up fast</p>
+                        {/* Subtitle describes the list, so it only holds while
+                            there is one. "Popular games filling up fast" above
+                            "No trending games yet" contradicted itself. */}
+                        {trendingGames.length > 0 && (
+                          <p className="text-sm text-muted-foreground">Popular games filling up fast</p>
+                        )}
                       </div>
-                      <Link to="/games">
-                        <Button variant="ghost" size="sm">
-                          View all <ChevronRight className="h-4 w-4 ml-1" />
+                      {/* "View all" led to an equally empty list. */}
+                      {trendingGames.length > 0 && (
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/games">
+                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                          </Link>
                         </Button>
-                      </Link>
+                      )}
                     </div>
+                    {/* Three across, like Nearby Open Games directly above and
+                        like /games itself. It was four, so the identical card
+                        rendered 440px wide in one section and 328px in the
+                        next, one scroll apart on the same screen. */}
                     {trendingGames.length > 0 ? (
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {trendingGames.map(game => (
                           <GameCard
                             key={game.id}
                             game={game}
                             participantCount={participantCounts[game.id] || 0}
+                          faces={participantFaces[game.id] || []}
                           />
                         ))}
                       </div>
                     ) : (
-                      <Card className="p-8 text-center">
-                        <p className="text-muted-foreground">No trending games yet</p>
-                        <Link to="/create-game" className="mt-4 inline-block">
-                          <Button>Create a game</Button>
-                        </Link>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={TrendingUp}
+                        title="No trending games yet"
+                        description="Start one and it will be the first thing people see here."
+                        actionLabel="Create a game"
+                        actionHref="/create-game"
+                      />
                     )}
                   </section>
 
@@ -365,7 +460,7 @@ const CommunityPage = () => {
                       </div>
                       <div className="flex gap-4 overflow-x-auto pb-2">
                         {playedWith.map((person) => (
-                          <Card key={person.id} className="shrink-0 w-36 text-center p-4 hover:shadow-md transition-shadow">
+                          <Card key={person.id} className="card-lift w-36 shrink-0 p-4 text-center">
                             <Avatar className="h-16 w-16 mx-auto mb-2">
                               <AvatarImage src={person.avatar_url} />
                               <AvatarFallback className="bg-primary/10 text-lg">
@@ -394,24 +489,33 @@ const CommunityPage = () => {
                           <Star className="h-5 w-5 text-primary" />
                           Recently Added Venues
                         </h2>
-                        <p className="text-sm text-muted-foreground">New places to play</p>
+                        {recentVenues.length > 0 && (
+                          <p className="text-sm text-muted-foreground">New places to play</p>
+                        )}
                       </div>
-                      <Link to="/venues">
-                        <Button variant="ghost" size="sm">
-                          View all <ChevronRight className="h-4 w-4 ml-1" />
+                      {recentVenues.length > 0 && (
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/venues">
+                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                          </Link>
                         </Button>
-                      </Link>
+                      )}
                     </div>
+                    {/* The games empty state below offers a way out; the
+                        venues one was a dead end. Owners can seed the
+                        catalogue, so send them there. */}
                     {recentVenues.length > 0 ? (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {recentVenues.map(venue => (
                           <Link key={venue.id} to={`/venue/${venue.id}`}>
-                            <Card className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] group">
+                            <Card className="card-lift group overflow-hidden">
                               <div className="aspect-[16/10] relative">
                                 <img
                                   src={venue.image_url || '/placeholder.svg'}
                                   alt={venue.name}
                                   className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                                 <div className="absolute bottom-2 left-2 right-2">
@@ -428,13 +532,27 @@ const CommunityPage = () => {
                                   <MapPin className="h-3 w-3" />
                                   <span className="truncate">{venue.city}</span>
                                 </div>
+                                {/* Price, not "Added 3 days ago".
+                                    The section is headed "Recently Added
+                                    Venues", so every tile repeating its own
+                                    recency said the same thing a fourth time
+                                    while the number people actually choose on
+                                    was missing entirely. A venue tile without
+                                    a price cannot be compared with the one
+                                    beside it. */}
                                 <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    Added {formatDistanceToNow(new Date(venue.created_at), { addSuffix: true })}
-                                  </span>
+                                  <Price
+                                    amount={venue.price_per_hour}
+                                    suffix="/ hr"
+                                    className="text-sm font-semibold text-foreground"
+                                    suffixClassName="text-xs text-muted-foreground"
+                                  />
                                   {venue.rating > 0 && (
                                     <div className="flex items-center gap-1">
-                                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                                      {/* Was fill-amber-500: a hardcoded palette
+                                          colour, and a different star from the
+                                          one every venue card draws. */}
+                                      <Star className="h-3 w-3 fill-primary text-primary" />
                                       <span className="text-xs font-medium">{venue.rating}</span>
                                     </div>
                                   )}
@@ -445,9 +563,15 @@ const CommunityPage = () => {
                         ))}
                       </div>
                     ) : (
-                      <Card className="p-8 text-center">
-                        <p className="text-muted-foreground">No venues added yet</p>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={MapPin}
+                        title="No venues added yet"
+                        description="The first listing here will be the one everybody books."
+                        actionLabel="List your venue"
+                        actionHref="/for-owners"
+                      />
                     )}
                   </section>
                 </>
@@ -456,18 +580,16 @@ const CommunityPage = () => {
 
             <TabsContent value="my-activity" className="space-y-8">
               {!user ? (
-                <Card className="p-12 text-center">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Join the Community</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Sign in to see your activity and connect with other players.
-                  </p>
-                  <Link to="/login">
-                    <Button>Sign In</Button>
-                  </Link>
-                </Card>
+                <EmptyState
+                  bordered
+                  icon={Users}
+                  title="Join the Community"
+                  description="Sign in to see your activity and connect with other players."
+                  actionLabel="Sign In"
+                  actionHref="/login"
+                />
               ) : userGamesLoading ? (
-                <div className="text-center py-12">
+                <div className="text-center py-12" role="status" aria-label="Loading the community">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                 </div>
               ) : (
@@ -482,35 +604,35 @@ const CommunityPage = () => {
                         </h2>
                         <p className="text-sm text-muted-foreground">Games you're participating in</p>
                       </div>
-                      <Link to="/dashboard">
-                        <Button variant="ghost" size="sm">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to="/dashboard">
                           View all <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                     {upcomingSessions.length > 0 ? (
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {upcomingSessions.map(game => (
                           <GameCard
                             key={game.id}
                             game={game}
                             participantCount={participantCounts[game.id] || 0}
+                          faces={participantFaces[game.id] || []}
                           />
                         ))}
                       </div>
                     ) : (
-                      <Card className="p-8 text-center">
-                        <Calendar className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground mb-4">No upcoming games</p>
-                        <div className="flex gap-3 justify-center">
-                          <Link to="/games">
-                            <Button variant="outline">Find a game</Button>
-                          </Link>
-                          <Link to="/create-game">
-                            <Button>Create a game</Button>
-                          </Link>
-                        </div>
-                      </Card>
+                      <EmptyState
+                        bordered
+                        compact
+                        icon={Calendar}
+                        title="No upcoming games"
+                        description="Join one that's already filling up, or start your own."
+                        actionLabel="Create a game"
+                        actionHref="/create-game"
+                        secondaryLabel="Find a game"
+                        secondaryHref="/games"
+                      />
                     )}
                   </section>
 
@@ -526,7 +648,7 @@ const CommunityPage = () => {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         {playedWith.map((person) => (
-                          <Card key={person.id} className="text-center p-4 hover:shadow-md transition-shadow">
+                          <Card key={person.id} className="card-lift p-4 text-center">
                             <Avatar className="h-16 w-16 mx-auto mb-2">
                               <AvatarImage src={person.avatar_url} />
                               <AvatarFallback className="bg-primary/10 text-lg">

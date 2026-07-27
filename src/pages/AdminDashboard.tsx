@@ -1,11 +1,11 @@
 import { useState, lazy, Suspense } from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { Link } from "react-router-dom";
 import {
   Users,
   Building2,
   Calendar,
   Gamepad2,
-  DollarSign,
   TrendingUp,
   Shield,
   AlertTriangle,
@@ -14,9 +14,7 @@ import {
   Loader2,
   MoreHorizontal,
   Eye,
-  Trash2,
-  UserCog,
-} from "lucide-react";
+  } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,35 +43,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import Layout from "@/components/layout/Layout";
 import {
   useAdminStats,
   useAllUsers,
   useAllVenues,
   useAllBookings,
-  useAllGames,
   useUpdateUserRole,
   useApproveVenue,
-  useDeleteGame,
   type AppRole,
 } from "@/hooks/useAdmin";
 import { format } from "date-fns";
 import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
 import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
+import { formatTimeOfDay } from "@/lib/time";
+import { bookingStatusDescriptor } from "@/features/booking/status";
 
-const FieldSubmissionsTab = lazy(() => import("@/components/admin/FieldSubmissionsTab"));
-const CandidateFieldsTab = lazy(() => import("@/components/admin/CandidateFieldsTab"));
+// FieldSubmissionsTab and CandidateFieldsTab used to be lazy-imported here and
+// never rendered — no TabsTrigger, no TabsContent, no route. Both components
+// still exist and still work; they simply have no way in. Whether to wire them
+// up or delete them is a product call, so the dead imports go and the question
+// is written down in docs/handover.md rather than answered here.
 const BlogPostsTab = lazy(() => import("@/components/admin/BlogPostsTab"));
 const BookingLeadsTab = lazy(() => import("@/components/admin/BookingLeadsTab"));
 const PayoutsTab = lazy(() => import("@/components/admin/PayoutsTab"));
@@ -85,11 +75,9 @@ const AdminDashboard = () => {
   const { data: users, isLoading: usersLoading } = useAllUsers();
   const { data: venues, isLoading: venuesLoading } = useAllVenues();
   const { data: bookings, isLoading: bookingsLoading } = useAllBookings();
-  const { data: games, isLoading: gamesLoading } = useAllGames();
   
   const updateRole = useUpdateUserRole();
   const approveVenue = useApproveVenue();
-  const deleteGame = useDeleteGame();
 
   const formatCurrency = (amount: number) => {
     return `֏${amount.toLocaleString()}`;
@@ -137,9 +125,9 @@ const AdminDashboard = () => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "admin":
-        return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Admin</Badge>;
+        return <Badge className={TONE_CHIP.danger}>Admin</Badge>;
       case "moderator":
-        return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Moderator</Badge>;
+        return <Badge className={TONE_CHIP.warning}>Moderator</Badge>;
       default:
         return <Badge variant="secondary">User</Badge>;
     }
@@ -150,13 +138,15 @@ const AdminDashboard = () => {
       <div className="bg-background min-h-screen">
         <div className="container py-8">
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 mb-8">
+          {/* flex-wrap: title block plus the "Operator view" button ran 47px
+              past a 375px screen. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Shield className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                <h1 className="page-title">Admin Dashboard</h1>
                 <p className="text-muted-foreground">Manage users, venues, and platform activity</p>
               </div>
             </div>
@@ -170,7 +160,7 @@ const AdminDashboard = () => {
 
           {/* Stats Grid */}
           {statsLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
@@ -227,7 +217,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     {venuesLoading ? (
-                      <div className="flex justify-center py-4">
+                      <div className="flex justify-center py-4" role="status" aria-label="Loading admin data">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
                     ) : (
@@ -270,7 +260,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     {bookingsLoading ? (
-                      <div className="flex justify-center py-4">
+                      <div className="flex justify-center py-4" role="status" aria-label="Loading admin data">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
                     ) : (
@@ -280,13 +270,13 @@ const AdminDashboard = () => {
                             <div>
                               <p className="font-medium text-foreground">{booking.venue_name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {format(new Date(booking.booking_date), "MMM d, yyyy")} • {booking.booking_time}
+                                {format(new Date(booking.booking_date), "MMM d, yyyy")} • {formatTimeOfDay(booking.booking_time)}
                               </p>
                             </div>
                             <div className="text-right">
                               <p className="font-medium text-foreground">{formatCurrency(booking.total_price)}</p>
                               <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {booking.status}
+                                {bookingStatusDescriptor(booking.status, "admin").label}
                               </Badge>
                             </div>
                           </div>
@@ -303,7 +293,7 @@ const AdminDashboard = () => {
 
             {/* Booking Leads Tab */}
             <TabsContent value="leads">
-              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-8" role="status" aria-label="Loading admin data"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                 <BookingLeadsTab />
               </Suspense>
             </TabsContent>
@@ -317,7 +307,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {usersLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
@@ -348,7 +338,7 @@ const AdminDashboard = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{user.user_type}</Badge>
+                              <Badge variant="outline" className="capitalize">{user.user_type}</Badge>
                             </TableCell>
                             <TableCell>{getRoleBadge(user.role)}</TableCell>
                             <TableCell>{user.city || "-"}</TableCell>
@@ -386,7 +376,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {venuesLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
@@ -415,9 +405,9 @@ const AdminDashboard = () => {
                             <TableCell>{formatCurrency(venue.price_per_hour)}/hr</TableCell>
                             <TableCell>
                               {venue.is_active ? (
-                                <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
+                                <Badge className={TONE_CHIP.positive}>Active</Badge>
                               ) : (
-                                <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">Pending</Badge>
+                                <Badge className={TONE_CHIP.warning}>Pending</Badge>
                               )}
                             </TableCell>
                             <TableCell className="text-right">
@@ -473,7 +463,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {bookingsLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
@@ -493,12 +483,12 @@ const AdminDashboard = () => {
                           <TableRow key={booking.id}>
                             <TableCell className="font-medium">{booking.venue_name}</TableCell>
                             <TableCell>{format(new Date(booking.booking_date), "MMM d, yyyy")}</TableCell>
-                            <TableCell>{booking.booking_time}</TableCell>
+                            <TableCell>{formatTimeOfDay(booking.booking_time)}</TableCell>
                             <TableCell>{booking.duration_hours}h</TableCell>
                             <TableCell>{formatCurrency(booking.total_price)}</TableCell>
                             <TableCell>
                               <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {booking.status}
+                                {bookingStatusDescriptor(booking.status, "admin").label}
                               </Badge>
                             </TableCell>
                           </TableRow>
@@ -514,13 +504,13 @@ const AdminDashboard = () => {
 
             {/* Blog Tab */}
             <TabsContent value="payouts">
-              <Suspense fallback={<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-10" role="status" aria-label="Loading admin data"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
                 <PayoutsTab />
               </Suspense>
             </TabsContent>
 
             <TabsContent value="blog">
-              <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              <Suspense fallback={<div className="flex justify-center py-8" role="status" aria-label="Loading admin data"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
                 <BlogPostsTab />
               </Suspense>
             </TabsContent>

@@ -24,8 +24,11 @@ serve(async (req) => {
       .eq("user_id", userId)
       .single();
 
-    // Get user's past games for pattern matching
-    const { data: pastGames } = await supabase
+    // NOTE: this used to fetch the caller's past games "for pattern
+    // matching" and then never reference them — a full round trip per
+    // invocation for a value that was discarded. Kept as `_pastGames` so the
+    // intent is visible to whoever wires the matching up.
+    const { data: _pastGames } = await supabase
       .from("game_participants")
       .select("game_id, games(sport, skill_level, location)")
       .eq("user_id", userId)

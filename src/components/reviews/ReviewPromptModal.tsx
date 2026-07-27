@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { usePendingReviewPrompts, useDismissReviewPrompt, useCompleteReviewPrompt } from "@/hooks/useReviewPrompts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Star, X } from "lucide-react";
+import { Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 

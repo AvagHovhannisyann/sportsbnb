@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatTimeOfDay } from "@/lib/time";
+import { atVenue } from "@/lib/venueTime";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { CreditCard, Loader2, ShieldCheck, Timer, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
+import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +22,33 @@ import {
 
 const MOCK_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PAYMENTS_MOCK === "true";
 
+const providerOptions: {
+  key: PaymentProviderKey;
+  icon: typeof CreditCard;
+  title: string;
+  detail: string;
+  dashed?: boolean;
+}[] = [
+  {
+    key: "ameria",
+    icon: CreditCard,
+    title: "Bank card",
+    detail: "Visa, Mastercard, ArCa · Ameriabank vPOS",
+  },
+  { key: "idram", icon: Wallet, title: "Idram", detail: "Pay from your Idram wallet" },
+  ...(MOCK_ENABLED
+    ? [
+        {
+          key: "mock" as PaymentProviderKey,
+          icon: ShieldCheck,
+          title: "Test payment",
+          detail: "Development only",
+          dashed: true,
+        },
+      ]
+    : []),
+];
+
 /** Checkout for a booking hold: countdown, provider choice, redirect to pay. */
 export default function CheckoutPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -28,7 +58,13 @@ export default function CheckoutPage() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const initPayment = useInitPayment();
 
-  const { data: booking, isLoading } = useQuery({
+  const {
+    data: booking,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ["booking", bookingId],
     enabled: !!bookingId && !!user,
     queryFn: async () => {
@@ -60,6 +96,8 @@ export default function CheckoutPage() {
     return `${m}:${String(s).padStart(2, "0")}`;
   }, [remaining]);
 
+  const isUrgent = remaining !== null && remaining <= 120;
+
   const handlePay = async () => {
     if (!bookingId) return;
     try {
@@ -77,28 +115,81 @@ export default function CheckoutPage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container flex min-h-[50vh] items-center justify-center">
+        <div className="container flex min-h-[50vh] items-center justify-center" role="status" aria-label="Loading checkout">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </Layout>
     );
   }
 
-  if (!booking || booking.status !== "pending_payment" || (remaining !== null && remaining <= 0)) {
+  // A failed fetch used to fall through to the expiry branch below, so a
+  // dropped connection told people "This reservation has expired. Please pick
+  // your slot again" while their hold was still live in the database. Acting
+  // on that advice means colliding with your own hold, or creating a second
+  // one and paying twice. Never guess about the state of someone's money —
+  // say the request failed and offer a retry.
+  if (isError) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold mb-2">
-            {booking?.status === "confirmed" ? "Already paid" : "This reservation has expired"}
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            {booking?.status === "confirmed"
-              ? "This booking is already confirmed."
-              : "Holds last 20 minutes. Please pick your slot again."}
-          </p>
-          <Button onClick={() => navigate(booking ? `/venue/${booking.venue_uuid ?? booking.venue_id}` : "/venues")}>
-            Back to venue
-          </Button>
+        <div className="container max-w-lg py-12">
+          <ErrorPanel
+            what="this reservation"
+            description="We couldn't reach our servers. Your hold has not been cancelled — don't book again until this loads."
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
+          >
+            {/* Was `/my-activity`, which is a tab id inside CommunityPage and
+                has never been a route — so the one escape hatch offered to
+                someone just told "your hold has not been cancelled, don't book
+                again until this loads" took them to the 404 page. */}
+            <Button variant="outline" onClick={() => navigate("/my-bookings")}>
+              View my bookings
+            </Button>
+          </ErrorPanel>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!booking || booking.status !== "pending_payment" || (remaining !== null && remaining <= 0)) {
+    const isPaid = booking?.status === "confirmed";
+    const isMissing = !booking;
+
+    return (
+      <Layout>
+        <div className="container max-w-lg py-12">
+          <StatusPanel
+            icon={isPaid ? ShieldCheck : Timer}
+            tone={isPaid ? "positive" : "neutral"}
+            title={
+              isPaid
+                ? "Already paid"
+                : isMissing
+                  ? "Reservation not found"
+                  : "This reservation has expired"
+            }
+            description={
+              isPaid
+                ? "This booking is confirmed — nothing further to pay."
+                : isMissing
+                  ? "The link may be out of date, or the reservation was cancelled."
+                  : "Holds last 20 minutes so slots don't sit locked. Pick your slot again to start a new one."
+            }
+          >
+            {isPaid ? (
+              <Button onClick={() => navigate(`/booking/${booking!.id}/status`)}>
+                View booking
+              </Button>
+            ) : (
+              <Button
+                onClick={() =>
+                  navigate(booking ? `/venue/${booking.venue_uuid ?? booking.venue_id}` : "/venues")
+                }
+              >
+                {booking ? "Back to venue" : "Browse venues"}
+              </Button>
+            )}
+          </StatusPanel>
         </div>
       </Layout>
     );
@@ -109,11 +200,28 @@ export default function CheckoutPage() {
       <div className="container max-w-lg py-10">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            {/* The page had no h1: its only heading was this card title.
+                "Confirm and pay" is what the page is, so it is the page
+                heading — on the one screen in the app where money changes
+                hands, which is not a good place to have no document outline. */}
+            <CardTitle as="h1" className="flex items-center justify-between">
               <span>Confirm and pay</span>
+              {/* Was a hardcoded text-amber-600 — off the token system and
+                  muddy on a dark surface — and it looked identical at 19:00
+                  and at 0:20. Under two minutes it escalates to destructive,
+                  and the value is announced politely so the deadline is not
+                  purely visual. */}
               {countdown && (
-                <span className="flex items-center gap-1.5 text-sm font-normal text-amber-600">
-                  <Timer className="h-4 w-4" /> {countdown}
+                <span
+                  role="timer"
+                  aria-live="polite"
+                  aria-label={`Time left to pay: ${countdown}`}
+                  className={cn(
+                    "flex items-center gap-1.5 font-mono text-sm font-medium tabular-nums transition-colors",
+                    isUrgent ? "text-destructive" : "text-warning",
+                  )}
+                >
+                  <Timer className="h-4 w-4" aria-hidden="true" /> {countdown}
                 </span>
               )}
             </CardTitle>
@@ -123,8 +231,8 @@ export default function CheckoutPage() {
               <p className="font-semibold text-base">{booking.venue_name}</p>
               <p className="text-muted-foreground">
                 {booking.starts_at
-                  ? `${format(new Date(booking.starts_at), "EEEE, MMM d")} · ${format(new Date(booking.starts_at), "HH:mm")}–${format(new Date(booking.ends_at!), "HH:mm")}`
-                  : `${booking.booking_date} · ${booking.booking_time}`}
+                  ? `${format(atVenue(booking.starts_at), "EEEE, MMM d")} · ${format(atVenue(booking.starts_at), "HH:mm")}–${format(atVenue(booking.ends_at!), "HH:mm")}`
+                  : `${booking.booking_date} · ${formatTimeOfDay(booking.booking_time)}`}
               </p>
             </div>
 
@@ -143,52 +251,45 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* These were three plain buttons: the choice was conveyed only by
+                a border colour, so a screen reader announced all of them
+                identically with no indication of which was selected — on the
+                control that decides how someone pays. Now a real radio group. */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Pay with</p>
-              <button
-                type="button"
-                onClick={() => setProvider("ameria")}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors",
-                  provider === "ameria" ? "border-primary ring-1 ring-primary" : "hover:border-primary/50",
-                )}
-              >
-                <CreditCard className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">Bank card</p>
-                  <p className="text-xs text-muted-foreground">Visa, Mastercard, ArCa · Ameriabank vPOS</p>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setProvider("idram")}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors",
-                  provider === "idram" ? "border-primary ring-1 ring-primary" : "hover:border-primary/50",
-                )}
-              >
-                <Wallet className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">Idram</p>
-                  <p className="text-xs text-muted-foreground">Pay from your Idram wallet</p>
-                </div>
-              </button>
-              {MOCK_ENABLED && (
-                <button
-                  type="button"
-                  onClick={() => setProvider("mock")}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-xl border border-dashed p-3 text-left transition-colors",
-                    provider === "mock" ? "border-primary ring-1 ring-primary" : "hover:border-primary/50",
-                  )}
-                >
-                  <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-sm">Test payment</p>
-                    <p className="text-xs text-muted-foreground">Development only</p>
-                  </div>
-                </button>
-              )}
+              <p id="pay-with-label" className="text-sm font-medium">
+                Pay with
+              </p>
+              <div role="radiogroup" aria-labelledby="pay-with-label" className="space-y-2">
+                {providerOptions.map(({ key, icon: Icon, title, detail, dashed }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={provider === key}
+                    onClick={() => setProvider(key)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-xl border p-3 text-left outline-none transition-colors",
+                      "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      dashed && "border-dashed",
+                      provider === key
+                        ? "border-primary ring-1 ring-primary"
+                        : "hover:border-primary/50",
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-5 w-5",
+                        key === "mock" ? "text-muted-foreground" : "text-primary",
+                      )}
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-sm font-medium">{title}</p>
+                      <p className="text-xs text-muted-foreground">{detail}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <Button className="w-full" size="lg" onClick={handlePay} disabled={initPayment.isPending}>

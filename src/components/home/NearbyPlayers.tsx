@@ -111,7 +111,7 @@ const NearbyPlayers = () => {
 
       {state === "loading" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground" role="status" aria-label="Loading nearby players">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <span className="text-sm font-medium">
               Searching for {selectedSport === "All" ? "players" : selectedSport + " players"}...
@@ -154,7 +154,7 @@ const NearbyPlayers = () => {
                 {players.map((player, idx) => (
                   <div
                     key={player.name + idx}
-                    className="flex items-center gap-4 bg-card border border-border/50 rounded-2xl p-4 hover:shadow-md transition-shadow"
+                    className="card-lift flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4"
                   >
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -163,7 +163,7 @@ const NearbyPlayers = () => {
                     </Avatar>
                     <div className="text-left min-w-0">
                       <p className="font-semibold text-foreground truncate">{player.name}</p>
-                      <p className="text-sm text-muted-foreground">{player.sport} · {player.level}</p>
+                      <p className="text-sm text-muted-foreground">{player.sport} · <span className="capitalize">{player.level}</span></p>
                       {player.city && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                           <MapPin className="h-3 w-3" />

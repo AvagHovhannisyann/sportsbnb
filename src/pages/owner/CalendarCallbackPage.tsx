@@ -57,10 +57,10 @@ const CalendarCallbackPage = () => {
           <CardHeader className="text-center">
             {status === "loading" && (
               <>
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center mb-4" role="status" aria-label="Connecting your calendar">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
-                <CardTitle>Connecting Calendar...</CardTitle>
+                <CardTitle as="h2">Connecting Calendar...</CardTitle>
                 <CardDescription>
                   Please wait while we complete the connection
                 </CardDescription>
@@ -74,7 +74,7 @@ const CalendarCallbackPage = () => {
                     <Check className="h-6 w-6 text-emerald-600" />
                   </div>
                 </div>
-                <CardTitle className="text-emerald-600">Calendar Connected!</CardTitle>
+                <CardTitle as="h2" className="text-emerald-600">Calendar Connected!</CardTitle>
                 <CardDescription>
                   Redirecting you back to integrations...
                 </CardDescription>
@@ -88,7 +88,7 @@ const CalendarCallbackPage = () => {
                     <AlertCircle className="h-6 w-6 text-destructive" />
                   </div>
                 </div>
-                <CardTitle className="text-destructive">Connection Failed</CardTitle>
+                <CardTitle as="h2" className="text-destructive">Connection Failed</CardTitle>
                 <CardDescription>
                   {errorMessage}
                 </CardDescription>

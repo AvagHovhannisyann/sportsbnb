@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, User, Phone, Mail, DollarSign, FileText, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Phone, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { venueLocalToInstant, addHoursToInstant } from "@/lib/venueTime";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -137,13 +138,45 @@ export function ManualBookingDialog({
         return;
       }
 
+      /**
+       * `venue_uuid`, `starts_at` and `ends_at` are what make this booking
+       * visible to everyone else, and they were all left NULL.
+       *
+       * `get_available_slots` matches on `b.venue_uuid = p_venue_id` and
+       * `tstzrange(b.starts_at, b.ends_at) && …`, and the `bookings_no_overlap`
+       * exclusion constraint is built over the same three columns. A row with
+       * NULLs in them is in neither: it falls out of the partial index and out
+       * of the availability query. So an owner adding a walk-in for Saturday
+       * 18:00 did not take 18:00 off the site — a player was still offered it,
+       * could hold it without the constraint raising `slot_taken`, and could
+       * pay for it. Two parties, one court, and nothing anywhere errored.
+       *
+       * The blindness was one-directional, which is why it survived: the
+       * dialog's own overlap check above queries by `venue_id`, so the owner
+       * *did* see player bookings. Only the player-facing direction was blind.
+       *
+       * Converted through `venueLocalToInstant` rather than `new Date(...)`,
+       * because the RPCs interpret these as Yerevan wall-clock and `new Date`
+       * would interpret them in whatever zone the owner's laptop is set to.
+       */
+      const startsAt = venueLocalToInstant(bookingDate, startTime);
+      const endsAt = startsAt ? addHoursToInstant(startsAt, parseFloat(duration)) : null;
+      if (!startsAt || !endsAt) {
+        toast.error("Couldn't read that date and time — please re-enter them.");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create the booking
       const { error: insertError } = await supabase.from("bookings").insert({
         venue_id: venueId,
+        venue_uuid: venueId,
         venue_name: selectedVenue?.name || "",
         booking_date: bookingDate,
         booking_time: startTime,
         duration_hours: parseFloat(duration),
+        starts_at: startsAt,
+        ends_at: endsAt,
         total_price: price,
         status: "confirmed",
         user_id: user?.id, // Will be the owner creating it
@@ -156,7 +189,14 @@ export function ManualBookingDialog({
       });
 
       if (insertError) {
-        if (insertError.code === '23505') {
+        // 23P01 as well as 23505. Now that the row carries `starts_at`/`ends_at`
+        // it is covered by `bookings_no_overlap`, which is an EXCLUDE
+        // constraint — Postgres reports those as `exclusion_violation` (23P01),
+        // not `unique_violation` (23505). Checking only the latter would have
+        // thrown a raw database error at an owner for the one collision this
+        // change exists to start catching: a player holding the slot between
+        // the overlap check above and this insert.
+        if (insertError.code === "23505" || insertError.code === "23P01") {
           toast.error("This time slot was just booked. Please select another time.");
           setIsSubmitting(false);
           return;

@@ -1,7 +1,8 @@
 import React from "react";
+import { TONE_CHIP } from "@/lib/chips";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, MapPin, Eye } from "lucide-react";
+import { CheckCircle, Loader2, MapPin, Sun, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,17 +73,17 @@ const FieldSubmissionsTab: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Approved</Badge>;
+        return <Badge className={TONE_CHIP.positive}>Approved</Badge>;
       case "rejected":
-        return <Badge className="bg-red-500/10 text-red-600 border-red-500/20">Rejected</Badge>;
+        return <Badge className={TONE_CHIP.danger}>Rejected</Badge>;
       default:
-        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Pending</Badge>;
+        return <Badge className={TONE_CHIP.warning}>Pending</Badge>;
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-8" role="status" aria-label="Loading submissions">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -119,9 +120,16 @@ const FieldSubmissionsTab: React.FC = () => {
                         <p className="text-sm text-muted-foreground mt-1">{sub.description}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        📍 {sub.latitude.toFixed(4)}, {sub.longitude.toFixed(4)} • 
+                        <MapPin className="mr-1 inline h-3 w-3" aria-hidden="true" />
+                        <span className="tabular-nums">{sub.latitude.toFixed(4)}, {sub.longitude.toFixed(4)}</span> • 
                         Submitted {format(new Date(sub.created_at), "MMM d, yyyy")}
-                        {sub.has_lighting && " • 💡 Has lighting"}
+                        {sub.has_lighting && (
+                          <>
+                            {" • "}
+                            <Sun className="mr-1 inline h-3 w-3" aria-hidden="true" />
+                            Has lighting
+                          </>
+                        )}
                       </p>
                     </div>
                     <div className="flex gap-2 shrink-0">

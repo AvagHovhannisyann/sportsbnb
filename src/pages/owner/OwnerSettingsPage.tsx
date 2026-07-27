@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, Save, Building2, Mail, Phone, Globe, MapPin, DollarSign } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Loader2, Save, Building2, Mail, Phone, Globe, MapPin, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,23 +14,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
+import { CURRENCIES } from "@/lib/currencies";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const currencies = [
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "€", name: "Euro" },
-  { code: "GBP", symbol: "£", name: "British Pound" },
-  { code: "AMD", symbol: "֏", name: "Armenian Dram" },
-  { code: "RUB", symbol: "₽", name: "Russian Ruble" },
-];
+/**
+ * The currencies this picker offers — the same list the profile page offers.
+ *
+ * It was a second, hardcoded list of five, and both pickers write the same
+ * `profiles.preferred_currency` column. The profile page offers all fifteen,
+ * so an owner who chose, say, Georgian Lari there came here and found the
+ * Currency field *blank*: a controlled Radix `Select` whose value matches no
+ * item renders neither the value nor its placeholder. Measured — /profile read
+ * "₾ Georgian Lari (GEL)" and /owner/settings read "". They could not see what
+ * their currency was set to, and touching the control at all would have forced
+ * them down to one of five.
+ *
+ * Deriving it from `CURRENCIES` is what stops the two lists diverging again;
+ * `currencies.test.ts` asserts it structurally rather than trusting this
+ * comment.
+ */
+const currencies = Object.entries(CURRENCIES).map(([code, info]) => ({
+  code,
+  symbol: info.symbol,
+  name: info.name,
+}));
 
 const OwnerSettingsPage = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
   const { data: myVenues = [], isLoading: venuesLoading, refetch } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -50,12 +66,27 @@ const OwnerSettingsPage = () => {
   // Profile state for currency
   const [currency, setCurrency] = useState("USD");
 
-  // Set default venue
+  /**
+   * Which venue to open, honouring `?venue=` before falling back to the first.
+   *
+   * `OwnerVenuesPage` sends `/owner/settings?venue=${venue.id}` from the row
+   * menu of a specific venue, and nothing here read it. The page opened on
+   * `myVenues[0]` regardless — so an owner with more than one venue picked
+   * "Settings" on their second, got a form pre-filled with their first
+   * venue's name, address and hourly price, and any edit they saved was
+   * written to the wrong record. Nothing on screen contradicted them: the
+   * form looked exactly as it should, just for a different venue.
+   *
+   * Checked against the owner's own venues rather than trusted, so a stale or
+   * hand-edited id falls back rather than selecting nothing and rendering an
+   * empty form over a venue that exists.
+   */
   useEffect(() => {
-    if (myVenues.length > 0 && !selectedVenueId) {
-      setSelectedVenueId(myVenues[0].id);
-    }
-  }, [myVenues, selectedVenueId]);
+    if (myVenues.length === 0 || selectedVenueId) return;
+    const requested = searchParams.get("venue");
+    const match = requested ? myVenues.find((v) => v.id === requested) : undefined;
+    setSelectedVenueId(match?.id ?? myVenues[0].id);
+  }, [myVenues, selectedVenueId, searchParams]);
 
   // Load venue data when venue changes
   useEffect(() => {
@@ -88,15 +119,19 @@ const OwnerSettingsPage = () => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile?.user_type !== "owner") {
+    // isProfileLoading, not just authLoading: authLoading covers the
+    // session only, so without it this reads user_type off a null profile
+    // and bounces the owner. RequireRole already guards this route; keeping
+    // the check correct here means it stays safe if that ever changes.
+    if (!authLoading && !isProfileLoading && user && profile?.user_type !== "owner") {
       navigate("/dashboard");
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, isProfileLoading, navigate]);
 
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Settings">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading settings">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
@@ -140,8 +175,6 @@ const OwnerSettingsPage = () => {
     }
   };
 
-  const selectedVenue = myVenues.find((v) => v.id === selectedVenueId);
-  const selectedCurrency = currencies.find((c) => c.code === currency);
 
   return (
     <OwnerLayout title="Settings" subtitle="Update your venue's basic information and settings">
@@ -160,12 +193,16 @@ const OwnerSettingsPage = () => {
           {/* Venue Selector */}
           {myVenues.length > 1 && (
             <div>
-              <Label className="mb-2 block">Select Venue</Label>
+              {/* `htmlFor`/`id`, not just proximity. The label was rendered
+                  right above the control and tied to nothing, so Chrome
+                  computed no accessible name for it and a screen reader
+                  announced an unnamed combobox. */}
+              <Label htmlFor="settings-venue" className="mb-2 block">Select Venue</Label>
               <Select
                 value={selectedVenueId || ""}
                 onValueChange={setSelectedVenueId}
               >
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger id="settings-venue" className="w-full max-w-xs">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,7 +219,7 @@ const OwnerSettingsPage = () => {
           {/* General Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-primary" />
                 General Information
               </CardTitle>
@@ -215,6 +252,7 @@ const OwnerSettingsPage = () => {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="email"
                       value={profile?.email || ""}
                       disabled
                       className="pl-10 bg-muted"
@@ -230,10 +268,11 @@ const OwnerSettingsPage = () => {
                     <Input
                       id="phone"
                       type="tel"
+                      autoComplete="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="pl-10"
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="+374 XX XXXXXX"
                     />
                   </div>
                 </div>
@@ -299,7 +338,7 @@ const OwnerSettingsPage = () => {
                     id="city"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="New York"
+                    placeholder="Yerevan"
                   />
                 </div>
 
@@ -307,7 +346,7 @@ const OwnerSettingsPage = () => {
                 <div className="space-y-2">
                   <Label htmlFor="price">Price per Hour</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="price"
                       type="number"

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { formatTimeOfDay } from "@/lib/time";
 import {
   format,
   startOfWeek,
@@ -8,12 +9,12 @@ import {
   isSameDay,
   parseISO,
   setHours,
-  setMinutes,
-} from "date-fns";
+  } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { bookingStatusDescriptor } from "@/features/booking/status";
 
 interface Booking {
   id: string;
@@ -26,7 +27,7 @@ interface Booking {
   customer_name?: string;
 }
 
-interface BlockedSlot {
+interface _RemovedBlockedSlot {
   id: string;
   date: string;
   start_time: string;
@@ -36,7 +37,10 @@ interface BlockedSlot {
 
 interface WeekCalendarProps {
   bookings: Booking[];
-  blockedSlots?: BlockedSlot[];
+  // No `blockedSlots`. It was declared, defaulted and never read, and no caller
+  // ever passed it — the residue of partial-day blocking, which the schema
+  // cannot store (see BlockTimeDialog). Leaving the prop in place advertised a
+  // capability this component does not have.
   blockedDates?: { blocked_date: string; reason?: string | null }[];
   openingHours?: { day_of_week: number; open_time: string; close_time: string; is_closed: boolean }[];
   onBookingClick?: (booking: Booking) => void;
@@ -49,7 +53,6 @@ const HOURS = Array.from({ length: 15 }, (_, i) => i + 6); // 6 AM to 8 PM
 
 export function WeekCalendar({
   bookings,
-  blockedSlots = [],
   blockedDates = [],
   openingHours = [],
   onBookingClick,
@@ -91,17 +94,12 @@ export function WeekCalendar({
     return getBlockedForDay(day).length > 0;
   };
 
-  const parseTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    return hours + minutes / 60;
-  };
-
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-4">
-          <h3 className="font-semibold text-foreground">{resourceName}</h3>
+          <h2 className="font-semibold text-foreground">{resourceName}</h2>
           <Badge variant="outline" className="text-xs">
             {format(weekStart, "MMM d")} - {format(addDays(weekStart, 6), "MMM d, yyyy")}
           </Badge>
@@ -120,9 +118,10 @@ export function WeekCalendar({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Previous week"
               onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"
@@ -136,9 +135,10 @@ export function WeekCalendar({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Next week"
               onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -205,16 +205,32 @@ export function WeekCalendar({
                       )}
                     >
                       {dayBookings.map((booking) => (
-                        <div
+                        <button
                           key={booking.id}
+                          type="button"
+                          /* Was a div: every booking on the owner's week was
+                             mouse-only, and the calendar is the page they run
+                             their day from. A real button also names itself
+                             from its contents. */
                           onClick={() => onBookingClick?.(booking)}
                           className={cn(
-                            "absolute left-1 right-1 rounded-md p-2 cursor-pointer transition-all hover:ring-2 hover:ring-primary/50",
-                            booking.status === "confirmed"
-                              ? "bg-primary text-primary-foreground"
-                              : booking.status === "pending"
-                              ? "bg-amber-500 text-white"
-                              : "bg-muted text-muted-foreground"
+                            "absolute left-1 right-1 rounded-md p-2 text-left cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            /* Tone-driven, so `pending_payment` reads as
+                               awaiting rather than falling through to the grey
+                               used for cancelled and expired. It matched only
+                               the legacy `pending`, which made an unpaid hold
+                               look settled on the owner's own calendar. */
+                            {
+                              positive: "bg-primary text-primary-foreground",
+                              /* Was `bg-amber-500 text-white` — 2.15:1, and
+                                 this block carries the customer's name and
+                                 time. Tinted like `danger` rather than filled,
+                                 which also keeps an unpaid hold visually
+                                 lighter than a confirmed booking. */
+                              warning: "bg-warning/20 text-warning",
+                              danger: "bg-destructive/20 text-destructive",
+                              neutral: "bg-muted text-muted-foreground",
+                            }[bookingStatusDescriptor(booking.status).tone]
                           )}
                           style={{
                             top: "2px",
@@ -225,9 +241,9 @@ export function WeekCalendar({
                             {booking.customer_name || "Booking"}
                           </div>
                           <div className="text-xs opacity-80 truncate">
-                            {booking.booking_time} • {booking.venue_name}
+                            {formatTimeOfDay(booking.booking_time)} • {booking.venue_name}
                           </div>
-                        </div>
+                        </button>
                       ))}
                       {isBlocked && !isClosed && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -250,7 +266,9 @@ export function WeekCalendar({
           <span className="text-xs text-muted-foreground">Confirmed</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-amber-500" />
+          {/* Follows the block above: a legend swatch that does not match the
+              thing it labels is worse than no legend. */}
+          <div className="w-3 h-3 rounded bg-warning/20 ring-1 ring-warning/50" />
           <span className="text-xs text-muted-foreground">Pending</span>
         </div>
         <div className="flex items-center gap-2">

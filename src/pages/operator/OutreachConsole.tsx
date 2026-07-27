@@ -1,6 +1,18 @@
 import { useMemo, useState } from "react";
+import { NEUTRAL_CHIP, TONE_CHIP } from "@/lib/chips";
 import { useOutreachTargets, usePrepareTarget, useDeleteTarget, type OutreachTarget } from "@/hooks/useOutreach";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,14 +26,14 @@ import { format, formatDistanceToNow } from "date-fns";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-muted text-muted-foreground",
-  enriched: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  researched: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  drafted: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  contacted: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  replied: "bg-green-500/20 text-green-400 border-green-500/30",
+  enriched: TONE_CHIP.info,
+  researched: "border-chart-4/20 bg-chart-4/10 text-chart-4",
+  drafted: TONE_CHIP.warning,
+  contacted: TONE_CHIP.positive,
+  replied: TONE_CHIP.positive,
   onboarded: "bg-primary/20 text-primary border-primary/30",
-  passed: "bg-red-500/15 text-red-400 border-red-500/30",
-  unreachable: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  passed: TONE_CHIP.danger,
+  unreachable: NEUTRAL_CHIP,
 };
 
 export default function OutreachConsole() {
@@ -75,11 +87,14 @@ export default function OutreachConsole() {
     <div className="min-h-screen bg-background">
       <SEOHead title="AI Outreach Console · Sportsbnb" description="Admin outreach workspace" />
       <div className="border-b border-border/40 bg-card/30 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
+        {/* flex-wrap + min-w-0 on the title block: back link, title and two
+            action buttons made a ~600px sticky bar that scrolled a 375px
+            screen sideways. */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <Button asChild variant="ghost" size="sm">
             <Link to="/operator"><ChevronLeft className="h-4 w-4 mr-1" /> Operator</Link>
           </Button>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold tracking-tight">AI Venue Outreach</h1>
             <p className="text-xs text-muted-foreground">One-click research, contact discovery, draft, send, and reply tracking</p>
           </div>
@@ -156,7 +171,15 @@ export default function OutreachConsole() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={STATUS_COLORS[t.status] ?? ""}>{t.status}</Badge>
+                      {/* These nine values are already ordinary words, unlike the payout and
+    booking enums; the only defect was that they rendered in database
+    lowercase. A descriptor module here would be ceremony. */}
+                      <Badge
+                        variant="outline"
+                        className={`capitalize ${STATUS_COLORS[t.status] ?? ""}`}
+                      >
+                        {t.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {t.last_contacted_at ? formatDistanceToNow(new Date(t.last_contacted_at), { addSuffix: true }) : "—"}
@@ -169,9 +192,52 @@ export default function OutreachConsole() {
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${t.name}?`)) del.mutate(t.id); }}>
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
+                      {/* Named, and confirmed with the app's own dialog rather
+                          than a native `confirm()`. Two problems in one
+                          control: the button had no accessible name, so a
+                          screen reader announced three identical "button"s in
+                          a row and none of them said which target they would
+                          delete; and `confirm()` is unstyled, blocks the
+                          thread, and can be suppressed outright by the
+                          browser, which would delete the row with no prompt at
+                          all. Every other destructive action here uses
+                          AlertDialog.
+
+                          Neither had been caught because `outreach_targets`
+                          was missing from the audit fixtures, so this table
+                          rendered empty and the row never existed for any
+                          check to look at. */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Delete outreach target ${t.name}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete outreach target</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Delete &ldquo;{t.name}&rdquo;? Its contact history and follow-up go
+                              with it, and this cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep it</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => del.mutate(t.id)}
+                              disabled={del.isPending}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {del.isPending ? "Deleting…" : "Delete target"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 );

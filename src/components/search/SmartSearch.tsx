@@ -4,8 +4,15 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sportTypes } from "@/data/constants";
+import { orIlike } from "@/lib/postgrest";
 
-const YANDEX_GEOCODER_API_KEY = "0182c04c-963d-409f-a83d-26b2fb34547e";
+// Browser-callable geocoder key. It is necessarily public — it ships in the
+// bundle — but it was hardcoded here, which meant it could not be swapped per
+// environment or rotated without a code change, and it sits in git history.
+// Configured like VITE_GOOGLE_MAPS_BROWSER_KEY instead. Restrict it by HTTP
+// referrer in the Yandex console; the quota is billable.
+const YANDEX_GEOCODER_API_KEY = import.meta.env.VITE_YANDEX_GEOCODER_KEY ?? "";
 
 interface SearchSuggestion {
   id: string;
@@ -56,8 +63,15 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
     const allSuggestions: SearchSuggestion[] = [];
 
     try {
-      // Sport matching (local)
-      const sportTypes = ["Football", "Basketball", "Tennis", "Swimming", "Volleyball", "Badminton", "Rugby", "Gym", "Cricket", "Golf", "Running", "Cycling"];
+      // Sport matching (local), against the one list venues are tagged from.
+      //
+      // This was a second copy of it, hardcoded here: twelve entries against
+      // the canonical twenty, and not a subset. It offered "Running", which is
+      // not a sport any venue can be tagged with, so accepting that suggestion
+      // navigated to a filter that could never match anything. And it was
+      // missing Boxing, Yoga, Table Tennis, Squash, Hockey, Baseball, Martial
+      // Arts, Dance and Climbing — nine real sports that a venue can offer and
+      // that this search would never suggest, however far you typed their name.
       sportTypes
         .filter(sport => sport.toLowerCase().includes(query.toLowerCase()))
         .slice(0, 2)
@@ -77,14 +91,14 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
           .from("venues")
           .select("id, name, city, address")
           .eq("is_active", true)
-          .or(`name.ilike.%${query}%,city.ilike.%${query}%,address.ilike.%${query}%`)
+          .or(orIlike(["name", "city", "address"], query))
           .limit(3),
         supabase
           .from("games")
           .select("id, title, sport, location")
           .eq("status", "open")
           .gte("game_date", new Date().toISOString().split("T")[0])
-          .or(`title.ilike.%${query}%,sport.ilike.%${query}%,location.ilike.%${query}%`)
+          .or(orIlike(["title", "sport", "location"], query))
           .limit(3),
         supabase.functions.invoke("geosuggest", {
           body: {
@@ -97,6 +111,14 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
           },
         }).then(({ data, error }) => error ? { results: [] } : data).catch(() => ({ results: [] })),
       ]);
+
+      // Errors used to be dropped here, so a 400 and a genuine no-match drew
+      // the same empty dropdown. They are still not shown to the user — a
+      // suggestion list is the wrong place for an error panel — but they reach
+      // the console, which is the difference between a reproducible bug and an
+      // invisible one.
+      if (venuesRes.error) console.error("SmartSearch venue lookup failed", venuesRes.error);
+      if (gamesRes.error) console.error("SmartSearch game lookup failed", gamesRes.error);
 
       venuesRes.data?.forEach(venue => {
         allSuggestions.push({
@@ -130,7 +152,7 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
             data: { uri: item.uri, fullText: item.subtitle?.text ? `${item.title.text}, ${item.subtitle.text}` : item.title.text },
           });
         });
-      } else {
+      } else if (YANDEX_GEOCODER_API_KEY) {
         const geocodeResponse = await fetch(
           `https://geocode-maps.yandex.ru/1.x/?apikey=${YANDEX_GEOCODER_API_KEY}&geocode=${encodeURIComponent(query)}&format=json&results=4&lang=en_US&ll=44.5152,40.1872&spn=2,2&rspn=1`
         );
@@ -161,6 +183,9 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
   }, []);
 
   const resolveLocationCoords = async (data: any): Promise<{ lat: number; lng: number; address: string } | null> => {
+    // Without a key the request is rejected by Yandex anyway; skipping it keeps
+    // venue and game suggestions working instead of failing the whole search.
+    if (!YANDEX_GEOCODER_API_KEY) return null;
     try {
       const geocodeParam = data.uri
         ? `uri=${encodeURIComponent(data.uri)}`
@@ -279,6 +304,7 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
         )}
         {!isLoading && inputValue && (
           <button
+            aria-label="Clear search"
             type="button"
             onClick={() => { setInputValue(""); setSuggestions([]); setIsOpen(false); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

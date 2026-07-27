@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 
 /**
  * Spotify-Wrapped style breakdown of the player's sports identity:
@@ -14,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 export function SportsDNACard() {
   const { user } = useAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["sports-dna", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -30,6 +31,11 @@ export function SportsDNACard() {
           .eq("user_id", user!.id)
           .limit(200),
       ]);
+      // Rethrow. `?? []` on both of these meant a failed request aggregated
+      // to nothing and rendered "your sports identity will appear here" — an
+      // active player told their history was empty because a query errored.
+      if (games.error) throw games.error;
+      if (intents.error) throw intents.error;
       return {
         games: (games.data ?? []) as Array<{ games: { sport: string; game_time: string; location: string } }>,
         intents: intents.data ?? [],
@@ -75,12 +81,20 @@ export function SportsDNACard() {
       </CardHeader>
       <CardContent className="space-y-5">
         {isLoading ? (
-          <div className="py-8 flex justify-center">
+          <div className="py-8 flex justify-center" role="status" aria-label="Loading your sports profile">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
           </div>
+        ) : isError ? (
+          <ErrorPanel
+            what="your sports history"
+            description="Your bookings and games are unaffected — this panel just summarises them."
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
+            className="py-4"
+          />
         ) : !dna || (dna.totalSports === 0 && dna.totalTime === 0) ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Play a game or send an inquiry — your sports identity will appear here.
+            Book a court or join a game — your sports identity will appear here.
           </p>
         ) : (
           <>

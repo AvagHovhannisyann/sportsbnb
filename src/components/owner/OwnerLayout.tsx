@@ -5,7 +5,7 @@ import {
   Building2,
   Calendar,
   Clock,
-  DollarSign,
+  Banknote,
   FileText,
   Link2,
   MessageCircle,
@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,9 +35,9 @@ const navigation = [
   { name: "Venues", href: "/owner/venues", icon: Building2 },
   { name: "Schedule", href: "/owner/schedule", icon: Calendar },
   { name: "Bookings", href: "/owner/bookings", icon: Clock },
-  { name: "Earnings", href: "/owner/earnings", icon: DollarSign },
+  { name: "Earnings", href: "/owner/earnings", icon: Banknote },
   { name: "Opening Hours", href: "/owner/hours", icon: Clock },
-  { name: "Pricing", href: "/owner/pricing", icon: DollarSign },
+  { name: "Pricing", href: "/owner/pricing", icon: Banknote },
   { name: "Equipment", href: "/owner/equipment", icon: Package },
   { name: "Policies", href: "/owner/policies", icon: FileText },
   { name: "Integrations", href: "/owner/integrations", icon: Link2 },
@@ -68,7 +67,11 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
     <div className="min-h-screen bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
+        // Decorative scrim. Keyboard users close the sidebar with its own
+        // close button, so this should not be an extra stop in the tab order —
+        // it should be invisible to assistive tech, which it was not.
         <div
+          aria-hidden="true"
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -92,9 +95,10 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
               variant="ghost"
               size="icon"
               className="lg:hidden"
+              aria-label="Close menu"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </Button>
           </div>
 
@@ -155,9 +159,12 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive"
+                /* Icon-only sign-out, on every owner page, with no name at
+                   all — a destructive action announced as just "button". */
+                aria-label="Sign out"
                 onClick={handleSignOut}
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -167,33 +174,42 @@ export function OwnerLayout({ children, title, subtitle }: OwnerLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
+        {/* min-h rather than a fixed h-16: at 375px the subtitle wraps to
+            three lines, which with `items-center` overflowed a 64px header
+            equally above and below and clipped the page title off the top of
+            the screen on every owner page. */}
+        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-border bg-background/95 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:gap-4 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
             className="lg:hidden"
+            aria-label="Open menu"
+            aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
 
-          <div className="flex-1">
+          {/* min-w-0 lets the subtitle clamp instead of forcing the row wider
+              than the phone. */}
+          <div className="min-w-0 flex-1">
             {title && (
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold text-foreground">{title}</h1>
                 {subtitle && (
-                  <p className="text-sm text-muted-foreground">{subtitle}</p>
+                  <p className="line-clamp-1 text-sm text-muted-foreground">{subtitle}</p>
                 )}
               </div>
             )}
           </div>
 
-          <Link to="/">
-            <Button variant="ghost" size="sm">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to site
-            </Button>
-          </Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/">
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Back to site</span>
+              <span className="sr-only sm:hidden">Back to site</span>
+            </Link>
+          </Button>
         </header>
 
         {/* Page content */}

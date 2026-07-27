@@ -4,20 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { 
-  MessageSquare, 
-  Flag, 
-  Ban, 
-  MoreVertical,
-  Plus,
-  Trash2,
-  Zap
-} from "lucide-react";
+import { Ban, Building2, Flag, MessageSquare, MoreVertical, Plus, Trash2, Zap } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -149,8 +140,9 @@ export const OwnerChatView = ({ roomId, venueName, customerId }: OwnerChatViewPr
       {/* Header */}
       <div className="px-4 py-3 border-b flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="text-xs">
-            🏟️ {venueName}
+          <Badge variant="secondary" className="gap-1 text-xs">
+            <Building2 className="h-3 w-3" aria-hidden="true" />
+            {venueName}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
@@ -175,8 +167,12 @@ export const OwnerChatView = ({ roomId, venueName, customerId }: OwnerChatViewPr
                         key={template.id} 
                         className="flex items-start justify-between p-3 rounded-lg border bg-muted/50"
                       >
-                        <div 
-                          className="flex-1 cursor-pointer"
+                        {/* Sibling of the delete button rather than its
+                            parent, so this can be a real button — picking a
+                            saved reply was mouse-only. */}
+                        <button
+                          type="button"
+                          className="flex-1 cursor-pointer text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() => {
                             handleQuickReply(template.message_text);
                             setShowTemplateDialog(false);
@@ -186,11 +182,15 @@ export const OwnerChatView = ({ roomId, venueName, customerId }: OwnerChatViewPr
                           <p className="text-xs text-muted-foreground line-clamp-2">
                             {template.message_text}
                           </p>
-                        </div>
+                        </button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 shrink-0"
+                          /* Icon-only, so it had no name at all: screen
+                             readers announced "button" beside each saved
+                             reply, with nothing to say it deletes one. */
+                          aria-label={`Delete template ${template.title}`}
                           onClick={() => handleDeleteTemplate(template.id)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />

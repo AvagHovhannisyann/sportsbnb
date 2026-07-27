@@ -1,59 +1,97 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Calendar, DollarSign, Users, TrendingUp, Building2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Loader2, Plus, Calendar, Banknote, Users, TrendingUp, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/owner/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { WeekCalendar } from "@/components/owner/schedule/WeekCalendar";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
 import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
+import { formatTimeOfDay } from "@/lib/time";
+import { cn } from "@/lib/utils";
+import { bookingStatusDescriptor } from "@/features/booking/status";
 
 const OwnerOverviewPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
-  const { data: analytics, isLoading: analyticsLoading } = useOwnerAnalytics();
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    refetch: refetchVenues,
+    isFetching: venuesFetching,
+  } = useOwnerVenues(user?.id);
+  const {
+    data: analytics,
+    isError: analyticsError,
+    refetch: refetchAnalytics,
+    isFetching: analyticsFetching,
+  } = useOwnerAnalytics();
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    if (!authLoading && user && profile && !profile.onboarding_completed) {
-      navigate("/onboarding/owner");
-    }
+    // Deliberately no onboarding redirect. /onboarding/owner is a deprecated
+    // stub that immediately sends owners back to /owner-dashboard, so this
+    // pair looped forever for any owner with onboarding_completed = false —
+    // which is every newly created owner. Owners set their venue up from the
+    // dashboard itself, which is what the stub's own comment says.
   }, [user, profile, authLoading, navigate]);
 
   if (authLoading) {
     return (
       <OwnerLayout title="Overview">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading your dashboard">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </OwnerLayout>
     );
   }
 
+  // Month-over-month, computed, or absent.
+  //
+  // These four badges read "+12%", "+8%", "+15%" and "+5%" — string literals,
+  // shown whenever the matching figure was above zero. An owner looking at
+  // "Total Revenue ֏27,000 +12%" on their own business dashboard would
+  // reasonably conclude revenue grew 12% against the previous period. Nothing
+  // was compared; the numbers were decoration.
+  //
+  // `revenueByMonth` carries six real months, so revenue and bookings can show
+  // a true change. Unique customers and occupancy have no prior-period figure
+  // anywhere in the analytics, so they show none — an absent badge is honest,
+  // an invented one is not.
+  const monthly = analytics?.revenueByMonth ?? [];
+  const thisMonth = monthly[monthly.length - 1];
+  const lastMonth = monthly[monthly.length - 2];
+  const changeOf = (now?: number, before?: number): string | null => {
+    if (now === undefined || before === undefined || before === 0) return null;
+    const pct = Math.round(((now - before) / before) * 100);
+    return `${pct >= 0 ? "+" : ""}${pct}%`;
+  };
+
   const stats = [
     {
       label: "Total Revenue",
       value: analytics ? `֏${analytics.totalRevenue.toLocaleString()}` : "֏0",
-      change: analytics?.totalRevenue > 0 ? "+12%" : "—",
-      icon: DollarSign,
+      change: changeOf(thisMonth?.revenue, lastMonth?.revenue),
+      icon: Banknote,
       color: "text-emerald-600",
       bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
       label: "Total Bookings",
       value: analytics?.totalBookings?.toString() || "0",
-      change: analytics?.totalBookings > 0 ? "+8%" : "—",
+      change: changeOf(thisMonth?.bookings, lastMonth?.bookings),
       icon: Calendar,
       color: "text-primary",
       bgColor: "bg-primary/10",
@@ -61,15 +99,15 @@ const OwnerOverviewPage = () => {
     {
       label: "Unique Customers",
       value: analytics?.uniqueCustomers?.toString() || "0",
-      change: analytics?.uniqueCustomers > 0 ? "+15%" : "—",
+      change: null,
       icon: Users,
-      color: "text-violet-600",
-      bgColor: "bg-violet-100 dark:bg-violet-900/30",
+      color: "text-chart-4",
+      bgColor: "bg-chart-4/10",
     },
     {
       label: "Occupancy Rate",
       value: analytics ? `${analytics.occupancyRate}%` : "0%",
-      change: analytics?.occupancyRate > 0 ? "+5%" : "—",
+      change: null,
       icon: TrendingUp,
       color: "text-amber-600",
       bgColor: "bg-amber-100 dark:bg-amber-900/30",
@@ -109,9 +147,18 @@ const OwnerOverviewPage = () => {
                   <div className={`w-10 h-10 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
                     <Icon className={`h-5 w-5 ${stat.color}`} />
                   </div>
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    {stat.change}
-                  </Badge>
+                  {stat.change && (
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-xs font-normal tabular-nums",
+                        stat.change.startsWith("-") && "text-destructive",
+                      )}
+                      title="Compared with last month"
+                    >
+                      {stat.change}
+                    </Badge>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -121,10 +168,28 @@ const OwnerOverviewPage = () => {
         })}
       </div>
 
+      {/* min-w-0 on both columns. The week calendar inside deliberately sets
+          `min-w-[800px]` on its grid and wraps it in `overflow-x-auto` so it
+          scrolls on a phone — but an explicit min-width still counts toward a
+          grid item's min-content, and the item defaults to `min-width: auto`.
+          The 800px propagated all the way out and scrolled the entire owner
+          dashboard sideways instead of just the calendar. */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content - Calendar */}
-        <div className="lg:col-span-2 space-y-6">
-          {myVenues.length > 0 ? (
+        <div className="min-w-0 lg:col-span-2 space-y-6">
+          {/* An owner with venues must never be told they have none because a
+              request failed — the empty state's call to action is "add your
+              first venue", which invites a duplicate listing. */}
+          {venuesError ? (
+            <Card>
+              <ErrorPanel
+                what="your venues"
+                description="We couldn't reach our servers. Your listings are unaffected."
+                onRetry={() => refetchVenues()}
+                isRetrying={venuesFetching}
+              />
+            </Card>
+          ) : myVenues.length > 0 ? (
             <WeekCalendar
               bookings={demoBookings}
               resourceName={myVenues[0]?.name || "Your Venue"}
@@ -151,7 +216,17 @@ const OwnerOverviewPage = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              {upcomingReservations.length > 0 ? (
+              {/* "No bookings yet" on a failed fetch is the dangerous one: an
+                  owner who believes their day is clear does not turn up. */}
+              {analyticsError ? (
+                <ErrorPanel
+                  what="your bookings"
+                  description="We couldn't reach our servers. Don't assume your schedule is clear until this loads."
+                  onRetry={() => refetchAnalytics()}
+                  isRetrying={analyticsFetching}
+                  className="py-8"
+                />
+              ) : upcomingReservations.length > 0 ? (
                 <div className="space-y-4">
                   {upcomingReservations.map((booking: any, index: number) => {
                     const bookingDate = parseISO(booking.booking_date);
@@ -169,7 +244,7 @@ const OwnerOverviewPage = () => {
                             <div>
                               <p className="font-medium text-foreground">{booking.venue_name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {dateLabel} at {booking.booking_time}
+                                {dateLabel} at {formatTimeOfDay(booking.booking_time)}
                               </p>
                             </div>
                           </div>
@@ -178,7 +253,7 @@ const OwnerOverviewPage = () => {
                               ֏{booking.total_price.toLocaleString()}
                             </p>
                             <Badge variant="secondary" className="text-xs">
-                              {booking.status || "Confirmed"}
+                              {bookingStatusDescriptor(booking.status).label}
                             </Badge>
                           </div>
                         </div>
@@ -200,7 +275,7 @@ const OwnerOverviewPage = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* Quick Actions */}
           <Card>
             <CardHeader>
@@ -244,21 +319,24 @@ const OwnerOverviewPage = () => {
             </CardHeader>
             <CardContent>
               {venuesLoading ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-8" role="status" aria-label="Loading your dashboard">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : myVenues.length > 0 ? (
                 <div className="space-y-3">
                   {myVenues.slice(0, 3).map((venue) => (
-                    <div
+                    // A Link rather than a div with navigate(): this is
+                    // navigation, so it should be focusable, openable in a new
+                    // tab, and announced as a link. It was none of those.
+                    <Link
                       key={venue.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/venue/${venue.id}/edit`)}
+                      to={`/venue/${venue.id}/edit`}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
                         <img
                           src={getVenueImage(venue)}
-                          alt={venue.name}
+                          alt={venue.name} loading="lazy" decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -269,7 +347,7 @@ const OwnerOverviewPage = () => {
                       <Badge variant={venue.is_active ? "default" : "secondary"} className="text-xs">
                         {venue.is_active ? "Active" : "Draft"}
                       </Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (

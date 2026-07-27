@@ -22,6 +22,8 @@ export default {
       colors: {
         border: "hsl(var(--border))",
         "border-strong": "hsl(var(--border-strong))",
+        // Control edges. See the note in index.css.
+        "border-interactive": "hsl(var(--border-interactive))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
@@ -44,10 +46,24 @@ export default {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
+          // Fill behind white text. See the note in index.css.
+          solid: "hsl(var(--destructive-solid))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        // The categorical five. They were already tokens in index.css for both
+        // themes, but only reachable from JS as `var(--chart-N)` — so anything
+        // in markup that needed a non-semantic colour reached for raw Tailwind
+        // palette instead. Exposing them here is what makes `text-chart-4`
+        // resolve rather than silently render nothing.
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
@@ -107,9 +123,19 @@ export default {
         shimmer: "shimmer 2s linear infinite",
       },
       fontFamily: {
-        display: ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
-        sans: ["DM Sans", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // These point at the CSS variables rather than restating the stacks,
+        // because restating them is exactly how they went wrong. `--font-*` in
+        // index.css each carry 'Noto Sans Armenian' to supply U+058F, the dram
+        // sign, which none of Space Grotesk, DM Sans or JetBrains Mono
+        // includes — but this block was a second, independent copy without it.
+        //
+        // So `.stat-numeral`, which reads var(--font-mono), rendered ֏
+        // correctly while every `className="font-mono"` price did not: the
+        // hero's confirmation card, checkout, booking status, owner earnings.
+        // Two definitions of one thing, and only one of them got fixed.
+        display: ["var(--font-display)"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
       },
       letterSpacing: {
         tightest: "-0.04em",

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,9 @@ import { ArrowLeft, Shield, Mail, Lock, Users, Loader2, CheckCircle, ArrowRight 
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthProviders } from "@/hooks/useAuthProviders";
 import { getGenericAuthError } from "@/lib/authErrors";
+import { safeRedirect } from "@/lib/redirect";
 import authHero from "@/assets/auth-hero.jpg";
 
 type AuthMode = "password" | "magic-link";
@@ -16,7 +18,22 @@ type AuthMode = "password" | "magic-link";
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+  const [searchParams] = useSearchParams();
+  /**
+   * The page the user was trying to reach, from either of the two ways the
+   * app asks for one.
+   *
+   * Router state is what the route guards use. `?redirect=` is what
+   * `BookingPanel` and `JoinTeamPage` use, and nothing read it — a signed-out
+   * visitor pressing Reserve, or opening a team invite, was sent here and then
+   * dropped on the dashboard, having lost the venue or the invite code.
+   *
+   * Both go through `safeRedirect`, because one of them arrives in a URL a
+   * stranger can write. See src/lib/redirect.ts.
+   */
+  const redirectTo =
+    safeRedirect(searchParams.get("redirect")) ??
+    safeRedirect((location.state as { from?: { pathname?: string } } | null)?.from?.pathname);
   const {
     user,
     isLoading: authLoading,
@@ -32,6 +49,7 @@ const LoginPage = () => {
   } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("password");
+  const providers = useAuthProviders();
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [formData, setFormData] = useState({
@@ -43,12 +61,17 @@ const LoginPage = () => {
   const [totpCode, setTotpCode] = useState("");
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated.
+  //
+  // `redirectTo` here too: arriving at /login?redirect=/join-team/CODE with a
+  // live session is the common case for an invite link opened in a tab that is
+  // still signed in, and sending that to the dashboard threw the code away
+  // just as thoroughly as the signed-out path did.
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -138,7 +161,7 @@ const LoginPage = () => {
       return;
     }
 
-    const { data: verifyData, error: verifyError } = await verifyMfa({
+    const { error: verifyError } = await verifyMfa({
       factorId: mfaFactorId,
       challengeId: challengeData.id,
       code: totpCode,
@@ -164,11 +187,13 @@ const LoginPage = () => {
       const profile = await fetchOnboardingStatus(userId);
 
       if (profile && !profile.onboarding_completed) {
-        navigate(profile.user_type === "owner" ? "/onboarding/owner" : "/onboarding/player", { replace: true });
+        navigate(profile.user_type === "owner" ? "/owner-dashboard" : "/onboarding/player", { replace: true });
         return;
       }
-      // Honor the page the user was trying to reach before login
-      if (redirectTo && redirectTo !== "/login") {
+      // Honor the page the user was trying to reach before login.
+      // `safeRedirect` already excludes /login and /signup, so a destination
+      // that survives it cannot bounce back here.
+      if (redirectTo) {
         navigate(redirectTo, { replace: true });
         return;
       }
@@ -178,7 +203,7 @@ const LoginPage = () => {
         navigate("/dashboard", { replace: true });
       }
     } else {
-      navigate(redirectTo && redirectTo !== "/login" ? redirectTo : "/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     }
   };
 
@@ -226,11 +251,23 @@ const LoginPage = () => {
         {/* Background Image */}
         <img
           src={authHero}
-          alt="Athletes playing sports"
+          alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+        {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the
+            whole frame — including the middle, where the photo is most
+            legible — so a vivid sports shot read as flat brown. All the text
+            on this panel is left-aligned, so the weight moves horizontally:
+            the left third carries the copy and stays dark, the right third
+            keeps the image. The mild bottom pass is only for the copyright. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25"
+        />
         
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 w-full">
@@ -246,7 +283,7 @@ const LoginPage = () => {
           
           {/* Hero Text */}
           <div className="max-w-lg">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5 leading-tight tracking-tight">
+            <h1 className="auth-hero-title text-white">
               Find your game.<br />Join your people.
             </h1>
             <p className="text-lg text-white/80 leading-relaxed">
@@ -257,7 +294,7 @@ const LoginPage = () => {
             <div className="flex items-center gap-6 mt-8">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-white/70 text-sm">Growing community</span>
+                <span className="text-white/70 text-sm">Free to join</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
@@ -267,7 +304,14 @@ const LoginPage = () => {
           </div>
           
           {/* Footer */}
-          <div className="text-sm text-white/40">
+          {/* /40 composited to #6c706e on this near-black panel: 3.81:1,
+              under the 4.5:1 body copy needs. /50 measures 5.29:1 and is
+              still far quieter than the headline above it. The same defect on
+              the forgot- and reset-password panels was found and fixed
+              earlier; these two were invisible to every audit here, because
+              /login and /signup redirect to /dashboard under the stubbed
+              signed-in session. */}
+          <div className="text-sm text-white/50">
             © {new Date().getFullYear()} Sportsbnb. All rights reserved.
           </div>
         </div>
@@ -291,7 +335,7 @@ const LoginPage = () => {
                 <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle className="h-8 w-8 text-emerald-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Check your email</h2>
+                <h2 className="auth-form-title">Check your email</h2>
                 <p className="text-muted-foreground mb-6">
                   We sent a login link to<br />
                   <span className="font-medium text-foreground">{formData.email}</span>
@@ -335,7 +379,7 @@ const LoginPage = () => {
                   <Shield className="h-7 w-7 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Two-factor authentication</h2>
+                  <h2 className="auth-form-title">Two-factor authentication</h2>
                   <p className="text-muted-foreground">Enter the code from your authenticator app</p>
                 </div>
               </div>
@@ -391,7 +435,7 @@ const LoginPage = () => {
 
               {/* Welcome Header */}
               <div className="mb-8">
-                <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Welcome back</h2>
+                <h2 className="auth-form-title">Welcome back</h2>
                 <p className="text-muted-foreground">
                   Sign in to continue your sports journey
                 </p>
@@ -399,7 +443,9 @@ const LoginPage = () => {
 
               {/* Form Card */}
               <div className="bg-card rounded-2xl border border-border/50 shadow-xl shadow-black/5 p-8">
-                {/* Google Sign In Button */}
+                {/* Third-party buttons render only when the project actually
+                    has that provider enabled — see useAuthProviders. */}
+                {providers.google && (
                 <Button
                   type="button"
                   variant="outline"
@@ -427,12 +473,13 @@ const LoginPage = () => {
                   </svg>
                   Continue with Google
                 </Button>
+                )}
 
-                {/* Apple Sign In Button */}
+                {providers.apple && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all mt-3"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.google ? "mt-3" : ""}`}
                   onClick={handleAppleSignIn}
                   disabled={isLoading}
                 >
@@ -441,13 +488,14 @@ const LoginPage = () => {
                   </svg>
                   Continue with Apple
                 </Button>
+                )}
 
-
-                {/* Magic Link Button */}
+                {/* Magic Link Button — signInWithOtp only needs the email
+                    provider, which is always on, so this is never gated. */}
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all mt-3"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.anyOAuth ? "mt-3" : ""}`}
                   onClick={() => setAuthMode("magic-link")}
                   disabled={isLoading}
                 >
@@ -476,6 +524,7 @@ const LoginPage = () => {
                         <Input
                           id="email"
                           type="email"
+                          autoComplete="email"
                           placeholder="you@example.com"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -521,6 +570,7 @@ const LoginPage = () => {
                         <Input
                           id="email"
                           type="email"
+                          autoComplete="email"
                           placeholder="you@example.com"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -542,6 +592,7 @@ const LoginPage = () => {
                         <Input
                           id="password"
                           type="password"
+                          autoComplete="current-password"
                           placeholder="Enter your password"
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -566,7 +617,14 @@ const LoginPage = () => {
               {/* Sign Up Link */}
               <p className="text-center text-muted-foreground mt-8">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-semibold">
+                {/* Carries the destination across the hop. Someone who
+                    followed a team invite and does not have an account yet
+                    would otherwise lose the code right here, one click after
+                    the login page was careful to keep it. */}
+                <Link
+                  to={redirectTo ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
+                  className="text-primary hover:underline font-semibold"
+                >
                   Create one
                 </Link>
               </p>

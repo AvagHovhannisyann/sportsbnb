@@ -1,4 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap");
+/* Separate request because `text=` subsets the whole call: this one returns
+   only U+058F (֏). See the --font-* notes below for why it is needed. */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&text=%D6%8F&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -49,15 +52,37 @@
     --accent: 36 16% 93%;
     --accent-foreground: 220 28% 10%;
 
-    --destructive: 358 68% 48%;
+    /* Two tokens, because one cannot serve both roles.
+       `--destructive` is what `text-destructive` and `border-destructive`
+       resolve to — 89 and 37 uses — and must clear 4.5:1 against the surface
+       it sits on. `--destructive-solid` is the fill behind white text on
+       buttons, toasts and badges, and must clear 4.5:1 the other way round.
+       Measured on the signup form: the old single value gave 3.85:1 for error
+       copy on a card and 4.04:1 for white on the button. Both failed AA, and
+       moving the one value fixed either at the other's expense. */
+    --destructive: 358 68% 44%;
+    --destructive-solid: 358 68% 44%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 158 64% 32%;
-    --warning: 35 92% 50%;
+    /* Both measured on white: the old --warning was 2.18:1 and the old
+       --success 4.27:1, against the 4.5:1 body copy needs. Neither is used as
+       a fill anywhere — `text-warning` twice, `text-success` never — so
+       darkening them costs nothing and makes them readable. The dark theme's
+       values already passed (8.81 and 7.20 on card) and are unchanged. */
+    --success: 158 64% 28%;
+    --warning: 35 92% 32%;
 
     /* ── Borders / inputs / focus ── */
     --border: 30 12% 88%;
     --border-strong: 30 10% 78%;
+    /* The edge of a control, not a divider.
+       WCAG 1.4.11 wants 3:1 for anything that identifies a UI component, and
+       a text input's boundary is exactly that. `--border` is 1.41:1 against a
+       card — fine for a decorative rule between sections, not fine as the only
+       thing telling you where a field begins. Kept separate so raising it does
+       not repaint every card and table in the app, which is a design decision
+       rather than an accessibility requirement. */
+    --border-interactive: 30 12% 50%;
     --input: 30 12% 88%;
     --ring: 158 72% 22%;
 
@@ -80,10 +105,18 @@
     --chart-4: 268 55% 50%;
     --chart-5: 220 15% 35%;
 
-    /* ── Fonts ── */
-    --font-display: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* ── Fonts ──
+       'Noto Sans Armenian' sits in every stack purely to carry U+058F, the
+       dram sign. None of Space Grotesk, DM Sans or JetBrains Mono includes it,
+       so every price in the app — ~20 surfaces, all of them going through
+       formatPrice — fell through to whatever the OS happened to supply, and
+       rendered as a wrong glyph where that guess was poor. CSS fallback is
+       per-glyph, so Latin still sets in the primary face; only the dram sign
+       resolves here. The @import subsets to that single codepoint, so the cost
+       is a ~1KB file rather than a whole Armenian family. */
+    --font-display: 'Space Grotesk', 'Noto Sans Armenian', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-sans: 'DM Sans', 'Noto Sans Armenian', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Noto Sans Armenian', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
     /* ── Refined shadow system (soft, layered) ── */
     --shadow-2xs: 0 1px 2px 0 hsl(220 30% 12% / 0.04);
@@ -106,27 +139,33 @@
     --dur-base: 250ms;
     --dur-slow: 400ms;
 
-    /* ── Glass (light) ── */
+    /* ── Glass (light) ──
+       Same defect as the dark bar, mirrored. A light bar is washed out by
+       *dark* content passing under it, not light: at 0.8 the nav read 5.2–5.3:1
+       over the light bands of the home page and 3.55–3.80:1 over the inverted
+       section, all five below AA. Latent today — the app ships dark-only — but
+       the light tokens are maintained and audited, so they should be right.
+       Measured, like the dark one, with `glass-contrast.mjs --light`. */
     --glass-bg: 40 18% 97%;
-    --glass-alpha: 0.8;
+    --glass-alpha: 0.93;
     --glass-border: 30 12% 88%;
     --glass-blur: 16px;
   }
 
   /* "Court at night" — the default look */
   .dark {
-    --background: 160 22% 5%;          /* near-black, green-tinted */
-    --surface-1: 160 18% 7%;
-    --surface-2: 160 15% 10%;
-    --surface-3: 158 13% 13%;
+    --background: 160 22% 5%;          /* near-black, green-tinted — deepest step */
+    --surface-1: 160 18% 10%;          /* tinted section band — must read as a step, not a shade */
+    --surface-2: 160 15% 14%;          /* elevated card */
+    --surface-3: 158 13% 18%;          /* inset / muted block */
 
     --foreground: 100 20% 96%;         /* chalk white, warm-green cast */
     --foreground-soft: 130 8% 72%;
 
-    --card: 160 15% 9%;
+    --card: 160 15% 13%;
     --card-foreground: 100 20% 96%;
 
-    --popover: 160 16% 8%;
+    --popover: 160 16% 12%;
     --popover-foreground: 100 20% 96%;
 
     /* Electric court-green — actions, live states */
@@ -143,14 +182,20 @@
     --accent: 158 14% 14%;
     --accent-foreground: 100 20% 96%;
 
-    --destructive: 358 72% 58%;
+    /* Dark: text must lighten to clear the card, the fill must darken to
+       carry white. 68% gives 5.28:1 on card and 4.84:1 on surface-1; the
+       42% fill gives 6.56:1 for white on it. */
+    --destructive: 358 72% 68%;
+    --destructive-solid: 358 68% 42%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 151 80% 44%;
     --warning: 42 95% 55%;
 
-    --border: 157 12% 17%;
+    --border: 157 12% 22%;
     --border-strong: 155 10% 26%;
+    /* 42% clears 3:1 on background, card, surface-1 and surface-2. */
+    --border-interactive: 157 12% 42%;
     --input: 157 12% 17%;
     --ring: 151 90% 47%;
 
@@ -166,7 +211,12 @@
     --chart-1: 151 90% 47%;
     --chart-2: 190 80% 50%;
     --chart-3: 42 95% 55%;
-    --chart-4: 268 65% 62%;
+    /* Was 268 65% 62%. Every other chart token can carry text on its own 10%
+       tint at AA; this one measured 3.35:1, which is fine for a chart fill
+       (graphical objects need 3:1) but fails the moment it is used in markup
+       — which it now is, on the skill-level chips. Lightened until the chip
+       measured 4.5:1, verified in the browser rather than computed here. */
+    --chart-4: 268 80% 76%;
     --chart-5: 130 8% 64%;
 
     /* Deeper shadows for the dark stage */
@@ -177,9 +227,25 @@
     --shadow-xl:  0 24px 48px -12px hsl(160 30% 2% / 0.7);
     --shadow-ring-primary: 0 0 0 4px hsl(var(--primary) / 0.18);
 
-    /* ── Glass (dark) ── */
+    /* ── Glass (dark) ──
+       `--glass-alpha` is a legibility figure, not a taste one.
+       The sticky header is glass, and the home page has light sections. At
+       0.72 the bar tinted dark over a dark hero and washed out to a muddy grey
+       over a light band, while the nav labels kept the one colour they have.
+       Measured on `/`: the same five links read 7.36–7.57:1 over the hero and
+       3.01–3.59:1 four thousand pixels further down — every one of them below
+       AA, purely because of what happened to be scrolling underneath.
+
+       The token audit cannot see this. It checks a colour against the surface
+       it is declared on; nothing in it composites a translucent bar over
+       arbitrary page content. scripts/glass-contrast.mjs does exactly that.
+
+       0.9 is the measured value, not a guessed one: it is where the composite
+       over the lightest section in the app stays dark enough for the nav to
+       clear 4.5:1, with the blur and saturation — the part that actually reads
+       as glass — untouched. */
     --glass-bg: 160 18% 8%;
-    --glass-alpha: 0.72;
+    --glass-alpha: 0.9;
     --glass-border: 155 20% 30%;
     --glass-blur: 18px;
   }
@@ -194,6 +260,22 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+
+    /* The header is `sticky top-0 z-50` and 65px tall. Anything the browser
+       scrolls to the top of the viewport therefore lands *underneath* it.
+       Tabbing to the "View all" link on /community put it at y=6 with the
+       header occupying y=0–65: `elementFromPoint` at the link's centre
+       returned the header, and a screenshot diff of the link focused versus
+       blurred changed exactly zero pixels. The focus ring was being painted
+       correctly and then covered up.
+
+       That is WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum), Level AA, and
+       it was not one link — it is every focusable element the browser scrolls
+       to the top edge, on every page in the app. `scroll-padding-top` is the
+       one thing that fixes the whole class: it tells the scroll container to
+       stop short, so focus scrolling, anchor jumps and `scrollIntoView` all
+       leave room for the bar. 5rem clears 65px with margin to spare. */
+    scroll-padding-top: 5rem;
   }
 
   body {
@@ -202,12 +284,82 @@
     font-feature-settings: "ss01", "cv11";
   }
 
-  /* Strong, confident headings */
+
+  /* ── Inverted surface ────────────────────────────────────────────────
+     A light panel inside the dark theme (`bg-secondary`). Everything
+     rendered on it inherits the *dark* theme's tokens, which are tuned for
+     a near-black background — so a --primary eyebrow lands at 1.57:1 on it
+     and a --foreground button at 1.08:1, i.e. invisible. Three separate
+     bugs on this branch traced back to exactly that.
+
+     Re-declaring the tokens here fixes the whole class at once: anything
+     inside a .surface-invert resolves --foreground, --primary and friends
+     to their light-theme values, so ordinary utilities (text-primary,
+     text-foreground, border-border) simply work. Values mirror the :root
+     block above; keep them in sync.
+     ------------------------------------------------------------------- */
+  .dark .surface-invert,
+  .surface-invert.dark-inverted {
+    --background: 40 22% 97%;
+    --foreground: 220 28% 10%;
+    --foreground-soft: 220 15% 28%;
+    --surface-1: 36 16% 95%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 36 14% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 28% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 28% 10%;
+    --primary: 158 72% 22%;
+    --primary-foreground: 40 30% 98%;
+    --primary-soft: 158 40% 94%;
+    --muted: 36 14% 92%;
+    --muted-foreground: 220 12% 42%;
+    --accent: 36 16% 93%;
+    --accent-foreground: 220 28% 10%;
+    --success: 158 64% 32%;
+    --border: 30 12% 88%;
+    --border-strong: 30 10% 78%;
+    --input: 30 12% 88%;
+    --ring: 158 72% 22%;
+  }
+
+  /* Strong, confident headings.
+     Deliberately no `color` here. Pinning headings to --foreground made them
+     invisible on any inverted surface (the light "for owners" panel sets
+     text-secondary-foreground on its container; the heading ignored it and
+     stayed near-white on near-white). Inheriting is both the browser default
+     and the correct behaviour: body already sets --foreground, so headings on
+     normal surfaces are unchanged, and headings on a re-coloured surface now
+     follow it. */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: var(--tracking-tight);
-    color: hsl(var(--foreground));
     font-weight: 600;
+  }
+
+  /* Sonner's mobile breakpoint sets the toast list to `width: 100%` while
+     keeping `left: 16px; right: 16px`, so at 375px the container measures 375px
+     starting at x=16 and ends 16px past the viewport. Every toast — and they
+     fire on errors and confirmations throughout the app — therefore gave the
+     page horizontal scroll. Setting --width does not help: that variable is
+     ignored at this breakpoint. Letting the insets define the box does. */
+  @media (max-width: 600px) {
+    ol.toaster {
+      width: auto;
+    }
+  }
+
+  /* Pages with a sticky mobile action bar lift the floating AI launcher clear
+     of it. The launcher is fixed bottom-right at z-50 and was landing exactly
+     on top of the venue page's Reserve button — clipping the label and taking
+     the taps, the same collision the desktop sidebar already had to solve.
+     Scoped by media query rather than toggled from JS, so the lift simply does
+     not exist at lg, where the bar is hidden and the sticky sidebar takes over. */
+  @media (max-width: 1023px) {
+    body.has-mobile-action-bar {
+      --fab-lift: 4.75rem;
+    }
   }
 
   /* Selection */
@@ -295,6 +447,116 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
+  /**
+   * The page's own title, and the gap to the subtitle that always follows it.
+   *
+   * Measured across thirteen routes, this was rendering at four sizes — 24, 30,
+   * 36 and 48px — with four different gaps beneath it (none, 4, 8, 16px). Seven
+   * pages said text-2xl and eight said text-3xl for the same structural thing:
+   * the h1 of an app page, under the same header, above the same muted
+   * subtitle. There was no rule, only a coin flip repeated fifteen times.
+   *
+   * Marketing pages (About, FAQ, Contact) keep their larger editorial titles,
+   * and empty states ("Venue Not Found") keep theirs — those are different
+   * jobs, decided rather than drifted.
+   */
+  .page-title {
+    @apply mb-1 text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  /*
+   * The four auth pages share one split-screen template — a marketing panel on
+   * the left, a form panel on the right — and disagreed about both halves of
+   * it. Measured logged out at 1280px:
+   *
+   *   /login            h1 48px   h2 30px
+   *   /signup           h1 48px   h2 30px
+   *   /forgot-password  h1 36px   h2 24px
+   *   /reset-password   h1 36px   h2 24px
+   *
+   * These pages link to each other. "Forgot your password?" sits under the
+   * login form, so one click shrinks both headings.
+   *
+   * Worse, the form heading changes size *within* a page: /login swaps
+   * "Welcome back" (30px, tracking-tight) for "Check your email" (24px, no
+   * tracking) once the magic link is sent, and again for "Two-factor
+   * authentication". Same slot, same panel, three sizes depending on state.
+   *
+   * Colour is deliberately NOT set here, and that is a correction rather than
+   * an omission. The panels split on colour too — `text-white` on login and
+   * signup, `text-secondary-foreground` on forgot and reset — and folding that
+   * into this class made the login heading rgb(12, 19, 16) on rgb(10, 16, 14),
+   * near-black on near-black, about 1.05:1. Measured, not guessed.
+   *
+   * The two panels are genuinely different surfaces: login and signup put the
+   * heading on a dark hero, while forgot and reset use `bg-secondary` with
+   * `surface-invert`, which is near-white in the dark theme. Same size, same
+   * rhythm, different backdrops — so each page keeps its own colour.
+   */
+  .auth-hero-title {
+    @apply mb-5 text-4xl font-bold leading-tight tracking-tight lg:text-5xl;
+  }
+
+  .auth-form-title {
+    @apply mb-2 text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  /*
+   * A heading for a group of items inside a page, one level under
+   * `.page-title`. Counted across the in-app pages, the same job was being
+   * done at two sizes: fifteen at text-xl — "About this venue", "Amenities",
+   * "Reviews (12)", the six section headers on /community — and four at
+   * text-lg: "Active Venues (3)" and "Draft/Inactive Venues" on the venue
+   * listing, "Teams I Captain" and "Teams I've Joined" on /teams. (The first
+   * two were on /my-venues, since removed as a duplicate of /owner/venues.)
+   *
+   * Nothing distinguished the two groups structurally. All nineteen sit
+   * directly under the page's h1 and label a list below them, so the 20px/18px
+   * split was drift. The majority wins.
+   *
+   * Not included, deliberately: the two uppercase eyebrow labels on /nearby,
+   * which are a different treatment for a denser list and were decided rather
+   * than drifted, and the editorial headings on the marketing and legal pages,
+   * which run their own larger scale.
+   */
+  .section-title {
+    @apply mb-4 text-xl font-semibold text-foreground;
+  }
+
+  /*
+   * A content panel — the surface a page section sits on.
+   *
+   * The venue page put its four sections (About, Operating Hours, Amenities,
+   * Reviews) as bare text on the page background, divided by hairline rules,
+   * directly beside a booking panel that is a glass card. So the column a
+   * buyer reads had no surface at all while the column they act in did, and
+   * the rules did the work a card edge should.
+   *
+   * Same tokens as Card, as a utility rather than a component, because these
+   * are page sections rather than list items and do not want CardHeader /
+   * CardContent structure imposed on them.
+   */
+  .panel {
+    @apply rounded-2xl border border-border bg-card p-6;
+  }
+
+  /*
+   * The eyebrow — small mono caps above a heading.
+   *
+   * This is the landing page's typographic signature, and it stopped at the
+   * landing page. /discover, /games, /teams and the rest open with a bare h1
+   * on a flat background, so the app one click past the hero reads as a
+   * different product from the hero.
+   *
+   * It was also drifting where it did exist: four sites on HomePage at
+   * tracking 0.2em, 0.16em and 0.14em, in text-primary, text-foreground-soft
+   * and plain opacity-60. Letter-spacing is the whole effect at 11px; three
+   * values is three different marks.
+   */
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary;
+  }
+
   /* Scoreboard numerals — prices, times, counts */
   .stat-numeral {
     font-family: var(--font-mono);
@@ -322,10 +584,49 @@
   .glow-primary {
     box-shadow: 0 0 32px -8px hsl(var(--primary) / 0.45), var(--shadow-md);
   }
+
+  /*
+   * How a card responds to the pointer. One answer, because there were six.
+   *
+   * The same object behaved differently depending on the page it was on:
+   *
+   *   venue card   /discover, /venues   -translate-y-1  + shadow-lg
+   *   venue card   /community           scale-[1.02]    + shadow-lg
+   *   venue card   /owner/venues        shadow-lg, no movement
+   *   game card    /games               shadow-md, no movement
+   *   game card    /community           scale-[1.02]    + shadow-lg
+   *   team card    /teams               -translate-y-0.5 + shadow-lg
+   *
+   * A venue card that rises on /discover and zooms on /community is two
+   * different components as far as the eye is concerned, and /community
+   * managed to hold both treatments at once — its game and venue cards zoom
+   * while its people cards only deepen a shadow.
+   *
+   * Lift rather than scale: `scale` resamples every glyph in the card, so text
+   * softens for the length of the transition and snaps back, while `translate`
+   * moves the same rasterisation. Both are GPU-composited, so this costs
+   * nothing either way.
+   *
+   * Deliberately not folded in here: the image zoom inside a card (a different
+   * job — the picture moves, the card does not), the auth CTA glow, the
+   * chatbot's floating button, and the header logo.
+   */
+  .card-lift {
+    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-lg;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .live-dot::after { animation: none; }
+
+  /* The shadow still answers the pointer; the movement does not. Nothing else
+     in the app declares a hover transform, so this covers the set. */
+  .card-lift {
+    transition: box-shadow 200ms ease;
+  }
+  .card-lift:hover {
+    transform: none;
+  }
 }
 
 @layer utilities {

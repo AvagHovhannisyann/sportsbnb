@@ -10,16 +10,29 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatAmd } from "@/features/booking/hooks/useBookingFlow";
+import { ledgerEntryLabel } from "@/features/booking/ledger";
+import { payoutStatusDescriptor } from "@/features/booking/payout";
 
-const ENTRY_LABELS: Record<string, string> = {
-  owner_earning: "Booking earning",
-  owner_refund_debit: "Refund reversal",
-  payout: "Payout",
-  adjustment: "Adjustment",
+/**
+ * The two tables on this page sit side by side and formatted the same column
+ * two different ways — "Jan 1, 00:00" beside "Jan 1, 1970". A ledger entry is
+ * a moment in a day, so it keeps the time; a payout is a day, so it keeps the
+ * year. Both now say which month and day in the same words.
+ */
+const LEDGER_DATE = "d MMM, HH:mm";
+const PAYOUT_DATE = "d MMM yyyy";
+
+/** Badge treatment per payout tone, using the audited token pairs. */
+const PAYOUT_TONE: Record<string, string> = {
+  positive: "bg-primary text-primary-foreground",
+  warning: "border-warning/20 bg-warning/10 text-warning",
+  danger: "border-destructive/20 bg-destructive/10 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
 };
 
 export default function OwnerEarningsPage() {
@@ -39,7 +52,13 @@ export default function OwnerEarningsPage() {
     },
   });
 
-  const { data: ledger, isLoading: ledgerLoading } = useQuery({
+  const {
+    data: ledger,
+    isLoading: ledgerLoading,
+    isError: ledgerError,
+    isFetching: ledgerFetching,
+    refetch: refetchLedger,
+  } = useQuery({
     queryKey: ["owner-ledger", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -114,7 +133,7 @@ export default function OwnerEarningsPage() {
             <CardDescription className="flex items-center gap-1.5">
               <PiggyBank className="h-4 w-4" /> Available balance
             </CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{formatAmd(balance?.balance_minor ?? 0)}</CardTitle>
+            <CardTitle as="h2" className="text-3xl tabular-nums">{formatAmd(balance?.balance_minor ?? 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">
@@ -125,7 +144,7 @@ export default function OwnerEarningsPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle as="h2" className="text-base flex items-center gap-2">
               {method === "idram" ? <Wallet className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
               Payout destination
             </CardTitle>
@@ -135,7 +154,7 @@ export default function OwnerEarningsPage() {
             <div className="space-y-1.5">
               <Label>Method</Label>
               <Select value={method} onValueChange={(v) => setMethod(v as "bank_transfer" | "idram")}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Payout method">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -170,13 +189,22 @@ export default function OwnerEarningsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent activity</CardTitle>
+            <CardTitle as="h2" className="text-base">Recent activity</CardTitle>
           </CardHeader>
           <CardContent>
             {ledgerLoading ? (
-              <div className="flex justify-center py-8">
+              <div className="flex justify-center py-8" role="status" aria-label="Loading your transactions">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
+            ) : ledgerError ? (
+              /* "No transactions yet" on a failed request tells an owner that
+                 their money history is empty. Of every false empty state in
+                 this app that is the one worth the least ambiguity. */
+              <ErrorPanel
+                what="your transactions"
+                onRetry={() => refetchLedger()}
+                isRetrying={ledgerFetching}
+              />
             ) : !ledger || ledger.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No transactions yet — earnings appear here after your first paid booking.
@@ -194,11 +222,21 @@ export default function OwnerEarningsPage() {
                   {ledger.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(entry.created_at), "MMM d, HH:mm")}
+                        {format(new Date(entry.created_at), LEDGER_DATE)}
                       </TableCell>
-                      <TableCell>{ENTRY_LABELS[entry.entry_type] ?? entry.entry_type}</TableCell>
+                      <TableCell>{ledgerEntryLabel(entry.entry_type)}</TableCell>
+                      {/* The debit half was already a token and the credit
+                          half was not, which is how `text-emerald-600` stayed
+                          here: it looks like the green that pairs with
+                          `text-destructive`, and it is not. Measured on the
+                          table's card surface it is 4.13:1, under the 4.5:1
+                          this 14px row needs — on the one screen in the app
+                          where a number is money. `palette-contrast.mjs`
+                          passed it, correctly by its own rule, because
+                          emerald-600 does reach AA on the darkest surface in
+                          the theme; it just is not sitting on that one. */}
                       <TableCell
-                        className={`text-right tabular-nums ${entry.amount_minor < 0 ? "text-destructive" : "text-emerald-600"}`}
+                        className={`text-right tabular-nums ${entry.amount_minor < 0 ? "text-destructive" : "text-success"}`}
                       >
                         {entry.amount_minor < 0 ? "−" : "+"}
                         {formatAmd(Math.abs(entry.amount_minor))}
@@ -213,7 +251,7 @@ export default function OwnerEarningsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Payouts</CardTitle>
+            <CardTitle as="h2" className="text-base">Payouts</CardTitle>
           </CardHeader>
           <CardContent>
             {!payouts || payouts.length === 0 ? (
@@ -231,10 +269,18 @@ export default function OwnerEarningsPage() {
                   {payouts.map((payout) => (
                     <TableRow key={payout.id}>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(payout.created_at), "MMM d, yyyy")}
+                        {format(new Date(payout.created_at), PAYOUT_DATE)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={payout.status === "paid" ? "default" : "secondary"}>{payout.status}</Badge>
+                        {/* Was `{payout.status}` in a badge whose only variant
+                            test was `=== "paid"`, so a failed transfer and a
+                            scheduled one rendered identically. */}
+                        <Badge
+                          className={PAYOUT_TONE[payoutStatusDescriptor(payout.status).tone]}
+                          title={payoutStatusDescriptor(payout.status).hint}
+                        >
+                          {payoutStatusDescriptor(payout.status).label}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{formatAmd(payout.amount_minor)}</TableCell>
                     </TableRow>

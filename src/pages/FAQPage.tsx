@@ -20,15 +20,15 @@ const FAQPage = () => {
         },
         {
           q: "Can I cancel my booking?",
-          a: "Yes, you can cancel your booking up to 24 hours before the scheduled time for a full refund. Cancellations made within 24 hours may be subject to a cancellation fee.",
+          a: "Cancellation terms are set by each venue, not by us, so they vary — some offer a full refund up to a cutoff, some a partial refund, and some are non-refundable. The exact terms for the venue you're booking are shown on the booking panel before you pay, and again on your confirmation.",
         },
         {
           q: "How do I pay for my booking?",
-          a: "We accept all major credit cards and debit cards. Payment is processed securely at the time of booking.",
+          a: "Visa, Mastercard and ArCa through Ameriabank, or directly from your Idram wallet. Payment is taken at the time of booking and handled entirely by the provider — your card details never reach SportsBnB.",
         },
         {
-          q: "Can I modify my booking?",
-          a: "Yes, you can modify your booking through your dashboard, subject to availability. Changes must be made at least 24 hours before your scheduled time.",
+          q: "Can I change the time of a booking?",
+          a: "Not yet — there's no reschedule flow at the moment. Cancel the booking you have (under the venue's own cancellation terms) and book the slot you want instead. If the venue is flexible, messaging the owner directly is often the quickest route.",
         },
       ],
     },
@@ -58,7 +58,7 @@ const FAQPage = () => {
         },
         {
           q: "What fees does Sportsbnb charge?",
-          a: "Sportsbnb charges a small service fee on each booking. You'll see the exact fee structure during the venue setup process.",
+          a: "5% per booking, and nothing else — no listing fee, no monthly cost, no minimum. You keep 100% of the price you set; the 5% is added on top for the player, who sees the final figure before paying.",
         },
         {
           q: "How do I manage my availability?",
@@ -66,7 +66,7 @@ const FAQPage = () => {
         },
         {
           q: "When do I get paid?",
-          a: "Payments are processed weekly. You'll receive funds in your bank account for all completed bookings from the previous week.",
+          a: "Weekly, covering every completed booking from the previous week, to whichever you've given us — an Armenian bank account or your Idram wallet. Each payout is itemised so you can match it against individual bookings.",
         },
       ],
     },
@@ -79,7 +79,12 @@ const FAQPage = () => {
         },
         {
           q: "How do I contact support?",
-          a: "You can reach our support team via the Contact page or by emailing support@sportsbnb.com. We typically respond within 24 hours.",
+          // .org. This was the one `sportsbnb.com` string in the repository, against
+    // twelve `.org` ones — and it is the answer to "How do I contact
+    // support?", so anyone who followed it emailed a domain the company does
+    // not own and heard nothing back. The contact function both sends from
+    // and delivers to support@sportsbnb.org.
+    a: "You can reach our support team via the Contact page or by emailing support@sportsbnb.org. We typically respond within 24 hours.",
         },
       ],
     },
@@ -136,9 +141,9 @@ const FAQPage = () => {
               <p className="text-muted-foreground mb-6">
                 Can't find the answer you're looking for? Our team is here to help.
               </p>
-              <Link to="/contact">
-                <Button size="lg">Contact Support</Button>
-              </Link>
+              <Button asChild size="lg">
+                <Link to="/contact">Contact Support</Link>
+              </Button>
             </div>
           </div>
         </div>

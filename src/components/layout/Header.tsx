@@ -49,16 +49,29 @@ const Header = () => {
 
   return (
     <header className="glass sticky top-0 z-50 w-full rounded-none border-x-0 border-t-0">
-      <div className="container flex h-14 md:h-[64px] items-center justify-between gap-4 md:gap-6 px-4 md:px-6">
-        <div className="flex items-center gap-6 md:gap-10">
+      {/* Three-part bar rather than two. The links used to sit in the same
+          flex group as the wordmark, so at 1440 they clustered against the
+          left edge and left ~600px of dead space between "Community" and
+          "Sign in". Absolute centring — rather than a flex-1 spacer — keeps
+          them on the true centre line regardless of how wide the wordmark or
+          the action group happen to be, which is what makes it read as
+          deliberate instead of incidental.
+
+          The desktop nav also moved from md (768) to lg (1024). Centring it
+          revealed that at 768 it genuinely collided — measured at -15px
+          against the wordmark and -3px against the actions — and stayed tight
+          to roughly 900px. Below lg the bar now uses the existing menu. */}
+      <div className="container relative flex h-14 items-center justify-between gap-4 px-4 md:h-[64px] md:gap-6 md:px-6">
+        <div className="flex items-center">
           <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-2">
             <Logo
               variant="full"
               className="h-9 md:h-12 w-auto transition-transform group-hover:scale-[1.02]"
             />
           </Link>
+        </div>
 
-          <nav className="hidden md:flex items-center gap-0.5">
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -75,35 +88,50 @@ const Header = () => {
                 )}
               </Link>
             ))}
-          </nav>
-        </div>
+        </nav>
 
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
           {!isLoading && user ? (
             <>
-              <Link to="/messages" className="relative">
-                <Button variant="ghost" size="icon" className="relative rounded-full text-foreground-soft hover:text-foreground">
-                  <MessageCircle className="h-[18px] w-[18px]" />
+              {/* Was a <Link> wrapping a <Button>: a link containing a
+                  button is invalid nesting, and neither carried a name, so
+                  both announced as unlabelled on every page. `asChild`
+                  collapses them into one anchor with the button's styling. */}
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full text-foreground-soft hover:text-foreground"
+              >
+                <Link to="/messages" aria-label="Messages">
+                  <MessageCircle className="h-[18px] w-[18px]" aria-hidden="true" />
                   <ChatBadge />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
 
               <NotificationDropdown />
 
               <span className="mx-1 h-6 w-px bg-border" aria-hidden />
 
               {isOwner && (
-                <Link to="/add-venue">
-                  <Button size="sm" variant="outline" className="gap-1.5 h-9">
+                <Button asChild size="sm" variant="outline" className="gap-1.5 h-9">
+                  <Link to="/add-venue">
                     <Building className="h-4 w-4" />
                     List venue
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full ml-1 h-10 w-10">
+                  {/* An avatar image with no alt and no label: the account
+                      menu was an anonymous button on every page. */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full ml-1 h-10 w-10"
+                    aria-label="Account menu"
+                  >
                     <Avatar className="h-9 w-9 ring-1 ring-border">
                       <AvatarImage src={user.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
@@ -152,14 +180,12 @@ const Header = () => {
             </>
           ) : !isLoading ? (
             <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className="text-foreground-soft hover:text-foreground">
-                  Sign in
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button size="sm" className="h-9 px-4">Get started</Button>
-              </Link>
+              <Button asChild variant="ghost" size="sm" className="text-foreground-soft hover:text-foreground">
+                <Link to="/login">Sign in</Link>
+              </Button>
+              <Button asChild size="sm" className="h-9 px-4">
+                <Link to="/signup">Get started</Link>
+              </Button>
             </>
           ) : null}
         </div>
@@ -167,7 +193,7 @@ const Header = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -175,7 +201,7 @@ const Header = () => {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-card">
+        <div className="lg:hidden border-t border-border bg-card">
           <nav className="container py-4 flex flex-col gap-2">
             {navLinks.map((link) => (
               <Link

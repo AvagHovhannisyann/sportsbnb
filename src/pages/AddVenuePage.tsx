@@ -35,7 +35,7 @@ const AddVenuePage = () => {
   if (authLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
+        <div className="container py-16 text-center" role="status" aria-label="Loading the venue form">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       </Layout>
@@ -48,11 +48,11 @@ const AddVenuePage = () => {
         <div className="container py-8 max-w-3xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" aria-label="Back" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Add New Venue</h1>
+              <h1 className="page-title">Add New Venue</h1>
               <p className="text-muted-foreground">Create a quality venue listing</p>
             </div>
           </div>
