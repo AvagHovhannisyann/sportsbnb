@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
 export interface VerifiedField {
@@ -80,9 +81,34 @@ export const useVerifiedFields = () => {
       return false;
     }
 
+    /**
+     * `verified_field_id` only. `field_id` used to be set to the same value and
+     * could never work: it is a foreign key to `public_fields`, and `fieldId`
+     * here is a `verified_fields` primary key. Every check-in from this map hit
+     * a 23503 and the user saw "Failed to check in".
+     *
+     * It was written because `field_id` was NOT NULL — the table predates
+     * verified fields, and the migration that added `verified_field_id`
+     * (20260314193224) did not relax it. 20260727060000 does, and adds a check
+     * constraint saying exactly one of the two must be set, so the next person
+     * does not have to work this out from a foreign-key error either.
+     *
+     * That migration has to be applied for this to work. Without it this insert
+     * fails on NOT NULL instead of on the foreign key — a different error for
+     * the same broken button.
+     */
     const { error } = await supabase
       .from("field_checkins")
-      .insert({ verified_field_id: fieldId, field_id: fieldId, user_id: user.id, player_count: playerCount } as any);
+      .insert({
+        verified_field_id: fieldId,
+        user_id: user.id,
+        player_count: playerCount,
+        // Cast because `src/integrations/supabase/types.ts` still marks
+        // `field_id` required — it was generated before 20260727060000 relaxed
+        // it. Regenerate the types after applying that migration and this goes
+        // away. Narrow on purpose: the previous `as any` covered the whole
+        // object and would have hidden a typo in any of these three fields.
+      } as unknown as TablesInsert<"field_checkins">);
 
     if (error) {
       toast.error("Failed to check in");

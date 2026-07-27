@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { AI_MODELS, chatCompletion } from "../_shared/ai.ts";
+import { requireAdmin, HttpError } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -310,6 +311,34 @@ Respond in EXACTLY this JSON format (no extra text):
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  /**
+   * Admin only, checked here and not just at the gateway.
+   *
+   * `supabase/config.toml` sets `verify_jwt = true` for this function, and that
+   * is the whole of the protection it had. `verify_jwt` proves a valid JWT is
+   * present — it says nothing about who holds it — so every signed-in player
+   * could invoke this. What they would be invoking is not read-only: the POST
+   * branch builds a `SUPABASE_SERVICE_ROLE_KEY` client and fans out across up
+   * to `max_tiles` Google Places requests, which are billable, writing rows
+   * with the service role as it goes. An authenticated stranger could spend the
+   * project's Maps quota in a loop.
+   *
+   * `requireAdmin` checks `user_roles`, which is what "admin" actually means
+   * here. The GET branch is gated too: it is only a tile listing, but it ran
+   * before any check at all, and a function that is admin-only should not have
+   * one door that is not.
+   */
+  try {
+    await requireAdmin(req);
+  } catch (error) {
+    const status = error instanceof HttpError ? error.status : 401;
+    const message = error instanceof HttpError ? error.message : "unauthorized";
+    return new Response(JSON.stringify({ error: message }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // Return available regions/tiles for the UI

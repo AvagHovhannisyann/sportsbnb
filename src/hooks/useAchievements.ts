@@ -77,6 +77,11 @@ export const useCheckAndAwardAchievements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-achievements"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      // No `["profile"]` invalidation here, though the RPC does write
+      // `profiles.xp` and `profiles.level`: `useAuth` keeps the profile in
+      // React state rather than in a query, so invalidating that key would
+      // match nothing and only look like it worked. The caller refreshes the
+      // profile through `useAuth().refreshProfile` instead.
     },
   });
 };

@@ -67,17 +67,49 @@ Deno.serve(async (req) => {
       description = `SportsBnB game — ${game.title}`;
     }
 
-    // Reuse an in-flight payment for the same subject+user if one exists
-    const idempotencyKey = `${bookingId ?? gameId}:${user.id}:${providerKey}`;
+    /**
+     * One payment row per *attempt*, reusing only one that is still in flight.
+     *
+     * The key used to be `${subject}:${user}:${provider}` with nothing else in
+     * it, and `idempotency_key` is `text UNIQUE` over the whole table — not a
+     * partial index scoped to live payments. The reuse SELECT accepts only
+     * `created` and `redirected`, so once an attempt reached `failed` or
+     * `cancelled` the row was invisible to the SELECT and fatal to the INSERT:
+     * every later attempt hit the unique constraint and returned 500.
+     *
+     * For a game that is permanent. `gameId`, `user.id` and the provider never
+     * change — GameDetailsPage pins the provider to "ameria" — so one declined
+     * card locked that player out of that game forever, with a 500 and no
+     * explanation. For a booking it kills the hold: the same `bookingId`
+     * cannot be paid again, and the customer has to wait out the 20 minutes
+     * and start over.
+     *
+     * Resetting the failed row instead would have been the shorter fix and the
+     * wrong one: `order_ref` is `NOT NULL UNIQUE DEFAULT nextval(...)` and is
+     * the OrderID sent to Ameriabank, which will not accept the same one twice.
+     * A fresh row is what gets a fresh order ref.
+     *
+     * The attempt suffix is derived from how many payments already exist for
+     * this subject, user and provider, so history is preserved and every
+     * attempt is separable in the ledger.
+     */
+    const keyPrefix = `${bookingId ?? gameId}:${user.id}:${providerKey}`;
     const { data: existingPayment } = await admin
       .from("payments")
       .select("*")
-      .eq("idempotency_key", idempotencyKey)
+      .like("idempotency_key", `${keyPrefix}%`)
       .in("status", ["created", "redirected"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     let payment = existingPayment;
     if (!payment) {
+      const { count } = await admin
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .like("idempotency_key", `${keyPrefix}%`);
+
       const { data: created, error: insertErr } = await admin
         .from("payments")
         .insert({
@@ -88,15 +120,37 @@ Deno.serve(async (req) => {
           amount_minor: amountMinor,
           currency,
           status: "created",
-          idempotency_key: idempotencyKey,
+          idempotency_key: `${keyPrefix}:${(count ?? 0) + 1}`,
         })
         .select()
         .single();
-      if (insertErr || !created) {
-        log("payment insert failed", { error: insertErr?.message });
+
+      if (insertErr) {
+        // 23505 here means another request for the same subject computed the
+        // same attempt number and won the race. That is the case the key
+        // exists for — two clicks on Pay — so the loser joins the winner's
+        // payment rather than starting a second one.
+        if (insertErr.code === "23505") {
+          const { data: raced } = await admin
+            .from("payments")
+            .select("*")
+            .like("idempotency_key", `${keyPrefix}%`)
+            .in("status", ["created", "redirected"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (raced) payment = raced;
+        }
+        if (!payment) {
+          log("payment insert failed", { error: insertErr.message, code: insertErr.code });
+          return errorResponse(req, "failed to create payment", 500);
+        }
+      } else if (!created) {
+        log("payment insert returned no row", { key: keyPrefix });
         return errorResponse(req, "failed to create payment", 500);
+      } else {
+        payment = created;
       }
-      payment = created;
     }
 
     const provider = getProvider(providerKey);
