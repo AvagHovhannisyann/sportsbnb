@@ -5,6 +5,17 @@ import {
   Trash2, Settings, Calendar, Loader2, UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -222,10 +233,42 @@ const TeamDetailsPage = () => {
                         <DropdownMenuItem onClick={() => navigate(`/team/${team.id}/edit`)}>
                           Edit Team
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Team
-                        </DropdownMenuItem>
+                        {/* Confirmed, like deleting a venue on EditVenuePage.
+                            This fired `deleteTeam` straight off the click — an
+                            irreversible action affecting every member, sitting
+                            one row below "Edit Team" in the same menu. The
+                            `onSelect` preventDefault is what stops Radix
+                            closing the menu before the dialog can mount. */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Team
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete team</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Delete &ldquo;{team.name}&rdquo;? Every member loses access and this
+                                cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep team</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDelete}
+                                disabled={deleteTeam.isPending}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {deleteTeam.isPending ? "Deleting…" : "Delete team"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}

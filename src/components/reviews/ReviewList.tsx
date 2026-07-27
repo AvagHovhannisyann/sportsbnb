@@ -1,6 +1,17 @@
 import { Star, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import type { Review } from "@/hooks/useReviews";
 
@@ -61,15 +72,41 @@ const ReviewList = ({ reviews, currentUserId, onDelete }: ReviewListProps) => {
                 </div>
               </div>
               {currentUserId === review.user_id && onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Delete your review"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => onDelete(review.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                /* Confirmed, like every other destructive action in the app.
+                   This deleted the review straight off the click, from an
+                   icon-only button sitting in the corner of the reviewer's own
+                   card — the easiest kind of control to hit by accident, and
+                   the review is not recoverable. */
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Delete your review"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete your review</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This removes your rating and comment from this venue. It cannot be
+                        undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep review</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => onDelete(review.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete review
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
             {review.comment && (

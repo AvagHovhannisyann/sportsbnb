@@ -85,6 +85,19 @@ const ROWS = {
     visibility: 'public', invite_code: 'SMOKE1', logo_url: null,
     created_at: NOW, updated_at: NOW,
   },
+  // The operator outreach table. Absent until now, so the generic `[]` answered
+  // it, the table rendered empty, and every control inside a row — including a
+  // delete button with no accessible name — had never been rendered by any
+  // audit here. Same shape as the signed-out and empty-data gaps: a check
+  // reports nothing because it never saw the thing.
+  outreach_targets: {
+    id: '66666666-6666-6666-6666-666666666666', name: 'Smoke Sports Center',
+    city: 'Yerevan', status: 'contacted', value: 120000,
+    contact_email: 'owner@example.com', contact_phone: '+37499112233',
+    followup_at: NOW, last_contacted_at: NOW, enriched: { website: 'https://example.com' },
+    notes: 'Interested, asked to be called back.', owner_name: 'Demo Owner',
+    source: 'manual', created_at: NOW,
+  },
   blog_posts: {
     id: '66666666-6666-6666-6666-666666666666', slug: IDS.slug,
     title: 'Smoke post', excerpt: 'A stub blog post.',

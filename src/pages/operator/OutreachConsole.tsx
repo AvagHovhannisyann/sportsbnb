@@ -2,6 +2,17 @@ import { useMemo, useState } from "react";
 import { NEUTRAL_CHIP, TONE_CHIP } from "@/lib/chips";
 import { useOutreachTargets, usePrepareTarget, useDeleteTarget, type OutreachTarget } from "@/hooks/useOutreach";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -181,9 +192,52 @@ export default function OutreachConsole() {
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${t.name}?`)) del.mutate(t.id); }}>
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
+                      {/* Named, and confirmed with the app's own dialog rather
+                          than a native `confirm()`. Two problems in one
+                          control: the button had no accessible name, so a
+                          screen reader announced three identical "button"s in
+                          a row and none of them said which target they would
+                          delete; and `confirm()` is unstyled, blocks the
+                          thread, and can be suppressed outright by the
+                          browser, which would delete the row with no prompt at
+                          all. Every other destructive action here uses
+                          AlertDialog.
+
+                          Neither had been caught because `outreach_targets`
+                          was missing from the audit fixtures, so this table
+                          rendered empty and the row never existed for any
+                          check to look at. */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Delete outreach target ${t.name}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete outreach target</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Delete &ldquo;{t.name}&rdquo;? Its contact history and follow-up go
+                              with it, and this cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep it</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => del.mutate(t.id)}
+                              disabled={del.isPending}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {del.isPending ? "Deleting…" : "Delete target"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 );
