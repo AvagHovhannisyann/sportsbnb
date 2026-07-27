@@ -122,6 +122,27 @@ const ROWS = {
     name: 'Match ball', description: 'Size 5', price_per_hour: 500,
     quantity: 10, is_active: true, created_at: NOW,
   },
+  // The remaining populatable tables, from the three-way split in
+  // docs/audits.md. Each renders a section that no check here had seen.
+  achievements: {
+    id: 'a1', name: 'First booking', description: 'Booked your first venue',
+    icon: 'Trophy', xp_reward: 50, category: 'booking', created_at: NOW,
+  },
+  outreach_messages: {
+    id: 'cccccccc-0000-0000-0000-000000000001',
+    target_id: '66666666-6666-6666-6666-666666666666',
+    channel: 'email', direction: 'outbound', subject: 'Listing your venue',
+    body: 'Hi — would you like to list with us?', sent_at: NOW, created_at: NOW,
+  },
+  review_prompts: {
+    id: 'dddddddd-0000-0000-0000-000000000001', user_id: UID,
+    venue_id: IDS.venue, booking_id: IDS.booking, status: 'pending',
+    created_at: NOW,
+  },
+  venue_promotions: {
+    id: 'eeeeeeee-0000-0000-0000-000000000001', venue_id: IDS.venue,
+    is_active: true, starts_at: NOW, ends_at: NOW, created_at: NOW,
+  },
   // The operator outreach table. Absent until now, so the generic `[]` answered
   // it, the table rendered empty, and every control inside a row — including a
   // delete button with no accessible name — had never been rendered by any
