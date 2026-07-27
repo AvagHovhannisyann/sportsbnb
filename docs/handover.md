@@ -153,7 +153,7 @@ corrected in the code comments and in `docs/design-audit.md`.
 
 ---
 
-## 5. Two product calls I did not make for you
+## 5. Three product calls I did not make for you
 
 Both surfaced from a lint rule that had been switched off. Neither is a bug I
 could fix without deciding something that is yours to decide.
@@ -175,6 +175,16 @@ trigger, no content and no route. The components work. Either they were pulled
 deliberately and should be deleted, or they were never finished being wired up —
 I could not tell from the repository, and guessing wrong either adds an
 unfinished surface to the admin console or deletes work you wanted.
+
+**A finished waitlist feature that nothing uses.** `src/hooks/useWaitlist.ts`
+is 88 lines exporting four hooks — `useWaitlist`, `useMyWaitlistEntries`,
+`useJoinWaitlist`, `useLeaveWaitlist` — against a `booking_waitlist` table.
+Nothing in the app imports any of them, so there is no way for a player to join
+a waitlist and no way for an owner to see one. The same shape as the two admin
+tabs above: working code with no way in. "Tell me when this slot frees up" is a
+normal thing to want on a venue whose evenings are full, so this may be a
+feature to finish rather than delete — but that is a product call, and the
+table it writes to needs its RLS checked before anything writes to it.
 
 ---
 

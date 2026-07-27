@@ -61,6 +61,45 @@ A typo throws rather than falling through — see `parseUserType`. That matters
 more than it sounds: a role the app does not recognise renders something
 subtly wrong, and an audit will report a clean run against it.
 
+## What the fixtures do not serve
+
+The harness answers every Supabase REST call from a table of fixtures in
+`scripts/lib/stub-page.mjs`. A table with no fixture gets the generic `[]`, so
+its section of UI renders empty — and the controls inside a row do not exist
+for `a11y-names`, `tap-targets` or `rendered-contrast` to find. A check reports
+nothing, which reads exactly like nothing being wrong.
+
+That is not theoretical. `outreach_targets` had no fixture, so the operator
+console's table rendered with no rows, and it was hiding three delete buttons
+with no accessible name and a native `confirm()` where the rest of the app uses
+`AlertDialog`. Adding one row surfaced all of it immediately. `blocked_dates`
+then did the same for six more unnamed controls on `/owner/hours` and
+`/venue/:id/availability`.
+
+Counting `.from("…")` against the fixture table: **44 tables queried, 28 now
+served, 16 still empty in every check.** (An earlier count said 45 and 22; it
+wrongly included `avatars`, which is a storage bucket rather than a table.)
+
+The sixteen are not one kind of thing, and the distinction matters more than
+the number:
+
+- **Tables behind UI that is unreachable anyway.** `candidate_fields`,
+  `field_submissions` and `public_fields` feed `CandidateFieldsTab` and
+  `FieldSubmissionsTab`, which have no tab trigger, no content and no route —
+  see `AdminDashboard.tsx` and §5 of `docs/handover.md`. `booking_waitlist`
+  feeds `useWaitlist`, which nothing imports at all. A fixture would not make
+  these visible to an audit, because nothing renders them.
+- **Tables read for a number or a flag**, where there is no row-level UI to
+  miss: `owner_balances`, `field_checkins`, `referral_codes`,
+  `referral_credits`, `verified_fields`, `platform_policies`.
+- **Tables that probably should be populated** and simply have not been:
+  `venue_promotions`, `outreach_messages`, `blocked_users`, `review_prompts`,
+  `achievements`, `booking_intents`. Each is a candidate for the same treatment
+  that found nine unnamed controls in an afternoon.
+
+Adding a fixture is cheap and the payoff is disproportionate. It is the first
+thing to try when an audit is suspiciously quiet about a screen.
+
 **Each of those four shapes was added because it found something the default
 could not see.** Signed out: two unnamed controls and two AA contrast failures
 on /login and /signup, which redirect to /dashboard under a stubbed session
