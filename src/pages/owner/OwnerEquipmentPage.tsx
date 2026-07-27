@@ -386,7 +386,11 @@ const OwnerEquipmentPage = () => {
                   setFormData(prev => ({ ...prev, equipment_type: value }))
                 }
               >
-                <SelectTrigger>
+                {/* `id="type"`, which the label above has always named and
+                    nothing has ever carried. Unlabelled, the trigger is
+                    announced as whatever it currently reads — "Item" — so the
+                    field's name changed every time its value did. */}
+                <SelectTrigger id="type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

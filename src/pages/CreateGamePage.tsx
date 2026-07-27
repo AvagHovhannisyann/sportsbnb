@@ -317,7 +317,12 @@ const CreateGamePage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Location Address *</Label>
+                  {/* The id has to reach the inner input. Without it this label
+                      pointed at nothing and the field was named by its
+                      placeholder — a different string from the one printed
+                      beside it, which is WCAG 2.5.3. */}
                   <LocationAutocomplete
+                    id="location"
                     value={formData.location}
                     onSelect={handleLocationSelect}
                     onClear={() => setFormData(prev => ({ 

@@ -7,10 +7,9 @@ import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCreateBookingHold, formatAmd } from "./hooks/useBookingFlow";
 import { useVenueHours } from "@/hooks/useAvailability";
+import { useVenuePolicy } from "@/hooks/useVenuePolicies";
 
 interface BookingPanelProps {
   venueId: string;
@@ -69,21 +68,22 @@ export function BookingPanel({ venueId, pricePerHour, blockedDates = [] }: Booki
     return row ? row.is_closed : null;
   }, [venueHours, selectedDate]);
 
-  const { data: policy, isError: policyError } = useQuery({
-    queryKey: ["venue-policy", venueId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("venue_policies")
-        .select("cancellation_policy, cancellation_hours, refund_type")
-        .eq("venue_id", venueId)
-        .maybeSingle();
-      // The error was previously dropped, which made a failed lookup
-      // indistinguishable from "this venue has no custom policy" — see below
-      // for why that distinction is not cosmetic.
-      if (error) throw error;
-      return data;
-    },
-  });
+  /**
+   * The shared hook, not a second query under the same cache key.
+   *
+   * This used to be its own `useQuery` with `queryKey: ["venue-policy", venueId]`
+   * — byte for byte the key `useVenuePolicy` uses — but selecting three columns
+   * where that one selects `*`. Same key, different shape: whichever ran first
+   * populated the cache, and the other read it back. An owner who looked at
+   * their own venue page and then opened Policies got the form filled from a
+   * row with three columns in it, every other field reading as undefined; the
+   * reverse order silently worked, which is the worst property a bug can have.
+   *
+   * `select("*")` here costs a few unused columns and removes the collision
+   * entirely. The error is still surfaced rather than swallowed — see below for
+   * why "the lookup failed" and "no custom policy" must not look the same.
+   */
+  const { data: policy, isError: policyError } = useVenuePolicy(venueId);
 
   // A null row genuinely means "no custom policy, platform default applies",
   // so the ?? fallbacks are right in that case. A *failed* lookup is different:

@@ -326,14 +326,14 @@ const OwnerWidgetPage = () => {
                   <div className="flex gap-2">
                     <Input
                       id="widget-primary-color"
-                      aria-label="Primary colour swatch"
+                      aria-label="Primary Color swatch"
                       type="color"
                       value={widgetSettings.primaryColor}
                       onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
                       className="w-12 h-10 p-1 cursor-pointer"
                     />
                     <Input
-                      aria-label="Primary colour hex value"
+                      aria-label="Primary Color hex value"
                       value={widgetSettings.primaryColor}
                       onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
                       className="font-mono"
