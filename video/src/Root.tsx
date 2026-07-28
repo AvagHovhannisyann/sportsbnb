@@ -3,10 +3,26 @@ import { Composition } from "remotion";
 
 import { MyComposition } from "./Composition";
 import { BookingFlow } from "./BookingFlow";
-import { BrandLoader } from "./BrandLoader";
 import { FeatureReel } from "./FeatureReel";
-import { HeroBackdrop } from "./HeroBackdrop";
 import { OwnerPitch } from "./OwnerPitch";
+/*
+ * BrandLoader and HeroBackdrop live in the *app* — `src/remotion/` — not here.
+ *
+ * They are the two compositions the React app mounts live through
+ * `@remotion/player` (the loading screen and the landing hero plate), so they
+ * have to sit inside the app's `tsconfig`/Vite `src` root to be bundled at
+ * all. One copy, two consumers: the studio and `remotion render` read them
+ * from across the directory boundary, the app imports them as `@/remotion/*`.
+ *
+ * Reaching out of `video/` means webpack resolves bare specifiers from the
+ * app's `node_modules` for those two files and from `video/node_modules` for
+ * everything else — two Reacts and two `remotion`s in one bundle, which is an
+ * "invalid hook call" at render time rather than a build error. The aliases in
+ * `remotion.config.ts` pin all three to this project's copies; do not remove
+ * them.
+ */
+import { BrandLoader } from "../../src/remotion/BrandLoader";
+import { HeroBackdrop } from "../../src/remotion/HeroBackdrop";
 import {
   SkeletonLoop,
   SKELETON_LOOP_DURATION,

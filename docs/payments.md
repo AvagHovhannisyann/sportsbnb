@@ -62,8 +62,12 @@ create_booking_hold() RPC          payments-init            provider redirect
   reversed with a positive `adjustment`.
 - Invariant: platform cash = Σ payment_received + Σ refund (≤0) — owner payouts.
 
-Commission comes from `platform_settings.commission_bps` (default 500 = 5%),
-read server-side only.
+Commission comes from `platform_settings.commission_bps`, read server-side
+only. It is currently `0` — Sportsbnb takes no commission, so every booking
+writes a zero-value `platform_commission` entry and the owner's earning equals
+the amount the player paid. The setting and the ledger entry type are kept so a
+future non-zero rate needs no schema change; `create_booking_hold()` falls back
+to 0, not 500, if the setting row is missing.
 
 ## Refund policy engine
 

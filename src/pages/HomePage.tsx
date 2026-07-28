@@ -557,18 +557,22 @@ const HomePage = () => {
               </ul>
 
               <dl className="mt-6 space-y-2.5 border-t border-border pt-5 text-[15px]">
+                {/* The sample breakdown a player actually sees at checkout.
+                    It carried a ֏600 "Service fee" line and a ֏12,600 total —
+                    the old 5% commission. There is no fee now, so the venue
+                    price is the total. */}
                 <div className="flex justify-between">
                   <dt className="text-foreground-soft">90 minutes</dt>
                   <dd className="font-mono tabular-nums text-foreground">֏12,000</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-foreground-soft">Service fee</dt>
-                  <dd className="font-mono tabular-nums text-foreground">֏600</dd>
+                  <dt className="text-foreground-soft">Booking fee</dt>
+                  <dd className="font-mono tabular-nums text-foreground">֏0</dd>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3">
                   <dt className="font-display font-semibold text-foreground">Total</dt>
                   <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                    ֏12,600
+                    ֏12,000
                   </dd>
                 </div>
               </dl>
@@ -620,7 +624,7 @@ const HomePage = () => {
 
           <dl className="grid grid-cols-2 gap-4">
             {[
-              { k: "Commission", v: "5%", note: "No listing fee, no monthly cost" },
+              { k: "Commission", v: "0%", note: "No listing fee, no monthly cost" },
               { k: "Payouts", v: "Weekly", note: "Itemised, straight to your account" },
               { k: "Setup", v: "10 min", note: "Photos, hours, price — that's it" },
               { k: "Support", v: "Direct", note: "Message players inside the app" },

@@ -58,7 +58,7 @@ const FAQPage = () => {
         },
         {
           q: "What fees does Sportsbnb charge?",
-          a: "5% per booking, and nothing else — no listing fee, no monthly cost, no minimum. You keep 100% of the price you set; the 5% is added on top for the player, who sees the final figure before paying.",
+          a: "Nothing. There is no commission, no listing fee, no monthly cost and no minimum. You keep 100% of the price you set, and the player pays exactly that — we add nothing on top.",
         },
         {
           q: "How do I manage my availability?",

@@ -18,10 +18,11 @@ can create or be invited to.
   are quoted per hour.
 - **Payment methods**: card via Ameriabank vPOS, or Idram. Payment is taken in
   the app at the time of booking; there is no cash-on-arrival flow.
-- **Platform fee**: 5%, added on top of the rate the venue owner sets. A venue
-  listed at ֏10,000/hour costs the player ֏10,500; the owner receives ֏10,000.
-  The rate is a platform setting (`commission_bps`, default 500) rather than a
-  per-venue negotiation.
+- **Platform fee**: none. Sportsbnb takes zero commission and adds nothing to
+  the rate the venue owner sets. A venue listed at ֏10,000/hour costs the
+  player ֏10,000, and the owner receives ֏10,000. The commission rate is a
+  platform setting (`commission_bps`, currently 0) rather than a per-venue
+  negotiation.
 - **Holding a slot**: selecting a time creates a 20-minute hold. If payment is
   not completed in that window the hold expires and the slot returns to the
   calendar.

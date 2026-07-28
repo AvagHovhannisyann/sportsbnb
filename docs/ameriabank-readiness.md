@@ -117,9 +117,10 @@ A bank reviewing an integration wants the flow, not a tour of the app. Worth
 including:
 
 - The live URL, **after** the merge.
-- That settlement is in AMD, that the platform fee is 5% charged to the player
-  on top of the venue's rate, and that funds are tracked in a double-entry
-  ledger with scheduled payouts to Armenian bank accounts and Idram wallets.
+- That settlement is in AMD, that Sportsbnb charges no platform fee — the
+  player is charged exactly the venue's rate and the owner receives all of it —
+  and that funds are tracked in a double-entry ledger with scheduled payouts to
+  Armenian bank accounts and Idram wallets.
 - That confirmation is always via `GetPaymentDetails` and never via the
   redirect parameters — this is the answer to the question they are really
   asking.

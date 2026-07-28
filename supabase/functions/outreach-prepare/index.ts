@@ -5,8 +5,8 @@ import { AI_MODELS, chatCompletion } from '../_shared/ai.ts';
 
 const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
 
-const PITCH_EN = `Sportsbnb is a booking platform for sports venues. Founding offer: 0% commission for the first 3 months, then only 3% — we help fill empty slots, bring new customers, and give owners a free smart calendar and online booking widget.`;
-const PITCH_HY = `Sportsbnb-ը սպորտային հարթակների ամրագրման հարթակ է։ Հիմնադիր առաջարկ՝ առաջին 3 ամիսը 0% միջնորդավճար, հետո ընդամենը 3%։ Օգնում ենք լրացնել դատարկ ժամերը, բերում ենք նոր հաճախորդներ և տալիս ենք անվճար խելացի օրացույց ու օնլայն ամրագրման վիջեթ։`;
+const PITCH_EN = `Sportsbnb is a booking platform for sports venues. We charge 0% commission — permanently, not as a trial. Owners keep 100% of every booking, with no listing fee and no monthly cost. We help fill empty slots, bring new customers, and give owners a free smart calendar and online booking widget.`;
+const PITCH_HY = `Sportsbnb-ը սպորտային հարթակների ամրագրման հարթակ է։ Մենք միջնորդավճար չենք վերցնում՝ 0%՝ ընդմիշտ, ոչ թե փորձնական ժամկետով։ Տերը ստանում է յուրաքանչյուր ամրագրման ողջ գումարը՝ առանց տեղադրման կամ ամսական վճարի։ Օգնում ենք լրացնել դատարկ ժամերը, բերում ենք նոր հաճախորդներ և տալիս ենք անվճար խելացի օրացույց ու օնլայն ամրագրման վիջեթ։`;
 
 const SYSTEM_EN = `You write warm, concise B2B outreach messages on behalf of the Sportsbnb team. ${PITCH_EN} Write in a personal, direct tone. NEVER sound like a template. Reference one concrete detail about the venue from the research. Keep under 130 words. End with a soft CTA (15-min call or reply). Return ONLY JSON: { "subject": "...", "body": "..." } where body uses real line breaks (\\n).`;
 const SYSTEM_HY = `Դու գրում ես ջերմ, հակիրճ B2B հաղորդագրություններ Sportsbnb-ի թիմի անունից։ ${PITCH_HY} Գրիր անձնական, ուղղակի տոնով։ ԵՐԲԵՔ չհնչիր ձևանմուշային։ Հղում արա մեկ կոնկրետ դետալի՝ վենյուի վերաբերյալ։ Մինչև 130 բառ։ Ավարտիր մեղմ CTA-ով (15-րոպեանոց զանգ կամ պատասխան)։ Վերադարձրու ՄԻԱՅՆ JSON՝ { "subject": "...", "body": "..." } որտեղ body-ն օգտագործում է իրական տողանջատումներ (\\n)։`;

@@ -441,7 +441,9 @@ const DiscoverPage = () => {
     }
   };
 
-  // Format customer-facing prices (including 5% fee)
+  // Format the price a player actually pays. Sportsbnb takes no commission, so
+  // this is the owner's listed rate — the comment used to claim it included a
+  // 5% fee, and `getCustomerPrice` no longer adds one.
   const formatCustomerPrice = (ownerPrice: number) => {
     return formatPrice(getCustomerPrice(ownerPrice));
   };

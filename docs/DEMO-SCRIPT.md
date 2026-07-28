@@ -97,8 +97,8 @@ need it:
 ### 4. Start a booking — `/book/…` — 90s (the important one)
 
 In the booking panel on the right: pick **tomorrow**, then tap a free hour.
-The price breaks down on screen — ֏12,000, service fee 5% = ֏600, total
-**֏12,600**. Click **Reserve**.
+The price breaks down on screen — ֏12,000, no booking fee, total
+**֏12,000**. Click **Reserve**.
 
 You land on checkout with a **20-minute countdown** and two payment options:
 **Bank card (Ameriabank vPOS)** and **Idram**.

@@ -1,11 +1,22 @@
 // Platform fee configuration
-// The platform adds a 5% fee on top of the owner's listed price
-// Example: Owner lists $40/hour → Customer pays $42 → Owner receives $40
+//
+// Sportsbnb takes zero commission. The player pays exactly the hourly rate the
+// owner listed, and the owner receives all of it.
+// Example: owner lists ֏12,000/hour → player pays ֏12,000 → owner receives ֏12,000.
+//
+// The functions below are kept rather than inlined away because the fee is a
+// platform *setting* (`platform_settings.commission_bps`, now 0), not a law of
+// nature — if a commission is ever reintroduced, this is the one place the
+// customer-facing arithmetic changes, and every call site follows.
 
-export const PLATFORM_FEE_PERCENTAGE = 0.05; // 5%
+export const PLATFORM_FEE_PERCENTAGE = 0; // no commission
 
 /**
- * Calculate the customer-facing price (owner's price + platform fee)
+ * Calculate the customer-facing price.
+ *
+ * With zero commission this is the owner's price unchanged; it stays a
+ * function so call sites keep expressing "what the player pays".
+ *
  * @param ownerPrice - The price the owner lists (what they will receive)
  * @returns The price the customer will pay
  */
@@ -16,7 +27,7 @@ export const getCustomerPrice = (ownerPrice: number): number => {
 /**
  * Calculate the platform fee amount from the owner's price
  * @param ownerPrice - The price the owner lists
- * @returns The platform fee amount
+ * @returns The platform fee amount — currently always 0
  */
 export const getPlatformFee = (ownerPrice: number): number => {
   return getCustomerPrice(ownerPrice) - ownerPrice;
@@ -25,7 +36,7 @@ export const getPlatformFee = (ownerPrice: number): number => {
 /**
  * Get the owner's price from the customer-facing price
  * @param customerPrice - The price the customer pays
- * @returns The amount the owner receives
+ * @returns The amount the owner receives — currently the full amount
  */
 export const getOwnerPrice = (customerPrice: number): number => {
   return Math.floor(customerPrice / (1 + PLATFORM_FEE_PERCENTAGE));

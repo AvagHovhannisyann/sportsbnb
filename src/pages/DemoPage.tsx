@@ -137,7 +137,7 @@ const BOOKING_STEPS = [
 ];
 
 const OWNER_STATS = [
-  { k: "Commission", v: "5%", note: "No listing fee, no monthly cost" },
+  { k: "Commission", v: "0%", note: "No listing fee, no monthly cost" },
   { k: "Payouts", v: "Weekly", note: "Itemised, straight to your account" },
   { k: "Setup", v: "10 min", note: "Photos, hours, price — that's it" },
   { k: "Calendar", v: "2-way", note: "Syncs with the calendar you already use" },
@@ -147,7 +147,7 @@ const OWNER_POINTS = [
   {
     icon: Wallet,
     title: "Earnings you can audit",
-    body: "Every booking writes an append-only ledger entry — what the player paid, your share, the platform's 5%. The earnings page is a view over that ledger, not a summary someone types in.",
+    body: "Every booking writes an append-only ledger entry — what the player paid and what you earned, which with zero commission is the same figure. The earnings page is a view over that ledger, not a summary someone types in.",
   },
   {
     icon: CalendarDays,
