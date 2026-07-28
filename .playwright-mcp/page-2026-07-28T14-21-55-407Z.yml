@@ -1,5 +1,0 @@
-- generic [ref=f2e2]:
-  - img "Sportsbnb" [ref=f2e5]
-  - region "Notifications (F8)":
-    - list
-  - region "Notifications alt+T"
