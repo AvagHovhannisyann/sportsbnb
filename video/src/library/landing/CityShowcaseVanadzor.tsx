@@ -31,6 +31,7 @@ import {
   noise,
   riseStyle,
   useSceneFrame,
+  wrap,
 } from "./shared";
 
 /* ── Beat sheet ───────────────────────────────────────────────────────────
@@ -155,7 +156,8 @@ const RidgeBed: FC<{
         style={{ display: "block" }}
       >
         {RIDGES.map((ridge) => {
-          const shift = -wavelength * ridge.laps * t;
+          /** Modulo one wavelength — see the file header. */
+          const shift = -wrap(wavelength * ridge.laps * t, wavelength);
           const span = width + wavelength * 2;
           const step = span / samples;
           let d = `M ${-wavelength} ${height + 4}`;
