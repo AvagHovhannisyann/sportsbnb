@@ -8,10 +8,10 @@ import {
 /**
  * The conversion at the provider boundary.
  *
- * Everything inside this system is integer minor units. Ameriabank's vPOS API
- * takes and returns decimal amounts. These two functions are the only place
- * that crosses between the two, which makes them the only place a rounding
- * error can turn into a wrong charge — and they had no tests.
+ * Everything inside this system is integer minor units. Payment providers take
+ * and return decimal amounts. These two functions are the only place that
+ * crosses between the two, which makes them the only place a rounding error
+ * can turn into a wrong charge — and they had no tests.
  *
  * They are worth testing precisely because they look trivial. `amount * 100`
  * on a float is not exact, and the scale of that was measured rather than
@@ -22,9 +22,9 @@ import {
  * for all 200,000. That is what these tests pin down.
  *
  * The adapter itself cannot be unit-tested here — it reads `Deno.env` and
- * makes network calls, so it needs the sandbox credentials and a live run
- * against `servicestest.ameriabank.am`. That is listed in the readiness notes
- * rather than pretended at.
+ * makes network calls, so it needs sandbox credentials and a live run against
+ * the provider. That is listed in the readiness notes rather than pretended
+ * at.
  */
 describe("provider money conversion", () => {
   it("round-trips whole dram", () => {
@@ -70,7 +70,7 @@ describe("provider money conversion", () => {
   });
 
   it("maps the settlement currency to its ISO 4217 numeric code", () => {
-    // Ameria vPOS takes the numeric code, not the alpha one. 051 is dram.
+    // Some provider APIs take the numeric code, not the alpha one. 051 is dram.
     expect(CURRENCY_NUMERIC.AMD).toBe("051");
     expect(CURRENCY_NUMERIC.USD).toBe("840");
     expect(CURRENCY_NUMERIC.EUR).toBe("978");

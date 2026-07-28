@@ -196,7 +196,7 @@ const App = () => {
                         one title between them — a WCAG 2.4.2 duplicate, which
                         nothing noticed because no audit list contained this
                         route and none had ever loaded it. Nothing in the app
-                        links here and the Ameria callback builds
+                        links here and the payment callback builds
                         `/join-status`, so it is redirected rather than removed:
                         a provider configured to it outside this repository
                         keeps working, and there is one canonical page again. */}

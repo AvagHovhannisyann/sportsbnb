@@ -54,7 +54,7 @@ export const getOwnerPrice = (customerPrice: number): number => {
  * dram to everyone, but it rendered as "$13,000" to any visitor outside
  * Armenia — roughly a 400x overstatement, on the number the entire booking
  * decision turns on. There is no FX layer here to justify a viewer-dependent
- * symbol, and the money rails behind it (Ameria vPOS, Idram) settle in AMD.
+ * symbol, and the payment rail behind it settles in AMD.
  *
  * US stays explicit because that inventory is genuinely dollar-priced.
  *

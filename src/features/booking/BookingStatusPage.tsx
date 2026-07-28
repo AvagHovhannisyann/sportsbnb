@@ -27,7 +27,8 @@ import { formatTimeOfDay } from "@/lib/time";
 /**
  * Landing page after returning from the payment provider.
  * Polls payments-verify until the payment reaches a terminal state
- * (covers redirect races and Idram's callback-driven flow).
+ * (covers redirect races, and providers that confirm by webhook rather than on
+ * the redirect itself).
  */
 export default function BookingStatusPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -170,8 +171,8 @@ export default function BookingStatusPage() {
                     <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
                     <AlertDialogDescription>
                       Your refund is calculated from the venue's cancellation policy that applied
-                      when you booked. Card refunds usually arrive within a few business days;
-                      Idram has no refund API, so those are processed by hand and can take longer.
+                      when you booked. Refunds go back to the card you paid with, and most
+                      arrive within a few business days.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

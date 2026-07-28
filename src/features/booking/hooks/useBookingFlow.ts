@@ -1,7 +1,28 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type PaymentProviderKey = "ameria" | "idram" | "mock";
+/**
+ * Providers `payments-init` will accept. Ameria vPOS and Idram were removed
+ * from the payment path; sending either now returns a 400, so they are gone
+ * from the union rather than left as values nothing rejects until runtime.
+ *
+ * "mock" is the dev/E2E rail and is the reason this stays a union of two: the
+ * shape below (a provider key chosen at the call site, a redirect-or-form
+ * result) is what lets a second real provider be added without reworking the
+ * flow.
+ */
+export type PaymentProviderKey = "lemonsqueezy" | "mock";
+
+/**
+ * The live rail. Every caller sends this unless it is deliberately paying
+ * against the mock provider — declared once so the next provider change is a
+ * one-line edit rather than a grep across call sites.
+ */
+export const LIVE_PAYMENT_PROVIDER: PaymentProviderKey = "lemonsqueezy";
+
+/** The mock provider is offered in dev, and in any build that opts in. */
+export const MOCK_PAYMENTS_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_PAYMENTS_MOCK === "true";
 
 export interface BookingHold {
   booking_id: string;
@@ -35,9 +56,9 @@ export interface PaymentInitResult {
  * `currency text NOT NULL DEFAULT 'AMD'` — `bookings`, `payments`,
  * `ledger_entries`, `payouts` — and every writer in the payment path pins it,
  * `payments-init` and `_shared/payments.ts` both falling back to "AMD"
- * explicitly. The rails settle in dram: Ameria vPOS and Idram do not offer
- * anything else. So a row with another currency cannot presently exist, and
- * the twelve call sites that print money with this are correct.
+ * explicitly. Every venue in the catalogue is priced and settled in dram. So a
+ * row with another currency cannot presently exist, and the twelve call sites
+ * that print money with this are correct.
  *
  * If that ever stops being true — a second provider, a second region with its
  * own settlement — this becomes silently wrong everywhere at once, because it
@@ -136,7 +157,14 @@ export function useCancelBooking() {
   });
 }
 
-/** Submits a provider form-post (Idram) by injecting a temporary form. */
+/**
+ * Submits a provider form-post by injecting a temporary form.
+ *
+ * No live provider uses this today — Lemon Squeezy is a plain redirect, so
+ * `formAction`/`formFields` come back null and callers fall through to
+ * `redirectUrl`. Kept because the init contract still carries those fields and
+ * a form-post provider may return; callers must guard on both being present.
+ */
 export function submitProviderForm(action: string, fields: Record<string, string>) {
   const form = document.createElement("form");
   form.method = "POST";

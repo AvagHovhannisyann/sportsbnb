@@ -37,7 +37,7 @@ describe("money conversion", () => {
     expect(decimalToMinor(19.99)).toBe(1999);
   });
 
-  it("maps currencies to ISO 4217 numeric codes for Ameria", () => {
+  it("maps currencies to ISO 4217 numeric codes", () => {
     expect(CURRENCY_NUMERIC.AMD).toBe("051");
     expect(CURRENCY_NUMERIC.USD).toBe("840");
     expect(CURRENCY_NUMERIC.EUR).toBe("978");

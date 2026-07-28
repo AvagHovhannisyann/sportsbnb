@@ -113,7 +113,7 @@ const ForOwnersPage = () => {
     {
       icon: CreditCard,
       title: "Instant Booking & Payments",
-      description: "Players book and pay online instantly by card or Idram. We collect, then pay out to your account — no cash handling, no invoicing, no chasing.",
+      description: "Players book and pay online instantly by card. We collect, then pay out to your account — no cash handling, no invoicing, no chasing.",
     },
     {
       icon: BarChart3,
@@ -176,7 +176,7 @@ const ForOwnersPage = () => {
     { value: "0%", label: "Commission — you keep every dram" },
     { value: "0", label: "Monthly fees or hidden costs" },
     { value: "Weekly", label: "Payouts, every booking itemised" },
-    { value: "AMD", label: "Settled in dram — card or Idram" },
+    { value: "AMD", label: "Settled in dram — players pay by card" },
   ];
 
   const onboardingSteps = [
@@ -200,7 +200,7 @@ const ForOwnersPage = () => {
            and no measurement behind either half of it. Replaced with the four
            facts the stats block settled on. */
         title="List Your Sports Venue in Armenia — Sportsbnb for Owners"
-        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card and Idram payments in dram, and keep 100% of your price. Zero commission, no listing fee, no monthly cost."
+        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card payments in dram, and keep 100% of your price. Zero commission, no listing fee, no monthly cost."
         canonical="/for-owners"
       />
       {/* ── Hero ── */}

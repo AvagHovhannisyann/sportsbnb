@@ -37,8 +37,8 @@ describe("CURRENCIES", () => {
   });
 
   it("includes the currency this marketplace actually settles in", () => {
-    // Ameria vPOS and Idram both settle in dram. A list without it would let
-    // someone set a preference that the money rails cannot honour.
+    // The marketplace settles in dram. A list without it would let someone set
+    // a preference that the money rails cannot honour.
     expect(CURRENCIES.AMD).toBeDefined();
     expect(CURRENCIES.AMD.symbol).toBe("֏");
   });

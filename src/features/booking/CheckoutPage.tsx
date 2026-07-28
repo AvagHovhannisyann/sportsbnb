@@ -3,7 +3,7 @@ import { formatTimeOfDay } from "@/lib/time";
 import { atVenue } from "@/lib/venueTime";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { CreditCard, Loader2, ShieldCheck, Timer, Wallet } from "lucide-react";
+import { CreditCard, Loader2, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
@@ -17,11 +17,21 @@ import {
   useInitPayment,
   submitProviderForm,
   formatAmd,
+  LIVE_PAYMENT_PROVIDER,
+  MOCK_PAYMENTS_ENABLED,
   PaymentProviderKey,
 } from "./hooks/useBookingFlow";
 
-const MOCK_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PAYMENTS_MOCK === "true";
-
+/**
+ * Ways to pay, in order of preference.
+ *
+ * There is one live rail, so in production this list has a single entry and
+ * the picker below does not render at all: a radio group with one radio in it
+ * is a decision that isn't one, and it puts a click between someone and the
+ * payment page they were always going to. The list and the radio group are
+ * kept rather than inlined — add a second entry here and the picker comes
+ * back on its own, still accessible, with nothing else to change.
+ */
 const providerOptions: {
   key: PaymentProviderKey;
   icon: typeof CreditCard;
@@ -30,13 +40,12 @@ const providerOptions: {
   dashed?: boolean;
 }[] = [
   {
-    key: "ameria",
+    key: LIVE_PAYMENT_PROVIDER,
     icon: CreditCard,
-    title: "Bank card",
-    detail: "Visa, Mastercard, ArCa · Ameriabank vPOS",
+    title: "Pay by card",
+    detail: "Visa or Mastercard, in dram",
   },
-  { key: "idram", icon: Wallet, title: "Idram", detail: "Pay from your Idram wallet" },
-  ...(MOCK_ENABLED
+  ...(MOCK_PAYMENTS_ENABLED
     ? [
         {
           key: "mock" as PaymentProviderKey,
@@ -49,12 +58,12 @@ const providerOptions: {
     : []),
 ];
 
-/** Checkout for a booking hold: countdown, provider choice, redirect to pay. */
+/** Checkout for a booking hold: countdown, amount, redirect to pay. */
 export default function CheckoutPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [provider, setProvider] = useState<PaymentProviderKey>("ameria");
+  const [provider, setProvider] = useState<PaymentProviderKey>(providerOptions[0].key);
   const [remaining, setRemaining] = useState<number | null>(null);
   const initPayment = useInitPayment();
 
@@ -260,53 +269,58 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* These were three plain buttons: the choice was conveyed only by
-                a border colour, so a screen reader announced all of them
-                identically with no indication of which was selected — on the
-                control that decides how someone pays. Now a real radio group. */}
-            <div className="space-y-2">
-              <p id="pay-with-label" className="text-sm font-medium">
-                Pay with
-              </p>
-              <div role="radiogroup" aria-labelledby="pay-with-label" className="space-y-2">
-                {providerOptions.map(({ key, icon: Icon, title, detail, dashed }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="radio"
-                    aria-checked={provider === key}
-                    onClick={() => setProvider(key)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl border p-3 text-left outline-none transition-colors",
-                      "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                      dashed && "border-dashed",
-                      provider === key
-                        ? "border-primary ring-1 ring-primary"
-                        : "hover:border-primary/50",
-                    )}
-                  >
-                    <Icon
+            {/* Only shown when there is something to choose between. These were
+                three plain buttons: the choice was conveyed only by a border
+                colour, so a screen reader announced all of them identically
+                with no indication of which was selected — on the control that
+                decides how someone pays. Now a real radio group, and it stays
+                one for whenever a second rail is added back. */}
+            {providerOptions.length > 1 && (
+              <div className="space-y-2">
+                <p id="pay-with-label" className="text-sm font-medium">
+                  Pay with
+                </p>
+                <div role="radiogroup" aria-labelledby="pay-with-label" className="space-y-2">
+                  {providerOptions.map(({ key, icon: Icon, title, detail, dashed }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="radio"
+                      aria-checked={provider === key}
+                      onClick={() => setProvider(key)}
                       className={cn(
-                        "h-5 w-5",
-                        key === "mock" ? "text-muted-foreground" : "text-primary",
+                        "flex w-full items-center gap-3 rounded-xl border p-3 text-left outline-none transition-colors",
+                        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        dashed && "border-dashed",
+                        provider === key
+                          ? "border-primary ring-1 ring-primary"
+                          : "hover:border-primary/50",
                       )}
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <p className="text-sm font-medium">{title}</p>
-                      <p className="text-xs text-muted-foreground">{detail}</p>
-                    </div>
-                  </button>
-                ))}
+                    >
+                      <Icon
+                        className={cn(
+                          "h-5 w-5",
+                          key === "mock" ? "text-muted-foreground" : "text-primary",
+                        )}
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">{title}</p>
+                        <p className="text-xs text-muted-foreground">{detail}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <Button className="w-full" size="lg" onClick={handlePay} disabled={initPayment.isPending}>
               {initPayment.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Pay {formatAmd(booking.amount_minor ?? 0)}
             </Button>
-            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5" /> Payments are processed securely by the provider — card details never touch SportsBnB.
+            <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> You'll be taken to a
+              secure page to pay by card — card details never touch SportsBnB.
             </p>
           </CardContent>
         </Card>

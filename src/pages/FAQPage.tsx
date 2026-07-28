@@ -24,7 +24,7 @@ const FAQPage = () => {
         },
         {
           q: "How do I pay for my booking?",
-          a: "Visa, Mastercard and ArCa through Ameriabank, or directly from your Idram wallet. Payment is taken at the time of booking and handled entirely by the provider — your card details never reach SportsBnB.",
+          a: "By card — Visa or Mastercard — on a secure payment page. Payment is taken at the time of booking and handled entirely by our payment provider, so your card details never reach SportsBnB.",
         },
         {
           q: "Can I change the time of a booking?",
