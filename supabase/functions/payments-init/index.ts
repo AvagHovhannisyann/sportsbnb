@@ -9,7 +9,11 @@ const log = makeLogger("payments-init");
 /**
  * Starts payment for a booking hold or a paid game.
  * The amount ALWAYS comes from the database row — never from the client.
- * Body: { bookingId?, gameId?, provider: 'ameria'|'idram'|'mock', lang? }
+ * Body: { bookingId?, gameId?, provider: 'lemonsqueezy'|'mock', lang? }
+ *
+ * Lemon Squeezy is the only live provider. Ameria and Idram were removed from
+ * the registry and from this allow-list; their adapters and callbacks remain on
+ * disk but are unreachable.
  */
 Deno.serve(async (req) => {
   const preflight = handlePreflight(req);
@@ -22,7 +26,7 @@ Deno.serve(async (req) => {
     if ((!bookingId && !gameId) || (bookingId && gameId)) {
       return errorResponse(req, "provide exactly one of bookingId or gameId", 400);
     }
-    if (!["ameria", "idram", "mock"].includes(providerKey)) {
+    if (!["lemonsqueezy", "mock"].includes(providerKey)) {
       return errorResponse(req, "invalid provider", 400);
     }
 
@@ -78,16 +82,15 @@ Deno.serve(async (req) => {
      * every later attempt hit the unique constraint and returned 500.
      *
      * For a game that is permanent. `gameId`, `user.id` and the provider never
-     * change — GameDetailsPage pins the provider to "ameria" — so one declined
-     * card locked that player out of that game forever, with a 500 and no
-     * explanation. For a booking it kills the hold: the same `bookingId`
-     * cannot be paid again, and the customer has to wait out the 20 minutes
-     * and start over.
+     * change — GameDetailsPage pins the provider — so one declined card locked
+     * that player out of that game forever, with a 500 and no explanation. For a
+     * booking it kills the hold: the same `bookingId` cannot be paid again, and
+     * the customer has to wait out the 20 minutes and start over.
      *
      * Resetting the failed row instead would have been the shorter fix and the
      * wrong one: `order_ref` is `NOT NULL UNIQUE DEFAULT nextval(...)` and is
-     * the OrderID sent to Ameriabank, which will not accept the same one twice.
-     * A fresh row is what gets a fresh order ref.
+     * the order id shown to the provider, which will not accept the same one
+     * twice. A fresh row is what gets a fresh order ref.
      *
      * The attempt suffix is derived from how many payments already exist for
      * this subject, user and provider, so history is preserved and every
@@ -154,7 +157,21 @@ Deno.serve(async (req) => {
     }
 
     const provider = getProvider(providerKey);
-    const backUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payments-callback-ameria?paymentId=${payment.id}`;
+
+    /**
+     * Where the provider sends the user back to.
+     *
+     * This used to point at payments-callback-ameria, which made sense only for
+     * Ameria's BackURL contract (that function re-verified with the bank and
+     * then bounced the browser onward). Lemon Squeezy settles over its webhook,
+     * not over the return trip, so the return URL goes straight to the app's
+     * status page — which polls payments-verify — and no longer detours through
+     * a callback belonging to a provider that is no longer wired up.
+     */
+    const appUrl = Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.org";
+    const backUrl = bookingId
+      ? `${appUrl}/booking/${bookingId}/status`
+      : `${appUrl}/game/${gameId}/join-status?paymentId=${payment.id}`;
     const initResult = await provider.init({
       orderRef: payment.order_ref,
       paymentId: payment.id,

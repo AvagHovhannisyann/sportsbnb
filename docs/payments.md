@@ -9,11 +9,27 @@ owners out in batches.
 
 | Provider | Flow | Verify | Refunds |
 |---|---|---|---|
-| `ameria` (Ameriabank vPOS) | `InitPayment` → redirect to bank page → BackURL | **Always** re-verified server-side via `GetPaymentDetails` (ResponseCode `00` + amount match). Redirect params are never trusted. | API (`RefundPayment`) |
-| `idram` | form-POST to Idram → user pays in wallet | Server-to-server callback: precheck (`EDP_PRECHECK=YES` → `OK`) then confirmation with MD5 `EDP_CHECKSUM` verified against `IDRAM_SECRET_KEY` + amount match | **No API** — manual in merchant cabinet; payment goes to `refund_pending`, admin confirms after refunding |
+| `lemonsqueezy` | `POST /v1/checkouts` with `custom_price` → redirect to hosted checkout → `redirect_url` back to the app's status page | Webhook `payments-callback-lemonsqueezy`: `X-Signature` hex HMAC-SHA256 over the **raw** body (verified before parsing) + `data.attributes.total` must equal `payments.amount_minor`. `payments-verify` polling additionally does `GET /v1/orders/<id>` once the webhook has recorded the order id. | API (`POST /v1/orders/<id>/refund`, `attributes.amount` in minor units) |
 | `mock` | fake bank page at `/pay/mock/:paymentId` | Tester chooses outcome via `payments-verify` `mockOutcome` | instant |
 
 The mock provider only works with `PAYMENTS_MOCK_ENABLED=true`. Never enable in production.
+
+Server env: `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_VARIANT_ID`,
+`LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_STORE_ID` (default `440378`),
+`LEMONSQUEEZY_STORE_CURRENCY` (default `AMD`). Products/variants cannot be
+created through the API — the variant is made in the dashboard and its id set
+in env.
+
+### Retired providers
+
+Ameria vPOS (`ameria`) and Idram (`idram`) are **no longer live**. Their
+adapters (`_shared/providers/ameria.ts`, `idram.ts`) and their callback
+functions are still on disk and still deployed, but they were removed from
+`getProvider()` and from the `payments-init` allow-list, so no new payment can
+be created against them. Re-enabling either means re-adding its `case` in
+`registry.ts` and its key in `payments-init`. A pre-existing `ameria`/`idram`
+payment row could not be refunded through `payments-refund` any more
+(`getProvider()` throws for it) — there were none when the switch was made.
 
 ## Money representation
 
