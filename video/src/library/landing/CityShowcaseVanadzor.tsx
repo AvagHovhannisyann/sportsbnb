@@ -20,7 +20,6 @@ import {
   Grain,
   IconArrow,
   IconPin,
-  IconWhistle,
   MaskedWords,
   Panel,
   SETTLE_SPRING,
@@ -197,7 +196,7 @@ const SeasonStrip: FC<{
   readonly months: readonly Month[];
   readonly startAt: number;
 }> = ({ frame, fps, months, startAt }) => (
-  <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 180 }}>
+  <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 250 }}>
     {months.map((month, i) => {
       const p = spring({
         frame,
@@ -457,9 +456,16 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
                         transform: `translateY(${interpolate(p, [0, 1], [12, 0])}px)`,
                       }}
                     >
-                      <span style={{ color: BRAND.primary, display: "inline-flex" }}>
-                        <IconWhistle size={18} />
-                      </span>
+                      {/* A dot, not an icon: at 18px the whistle glyph read as
+                          a stray symbol rather than as a sport marker. */}
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 999,
+                          backgroundColor: BRAND.primary,
+                        }}
+                      />
                       {sport}
                     </span>
                   );

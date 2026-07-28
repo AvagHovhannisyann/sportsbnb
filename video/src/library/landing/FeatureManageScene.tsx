@@ -239,7 +239,7 @@ export const featureManageSceneDefaultProps: FeatureManageSceneProps = {
   stepNumber: "04",
   eyebrow: "Manage",
   headline: ["Fill", "the", "empty", "hours."],
-  accentFrom: 1,
+  accentFrom: 2,
   body: "List once, set your hours and price, then take bookings around the clock. We collect payment; you get a weekly payout with every booking itemised.",
   dayLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
   hourLabels: ["17:00", "18:00", "19:00", "20:00", "21:00", "22:00"],
