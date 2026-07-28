@@ -288,7 +288,7 @@ export const FeatureBookScene: FC<FeatureBookSceneProps> = ({
         }}
       >
         <div style={{ flex: "1 1 0", minWidth: 0 }}>
-          <Sequence name="Step header">
+          <Sequence name="Step header" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 0, 14, 24),
@@ -319,7 +319,7 @@ export const FeatureBookScene: FC<FeatureBookSceneProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Headline">
+          <Sequence name="Headline" layout="none">
             <div
               style={{
                 marginTop: 24,
@@ -344,7 +344,7 @@ export const FeatureBookScene: FC<FeatureBookSceneProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Body">
+          <Sequence name="Body" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 44, 18),
@@ -360,7 +360,7 @@ export const FeatureBookScene: FC<FeatureBookSceneProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Payment">
+          <Sequence name="Payment" layout="none">
             <div
               style={{
                 marginTop: 52,
@@ -410,7 +410,7 @@ export const FeatureBookScene: FC<FeatureBookSceneProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Booking panel">
+        <Sequence name="Booking panel" layout="none">
           <div
             style={{
               width: 700,

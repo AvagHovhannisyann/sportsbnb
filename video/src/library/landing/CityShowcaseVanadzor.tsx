@@ -345,7 +345,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
           }}
         >
           <div>
-            <Sequence name="Header">
+            <Sequence name="Header" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 6, 12, 22),
@@ -361,7 +361,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="City name">
+            <Sequence name="City name" layout="none">
               <div
                 style={{
                   marginTop: 22,
@@ -383,7 +383,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Standfirst">
+            <Sequence name="Standfirst" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 40, 16, 26),
@@ -398,7 +398,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Season strip">
+            <Sequence name="Season strip" layout="none">
               <div style={{ marginTop: 38 }}>
                 <Eyebrow size={16} color={BRAND.muted} style={{ marginBottom: 18 }}>
                   {stripCaption}
@@ -412,7 +412,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Sports">
+            <Sequence name="Sports" layout="none">
               <div
                 style={{
                   marginTop: 34,
@@ -459,7 +459,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
           </div>
 
           <div>
-            <Sequence name="Weather note">
+            <Sequence name="Weather note" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 178, 14, 26),
@@ -477,7 +477,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Venue count">
+            <Sequence name="Venue count" layout="none">
               <div
                 style={{
                   marginTop: 30,
@@ -512,7 +512,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="CTA">
+            <Sequence name="CTA" layout="none">
               <div
                 style={{
                   marginTop: 26,

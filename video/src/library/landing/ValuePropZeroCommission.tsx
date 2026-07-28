@@ -244,13 +244,13 @@ export const ValuePropZeroCommission: FC<ValuePropZeroCommissionProps> = ({
         }}
       >
         <div style={{ flex: "1 1 0", minWidth: 0 }}>
-          <Sequence name="Eyebrow">
+          <Sequence name="Eyebrow" layout="none">
             <div style={riseStyle(frame, fps, 0, 14, 24)}>
               <Eyebrow>{eyebrow}</Eyebrow>
             </div>
           </Sequence>
 
-          <Sequence name="Headline">
+          <Sequence name="Headline" layout="none">
             <div
               style={{
                 marginTop: 24,
@@ -273,7 +273,7 @@ export const ValuePropZeroCommission: FC<ValuePropZeroCommissionProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Subhead">
+          <Sequence name="Subhead" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 52, 20),
@@ -289,7 +289,7 @@ export const ValuePropZeroCommission: FC<ValuePropZeroCommissionProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Claims">
+          <Sequence name="Claims" layout="none">
             <div
               style={{
                 marginTop: 44,
@@ -312,7 +312,7 @@ export const ValuePropZeroCommission: FC<ValuePropZeroCommissionProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Receipt">
+        <Sequence name="Receipt" layout="none">
           <div
             style={{
               width: 700,

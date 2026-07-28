@@ -150,7 +150,7 @@ export const HeadlineBookTheCourt: FC<HeadlineBookTheCourtProps> = ({
           justifyContent: "center",
         }}
       >
-        <Sequence name="Eyebrow pill" from={0}>
+        <Sequence name="Eyebrow pill" layout="none" from={0}>
           <div style={riseStyle(frame, fps, 0, 18, 26)}>
             <LivePill frame={frame} label={eyebrow} />
           </div>
@@ -158,7 +158,7 @@ export const HeadlineBookTheCourt: FC<HeadlineBookTheCourtProps> = ({
 
         <div style={{ height: 40 }} />
 
-        <Sequence name="Headline">
+        <Sequence name="Headline" layout="none">
           <div
             style={{
               fontFamily: FONT_DISPLAY,
@@ -194,7 +194,7 @@ export const HeadlineBookTheCourt: FC<HeadlineBookTheCourtProps> = ({
           }}
         />
 
-        <Sequence name="Subhead">
+        <Sequence name="Subhead" layout="none">
           <div
             style={{
               ...subStyle,
@@ -210,7 +210,7 @@ export const HeadlineBookTheCourt: FC<HeadlineBookTheCourtProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="CTA row">
+        <Sequence name="CTA row" layout="none">
           <div
             style={{
               marginTop: 52,
@@ -226,7 +226,7 @@ export const HeadlineBookTheCourt: FC<HeadlineBookTheCourtProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Trust marks">
+        <Sequence name="Trust marks" layout="none">
           <div style={{ marginTop: 44, display: "flex", gap: 46 }}>
             {trustMarks.map((mark, i) => (
               <TrustMark

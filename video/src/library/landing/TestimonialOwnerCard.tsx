@@ -257,7 +257,7 @@ export const TestimonialOwnerCard: FC<TestimonialOwnerCardProps> = ({
             }}
           >
             <div>
-              <Sequence name="Header">
+              <Sequence name="Header" layout="none">
                 <div
                   style={{
                     ...riseStyle(frame, fps, 14, 12, 22),
@@ -281,7 +281,7 @@ export const TestimonialOwnerCard: FC<TestimonialOwnerCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Quote">
+              <Sequence name="Quote" layout="none">
                 <div
                   style={{
                     marginTop: 36,
@@ -306,7 +306,7 @@ export const TestimonialOwnerCard: FC<TestimonialOwnerCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Attribution">
+              <Sequence name="Attribution" layout="none">
                 <div
                   style={{
                     marginTop: 40,
@@ -367,7 +367,7 @@ export const TestimonialOwnerCard: FC<TestimonialOwnerCardProps> = ({
             </div>
 
             <div>
-              <Sequence name="Metrics">
+              <Sequence name="Metrics" layout="none">
                 <div style={{ display: "flex", gap: 20 }}>
                   <Metric
                     frame={frame}
@@ -394,7 +394,7 @@ export const TestimonialOwnerCard: FC<TestimonialOwnerCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Commission line">
+              <Sequence name="Commission line" layout="none">
                 <div
                   style={{
                     ...riseStyle(frame, fps, 214, 14, 26),

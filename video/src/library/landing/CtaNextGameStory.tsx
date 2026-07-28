@@ -219,7 +219,7 @@ export const CtaNextGameStory: FC<CtaNextGameStoryProps> = ({
         }}
       >
         <div style={{ width: "100%" }}>
-          <Sequence name="Pill">
+          <Sequence name="Pill" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 0, 16, 26),
@@ -231,7 +231,7 @@ export const CtaNextGameStory: FC<CtaNextGameStoryProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Headline">
+          <Sequence name="Headline" layout="none">
             <div
               style={{
                 marginTop: 36,
@@ -256,7 +256,7 @@ export const CtaNextGameStory: FC<CtaNextGameStoryProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Subline">
+          <Sequence name="Subline" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 60, 18),
@@ -273,7 +273,7 @@ export const CtaNextGameStory: FC<CtaNextGameStoryProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Booking card">
+        <Sequence name="Booking card" layout="none">
           <div
             style={{
               width: "100%",
@@ -400,7 +400,7 @@ export const CtaNextGameStory: FC<CtaNextGameStoryProps> = ({
         </Sequence>
 
         <div style={{ width: "100%" }}>
-          <Sequence name="Button">
+          <Sequence name="Button" layout="none">
             <div
               style={{
                 opacity: interpolate(button, [0, 0.4], [0, 1], CLAMP),
@@ -432,7 +432,7 @@ export const CtaNextGameStory: FC<CtaNextGameStoryProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Footnote">
+          <Sequence name="Footnote" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 244, 14, 26),

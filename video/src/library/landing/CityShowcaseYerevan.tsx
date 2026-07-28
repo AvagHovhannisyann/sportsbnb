@@ -275,7 +275,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
           }}
         >
           <div>
-            <Sequence name="Header">
+            <Sequence name="Header" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 6, 12, 22),
@@ -291,7 +291,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="City name">
+            <Sequence name="City name" layout="none">
               <div
                 style={{
                   marginTop: 22,
@@ -325,7 +325,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Venue count">
+            <Sequence name="Venue count" layout="none">
               <div
                 style={{
                   marginTop: 40,
@@ -359,7 +359,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Sports">
+            <Sequence name="Sports" layout="none">
               <div
                 style={{
                   marginTop: 40,
@@ -387,7 +387,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
           </div>
 
           <div>
-            <Sequence name="Districts">
+            <Sequence name="Districts" layout="none">
               <div
                 style={{
                   display: "flex",
@@ -425,7 +425,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Subline">
+            <Sequence name="Subline" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 200, 14, 26),
@@ -440,7 +440,7 @@ export const CityShowcaseYerevan: FC<CityShowcaseYerevanProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="CTA">
+            <Sequence name="CTA" layout="none">
               <div
                 style={{
                   marginTop: 30,

@@ -333,7 +333,7 @@ export const FeatureManageScene: FC<FeatureManageSceneProps> = ({
       </Sequence>
 
       <AbsoluteFill style={{ padding: "72px 100px", justifyContent: "center" }}>
-        <Sequence name="Step header">
+        <Sequence name="Step header" layout="none">
           <div
             style={{
               ...riseStyle(frame, fps, 0, 14, 24),
@@ -366,7 +366,7 @@ export const FeatureManageScene: FC<FeatureManageSceneProps> = ({
 
         <div style={{ display: "flex", gap: 60, marginTop: 22 }}>
           <div style={{ flex: "1 1 0", minWidth: 0 }}>
-            <Sequence name="Headline">
+            <Sequence name="Headline" layout="none">
               <div
                 style={{
                   fontFamily: FONT_DISPLAY,
@@ -387,7 +387,7 @@ export const FeatureManageScene: FC<FeatureManageSceneProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Body">
+            <Sequence name="Body" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 44, 18),
@@ -403,7 +403,7 @@ export const FeatureManageScene: FC<FeatureManageSceneProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Payout">
+            <Sequence name="Payout" layout="none">
               <div
                 style={{
                   marginTop: 38,
@@ -470,7 +470,7 @@ export const FeatureManageScene: FC<FeatureManageSceneProps> = ({
             </Sequence>
           </div>
 
-          <Sequence name="Calendar">
+          <Sequence name="Calendar" layout="none">
             <div
               style={{
                 width: 980,
@@ -530,7 +530,7 @@ export const FeatureManageScene: FC<FeatureManageSceneProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Owner facts">
+        <Sequence name="Owner facts" layout="none">
           <div style={{ marginTop: 42, display: "flex", gap: 20 }}>
             {facts.map((fact, i) => (
               <OwnerFact

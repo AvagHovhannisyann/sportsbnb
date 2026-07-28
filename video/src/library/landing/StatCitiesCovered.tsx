@@ -253,7 +253,7 @@ export const StatCitiesCovered: FC<StatCitiesCoveredProps> = ({
             borderColor: alpha(BRAND.primary, 0.12 + land * 0.5),
           }}
         >
-          <Sequence name="Header">
+          <Sequence name="Header" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 0, 14, 24),
@@ -269,7 +269,7 @@ export const StatCitiesCovered: FC<StatCitiesCoveredProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Numeral">
+          <Sequence name="Numeral" layout="none">
             <div
               style={{
                 marginTop: 26,
@@ -314,7 +314,7 @@ export const StatCitiesCovered: FC<StatCitiesCoveredProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="City map">
+          <Sequence name="City map" layout="none">
             <div style={{ flex: "1 1 0", marginTop: 34, minHeight: 0 }}>
               <CityMap
                 frame={frame}
@@ -326,7 +326,7 @@ export const StatCitiesCovered: FC<StatCitiesCoveredProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Footnote">
+          <Sequence name="Footnote" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 186, 12, 26),

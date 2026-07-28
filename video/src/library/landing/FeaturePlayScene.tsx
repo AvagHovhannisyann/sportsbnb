@@ -252,7 +252,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
         }}
       >
         <div style={{ flex: "1 1 0", minWidth: 0 }}>
-          <Sequence name="Step header">
+          <Sequence name="Step header" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 0, 14, 24),
@@ -283,7 +283,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Headline">
+          <Sequence name="Headline" layout="none">
             <div
               style={{
                 marginTop: 24,
@@ -305,7 +305,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Body">
+          <Sequence name="Body" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 44, 18),
@@ -321,7 +321,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Notes">
+          <Sequence name="Notes" layout="none">
             <div
               style={{
                 marginTop: 44,
@@ -344,7 +344,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Booking pass">
+        <Sequence name="Booking pass" layout="none">
           <div
             style={{
               width: 720,

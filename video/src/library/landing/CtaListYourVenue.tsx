@@ -216,7 +216,7 @@ export const CtaListYourVenue: FC<CtaListYourVenueProps> = ({
           }}
         >
           <div>
-            <Sequence name="Eyebrow">
+            <Sequence name="Eyebrow" layout="none">
               <div style={riseStyle(frame, fps, 0, 14, 24)}>
                 <Eyebrow size={22} color={alpha(ink, 0.55)}>
                   {eyebrow}
@@ -224,7 +224,7 @@ export const CtaListYourVenue: FC<CtaListYourVenueProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Headline">
+            <Sequence name="Headline" layout="none">
               <div
                 style={{
                   marginTop: 24,
@@ -246,7 +246,7 @@ export const CtaListYourVenue: FC<CtaListYourVenueProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Facts">
+            <Sequence name="Facts" layout="none">
               <div style={{ marginTop: 56, display: "flex", gap: 22 }}>
                 {facts.map((fact, i) => (
                   <Fact
@@ -265,7 +265,7 @@ export const CtaListYourVenue: FC<CtaListYourVenueProps> = ({
           </div>
 
           <div>
-            <Sequence name="Commission bar">
+            <Sequence name="Commission bar" layout="none">
               <div
                 style={{
                   display: "flex",
@@ -309,7 +309,7 @@ export const CtaListYourVenue: FC<CtaListYourVenueProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Button">
+            <Sequence name="Button" layout="none">
               <div
                 style={{
                   marginTop: 40,

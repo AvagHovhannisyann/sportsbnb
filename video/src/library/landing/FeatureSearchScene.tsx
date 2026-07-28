@@ -314,7 +314,7 @@ export const FeatureSearchScene: FC<FeatureSearchSceneProps> = ({
       </Sequence>
 
       <AbsoluteFill style={{ padding: "84px 110px", justifyContent: "center" }}>
-        <Sequence name="Step header">
+        <Sequence name="Step header" layout="none">
           <div
             style={{
               ...riseStyle(frame, fps, 0, 14, 24),
@@ -345,7 +345,7 @@ export const FeatureSearchScene: FC<FeatureSearchSceneProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Headline">
+        <Sequence name="Headline" layout="none">
           <div
             style={{
               marginTop: 24,
@@ -367,7 +367,7 @@ export const FeatureSearchScene: FC<FeatureSearchSceneProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Body">
+        <Sequence name="Body" layout="none">
           <div
             style={{
               ...riseStyle(frame, fps, 46, 18),
@@ -383,7 +383,7 @@ export const FeatureSearchScene: FC<FeatureSearchSceneProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Search bar">
+        <Sequence name="Search bar" layout="none">
           <div
             style={{
               marginTop: 46,
@@ -425,7 +425,7 @@ export const FeatureSearchScene: FC<FeatureSearchSceneProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Filters">
+        <Sequence name="Filters" layout="none">
           <div style={{ marginTop: 26, display: "flex", gap: 16 }}>
             {filters.map((filter, i) => {
               let selectedRank = -1;
@@ -462,7 +462,7 @@ export const FeatureSearchScene: FC<FeatureSearchSceneProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Results">
+        <Sequence name="Results" layout="none">
           <div style={{ marginTop: 40, display: "flex", gap: 26 }}>
             {results.map((result, i) => (
               <ResultCard

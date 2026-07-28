@@ -216,7 +216,7 @@ export const TestimonialPlayerCard: FC<TestimonialPlayerCardProps> = ({
             }}
           >
             <div>
-              <Sequence name="Header">
+              <Sequence name="Header" layout="none">
                 <div
                   style={{
                     ...riseStyle(frame, fps, 8, 12, 22),
@@ -238,7 +238,7 @@ export const TestimonialPlayerCard: FC<TestimonialPlayerCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Quote">
+              <Sequence name="Quote" layout="none">
                 <div
                   style={{
                     marginTop: 40,
@@ -265,7 +265,7 @@ export const TestimonialPlayerCard: FC<TestimonialPlayerCardProps> = ({
             </div>
 
             <div>
-              <Sequence name="Rating">
+              <Sequence name="Rating" layout="none">
                 <div style={riseStyle(frame, fps, 100, 12, 24)}>
                   <RatingStars
                     frame={frame}
@@ -276,7 +276,7 @@ export const TestimonialPlayerCard: FC<TestimonialPlayerCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Attribution">
+              <Sequence name="Attribution" layout="none">
                 <div
                   style={{
                     marginTop: 40,
@@ -351,7 +351,7 @@ export const TestimonialPlayerCard: FC<TestimonialPlayerCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Booking chip">
+              <Sequence name="Booking chip" layout="none">
                 <div
                   style={{
                     ...riseStyle(frame, fps, 176, 14, 26),

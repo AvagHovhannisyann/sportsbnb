@@ -236,13 +236,13 @@ export const HeadlineSlotIsYours: FC<HeadlineSlotIsYoursProps> = ({
         }}
       >
         <div style={{ flex: "1 1 0", minWidth: 0 }}>
-          <Sequence name="Eyebrow">
+          <Sequence name="Eyebrow" layout="none">
             <div style={riseStyle(frame, fps, 0, 14, 24)}>
               <Eyebrow>{eyebrow}</Eyebrow>
             </div>
           </Sequence>
 
-          <Sequence name="Headline">
+          <Sequence name="Headline" layout="none">
             <div
               style={{
                 marginTop: 24,
@@ -267,7 +267,7 @@ export const HeadlineSlotIsYours: FC<HeadlineSlotIsYoursProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Subhead">
+          <Sequence name="Subhead" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 56, 20),
@@ -283,7 +283,7 @@ export const HeadlineSlotIsYours: FC<HeadlineSlotIsYoursProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Claims">
+          <Sequence name="Claims" layout="none">
             <div
               style={{
                 marginTop: 40,
@@ -306,7 +306,7 @@ export const HeadlineSlotIsYours: FC<HeadlineSlotIsYoursProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Slot panel">
+        <Sequence name="Slot panel" layout="none">
           <div
             style={{
               width: 660,

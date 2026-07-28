@@ -279,7 +279,7 @@ export const SocialProofRatingCard: FC<SocialProofRatingCardProps> = ({
             }}
           >
             <div>
-              <Sequence name="Eyebrow">
+              <Sequence name="Eyebrow" layout="none">
                 <div style={riseStyle(frame, fps, 12, 12, 22)}>
                   <Eyebrow size={22} color={BRAND.amber}>
                     {eyebrow}
@@ -287,7 +287,7 @@ export const SocialProofRatingCard: FC<SocialProofRatingCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Average">
+              <Sequence name="Average" layout="none">
                 <div
                   style={{
                     marginTop: 28,
@@ -351,7 +351,7 @@ export const SocialProofRatingCard: FC<SocialProofRatingCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Distribution">
+              <Sequence name="Distribution" layout="none">
                 <div
                   style={{
                     marginTop: 42,
@@ -373,7 +373,7 @@ export const SocialProofRatingCard: FC<SocialProofRatingCardProps> = ({
                 </div>
               </Sequence>
 
-              <Sequence name="Review count">
+              <Sequence name="Review count" layout="none">
                 <div
                   style={{
                     marginTop: 34,
@@ -410,7 +410,7 @@ export const SocialProofRatingCard: FC<SocialProofRatingCardProps> = ({
             </div>
 
             <div>
-              <Sequence name="Quotes">
+              <Sequence name="Quotes" layout="none">
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 18 }}
                 >

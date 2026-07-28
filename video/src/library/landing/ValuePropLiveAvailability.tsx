@@ -290,13 +290,13 @@ export const ValuePropLiveAvailability: FC<ValuePropLiveAvailabilityProps> = ({
       <AbsoluteFill style={{ padding: "88px 120px", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 72 }}>
           <div style={{ flex: "1 1 0", minWidth: 0 }}>
-            <Sequence name="Live pill">
+            <Sequence name="Live pill" layout="none">
               <div style={riseStyle(frame, fps, 0, 16, 26)}>
                 <LivePill frame={frame} label={eyebrow} />
               </div>
             </Sequence>
 
-            <Sequence name="Headline">
+            <Sequence name="Headline" layout="none">
               <div
                 style={{
                   marginTop: 30,
@@ -319,7 +319,7 @@ export const ValuePropLiveAvailability: FC<ValuePropLiveAvailabilityProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Subhead">
+            <Sequence name="Subhead" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 56, 20),
@@ -336,7 +336,7 @@ export const ValuePropLiveAvailability: FC<ValuePropLiveAvailabilityProps> = ({
             </Sequence>
           </div>
 
-          <Sequence name="Availability strip">
+          <Sequence name="Availability strip" layout="none">
             <div
               style={{
                 width: 780,
@@ -381,7 +381,7 @@ export const ValuePropLiveAvailability: FC<ValuePropLiveAvailabilityProps> = ({
           </Sequence>
         </div>
 
-        <Sequence name="Proof panels">
+        <Sequence name="Proof panels" layout="none">
           <div style={{ marginTop: 72, display: "flex", gap: 26 }}>
             {panels.map((panel, i) => (
               <ProofPanel

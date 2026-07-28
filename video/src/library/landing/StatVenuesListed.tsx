@@ -183,7 +183,7 @@ export const StatVenuesListed: FC<StatVenuesListedProps> = ({
             borderColor: alpha(BRAND.primary, 0.12 + land * 0.5),
           }}
         >
-          <Sequence name="Header">
+          <Sequence name="Header" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 0, 14, 24),
@@ -199,7 +199,7 @@ export const StatVenuesListed: FC<StatVenuesListedProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Numeral">
+          <Sequence name="Numeral" layout="none">
             <div
               style={{
                 opacity: interpolate(numeralEnter, [0, 0.4], [0, 1], CLAMP),
@@ -248,7 +248,7 @@ export const StatVenuesListed: FC<StatVenuesListedProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Meter">
+          <Sequence name="Meter" layout="none">
             <div style={{ ...riseStyle(frame, fps, 46, 12, 24) }}>
               <div
                 style={{
@@ -268,7 +268,7 @@ export const StatVenuesListed: FC<StatVenuesListedProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Dot grid">
+          <Sequence name="Dot grid" layout="none">
             <DotGrid
               frame={frame}
               fps={fps}
@@ -279,7 +279,7 @@ export const StatVenuesListed: FC<StatVenuesListedProps> = ({
             />
           </Sequence>
 
-          <Sequence name="Footnote">
+          <Sequence name="Footnote" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 190, 12, 26),

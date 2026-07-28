@@ -210,7 +210,7 @@ export const StatHoursBooked: FC<StatHoursBookedProps> = ({
             borderColor: alpha(BRAND.cyan, 0.12 + land * 0.5),
           }}
         >
-          <Sequence name="Header">
+          <Sequence name="Header" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 0, 14, 24),
@@ -228,7 +228,7 @@ export const StatHoursBooked: FC<StatHoursBookedProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Numeral">
+          <Sequence name="Numeral" layout="none">
             <div
               style={{
                 opacity: interpolate(numeralEnter, [0, 0.4], [0, 1], CLAMP),
@@ -275,7 +275,7 @@ export const StatHoursBooked: FC<StatHoursBookedProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Week bars">
+          <Sequence name="Week bars" layout="none">
             <WeekBars
               frame={frame}
               fps={fps}
@@ -285,7 +285,7 @@ export const StatHoursBooked: FC<StatHoursBookedProps> = ({
             />
           </Sequence>
 
-          <Sequence name="Peak callout">
+          <Sequence name="Peak callout" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 178, 12, 26),
@@ -305,7 +305,7 @@ export const StatHoursBooked: FC<StatHoursBookedProps> = ({
             </div>
           </Sequence>
 
-          <Sequence name="Footnote">
+          <Sequence name="Footnote" layout="none">
             <div
               style={{
                 ...riseStyle(frame, fps, 214, 12, 26),

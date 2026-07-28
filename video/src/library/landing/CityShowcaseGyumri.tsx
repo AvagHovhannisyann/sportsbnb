@@ -315,7 +315,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
           }}
         >
           <div>
-            <Sequence name="Header">
+            <Sequence name="Header" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 6, 12, 22),
@@ -331,7 +331,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="City name">
+            <Sequence name="City name" layout="none">
               <div
                 style={{
                   marginTop: 22,
@@ -353,7 +353,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Standfirst">
+            <Sequence name="Standfirst" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 40, 16, 26),
@@ -368,7 +368,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Figures">
+            <Sequence name="Figures" layout="none">
               <div
                 style={{
                   marginTop: 44,
@@ -395,7 +395,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
           </div>
 
           <div>
-            <Sequence name="Venues">
+            <Sequence name="Venues" layout="none">
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 14 }}
               >
@@ -412,7 +412,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="Subline">
+            <Sequence name="Subline" layout="none">
               <div
                 style={{
                   ...riseStyle(frame, fps, 210, 14, 26),
@@ -427,7 +427,7 @@ export const CityShowcaseGyumri: FC<CityShowcaseGyumriProps> = ({
               </div>
             </Sequence>
 
-            <Sequence name="CTA">
+            <Sequence name="CTA" layout="none">
               <div
                 style={{
                   marginTop: 26,

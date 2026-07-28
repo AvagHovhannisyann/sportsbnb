@@ -139,7 +139,7 @@ export const CtaBrowseVenues: FC<CtaBrowseVenuesProps> = ({
           padding: "0 160px",
         }}
       >
-        <Sequence name="Headline">
+        <Sequence name="Headline" layout="none">
           <div
             style={{
               maxWidth: 1400,
@@ -165,7 +165,7 @@ export const CtaBrowseVenues: FC<CtaBrowseVenuesProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Subline">
+        <Sequence name="Subline" layout="none">
           <div
             style={{
               ...riseStyle(frame, fps, 62, 20),
@@ -181,7 +181,7 @@ export const CtaBrowseVenues: FC<CtaBrowseVenuesProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Buttons">
+        <Sequence name="Buttons" layout="none">
           <div
             style={{
               marginTop: 56,
@@ -209,7 +209,7 @@ export const CtaBrowseVenues: FC<CtaBrowseVenuesProps> = ({
           </div>
         </Sequence>
 
-        <Sequence name="Footnote">
+        <Sequence name="Footnote" layout="none">
           <div
             style={{
               ...riseStyle(frame, fps, 142, 14, 26),
