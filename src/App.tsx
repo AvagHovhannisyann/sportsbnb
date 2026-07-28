@@ -14,6 +14,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { RequireRole } from "@/components/auth/RequireRole";
 import RouteMeta from "@/components/seo/RouteMeta";
+import { RemotionScene } from "@/remotion/RemotionScene";
+import { usePreloadScene } from "@/remotion/preload";
 import Layout from "./components/layout/Layout";
 
 // Eagerly load HomePage since it's the landing page
@@ -108,16 +110,49 @@ const JoinSuccessRedirect = () => {
   return <Navigate to={`/game/${id}/join-status${search}`} replace />;
 };
 
-// Minimal loading fallback
+/**
+ * The route-transition screen — the first frame of the product on every
+ * navigation to a lazily-loaded page, which is all of them.
+ *
+ * The spinner is still here and still does real work: it is what a
+ * reduced-motion visitor sees, and what everyone sees for the moments before
+ * the BrandLoader chunk has arrived. `RemotionScene` renders exactly one of
+ * the two, never both.
+ *
+ * The square is capped rather than fluid — the composition is authored on a
+ * 600×600 canvas with a wordmark and a caption in it, and below roughly 180px
+ * the caption stops being readable, which is worse than not showing it.
+ */
+const LoaderSpinner = () => (
+  <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+);
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+    <RemotionScene
+      name="BrandLoader"
+      fallback={<LoaderSpinner />}
+      className="h-[min(72vw,260px)] w-[min(72vw,260px)]"
+    />
   </div>
 );
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const handleSplashFinished = useCallback(() => setShowSplash(false), []);
+
+  /*
+   * Warm the BrandLoader chunk once the browser is idle.
+   *
+   * Without this the embed is theoretical: PageLoader is on screen for the few
+   * hundred milliseconds a route chunk takes to download, and a player that
+   * only starts fetching at that point never wins that race — every
+   * navigation would fall back to the spinner. Idle-scheduled and after first
+   * paint, so it cannot compete with the route, image and font requests the
+   * landing page actually needs. Skipped entirely under reduced motion, where
+   * the chunk would never be mounted.
+   */
+  usePreloadScene("BrandLoader");
 
   return (
     <>

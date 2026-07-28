@@ -6,6 +6,7 @@
  */
 
 import path from "path";
+import { createRequire } from "module";
 import { Config } from "@remotion/cli/config";
 import { enableTailwind } from '@remotion/tailwind-v4';
 
@@ -32,7 +33,22 @@ Config.setOverwriteOutput(true);
  * Pinning the three shared packages to this project's copies collapses that
  * back to one instance each. The aliases are non-exact, so subpath imports
  * (`remotion/no-react`, `react-dom/client`) still resolve underneath them.
+ *
+ * Resolution is anchored at `process.cwd()` and not at `__dirname`: the CLI
+ * bundles this config before evaluating it, so `__dirname` at runtime is
+ * `video/node_modules/@remotion/cli/dist`, and the aliases silently pointed at
+ * `…/cli/dist/node_modules/react`, which does not exist. `createRequire` also
+ * means a missing package throws here, by name, instead of producing an alias
+ * to a path that is only reported 200 lines into a webpack resolve trace.
  */
+const requireFromProject = createRequire(
+  path.join(process.cwd(), "package.json"),
+);
+
+/** Absolute path to a package's own directory, resolved from this project. */
+const pkgDir = (name: string) =>
+  path.dirname(requireFromProject.resolve(`${name}/package.json`));
+
 Config.overrideWebpackConfig((currentConfiguration) => {
   const withTailwind = enableTailwind(currentConfiguration);
 
@@ -42,9 +58,9 @@ Config.overrideWebpackConfig((currentConfiguration) => {
       ...withTailwind.resolve,
       alias: {
         ...withTailwind.resolve?.alias,
-        react: path.resolve(__dirname, "node_modules/react"),
-        "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
-        remotion: path.resolve(__dirname, "node_modules/remotion"),
+        react: pkgDir("react"),
+        "react-dom": pkgDir("react-dom"),
+        remotion: pkgDir("remotion"),
       },
     },
   };

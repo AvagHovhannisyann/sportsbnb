@@ -9,6 +9,8 @@ import {
   type Variants,
 } from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
+import { RemotionScene } from "@/remotion/RemotionScene";
+import { useMediaQuery } from "@/remotion/useMediaQuery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +127,12 @@ const LoginPage = () => {
 
   /* ── Motion state ──────────────────────────────────────────────── */
   const prefersReduced = useReducedMotion();
+  /* The brand panel is `hidden lg:flex` — CSS-hidden, which is not the same
+     as unmounted. Without this gate every phone visiting /login would still
+     mount the panel's subtree, fetch the player chunk and run a 1920×1080
+     composition it will never see a pixel of. The breakpoint is Tailwind's
+     `lg`, and has to stay in step with the class above. */
+  const brandPanelVisible = useMediaQuery("(min-width: 1024px)");
   /* Two controls rather than one: the card and the OTP group are never
      mounted at the same time, and starting a control nothing is bound to
      is a no-op that logs. */
@@ -353,19 +361,42 @@ const LoginPage = () => {
     <div className="min-h-screen flex">
       {/* Left Panel - Emotional Brand Side */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Background Image. The one element that scales: a photograph
-            settling into its frame, not a block of text sliding in. */}
-        <motion.img
-          src={authHero}
-          alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
-          className="absolute inset-0 w-full h-full object-cover"
-          {...(prefersReduced
-            ? {}
-            : {
-                initial: { opacity: 0, scale: 1.04 },
-                animate: { opacity: 1, scale: 1 },
-                transition: { duration: 0.5, ease: EASE },
-              })}
+        {/* The panel's base layer: the `HeroBackdrop` Remotion composition
+            running live on a seamless 6s loop, with the photograph as its
+            fallback.
+
+            Exactly one of the two renders. The photo is what a reduced-motion
+            visitor sees, what shows while the player chunk is in flight, and
+            what every viewport under 1024px would see if this panel were not
+            already display:none there — so it keeps its `eager`/`high` fetch
+            priority and its entrance.
+
+            Scope is deliberate: this is the branded half of the page and the
+            form opposite it is untouched. The plate never crosses the fold
+            into the form column, carries no text of its own, and sits under
+            the same two scrims as the photo did, so the panel's copy contrast
+            is unchanged. */}
+        <RemotionScene
+          name="HeroBackdrop"
+          enabled={brandPanelVisible}
+          fit="cover"
+          className="absolute inset-0"
+          fallback={
+            /* Background Image. The one element that scales: a photograph
+               settling into its frame, not a block of text sliding in. */
+            <motion.img
+              src={authHero}
+              alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+              {...(prefersReduced
+                ? {}
+                : {
+                    initial: { opacity: 0, scale: 1.04 },
+                    animate: { opacity: 1, scale: 1 },
+                    transition: { duration: 0.5, ease: EASE },
+                  })}
+            />
+          }
         />
         {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the
             whole frame — including the middle, where the photo is most

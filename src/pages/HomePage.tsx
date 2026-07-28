@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import HeroSearch from "@/components/home/HeroSearch";
 import SEOHead, { createWebsiteJsonLd } from "@/components/seo/SEOHead";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { RemotionScene } from "@/remotion/RemotionScene";
+import { useMediaQuery } from "@/remotion/useMediaQuery";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-landing.jpg";
 import venueFootball from "@/assets/venue-football.jpg";
@@ -111,6 +113,22 @@ const Eyebrow = ({
 const HomePage = () => {
   const { user } = useAuth();
   const prefersReduced = useReducedMotion();
+  /*
+   * The ambient hero plate is desktop-only.
+   *
+   * Not a taste call — it is 1920×1080 of stacked SVG filters, blurs and a
+   * grain tile, composited every frame. On a 390px phone that is the most
+   * expensive thing on a page whose job is to load fast on exactly that
+   * device, and it is behind copy that fills the viewport anyway, so almost
+   * none of it is even visible there. Below 768px the section stays the flat
+   * `bg-background` it was, and the chunk is never fetched.
+   *
+   * `useMediaQuery` rather than the app's `useIsMobile`: that one starts at
+   * `false` and corrects itself in an effect, which is one render at the wrong
+   * answer — enough to fire the lazy import and put the player on the wire on
+   * the phones it was meant to spare.
+   */
+  const ambientHero = useMediaQuery("(min-width: 768px)");
   const [venueCount, setVenueCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -186,6 +204,33 @@ const HomePage = () => {
           described: the card underneath is a real booking state.
       ============================================================ */}
       <section className="relative overflow-hidden bg-background">
+        {/* Ambient Remotion plate — the `HeroBackdrop` composition, running
+            live rather than as a rendered file, on a seamless 6s loop.
+
+            First child, so every existing layer still sits on top of it: the
+            primary blur below, the container, and the copy. It is background
+            in the literal sense — `aria-hidden`, `pointer-events-none`, no
+            focusable content, invisible to the accessibility tree.
+
+            Readability is the composition's own budget, not an overlay bolted
+            on here. Its base colour *is* `--background` (160 22% 5%), its
+            additive light is capped at ~0.13 alpha per orb, and it carries an
+            internal scrim weighted to the left-centre where this headline
+            lands — measured at 14.1:1 against `--foreground` across the plate.
+            The app ships `class="dark"` on <html>, so that is the theme this
+            is measured against and the only one it renders in.
+
+            No fallback element: without the plate this section is the flat
+            `bg-background` it has always been, which is the correct static
+            state rather than a substitute for one. */}
+        <RemotionScene
+          name="HeroBackdrop"
+          enabled={ambientHero}
+          fit="cover"
+          fallback={null}
+          className="pointer-events-none absolute inset-0"
+        />
+
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-40 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"

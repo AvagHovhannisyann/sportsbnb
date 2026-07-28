@@ -23,6 +23,7 @@ import { OwnerPitch } from "./OwnerPitch";
  */
 import { BrandLoader } from "../../src/remotion/BrandLoader";
 import { HeroBackdrop } from "../../src/remotion/HeroBackdrop";
+import { BRAND_LOADER, HERO_BACKDROP } from "../../src/remotion/metadata";
 import {
   SkeletonLoop,
   SKELETON_LOOP_DURATION,
@@ -40,15 +41,12 @@ export const RemotionRoot: React.FC = () => {
           point stays valid. */}
       <MyComposition />
 
-      {/* Square 600x600 logo animation for splash / loading states. */}
-      <Composition
-        id="BrandLoader"
-        component={BrandLoader}
-        durationInFrames={60}
-        fps={30}
-        width={600}
-        height={600}
-      />
+      {/* Square 600x600 logo animation for splash / loading states.
+          Metadata is spread from `src/remotion/metadata.ts` because the app
+          mounts this same composition in a <Player>, which needs the identical
+          four numbers — and a Player given the wrong duration does not error,
+          it silently plays part of the loop. */}
+      <Composition id="BrandLoader" component={BrandLoader} {...BRAND_LOADER} />
 
       {/* 24s landscape product tour. */}
       <Composition
@@ -112,15 +110,9 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
       />
 
-      {/* 6s ambient landscape loop used behind the marketing hero. */}
-      <Composition
-        id="HeroBackdrop"
-        component={HeroBackdrop}
-        durationInFrames={180}
-        fps={30}
-        width={1920}
-        height={1080}
-      />
+      {/* 6s ambient landscape loop used behind the marketing hero — mounted
+          live in the app, so its metadata is shared. See BrandLoader above. */}
+      <Composition id="HeroBackdrop" component={HeroBackdrop} {...HERO_BACKDROP} />
     </>
   );
 };
