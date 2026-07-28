@@ -406,7 +406,7 @@ export const ValuePropZeroCommission: FC<ValuePropZeroCommissionProps> = ({
                 }}
               >
                 <IconCheck size={26} />
-                {stampLabel} · owner keeps {groupNumber(venuePrice)}
+                {stampLabel} · owner keeps {currency} {groupNumber(venuePrice)}
               </div>
             </Panel>
           </div>
