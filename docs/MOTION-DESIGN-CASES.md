@@ -2124,4 +2124,548 @@ here is `--warning: 42 95% 55%` and `--destructive: 358 72% 68%`.
 
 ---
 
+## 7. Booking flow & hold timer
+
+Scope: the three screens money passes through — `src/features/booking/CheckoutPage.tsx`
+(`/book/:bookingId`), `src/features/booking/BookingStatusPage.tsx`
+(`/booking/:bookingId/status`), and the hand-off out of
+`src/features/booking/BookingPanel.tsx` that creates the hold.
+
+**The real flow**, from `src/App.tsx:242-244`:
+
+```
+BookingPanel.handleReserve  →  create_booking_hold RPC  →  navigate(`/book/${hold.booking_id}`)
+  → CheckoutPage            →  payments-init            →  submitProviderForm() | location.href
+    → Ameria vPOS / Idram   →  provider returns          →  /booking/:bookingId/status
+      → BookingStatusPage   →  payments-verify polled every 2s, max 30 attempts
+```
+
+There is **no multi-step wizard and no step indicator** in this repo. "Checkout
+steps" means these route hand-offs, and the cases below animate the hand-offs,
+not an invented stepper.
+
+**The hold is 20 minutes.** The number is not in the client — `expires_at` comes
+back on the booking row and `CheckoutPage.tsx:81-90` diffs it against
+`Date.now()` on a 1000ms `setInterval`. The string "Holds last 20 minutes" is
+written once, in the expiry copy at `CheckoutPage.tsx:176`.
+
+**Current state of these files**: `transition-colors` with no duration at
+`CheckoutPage.tsx:220` (the timer) and `:271` (the provider cards);
+`animate-spin` on `Loader2` at `CheckoutPage.tsx:119,296`,
+`BookingPanel.tsx:321`, `BookingStatusPage.tsx:109`. Nothing else moves anywhere
+in the payment path.
+
+### 52. Reserve → hold acquired
+
+- **Where**: `/venue/:id` → `/book/:bookingId`.
+  `src/features/booking/BookingPanel.tsx:130-151` (`handleReserve`) and the
+  button at `:320-323`.
+- **Motion**: Three beats on one press. (a) The `Reserve` button takes
+  `whileTap={tapScale}` — `scale(1) → scale(0.97)`, straight from
+  `src/lib/motion.ts:49` — so the press registers before the network does.
+  (b) While `createHold.isPending`, the existing `Loader2` stays, but the button
+  also gets `aria-busy` and its width is pinned so the spinner does not reflow
+  the label. (c) On success, before `navigate()`, the `.glass` panel plays a
+  160ms exit: `opacity 1 → 0`, `translateY(0) → translateY(-6px)`. The user
+  understands that the slot is now *theirs and held* — the panel leaves rather
+  than being replaced, so the next screen reads as the same task continuing, not
+  a new page they were thrown to. Without it, an instant route swap at 1200ms of
+  latency looks like the click failed and then something happened.
+- **Timing**: tap 90ms `cubic-bezier(.2,.8,.2,1)`; exit 160ms
+  `cubic-bezier(0.16, 1, 0.3, 1)` (`easeOutExpo` from `src/lib/motion.ts`), then
+  `navigate()` on the exit's completion callback.
+- **Build**: framer-motion. `handleReserve` is already `async`, so
+  `await controls.start(...)` before `navigate()` is one line; a CSS class toggle
+  would need its own `transitionend` plumbing to sequence against the promise.
+- **Reduced motion**: `useReducedMotion()` → skip both the tap scale and the
+  exit, and call `navigate()` immediately. The 160ms delay is motion, so it must
+  not be charged to someone who opted out.
+- **Perf**: `transform` + `opacity` only. One caveat worth stating: the panel is
+  `.glass` (`src/index.css:430-438`), i.e. `backdrop-filter: blur(18px)`.
+  Animating opacity on a backdrop-filtered element re-composites the blur each
+  frame. At one 160ms exit per booking that is fine; do not extend this to a
+  loop.
+
+### 53. Minute rollover on the hold timer
+
+- **Where**: `/book/:bookingId`, the timer chip in `CardTitle` —
+  `src/features/booking/CheckoutPage.tsx:215-226`, fed by `countdown` (`:92-97`).
+- **Motion**: The timer fires every 1000ms (`:88`) but only animates on the
+  **minute boundary** (`remaining % 60 === 0`): the chip does
+  `scale(1) → scale(1.04) → scale(1)` and the `Timer` icon rotates
+  `0deg → -8deg → 0deg`. Nothing moves on the other 59 ticks. What the user
+  understands: time is being *spent*, in units they can count, and there are a
+  small number of units left. A per-second flicker would say the same thing 1200
+  times and become wallpaper within ten seconds; twenty distinct events over
+  twenty minutes stay legible in peripheral vision while they read the price
+  breakdown.
+- **Timing**: 260ms total, `cubic-bezier(0.34, 1.56, 0.64, 1)` (`--ease-spring`,
+  `src/index.css:137`) — the slight overshoot is what makes a 4% scale readable
+  at all.
+- **Build**: framer-motion `useAnimationControls` keyed off the existing effect
+  at `:81-90`; a CSS keyframe would need the class removed and re-added per
+  minute, which is a re-render either way.
+- **Reduced motion**: `useReducedMotion()` → no scale, no rotation. The digits
+  still change, which is the actual information; only the emphasis is dropped.
+- **Perf**: `transform` only, on a chip with no children that lay out. Flag: the
+  chip is inside `flex items-center justify-between` (`:207`) and the string
+  loses a character at `9:59`, so its box narrows once per session and the icon
+  jumps ~8px left. Fix that with `min-w-[5.5ch] justify-end` on the span, not
+  with motion — it is a layout bug the animation would otherwise draw attention
+  to.
+
+### 54. Two-minute escalation **[HIGH IMPACT]**
+
+- **Where**: `/book/:bookingId`. `isUrgent` at
+  `src/features/booking/CheckoutPage.tsx:99` (`remaining <= 120`) driving the
+  `cn()` at `:219-222`.
+- **Motion**: Today the colour swaps `text-warning → text-destructive` under a
+  bare `transition-colors` (default 150ms) and nothing else marks the crossing.
+  Add a one-shot at the boundary: the chip's `box-shadow` goes
+  `0 0 0 0 hsl(var(--destructive) / 0.35)` → `0 0 0 10px hsl(var(--destructive) / 0)`
+  — a single ring leaving the chip — while the colour travels over a slower
+  320ms. It fires **once**, at `remaining === 120`, never again. The user
+  understands that a threshold was crossed, not that a value changed: a colour
+  that snaps reads as a re-render, a colour that travels with a ring behind it
+  reads as the system escalating. This is the difference between someone
+  finishing checkout and someone losing the slot they picked.
+- **Timing**: ring 520ms `cubic-bezier(0.16, 1, 0.3, 1)`; colour 320ms
+  `cubic-bezier(.2,.8,.2,1)` (deliberately slower than the current 150ms so the
+  change is perceived as a transition rather than a repaint).
+- **Build**: CSS. A `@keyframes urgency-ring` in `index.css` next to `live-ping`
+  (`:578`), applied by a class the existing `cn()` already toggles — no new JS
+  state, since `isUrgent` is already computed.
+- **Reduced motion**: extend the `@media (prefers-reduced-motion: reduce)` block
+  at `src/index.css:619` with `.urgency-ring { animation: none }`. The colour
+  change stays (it is information, and `--destructive` at `358 72% 68%` was
+  contrast-checked, per the note at `index.css:55-65`), and the escalation is
+  additionally carried by text.
+- **Perf**: `box-shadow` animation is a paint, not a composite — this is the one
+  case here that is not transform/opacity. It is bounded to a single 520ms play
+  on a 90×24px element, so the repaint area is negligible; using
+  `transform: scale` on a pseudo-element instead would composite, but then the
+  ring is clipped by the `CardHeader` overflow. Accepted trade, once per session.
+  Adjacent, not motion: `aria-live="polite"` at `:217` announces this timer on
+  every tick; if that is ever tightened, the 120s crossing is the moment that
+  deserves an assertive announcement, and this ring is its visual twin.
+
+### 55. Hold expiry hand-off
+
+- **Where**: `/book/:bookingId`. The branch at
+  `src/features/booking/CheckoutPage.tsx:154-196` — when `remaining <= 0` the
+  whole `<Card>` is replaced by `<StatusPanel icon={Timer} … "This reservation
+  has expired">` (`src/components/common/StatusPanel.tsx:37-60`).
+- **Motion**: Today the payment form vanishes and the expiry panel appears in one
+  frame, indistinguishable from a crash. Crossfade instead: the `CardContent`
+  goes `opacity 1 → 0` and `scale(1) → scale(0.985)` over 140ms, then the
+  `StatusPanel` enters `opacity 0 → 1`, `translateY(8px) → 0` over 220ms, with
+  its icon chip scaling `0.9 → 1`. The user understands that *the deadline
+  arrived* — the form was withdrawn on purpose, in an order they can see —
+  rather than that the page broke while they had their card out. That
+  distinction decides whether they re-book or leave.
+- **Timing**: out 140ms `cubic-bezier(.4,0,1,1)` (accelerate — the form is
+  leaving), in 220ms `cubic-bezier(0.16, 1, 0.3, 1)` starting at 140ms. Total
+  360ms.
+- **Build**: framer-motion `<AnimatePresence mode="wait">` around the two
+  branches. `mode="wait"` is exactly the sequencing here, and CSS cannot express
+  "unmount only after the exit finishes".
+- **Reduced motion**: `useReducedMotion()` → both variants collapse to
+  `{ opacity: 1 }` with `duration: 0`; `AnimatePresence` still swaps, just
+  instantly. Same as today's behaviour, which is the correct floor.
+- **Perf**: `transform` + `opacity`. The card is not `.glass` (it is `<Card>`,
+  opaque per the note at `index.css:427-429`), so no backdrop-filter recomposite
+  here.
+
+### 56. Payment provider selection
+
+- **Where**: `/book/:bookingId`, the `role="radiogroup"` at
+  `src/features/booking/CheckoutPage.tsx:262-292`.
+- **Motion**: Selection currently changes only `border-primary` +
+  `ring-1 ring-primary` under `transition-colors` (`:271`) — a 1px edge, no
+  movement. Add: on select, the chosen card's ring grows from the token
+  `--shadow-ring-primary` (`0 0 0 4px hsl(var(--primary) / 0.18)`,
+  `src/index.css:228`) out of `0 0 0 0`, and its `lucide` icon scales
+  `1 → 1.12 → 1`; the two deselected cards drop `opacity 1 → 0.72` over the same
+  window. The user understands which card their money will go through — the
+  selected one gains presence *while the others recede*, which a border colour
+  alone cannot do on a dark surface where `--border: 157 12% 22%` and
+  `--primary` differ mostly in hue.
+- **Timing**: ring + opacity 180ms `cubic-bezier(.2,.8,.2,1)`; icon 220ms
+  `cubic-bezier(0.34, 1.56, 0.64, 1)`.
+- **Build**: Tailwind/CSS. `provider === key` already drives a `cn()` branch, so
+  this is `transition-[box-shadow,opacity] duration-180` plus a
+  `shadow-ring-primary` class on the selected branch — no JS.
+- **Reduced motion**: keep the ring and the dimming (both are state, not
+  decoration) but set `transition-duration: 0ms` and drop the icon scale, via
+  the existing reduce block at `src/index.css:619`. Selection must never become
+  invisible to someone who opted out of motion.
+- **Perf**: `opacity` composites; `box-shadow` repaints a 3-row region once per
+  click, at human click rate. No layout property touched — `ring` is drawn
+  outside the box model and does not reflow the `space-y-2` stack.
+
+### 57. Redirect commit — the moment the app hands off
+
+- **Where**: `/book/:bookingId`, `handlePay` at
+  `src/features/booking/CheckoutPage.tsx:101-113` and the pay button at
+  `:295-298`, terminating in either `submitProviderForm()`
+  (`src/features/booking/hooks/useBookingFlow.ts:139-154`, a synthetic form POST
+  for Idram) or `window.location.href = result.redirectUrl` (Ameria). The
+  dev-only `src/features/booking/MockPayPage.tsx` (`/pay/mock/:paymentId`,
+  `:48-55`) shares this commit pattern and both its buttons already gate on
+  `busy !== null` — give it the same treatment rather than its own case.
+- **Motion**: Between the click and the browser unloading there is one
+  `supabase.functions.invoke("payments-init")` round-trip — on a 3G Yerevan
+  connection, one to three seconds — during which the only feedback is a 16px
+  spinner inside a button whose label still reads `Pay ֏12,500`. Replace with a
+  commit sequence: the button label crossfades (120ms) to a redirect state, a
+  2px indeterminate bar sweeps `translateX(-100%) → translateX(100%)` across the
+  bottom edge of the `<Card>` on a 1.1s loop, and the provider radiogroup dims to
+  `opacity 0.5` and stops accepting pointer events. The user understands that
+  the decision is *made and in flight* — the choice is frozen, the app is
+  leaving, and pressing anything again will not help. This is the only place in
+  the app where the far side of a transition is a third party we do not control,
+  and the only place where a confused second click is a second payment.
+- **Timing**: label crossfade 120ms `cubic-bezier(.2,.8,.2,1)`; radiogroup dim
+  200ms `cubic-bezier(0.16, 1, 0.3, 1)`; sweep 1100ms `cubic-bezier(.4,0,.2,1)`
+  infinite until unload.
+- **Build**: CSS/Tailwind, driven by the `initPayment.isPending` flag the button
+  already reads. `translateX` on an absolutely-positioned 2px child of the card;
+  no framer-motion needed because there is no enter/exit sequencing — the page is
+  about to be destroyed.
+- **Reduced motion**: the sweep is replaced by a static 2px `--primary` rule at
+  40% opacity across the card's bottom edge — present, not moving — plus the
+  (already present) `disabled` state and the label change. Extend the
+  `src/index.css:619` block with
+  `.redirect-sweep { animation: none; opacity: .4; transform: none }`.
+- **Perf**: `transform` + `opacity` only, on a 2px strip. Flag the failure mode
+  instead of a layout one: if `payments-init` rejects, `handlePay` catches and
+  toasts (`:110-112`) but the animation must be torn down in the same branch —
+  `isPending` returns to `false`, so binding purely to that flag is what makes it
+  self-correcting.
+
+---
+
+## 8. Payment result & confirmation
+
+Scope: the two screens the user lands on after the bank hands them back —
+`src/features/booking/BookingStatusPage.tsx` (route `/booking/:bookingId/status`)
+and `src/features/booking/GameJoinStatusPage.tsx` (route
+`/game/:id/join-status`) — plus the redirect seam that gets them there
+(`JoinSuccessRedirect` at `src/App.tsx:105-109` and `PageLoader` at `:112-116`).
+
+**The real state machine.** `BookingStatusPage.tsx:51-103` polls
+`payments-verify` every **2000 ms**, up to **30 attempts** — a hard **60 s**
+budget — then sets `finalStatus = "timeout"`. `finalStatus` is `null` while
+polling, `"paid"` on success, and one of
+`failed | cancelled | expired | timeout | no_payment` otherwise
+(`BookingStatusPage.tsx:209`). `GameJoinStatusPage.tsx:21-66` runs the same
+2000 ms × 30 loop, collapsed to `loading | success | error`. There are exactly
+three bodies to animate between; everything below is about those three and the
+seams around them.
+
+**There is no receipt page and no PDF.** The receipt in this app is the `<dl>`
+at `BookingStatusPage.tsx:134-149`: `Paid` (`formatAmd(booking.amount_minor)`,
+`.stat-numeral tabular-nums`) and `Reference` (`booking.id.slice(0, 8)`,
+`font-mono uppercase`). Case 61 animates that block and nothing else — no
+invented download, no invented email preview.
+
+Note both success icons are hardcoded `text-green-600`
+(`BookingStatusPage.tsx:118`, `GameJoinStatusPage.tsx:81`) — raw Tailwind, not
+`--success`. Case 60 ships the token swap with the animation, because animating
+attention onto an off-brand green is worse than leaving it static.
+
+### 58. Poll heartbeat and the 60-second budget
+
+- **Where**: `/booking/:bookingId/status` →
+  `src/features/booking/BookingStatusPage.tsx:106-113`, and
+  `/game/:id/join-status` → `src/features/booking/GameJoinStatusPage.tsx:73-78`.
+  Both render `<Loader2 className="animate-spin">` under "Confirming your
+  payment…".
+- **Motion**: two things replace one undifferentiated spinner. (a) A 56 px SVG
+  ring behind the icon whose `pathLength` runs `0 → 1` **once, linearly, over
+  60 s** — the real `attempts.current < 30` × 2000 ms budget from
+  `BookingStatusPage.tsx:92`. (b) On each poll tick, the icon scales
+  `1 → 1.06 → 1`. What the user understands: this is bounded, it is actively
+  retrying right now, and the arc's remaining gap is how much patience is left
+  before the page says something different. Today the spinner at second 3 and
+  the spinner at second 55 are pixel-identical, which is why the 60 s wait feels
+  like a hang.
+- **Timing**: arc `60000ms linear` (it must be linear — eased would misreport
+  remaining time). Tick pulse `260ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+  (`--ease-spring`), fired from the `attempts.current += 1` site.
+- **Build**: framer-motion. `motion.circle` with `animate={{ pathLength: 1 }}`
+  is the only clean way to drive a 60 s stroke from React state that also
+  cancels correctly when the `stopped` flag flips in the effect cleanup
+  (`BookingStatusPage.tsx:99-101`). The tick pulse alone could be CSS, but it
+  shares the same component. **Cost note, say it plainly**: `attempts` is a
+  `useRef` (`:35`) and does not currently trigger renders, so the per-tick pulse
+  needs it promoted to state or a second `useState` counter incremented beside
+  it — one small refactor. If that is not wanted, the cheaper variant is a
+  linear 2px hairline under the heading whose fill is
+  `scaleX(attempts / 30)`, advancing in 30 discrete 2000 ms steps; same
+  information, one composited property, no SVG.
+- **Reduced motion**: `useReducedMotion()` → no arc animation, no pulse, no
+  spin. Render the ring at a static 25 % stroke and add a text line inside the
+  existing `role="status"` container that updates every 10 s
+  ("Still checking — 20s"). The status region is already `role="status"`, so a
+  10 s cadence is polite; a 2 s cadence would flood a screen reader.
+- **Perf**: `pathLength` compiles to `stroke-dashoffset`, which **paints** every
+  frame — it is not a compositor property. Acceptable only because the element
+  is a single ≤56 px SVG on an otherwise static card; do not reuse this on a
+  list. The hairline variant is `transform: scaleX`, composited, one change per
+  2 s — and must never animate `width`, which reflows the centred `text-center
+  py-8` block and its heading on every step. The tick pulse is `transform` only.
+
+### 59. The answer landing — pending → terminal body swap
+
+- **Where**: `src/features/booking/BookingStatusPage.tsx:105-226` (`renderBody`
+  returns three different subtrees into one `<CardContent>` at `:232`), and
+  the same shape at `src/features/booking/GameJoinStatusPage.tsx:72-103`.
+- **Motion**: wrap `renderBody()` in `<AnimatePresence mode="wait">` keyed on
+  `finalStatus ?? "pending"`. Outgoing body: `opacity 1 → 0`, `y 0 → -6px`.
+  Incoming body: `opacity 0 → 1`, `y 8px → 0` — the same shape as `fadeUp` in
+  `src/lib/motion.ts:28-31`. The `<Card>` itself grows with `layout`: the
+  pending body is ~140 px (`py-8`, icon, two lines) and the paid body is
+  ~420 px once the receipt `<dl>` and the cancel row are in. Inside the incoming
+  paid body the order is fixed and is the whole argument for staging: the check
+  mark (case 60) draws first, the `h1` and venue line follow, then the receipt
+  (case 61), then the two `Button`s last — so the eye finishes on the reference
+  rather than on the largest element. What the user understands: the wait ended
+  and this is the *replacement* for it, not a second, unrelated screen — today
+  the card snaps height and the eye has to re-find the heading.
+- **Timing**: out `150ms cubic-bezier(0.16, 1, 0.3, 1)` (`--dur-fast`), in
+  `400ms cubic-bezier(0.16, 1, 0.3, 1)` (`--dur-slow`), card height
+  `300ms cubic-bezier(0.16, 1, 0.3, 1)`; the buttons land at `+480ms` from the
+  body's own start. `mode="wait"` serialises the swap, so the total is 550 ms —
+  long enough to read as a transition, short enough that the outcome is on
+  screen inside 200 ms of it being known.
+- **Build**: framer-motion. `AnimatePresence mode="wait"` plus `layout` is the
+  only thing here that can animate an unknown-to-unknown height; CSS
+  `height: auto` cannot.
+- **Reduced motion**: `useReducedMotion()` → set both durations to `0` and drop
+  `layout` from the card (pass `layout={!prefersReduced}`). The new body
+  replaces the old one on the same frame at final height, buttons included. Do
+  not substitute a crossfade — a crossfade is still motion.
+- **Perf**: the body transition is `transform`/`opacity` only. The `layout`
+  prop is the flag: framer-motion 12 animates size by scale-correcting, which
+  visibly softens glyphs mid-flight unless children opt in. Put
+  `layout="position"` on the heading and paragraph so the text translates
+  instead of being scaled, and leave the `<dl>` out of `layout` entirely
+  (see case 61).
+
+### 60. Confirmation mark — draw, then settle **[HIGH IMPACT]**
+
+- **Where**: `src/features/booking/BookingStatusPage.tsx:118`
+  (`<CheckCircle2 className="h-14 w-14 text-green-600 …" />`) and
+  `src/features/booking/GameJoinStatusPage.tsx:81` (identical markup, above
+  "You're in!").
+- **Motion**: lucide's `CheckCircle2` is a `<circle cx="12" cy="12" r="10">`
+  plus a `<path d="m9 12 2 2 4-4">` on a 24-unit viewBox. Animate them
+  separately: the circle scales `0.7 → 1` with an overshoot, then the tick path
+  draws left-to-right via `stroke-dasharray: 12; stroke-dashoffset: 12 → 0`.
+  What the user understands: the confirmation was *produced by* the wait that
+  just ended, in that order — money left, the venue is held. A check that is
+  simply present when the spinner vanishes reads as a page swap; a check that
+  draws reads as an outcome. Ship the token fix in the same commit:
+  `text-green-600` → `text-success` (`151 80% 44%` dark / `158 64% 28%` light),
+  or the one moment the app draws the eye lands on a green used nowhere else.
+- **Timing**: circle `320ms cubic-bezier(0.34, 1.56, 0.64, 1)` (`--ease-spring`,
+  the overshoot is the point); tick path `220ms cubic-bezier(0.16, 1, 0.3, 1)`
+  starting at `+90ms`. Total 410 ms, beginning after case 59's incoming body
+  has committed.
+- **Build**: framer-motion, on a local inline SVG rather than the lucide
+  component — `<CheckCircle2>` renders its own children, so there is no handle
+  on the path. Copy the two elements into the page as `motion.circle` /
+  `motion.path` and drive `pathLength`. (Do not add a dependency for this; it is
+  eight lines of SVG.)
+- **Reduced motion**: `useReducedMotion()` → render the plain lucide
+  `<CheckCircle2>` at full scale, opacity 1, `pathLength: 1`, zero duration. The
+  token swap still applies. Nothing draws, nothing overshoots.
+- **Perf**: the circle is `transform` (composited). The tick is
+  `stroke-dashoffset` — paint, but for 220 ms on one 56 px SVG. No layout is
+  touched: the icon keeps its `h-14 w-14` box throughout, so the heading beneath
+  it never moves.
+- **Why this one**: it is the only frame in the product where money has
+  irreversibly left the user's account. Everything else on these two screens can
+  be re-read; this beat is the difference between "did that go through?" and
+  "that went through", and it costs 410 ms of one SVG.
+
+### 61. Receipt reveal — amount before reference
+
+- **Where**: `src/features/booking/BookingStatusPage.tsx:134-149` — the
+  `<dl>` holding `Paid` (`formatAmd(booking.amount_minor)`, `.stat-numeral
+  tabular-nums`) and `Reference` (`booking.id.slice(0, 8)`). This block exists
+  precisely because an email receipt is not guaranteed (see the comment at
+  `:128-133`), so it is the user's only artefact.
+- **Motion**: the `<dl>` container fades `opacity 0 → 1` and translates
+  `y 10px → 0`; then the two `<dd>` values fade in on a short stagger, amount
+  first, reference second. What the user understands: the reading order. The
+  amount is what to check against the card statement; the reference is what to
+  quote if it does not match. Staggering them in that order is the whole
+  argument for animating this block at all. Explicitly **no digit count-up** on
+  the amount — a price the user has already been charged must not appear to be
+  still resolving.
+- **Timing**: container `300ms cubic-bezier(0.16, 1, 0.3, 1)` at `delay 420ms`
+  (immediately after case 60's 410 ms mark settles); amount `<dd>` `200ms` at
+  `+0ms`; reference `<dd>` `200ms` at `+80ms`. Receipt fully legible at ~700 ms
+  from the result landing.
+- **Build**: framer-motion, `variants` + `staggerChildren: 0.08` — the same
+  pattern as `staggerChildren` in `src/lib/motion.ts:43-46`. Reusing the shared
+  vocabulary keeps this consistent with the entrances on `/` and `/for-owners`.
+- **Reduced motion**: `useReducedMotion()` → the `<dl>` renders at final state
+  on the first paint of the paid body, **delay 0**. This is a hard rule, not a
+  convenience: evidentiary content must never sit behind a 420 ms delay for a
+  user who asked for less motion.
+- **Perf**: `transform` and `opacity` only. Do not animate the `<dl>`'s height
+  or width — it carries `tabular-nums` money, and any size interpolation makes
+  the digits jitter against their own advance widths. Keep it out of the
+  `layout` set from case 59 for the same reason.
+
+### 62. Failure mark — settles sideways, never bounces
+
+- **Where**: `src/features/booking/BookingStatusPage.tsx:212`
+  (`<XCircle className="h-14 w-14 text-destructive …" />`, covering
+  `failed | cancelled | expired | no_payment`) and
+  `src/features/booking/GameJoinStatusPage.tsx:93`.
+- **Motion**: the icon fades `opacity 0 → 1` while translating on `x` through
+  a damped two-beat: `x: [0, -4, 3, -2, 0]` px, `scale` pinned at 1 the whole
+  time. What the user understands: the outcome, before reading a word. Case 60
+  overshoots *outward* and settles; this settles *laterally* and stops dead.
+  Two physics, two answers — and the visual difference survives at a glance,
+  in a screenshot, and for a user who cannot distinguish the green from the red.
+  Same motion for the "Payment not completed" and "Booking cancelled" copy
+  branches (`:213-215`) because in both cases no money was taken (`:219`). The
+  panel around it gets the same 260 ms fade-and-rise as the success panel — no
+  red flash, no error choreography — because the copy at `:219` says "No money
+  was taken. You can try booking the slot again", and shake-on-error reads as
+  *you did something wrong*, which is both false and expensive when the honest
+  next action is "press the button again".
+- **Timing**: `260ms cubic-bezier(0.2, 0.8, 0.2, 1)` for the x keyframes,
+  `160ms` linear for the opacity, both starting with the incoming body from
+  case 59.
+- **Build**: framer-motion — `animate={{ x: [0, -4, 3, -2, 0] }}` is a
+  keyframe array, which CSS would need a bespoke `@keyframes` block for. There
+  is no such keyframe in `tailwind.config.ts:101-124` today and adding one for a
+  single element is not worth the global surface. If case 55's `AnimatePresence`
+  has not landed, `animate-in fade-in-0 slide-in-from-bottom-2` from
+  `tailwindcss-animate` covers the panel with no new CSS.
+- **Reduced motion**: `useReducedMotion()` → `opacity 0 → 1` over `120ms`, `x`
+  never leaves 0. **Never shake.** The x-array must be gated, not scaled down.
+- **Perf**: `transform`/`opacity`, composited, no layout. The 4 px amplitude cap
+  is deliberate — beyond that a 56 px icon reads as a rejected-form-field
+  shudder, and lateral shakes are the class of motion vestibular-sensitive users
+  report on even when they have not set the OS preference.
+
+### 63. "Still processing" is not a failure
+
+- **Where**: `src/features/booking/BookingStatusPage.tsx:209-220`, the
+  `finalStatus === "timeout"` branch. It currently renders the same
+  `XCircle text-destructive` as an outright failure (`:212`) while the heading
+  says "Payment still processing" and the body says the page will update
+  (`:214, :218`) — the icon contradicts the copy.
+- **Motion**: swap this branch to a `Clock` in `text-warning`
+  (`42 95% 55%` dark / `35 92% 32%` light) and give it a slow breathing
+  `opacity 0.55 → 1 → 0.55`, infinite. Deliberately no scale ping — that is the
+  `.live-dot` treatment (`src/index.css:567-581`) and it means "live data
+  arriving", which is exactly what has stopped. What the user understands: the
+  60 s poll gave up, the payment did not; this page is worth coming back to and
+  their money is not lost. Today the red X tells them the opposite of what the
+  sentence under it says.
+- **Timing**: `2400ms cubic-bezier(0.16, 1, 0.3, 1)` per breath, `infinite`,
+  `alternate` — roughly half the tempo of `live-ping`'s `1.8s`
+  (`src/index.css:576`), because slower reads as "waiting" and faster reads as
+  "working".
+- **Build**: CSS. It is one keyframe on one element with no React state — add
+  `breathe` alongside `fade-in` and `shimmer` in `tailwind.config.ts:101-124`
+  and use `animate-breathe`. Pulling framer-motion in for an infinite opacity
+  loop would keep a JS animation frame alive for the life of the page.
+- **Reduced motion**: extend the existing block at `src/index.css:619-630` —
+  `.animate-breathe { animation: none; opacity: 1; }`. The warning colour and
+  the copy still carry the whole message; the breathing was only ever the
+  redundant channel.
+- **Perf**: `opacity` only — composited, no paint, no layout. It is infinite,
+  so gate it on `document.visibilityState !== "hidden"` (or accept that Chrome
+  throttles background rAF but not CSS compositor animations on some platforms)
+  rather than leaving it running on a backgrounded tab for the length of a
+  football match.
+
+### 64. Cancelling a confirmed booking — the receipt stays put
+
+- **Where**: `src/features/booking/BookingStatusPage.tsx:160-205`. The
+  `AlertDialog` sits *inside* the paid body; confirming calls
+  `setFinalStatus(result.status)` (`:184`), which flips `renderBody()` from
+  the green confirmation straight to the red X branch, and fires a sonner toast
+  carrying the refund amount (`:186-193`).
+- **Motion**: three coordinated pieces. (a) The dialog closes on Radix's
+  existing `data-[state=closed]` exit from `src/components/ui/alert-dialog.tsx`
+  — unchanged. (b) The body swap reuses case 59's `AnimatePresence`, but the
+  receipt `<dl>` is carried across with `layoutId="receipt-lines"` so the amount
+  and reference the user was just reading translate to their new position
+  instead of blinking out and back — it is the same reference, and a refund
+  query needs it more than the booking did. (c) The refund toast enters
+  bottom-right with sonner's own transition. What the user understands: this is
+  the same booking changing state, not a new page reporting a new event.
+- **Timing**: body swap as case 59 (150 ms out / 400 ms in); shared-element
+  `<dl>` `300ms cubic-bezier(0.16, 1, 0.3, 1)`; toast `duration: 6000` rather
+  than sonner's 4000 default, because a refund figure formatted by `formatAmd`
+  is a number people re-read.
+- **Build**: framer-motion for `layoutId` (nothing in CSS crosses a subtree
+  boundary), Radix/`tailwindcss-animate` for the dialog, sonner for the toast —
+  each already mounted (`<Sonner />` at `src/App.tsx:132`).
+- **Reduced motion**: add `motion-reduce:animate-none` to `AlertDialogContent`;
+  gate `layoutId` behind `useReducedMotion()` so the `<dl>` re-renders in place
+  with no flight; keep the toast — its arrival is information, not decoration —
+  but kill its travel with an override in the reduce block at
+  `src/index.css:619-630`: `[data-sonner-toast] { transition: none !important; }`.
+  sonner 1.7.4 animates through its own CSS transitions on that attribute;
+  verify rather than assume the library reads the preference for you, and read
+  case 92 before writing that rule — a blanket `transition: none` on toasts is
+  the exact defect case 92 fixes.
+- **Perf**: `layoutId` measures both positions with `getBoundingClientRect`
+  once per transition — two forced reflows at the swap, not per frame. That is
+  the layout-thrash risk here and it is bounded; the flight itself is
+  `transform`. Do not extend `layoutId` to the whole body.
+
+### 65. Coming back from the bank — the blank frame
+
+- **Where**: `src/App.tsx:105-109` (`JoinSuccessRedirect`, mounted at
+  `/game/:id/join-success`, renders `<Navigate replace>` and therefore no
+  pixels) and `src/App.tsx:112-116` (`PageLoader` — a bare `min-h-screen`
+  centred spinner on `bg-background`, with no header, no text). Both status
+  pages are `lazy()` (`src/App.tsx:34, 36`), so the first frame after Ameria or
+  Idram redirects the user back is that chunk-loading spinner, and a provider
+  configured to the legacy `/join-success` URL adds a second mount on top.
+- **Motion**: give `PageLoader`'s spinner a `120ms` entrance delay with
+  `animation-fill-mode: backwards`, so a chunk that resolves in 40 ms shows no
+  spinner at all; and let the status page enter with `pageTransition` from
+  `src/lib/motion.ts:52-56` (`opacity 0 → 1`, `y 8px → 0`). What the user
+  understands: one continuous "we're on it" from the moment the bank released
+  them, instead of blank → spinner → different spinner → content. This is the
+  most fragile moment in the funnel — the user has already been charged and is
+  looking at a page that is not the bank's and not yet ours.
+- **Timing**: spinner fade-in `150ms cubic-bezier(0.16, 1, 0.3, 1)` at
+  `delay 120ms`; page enter `250ms cubic-bezier(0.16, 1, 0.3, 1)`
+  (`--dur-base`, matching `transitionBase` in `src/lib/motion.ts:25`). Note case
+  4 proposes a 250 ms gate on the same component for ordinary navigation; pick
+  one number and apply it once — 120 ms here is the more conservative choice for
+  a post-payment return, where withholding feedback is riskier than a brief
+  flash.
+- **Build**: CSS for the delayed spinner (it lives in a component with no state
+  and no framer-motion import — keep `App.tsx`'s eager bundle clean);
+  framer-motion for the page enter, reusing the already-exported
+  `pageTransition` variants.
+- **Reduced motion**: drop the delay under
+  `@media (prefers-reduced-motion: reduce)` — withholding feedback is worse than
+  showing it — and render the spinner immediately at opacity 1. Replace
+  `animate-spin` with a static ring in the same block at `src/index.css:619-630`,
+  and because the spin is then the only "still working" signal that has been
+  removed, `PageLoader` needs an `<span className="sr-only">Loading</span>`
+  inside a `role="status"` wrapper, which it does not have today. The page
+  enter resolves to its final state via `useReducedMotion()`.
+- **Perf**: `opacity` and `transform` only on both halves. `animate-spin` is a
+  transform on one 32 px div — composited. No layout risk; the flag here is
+  correctness, not cost.
+
+---
+
 <!--NEXT-->
