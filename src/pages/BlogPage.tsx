@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
+import type { MotionProps, Variants } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
@@ -8,9 +10,90 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Clock, ArrowRight, BookOpen } from "lucide-react";
 import { format } from "date-fns";
+import { easeOutExpo } from "@/lib/motion";
+
+/* ------------------------------------------------------------------
+   Motion.
+
+   Two things move: the post cards deal in, and the read-time row
+   settles a beat after the card it belongs to. Everything else — the
+   hover lift, the cover zoom — is the shared `.card-lift` treatment
+   and a transform, so this page adds no new hover vocabulary.
+
+   Easing comes from lib/motion, which mirrors --ease-out-expo in
+   index.css. Under `prefers-reduced-motion: reduce` the props are
+   omitted entirely rather than given a zero duration, so cards mount
+   in their final state — the convention HomePage and DiscoverPage
+   established.
+   ------------------------------------------------------------------ */
+
+/** Gap between one card's entrance and the next. */
+const CARD_STAGGER_STEP = 0.05;
+/**
+ * The index past which every remaining card shares the last delay.
+ *
+ * The listing is unpaginated — `usePublishedBlogPosts` returns every
+ * published post — so without a cap a growing blog would eventually be
+ * dealing out cards a second after the data landed. Capped, the
+ * stagger costs 400ms whether there are three posts or ninety.
+ */
+const CARD_STAGGER_CAP = 8;
+
+const cardDelay = (index: number) => Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP;
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: easeOutExpo, delay: cardDelay(index) },
+  }),
+};
+
+/**
+ * The date + read-time row, arriving just behind its own card.
+ *
+ * Translate only, deliberately: this row is a descendant of the card,
+ * which is already fading in, and a nested opacity animation would
+ * fade it twice — visibly slower than everything around it. Riding the
+ * card's fade and adding only the settle keeps it one entrance with a
+ * late beat rather than two competing ones.
+ */
+const metaVariants: Variants = {
+  hidden: { y: 6 },
+  visible: (index: number) => ({
+    y: 0,
+    transition: { duration: 0.25, ease: easeOutExpo, delay: cardDelay(index) + 0.18 },
+  }),
+};
 
 const BlogPage = () => {
   const { data: posts, isLoading } = usePublishedBlogPosts();
+  const prefersReduced = useReducedMotion();
+
+  const cardMotion = (index: number): MotionProps =>
+    prefersReduced
+      ? {}
+      : { variants: cardVariants, initial: "hidden", animate: "visible", custom: index };
+
+  const metaMotion = (index: number): MotionProps =>
+    prefersReduced
+      ? {}
+      : { variants: metaVariants, initial: "hidden", animate: "visible", custom: index };
+
+  // Hover affordances are withheld rather than undone with `motion-reduce:`
+  // utilities: those have to out-specify the class they are cancelling, and
+  // two utilities of equal specificity are settled by stylesheet order.
+  const coverZoom = `w-full h-full object-cover${
+    prefersReduced ? "" : " transition-transform duration-300 group-hover:scale-105"
+  }`;
+  // The read-more arrow is the card's one hover embellishment: it fades in
+  // and leans toward where the click goes.
+  const readArrow = `h-4 w-4 text-primary opacity-0 group-hover:opacity-100${
+    prefersReduced
+      ? ""
+      : " -translate-x-1 transition-[opacity,transform] duration-200 ease-out group-hover:translate-x-0"
+  }`;
 
   const breadcrumbJsonLd = createBreadcrumbJsonLd([
     { name: "Home", url: "/" },
@@ -65,15 +148,16 @@ const BlogPage = () => {
           </div>
         ) : posts && posts.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post) => (
-              <Link key={post.id} to={`/blog/${post.slug}`} className="group">
+            {posts.map((post, index) => (
+              <motion.div key={post.id} {...cardMotion(index)}>
+                <Link to={`/blog/${post.slug}`} className="group block h-full">
                 <Card className="card-lift h-full overflow-hidden border-border/50">
                   {post.cover_image_url ? (
                     <div className="h-48 overflow-hidden">
                       <img
                         src={post.cover_image_url}
                         alt={post.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className={coverZoom}
                         loading="lazy"
                       />
                     </div>
@@ -96,7 +180,10 @@ const BlogPage = () => {
                         {post.excerpt}
                       </p>
                     )}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <motion.div
+                      {...metaMotion(index)}
+                      className="flex items-center justify-between text-xs text-muted-foreground"
+                    >
                       <div className="flex items-center gap-3">
                         {post.published_at && (
                           <span className="flex items-center gap-1">
@@ -109,11 +196,12 @@ const BlogPage = () => {
                           {estimateReadTime(post.content)} min read
                         </span>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                      <ArrowRight className={readArrow} />
+                    </motion.div>
                   </CardContent>
                 </Card>
-              </Link>
+                </Link>
+              </motion.div>
             ))}
           </div>
         ) : (

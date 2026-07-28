@@ -17,27 +17,93 @@ import {
   Star,
   CalendarSync,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import type { MotionProps, Variants } from "framer-motion";
 import Layout from "@/components/layout/Layout";
+import { easeOutExpo } from "@/lib/motion";
 import venueBasketball from "@/assets/venue-basketball.jpg";
 import venueFootball from "@/assets/venue-football.jpg";
 import venueTennis from "@/assets/venue-tennis.jpg";
 
-const ease = [0.25, 0.1, 0.25, 1] as const;
+/* ------------------------------------------------------------------
+   Motion.
 
-const fadeUp = {
-  initial: { opacity: 0, y: 48 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-120px" } as const,
-  transition: { duration: 0.9, ease },
+   This page already moved, on a vocabulary of its own: a private
+   cubic-bezier, 800–900ms entrances and a 48px rise, with the delay
+   passed in raw at the call site so a twelve-item grid dealt its last
+   card 550ms after its first. Nothing switched it off for
+   `prefers-reduced-motion`, so the longest animations in the app were
+   also the only ones that ignored the preference.
+
+   It now speaks the same vocabulary as the rest of the app: easing
+   from lib/motion (mirroring --ease-out-expo in index.css), one
+   entrance duration, a stagger expressed as an *index* so the cap
+   below can apply, and props omitted wholesale under reduced motion
+   rather than given a zero duration — the convention HomePage and
+   DiscoverPage established.
+   ------------------------------------------------------------------ */
+
+/** An element arriving. */
+const ENTER = 0.42;
+/** Gap between one sibling's entrance and the next. */
+const STAGGER_STEP = 0.05;
+/**
+ * The index past which every remaining sibling shares the last delay.
+ *
+ * The features grid is twelve items and the pricing list five, so this
+ * is the difference between a 400ms deal and a queue whose tail lands
+ * long after the reader has arrived at it.
+ */
+const STAGGER_CAP = 7;
+
+const reveal: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (index: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: ENTER,
+      ease: easeOutExpo,
+      delay: Math.min(index, STAGGER_CAP) * STAGGER_STEP,
+    },
+  }),
 };
 
-const stagger = (delay: number) => ({
-  ...fadeUp,
-  transition: { duration: 0.8, ease, delay },
-});
+const viewportOnce = { once: true, margin: "-80px" };
 
 const ForOwnersPage = () => {
+  const prefersReduced = useReducedMotion();
+
+  /** Above the fold: nothing to scroll to, so it plays on mount. */
+  const onMount = (index = 0): MotionProps =>
+    prefersReduced
+      ? {}
+      : { variants: reveal, initial: "hidden", animate: "visible", custom: index };
+
+  /** Everything below: plays as it comes into view, once. */
+  const onScroll = (index = 0): MotionProps =>
+    prefersReduced
+      ? {}
+      : {
+          variants: reveal,
+          initial: "hidden",
+          whileInView: "visible",
+          viewport: viewportOnce,
+          custom: index,
+        };
+
+  // The one CTA embellishment on the page: the arrow leans toward where the
+  // click goes. Withheld rather than undone with a `motion-reduce:` utility,
+  // which would have to out-specify the class it is cancelling. Press feedback
+  // comes from the shared Button, which already scales on `:active`.
+  const ctaArrow = `ml-2 h-5 w-5${
+    prefersReduced ? "" : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+  }`;
+  // The picture moves inside its frame; the card does not.
+  const showcaseZoom = `w-full h-full object-cover${
+    prefersReduced ? "" : " transition-transform duration-500 ease-out group-hover:scale-105"
+  }`;
+
   const features = [
     {
       icon: Calendar,
@@ -153,18 +219,14 @@ const ForOwnersPage = () => {
         <div className="container relative z-10 py-20 md:py-0">
           <div className="max-w-4xl mx-auto text-center">
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease, delay: 0.2 }}
+              {...onMount()}
               className="text-sm md:text-base font-medium tracking-widest uppercase text-white/60 mb-4 md:mb-6"
             >
               For Venue Owners
             </motion.p>
 
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease, delay: 0.35 }}
+              {...onMount(1)}
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.95] tracking-tighter mb-6 md:mb-8"
             >
               {/* Explicit break: left to flow, "Your venue. Our" filled line one
@@ -177,24 +239,20 @@ const ForOwnersPage = () => {
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease, delay: 0.55 }}
+              {...onMount(2)}
               className="text-base md:text-xl lg:text-2xl text-white/70 leading-relaxed max-w-2xl mx-auto mb-8 md:mb-12"
             >
               Fill your courts, automate your bookings, and grow your business — with zero monthly fees.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease, delay: 0.7 }}
+              {...onMount(3)}
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
             >
-              <Button asChild size="xl" className="w-full sm:w-auto rounded-full font-semibold shadow-2xl">
+              <Button asChild size="xl" className="group w-full sm:w-auto rounded-full font-semibold shadow-2xl">
                 <Link to="/list-venue">
                   List your venue free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className={ctaArrow} />
                 </Link>
               </Button>
               <Button asChild
@@ -214,7 +272,7 @@ const ForOwnersPage = () => {
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
-              <motion.div key={stat.label} {...stagger(index * 0.1)} className="text-center">
+              <motion.div key={stat.label} {...onScroll(index)} className="text-center">
                 {/* Sized down from lg:text-6xl: the band was built for short
                     numerals, and a word-length value ("Weekly") ran straight
                     into its neighbour at 60px. The dram sign also left the
@@ -233,7 +291,7 @@ const ForOwnersPage = () => {
       {/* ── All Features ── */}
       <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
+          <motion.div {...onScroll()} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Everything You Need
             </p>
@@ -251,7 +309,7 @@ const ForOwnersPage = () => {
               return (
                 <motion.div
                   key={feature.title}
-                  {...stagger(index * 0.05)}
+                  {...onScroll(index)}
                   className="group bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl md:rounded-3xl p-5 md:p-6"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-5">
@@ -270,7 +328,7 @@ const ForOwnersPage = () => {
       <section className="surface-invert py-16 md:py-24 bg-secondary">
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center max-w-6xl mx-auto">
-            <motion.div {...fadeUp}>
+            <motion.div {...onScroll()}>
               <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
                 Simple & Transparent
               </p>
@@ -288,7 +346,7 @@ const ForOwnersPage = () => {
                   "Weekly payouts to your bank account or Idram wallet",
                   "No minimum commitment — cancel anytime",
                 ].map((item, i) => (
-                  <motion.div key={i} {...stagger(i * 0.08)} className="flex items-start gap-3">
+                  <motion.div key={i} {...onScroll(i)} className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                     <span className="text-secondary-foreground/80 text-sm md:text-base">{item}</span>
                   </motion.div>
@@ -296,7 +354,7 @@ const ForOwnersPage = () => {
               </div>
             </motion.div>
 
-            <motion.div {...stagger(0.2)} className="bg-secondary-foreground/5 rounded-3xl p-8 md:p-12 text-center">
+            <motion.div {...onScroll(1)} className="bg-secondary-foreground/5 rounded-3xl p-8 md:p-12 text-center">
               <p className="text-secondary-foreground/60 text-sm font-medium uppercase tracking-widest mb-4">Commission</p>
               <p className="text-6xl md:text-8xl font-bold text-primary tracking-tighter mb-2">5%</p>
               <p className="text-secondary-foreground/70 text-base md:text-lg mb-8">per booking, paid by the player</p>
@@ -314,10 +372,10 @@ const ForOwnersPage = () => {
                   <span className="text-secondary-foreground font-semibold">֏0</span>
                 </div>
               </div>
-              <Button asChild size="lg" className="mt-8 w-full rounded-full font-semibold">
+              <Button asChild size="lg" className="group mt-8 w-full rounded-full font-semibold">
                 <Link to="/list-venue">
                   Get started free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className={ctaArrow} />
                 </Link>
               </Button>
             </motion.div>
@@ -328,7 +386,7 @@ const ForOwnersPage = () => {
       {/* ── How to Get Started ── */}
       <section className="py-16 md:py-24 bg-background">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
+          <motion.div {...onScroll()} className="text-center mb-10 md:mb-14">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Getting Started
             </p>
@@ -342,7 +400,7 @@ const ForOwnersPage = () => {
 
           <div className="grid md:grid-cols-4 gap-5 md:gap-6 max-w-5xl mx-auto">
             {onboardingSteps.map((item, index) => (
-              <motion.div key={item.step} {...stagger(index * 0.12)} className="text-center">
+              <motion.div key={item.step} {...onScroll(index)} className="text-center">
                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary text-primary-foreground text-xl md:text-2xl font-bold flex items-center justify-center mx-auto mb-5 md:mb-6">
                   {item.step}
                 </div>
@@ -357,7 +415,7 @@ const ForOwnersPage = () => {
       {/* ── Showcase Image ── */}
       <section className="py-16 md:py-24 bg-muted/20 overflow-hidden">
         <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-10 md:mb-14">
+          <motion.div {...onScroll()} className="text-center mb-10 md:mb-14">
             <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
               Built for facilities<br className="hidden md:block" /> <span className="text-primary">of every size.</span>
             </h2>
@@ -369,8 +427,8 @@ const ForOwnersPage = () => {
               { img: venueTennis, label: "Tennis & Padel Courts" },
               { img: venueBasketball, label: "Multi-Sport Complexes" },
             ].map((item, index) => (
-              <motion.div key={item.label} {...stagger(index * 0.12)} className="relative aspect-[4/5] rounded-2xl md:rounded-3xl overflow-hidden group">
-                <img src={item.img} alt={item.label} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <motion.div key={item.label} {...onScroll(index)} className="relative aspect-[4/5] rounded-2xl md:rounded-3xl overflow-hidden group">
+                <img src={item.img} alt={item.label} loading="lazy" decoding="async" className={showcaseZoom} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8">
                   <h3 className="text-white text-lg md:text-2xl font-semibold tracking-tight">{item.label}</h3>
@@ -383,7 +441,7 @@ const ForOwnersPage = () => {
 
       <section className="surface-invert py-16 md:py-24 bg-secondary">
         <div className="container">
-          <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
+          <motion.div {...onScroll()} className="max-w-3xl mx-auto text-center">
             <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
               Partnership
             </p>
@@ -394,10 +452,10 @@ const ForOwnersPage = () => {
               We're not just a booking platform — we're your growth partner. More visibility, more players, more revenue. No risk, no commitment.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Button asChild size="xl" className="w-full sm:w-auto rounded-full font-semibold">
+              <Button asChild size="xl" className="group w-full sm:w-auto rounded-full font-semibold">
                 <Link to="/list-venue">
                   List your venue free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className={ctaArrow} />
                 </Link>
               </Button>
               <Button asChild

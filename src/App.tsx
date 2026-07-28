@@ -82,6 +82,7 @@ const NearbyFieldsPage = lazy(() => import("./pages/NearbyFieldsPage"));
 const SubmitFieldPage = lazy(() => import("./pages/SubmitFieldPage"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const DemoPage = lazy(() => import("./pages/DemoPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -228,6 +229,7 @@ const App = () => {
                     <Route path="/settings" element={<Navigate to="/profile" replace />} />
                     {/* Info Pages */}
                     <Route path="/for-owners" element={<ForOwnersPage />} />
+                    <Route path="/demo" element={<DemoPage />} />
                     <Route path="/blog" element={<BlogPage />} />
                     <Route path="/blog/:slug" element={<BlogPostPage />} />
                     <Route path="/about" element={<AboutPage />} />
