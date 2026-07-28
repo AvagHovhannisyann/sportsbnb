@@ -659,10 +659,17 @@ export const IconCalendar: FC<IconProps> = ({ size = 28, strokeWidth = 1.9 }) =>
   </svg>
 );
 
-export const IconWhistle: FC<IconProps> = ({ size = 28, strokeWidth = 1.9 }) => (
+/**
+ * A football, not a whistle. The first draft drew a whistle as a circle with
+ * two chords across it and it rasterised as a stray `⊜`-looking glyph at the
+ * sizes it is actually used at — a panel of pentagons and spokes reads as a
+ * ball at 18px and at 44px alike.
+ */
+export const IconBall: FC<IconProps> = ({ size = 28, strokeWidth = 1.7 }) => (
   <svg {...iconBase(size, strokeWidth)}>
     <circle cx={12} cy={12} r={9} />
-    <path d="M12 3a9 9 0 000 18M3.6 9h16.8M3.6 15h16.8" />
+    <path d="M12 7.4l3.7 2.7-1.4 4.4H9.7L8.3 10.1z" />
+    <path d="M12 3.1v4.3M20.6 9.9l-4.9 2.2M17.3 20.3l-3-5.8M6.7 20.3l3-5.8M3.4 9.9l4.9 2.2" />
   </svg>
 );
 

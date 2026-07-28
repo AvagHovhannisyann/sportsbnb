@@ -20,7 +20,7 @@ import {
   Grain,
   IconCheck,
   IconPin,
-  IconWhistle,
+  IconBall,
   MaskedWords,
   Panel,
   StageWash,
@@ -404,7 +404,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                     </div>
                   </div>
                   <span style={{ color: BRAND.primary, display: "inline-flex" }}>
-                    <IconWhistle size={44} />
+                    <IconBall size={44} />
                   </span>
                 </div>
 
@@ -502,6 +502,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                         fontFamily: FONT_SANS,
                         fontSize: 21,
                         color: BRAND.muted,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {squadNote}
@@ -515,8 +516,9 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                     flexDirection: "column",
                     alignItems: "center",
                     gap: 12,
-                    padding: "24px 30px",
+                    padding: "22px 26px",
                     borderRadius: 20,
+                    flexShrink: 0,
                     border: `2px solid ${alpha(BRAND.primary, 0.5)}`,
                     color: BRAND.primary,
                     opacity: interpolate(stamp, [0, 0.3], [0, 1], CLAMP),
@@ -531,10 +533,11 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                   <span
                     style={{
                       fontFamily: FONT_DISPLAY,
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: 700,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {stampLabel}

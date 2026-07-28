@@ -114,7 +114,7 @@ export const FeedLiveTicker: FC<FeedLiveTickerProps> = ({
   listsPerLoop,
 }) => {
   const rawFrame = useCurrentFrame();
-  const { durationInFrames, width, height } = useVideoConfig();
+  const { durationInFrames, width } = useVideoConfig();
   const unit = width / CANVAS_W;
 
   // Loop: frame 0 both opens and closes the cycle.
