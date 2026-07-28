@@ -432,10 +432,21 @@ const LoginPage = () => {
             right edge so the plate stays visible where nothing is written over
             it. Rendered unconditionally: over the fallback it lands on top of
             an already-scrimmed photograph, which costs a shade of depth and
-            never costs contrast. Measured on the running page, the three text
-            weights on this panel come out at 15.8:1 (white headline), 11.9:1
-            (white/80 body) and 5.6:1 (white/50 copyright) — all above their
-            WCAG AA floors. */}
+            never costs contrast.
+
+            Measured on the built page rather than reasoned about — six samples
+            across the 6s loop, each text weight scored against the *brightest*
+            pixel anywhere under it (a court stroke at full primary green),
+            which is the worst frame and the worst pixel of that frame:
+
+              headline  white      7.14:1
+              body      white/80   6.95:1
+              copyright white/50   5.29:1
+
+            All clear of the 4.5:1 AA floor for body text; the headline is
+            large-scale and only needs 3:1. The copyright lands on exactly the
+            5.29:1 recorded for it below, because nothing in the plate reaches
+            that corner. */}
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent"

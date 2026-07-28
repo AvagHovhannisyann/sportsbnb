@@ -32,12 +32,34 @@ import {
  *
  *     h(x) = base − Σ aₙ · sin(2π · kₙ · x / L + φₙ)      with kₙ ∈ ℤ
  *
- * which satisfies `h(x + L) = h(x)` exactly, for every x, because each term is
- * a full number of cycles across L. The layer is then drawn over
- * `[-L, W + L]` — one spare wavelength either side — and translated by
- * `-L · t`. At t = 1 the layer has moved exactly one wavelength, so the
- * silhouette in front of the camera is bit-identical to the one at t = 0. The
- * spare wavelength is what keeps the far edge covered while it travels.
+ * which satisfies `h(x + L) = h(x)` for every x, because each term completes a
+ * whole number of cycles across L. The path is sampled once over `[-L, W + L]`
+ * — one spare wavelength either side — and never changes: it is a *static* `d`
+ * attribute. The only animated quantity is the layer's translate.
+ *
+ * That translate is taken **modulo one wavelength**:
+ *
+ *     shift = −wrap(L · laps · t, L)          ∈ (−L, 0]
+ *
+ * which does two things, both load-bearing:
+ *
+ *   1. It makes the seam exact. `wrap(0, L)` is 0 and `wrap(L · laps, L)` is 0
+ *      for integer `laps`, so the transform serialises to the identical string
+ *      at frame 0 and frame `period`, over an identical `d`. The two frames are
+ *      byte-identical SVG. Without the modulo the seam rests on
+ *      `h(x + L) === h(x)` holding *in IEEE 754*, and it does not — the two
+ *      sides differ in the last few mantissa bits, which is exactly the class
+ *      of "it looks fine, the loop is fine" assumption worth distrusting.
+ *   2. It keeps the frame covered. Unwrapped, a `laps = 3` layer would have
+ *      travelled 3L by the end of the loop and be reading source x ∈ [5760,
+ *      7680] — well past the 3840 the path was sampled to — leaving bare
+ *      background under the near ridge for the back half of the cycle. Wrapped,
+ *      the visible window is always x ∈ [0, L] + [0, W] ⊆ the sampled span.
+ *
+ * Because h is periodic, wrapping the translate is invisible: the silhouette
+ * that scrolls off the left is the one that scrolls back in on the right.
+ * `samples` is kept a multiple of 3 so the wavelength is a whole number of
+ * sample steps and the wrap lands exactly on a sample.
  *
  * The sky gradient is a full-period cosine; the stars are `bloom()`s on a
  * wrapped local frame, exactly 0 at both ends of their own cycles. Nothing in
@@ -143,8 +165,12 @@ const RidgeLayers: FC<
         style={{ display: "block" }}
       >
         {RIDGES.map((ridge) => {
-          /** Whole wavelengths per loop ⇒ identical silhouette at the seam. */
-          const shift = -wavelength * ridge.laps * t;
+          /**
+           * Modulo one wavelength — exactly 0 at both ends of the loop, and
+           * never further than one wavelength from the sampled span. See the
+           * file header for why both halves of that matter.
+           */
+          const shift = -wrap(wavelength * ridge.laps * t, wavelength);
 
           /* Sample across [-L, W + L]: one spare wavelength either side keeps
              the trailing edge covered for the whole of the travel. */
@@ -228,7 +254,12 @@ const Stars: FC<
 };
 
 export type HeroAraratRidgeProps = {
-  /** Points sampled per ridgeline. Higher is smoother crests, linearly costlier. */
+  /**
+   * Points sampled per ridgeline. Higher is smoother crests, linearly
+   * costlier. Keep it a **multiple of 3**: the path spans three wavelengths,
+   * so a multiple of 3 puts a sample exactly on the wavelength boundary the
+   * translate wraps at.
+   */
   readonly samples: number;
   /** Stars scattered across the upper sky. */
   readonly starCount: number;
@@ -240,7 +271,7 @@ export type HeroAraratRidgeProps = {
 };
 
 export const heroAraratRidgeDefaultProps: HeroAraratRidgeProps = {
-  samples: 128,
+  samples: 129,
   starCount: 34,
   intensity: 1,
   focusX: 32,

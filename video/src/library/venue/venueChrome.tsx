@@ -214,6 +214,8 @@ export type ListingPlateProps = {
   sportLabel: string;
   accent: string;
   price: number;
+  /** What the price buys. "hour" for courts, "lane hour" for pools. */
+  per?: string;
   rating: number;
   reviewCount: number;
   unit: number;
@@ -235,6 +237,7 @@ export const ListingPlate: FC<ListingPlateProps> = ({
   sportLabel,
   accent,
   price,
+  per = "hour",
   rating,
   reviewCount,
   unit,
@@ -341,7 +344,7 @@ export const ListingPlate: FC<ListingPlateProps> = ({
           justifyContent: "space-between",
         }}
       >
-        <PriceLine price={price} unit={unit} accent={accent} />
+        <PriceLine price={price} unit={unit} accent={accent} per={per} />
         <span
           style={{
             fontFamily: MONO_FONT,

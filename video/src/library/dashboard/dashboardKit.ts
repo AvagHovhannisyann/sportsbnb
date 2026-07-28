@@ -455,7 +455,10 @@ export const cardSurface = (unit: number, radiusPx = 20): CSSProperties => ({
 });
 
 /** `.eyebrow` — mono caps, 0.2em, court green. */
-export const eyebrowStyle = (unit: number, color = BRAND.primary): CSSProperties => ({
+// `color` is annotated `string` on purpose. BRAND is `as const`, so an
+// unannotated default would infer the parameter as the single literal
+// "hsl(151, 90%, 47%)" and reject every other token in the palette.
+export const eyebrowStyle = (unit: number, color: string = BRAND.primary): CSSProperties => ({
   fontFamily: MONO_FONT,
   fontSize: 11 * unit,
   fontWeight: 500,

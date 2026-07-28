@@ -48,10 +48,18 @@ import {
  *
  *     h(x) = base − Σ aₙ · sin(2π · kₙ · x / L + φₙ),   kₙ ∈ ℤ
  *
- * so `h(x + L) = h(x)` exactly. The layers translate by `-L · laps · t` over a
- * modulo cycle, which means the silhouette in front of the camera returns to
- * itself and the drift is continuous if this card is played on repeat. Drawn
- * over `[-L, W + L]` so the trailing edge stays covered for the whole travel.
+ * so `h(x + L) = h(x)`: each term completes a whole number of cycles across L.
+ * The path is sampled once over `[-L, W + L]` and is static thereafter; only
+ * the layer's translate moves, and it is taken **modulo one wavelength**:
+ *
+ *     shift = −wrap(L · laps · t, L)          ∈ (−L, 0]
+ *
+ * Unwrapped, the `laps = 2` layer would be reading source x ∈ [2160, 3240] by
+ * the end of a cycle — past the 2160 the path was sampled to — and the near
+ * ridge would simply run out, leaving bare card under it. Wrapped, the visible
+ * window is always inside the sampled span, and the drift is continuous across
+ * repeats because `wrap` is exactly 0 at both ends. `samples` is a multiple of
+ * 3 so the wavelength is a whole number of sample steps.
  *
  * ── Why a season strip ────────────────────────────────────────────────────
  * Lori is the one region where the weather genuinely changes what you can
