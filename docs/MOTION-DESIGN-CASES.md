@@ -4,25 +4,24 @@
 
 ## Motion principles
 
-Motion in SportsBnB exists to answer a question the interface would otherwise
-leave open: *did that register, what changed, where did it go, how much longer.*
-A booking marketplace is a sequence of commitments — pick a slot, hold it, pay a
-bank we do not control, get a person into a squad — and at every one of those
-seams the user is deciding whether to trust the screen. Motion that carries no
-such answer is cut. There is no ambient decoration in this catalogue that has not
-been argued for, and several cases exist purely to *remove* animation that lies.
+Motion here answers a question the interface would otherwise leave open: *did
+that register, what changed, where did it go, how much longer.* A booking
+marketplace is a sequence of commitments — pick a slot, hold it, pay a bank we
+do not control, admit a person to a squad — and at each seam the user is
+deciding whether to trust the screen. Motion carrying no such answer is cut;
+several cases below exist purely to remove animation that lies.
 
-Restraint is the working method: one easing family (`--ease-out-expo` for
-arrivals, `--ease-spring` for the rare completion, a fast ease-in for exits),
-durations drawn from `--dur-fast/base/slow`, and loops only where something is
-genuinely still happening.
+Restraint is the method: one easing family (`--ease-out-expo` for arrivals,
+`--ease-spring` for the rare completion, a fast ease-in for exits), durations
+from `--dur-fast/base/slow`, and loops only where something is genuinely still
+happening.
 
-Performance is a hard constraint, not a preference — `transform` and `opacity`
-unless a case names the exception and pays for it. Every case that touches
-layout, `box-shadow`, `background-position` or `backdrop-filter` flags the cost.
+Performance is a constraint, not a preference — `transform` and `opacity` unless
+a case names the exception and pays for it. Anything touching layout,
+`box-shadow`, `background-position` or `backdrop-filter` flags its cost.
 
-Accessibility is a requirement of the case, not a coda. Every entry states what
-happens under `prefers-reduced-motion: reduce`, and no case is accepted if
+Accessibility is part of the case, not a coda. Every entry states its
+`prefers-reduced-motion: reduce` behaviour, and no case is accepted if
 information lives only in the movement.
 
 ## What every case is built from
@@ -2668,4 +2667,1560 @@ attention onto an off-brand green is worse than leaving it static.
 
 ---
 
-<!--NEXT-->
+## 9. Auth: login, signup, reset
+
+Scope: the five real auth routes in `src/App.tsx:202,220-223` —
+`/login` (`src/pages/LoginPage.tsx`), `/signup` (`src/pages/SignupPage.tsx`),
+`/forgot-password` (`src/pages/ForgotPasswordPage.tsx`), `/reset-password`
+(`src/pages/ResetPasswordPage.tsx`) and `/auth/callback`
+(`src/pages/AuthCallbackPage.tsx`). All five are `lazy()` behind the
+`PageLoader` spinner at `src/App.tsx:112-116`.
+
+**The real state machines.** Nothing here is invented; these are the branches
+the components already render.
+
+```
+/login          LoginPage.tsx:448,501  magicLinkSent ? … : mfaRequired ? … : form
+                          :113         authMode "password" | "magic-link"
+                          :115-116     magicLinkSent, resendCooldown (30 → 0, 1000ms tick at :175-179)
+                          :121-123     mfaRequired, mfaFactorId, totpCode
+/signup         SignupPage.tsx:738     password strength block, mounts on first keystroke
+                          :600         RadioGroup player | owner
+/forgot         ForgotPasswordPage.tsx:91   isEmailSent ? sent panel : form
+/reset          ResetPasswordPage.tsx:148   isSuccess ? panel : form, then signOut+navigate at :105-108 (3000ms)
+/auth/callback  AuthCallbackPage.tsx:108,114,122  loading | success | error, redirects at 1500ms / 3000ms
+```
+
+`/login` and `/signup` are both framer-motion pages now, with locally declared
+literals rather than CSS variables because framer needs values: `LoginPage.tsx:37-42`
+defines `EASE`, `EASE_SPRING`, `ENTER 0.42`, `EXIT 0.16`, `FEEDBACK 0.28`,
+`STAGGER 0.05`, and its header comment states the rule this section follows —
+"motion on this page has three jobs and no others: bring the form in in reading
+order, answer a focus, and answer a failure". `SignupPage.tsx:102-107` ships its
+own scoped reduce block, `SIGNUP_MOTION_CSS`, because `Progress` and `Button`
+carry unguarded transitions from shared components that page does not own.
+
+Bundle note that matters here: `HomePage` is **eagerly** imported
+(`src/App.tsx:20`) and imports framer-motion, so the library is already in the
+initial bundle before anyone reaches `/login` — a `motion` import in an auth
+chunk adds no download.
+
+### 66. The /login panel is three screens in one slot **[HIGH IMPACT]**
+
+- **Where**: `/login`, the top-level ternary in `src/pages/LoginPage.tsx:446-554`
+  — sign-in form, "Check your email" (`:449`), "Two-factor authentication"
+  (`:502`). All three render into the same `max-w-md` slot.
+- **Already built**: this ships. The ternary is wrapped in
+  `<AnimatePresence mode="wait">` (`:446`) with one `motion.div` per branch keyed
+  `"magic-sent" | "mfa" | "form"`, driven by the `swap` / `swapOut` prop objects
+  at `:150-163`, both of which collapse to `{}` under `prefersReduced`. The
+  typographic half was fixed earlier — `.auth-hero-title` / `.auth-form-title`
+  exist at `index.css:496-502` precisely because "the form heading changes size
+  *within* a page" (`index.css:479-483`).
+- **Motion**: what remains is **direction**. Forward (form → magic-link-sent,
+  form → MFA) and backward (the "Back to login" buttons at `:451` and `:504`,
+  both calling `handleBackToLogin` at `:313`, which *signs the user out*)
+  currently animate identically. Give the slot a sign: forward, outgoing panel
+  `translateX(0 → -24px)` and incoming from `+24px`; backward, mirrored. The user
+  understands that the credentials screen was not destroyed, it was stepped away
+  from, and that the back arrow returns to the same place it left.
+- **Timing**: exit `EXIT` (160ms) `cubic-bezier(0.16, 1, 0.3, 1)`, enter 250ms
+  same curve, enter delayed 120ms so the two do not overlap into a cross-dissolve
+  mush. These are `--dur-fast` / `--dur-base` verbatim (`index.css:138-139`) and
+  match the page's own constants.
+- **Build**: framer-motion, already in place — this is one `custom` prop on
+  `AnimatePresence` and a direction `useRef` holding the previous key. `mode="wait"`
+  is why the library is here rather than CSS: the three branches have very
+  different heights and must not be in flow simultaneously.
+- **Reduced motion**: `swap`/`swapOut` already return `{}`; add
+  `initial={false}` on `AnimatePresence` under the same flag. The panel swaps
+  instantly, exactly as it did before any of this; the focus move still happens
+  because it is not motion.
+- **Perf**: `transform` + `opacity` only. Two real risks, both nameable. (1) The
+  parent is `flex items-center justify-center`, so the wrapper's height change
+  still reflows that one centred column — acceptable at this scale, but do
+  **not** animate `height` on top of it. (2) During the 120ms overlap gap the
+  slot is empty, so the card visibly recentres; pin a `min-height` on the
+  `max-w-md` wrapper for the duration, or accept the settle. **Why this one**:
+  it is the single highest-traffic signed-out surface in the app, and the only
+  place where a user is silently signed out by a "Back" control.
+
+### 67. Password ↔ magic-link, inside the card
+
+- **Where**: `/login`, `authMode` (`src/pages/LoginPage.tsx:113`) switching the
+  two forms inside the `"form"` branch, driven by the "Send Magic Link" button
+  and the "Sign in with password instead" link.
+- **Motion**: This swap removes or adds the entire password field group —
+  roughly 92px of the card. Today the card jumps and every button below it
+  teleports. Animate the card's height from its measured old value to its new
+  one while the departing field group fades `opacity 1 → 0` and the arriving one
+  fades in, both without translation. Height is the whole point: the user
+  understands that one field was added or removed from a form they are still in,
+  rather than that the form was replaced. Keep the shared email field mounted and
+  untouched — it is the same input with the same value, and anything it does
+  during the swap says otherwise.
+- **Timing**: height 260ms `cubic-bezier(0.16, 1, 0.3, 1)`; the field group's
+  opacity 150ms `linear`, out first, in on completion.
+- **Build**: framer-motion `<motion.div layout>` on the card, with a nested
+  `<AnimatePresence mode="wait">` inside the existing `"form"` branch. Hand-rolled
+  CSS height animation needs a measured pixel value and a `ResizeObserver`;
+  `layout` does the FLIP for free and the library is already imported on this
+  page.
+- **Reduced motion**: `useReducedMotion()` → drop the `layout` prop entirely and
+  render the swap instantly. Do not leave `layout` on with `duration: 0` — it
+  still runs a measure pass each render for no visible benefit.
+- **Perf**: this is the one case in the section that is *not* transform-only.
+  `layout` animates via `transform: scaleY` and counter-scales children, so it
+  composites, but it forces a layout read on every swap. It is a single card, on
+  user click, at most a few times per session — bounded and worth it. Do **not**
+  extend the same treatment to `/signup`, whose card is twice as tall and whose
+  strength block (case 70) changes height on every keystroke.
+
+### 68. The six OTP slots, and arming the verify button
+
+- **Where**: `/login`, MFA branch — `InputOTP` at `src/pages/LoginPage.tsx:523-540`
+  over `src/components/ui/input-otp.tsx:24-50`, and the gated Verify button
+  (`disabled={totpCode.length !== 6 || isVerifyingMfa}`).
+- **Already built, partially**: failure is answered. The page holds an
+  `otpShake` `useAnimationControls` (`:132`) applied to the OTP group (`:522`)
+  and fired from both invalid-code paths (`:260`, `:273`), through a `shake()`
+  helper that returns early under `prefersReduced` (`:138-141`). What is not
+  built is per-digit confirmation and the arming of the button.
+- **Motion**: Three linked pieces. (1) On each digit, that slot's character
+  enters `opacity 0 → 1` with `scale(0.8) → 1` — the slot confirms it took the
+  character, which matters when a 6-digit code is pasted or typed fast. (2) The
+  active slot's `ring-2 ring-ring` (`input-otp.tsx:36`) currently appears through
+  an undurated `transition-all`; give it 120ms so the ring reads as *moving*
+  left-to-right across the group rather than blinking in six places. (3) When the
+  sixth digit lands, the Verify button crosses from `disabled:opacity-50`
+  (`button.tsx:8`) to full with a 220ms `box-shadow: var(--shadow-ring-primary)`
+  pulse that decays to none. The user understands the code is complete before
+  reading the button label — the common failure here is typing five digits and
+  pressing a dead button.
+- **Timing**: character 140ms `cubic-bezier(0.34, 1.56, 0.64, 1)` (`EASE_SPRING`
+  at `LoginPage.tsx:38` — the slight overshoot reads as a key press); ring 120ms
+  `cubic-bezier(0.16, 1, 0.3, 1)`; button arm 220ms same curve.
+- **Build**: CSS/Tailwind. Add `duration-150` to the slot's existing
+  `transition-all`, and one keyframe pair in the `@layer components` block of
+  `index.css`; the character animation keys off `char` becoming non-empty, which
+  is a class toggle in `InputOTPSlot`, not a new library. `input-otp` already
+  supplies `hasFakeCaret` / `isActive` (`input-otp.tsx:29`).
+- **Reduced motion**: extend `index.css:619-630` with
+  `.animate-caret-blink { animation: none; }` (the caret at `input-otp.tsx:44` is
+  a 1000ms blink that reduce users currently still get), slot character
+  transitions to `none`, and the button's arming pulse replaced by the instant
+  opacity change it already has. The ring is a focus indicator and must never be
+  suppressed — it just stops being timed.
+- **Perf**: `transform`, `opacity`, `box-shadow`. `box-shadow` is a paint, not a
+  layout — on a 48px-tall button, once. The slot `scale` is on a 40×40 box with
+  one glyph.
+
+### 69. The 30-second resend cooldown, shown rather than counted
+
+- **Where**: `/login`, "Check your email" panel — the resend Button at
+  `src/pages/LoginPage.tsx:478-490`, `resendCooldown` decremented by the
+  `setTimeout` at `:175-179`, guarded at `:237`.
+- **Motion**: The label already ticks `Resend in 30s … 29s …` (`:484-485`), which
+  is a number changing once a second and reads as a stopwatch the user is being
+  made to watch. Add a depleting hairline: a 2px rule pinned to the bottom edge
+  of the disabled outline button, `transform: scaleX(1) → scaleX(0)` with
+  `transform-origin: left`, driven off the same `resendCooldown` value —
+  `scaleX(resendCooldown / 30)`. The user understands *how much* waiting is left
+  at a glance and when the button becomes live, without reading a number. On
+  reaching 0 the rule is unmounted and the button's own 200ms `transition-all`
+  (`button.tsx:8`) carries it from `disabled:opacity-50` to full.
+- **Timing**: each step 1000ms `linear`, matching the real tick at `:176`.
+  Linear is deliberate — it is a clock; easing it would misreport how much time
+  is left mid-step.
+- **Build**: CSS/Tailwind. `style={{ transform: 'scaleX(' + resendCooldown / 30 + ')' }}`
+  on an absolutely-positioned `div` plus `transition-transform duration-1000
+  ease-linear`. React already re-renders on every tick, so there is no new state
+  and no new dependency.
+- **Reduced motion**: `transition: none` on the rule — it still steps down once
+  per second (that is information, not decoration), it just does not glide.
+  Nothing else changes; the numeric label at `:485` is unaffected and remains
+  the accessible source of truth.
+- **Perf**: `transform: scaleX` on a composited 2px layer, one change per
+  second, inside a `relative` button — no reflow of the centred panel. Do
+  **not** animate `width` here; the button is inside a `text-center` column and a
+  width change on a child would relayout the block on every tick.
+
+### 70. Password strength: the bar, the label, and the four ticks
+
+- **Where**: `/signup`, `src/pages/SignupPage.tsx:738-770` — `Progress
+  data-strength-meter` at `:740`, the strength word beside it, the requirement
+  grid below, scored by the `useMemo` at `:142-159` in 20-point steps. A second,
+  differently built version of the same block is at
+  `src/pages/ResetPasswordPage.tsx:213-225`.
+- **Already built, partially**: the panel's *mount* is animated —
+  `strengthPanelMotion` (`:325`) on a keyed `motion.div` (`:738`) — and the reduce
+  path for the shared `Progress` indicator is already handled by the page's own
+  scoped block, `[data-signup] [data-strength-meter] > * { transition: none; }`
+  (`SignupPage.tsx:104`). The `data-strength-meter` attribute exists exactly so
+  that rule can reach a component the page does not own.
+- **Motion**: The bar already moves — `progress.tsx:23-25` transitions
+  `translateX(-N%)` — but at Tailwind's default 150ms `cubic-bezier(0.4, 0, 0.2, 1)`,
+  which for a 20-point jump lands flat and unnoticed. Retime it to 250ms
+  `--ease-out-expo` so a keystroke that earns a criterion produces a visible
+  advance. Then stage the tick: when a `checks.*` flips true (`:145-157`), its
+  `X` → `Check` swap scales `0.7 → 1` over 160ms and its label crossfades
+  `text-muted-foreground → text-foreground` over 200ms, **delayed 120ms** behind
+  the bar. The user understands *which* rule they just satisfied — the bar says
+  "better", the tick says "because of this".
+- **Timing**: bar 250ms `cubic-bezier(0.16, 1, 0.3, 1)`; tick 160ms
+  `cubic-bezier(0.34, 1.56, 0.64, 1)`; label colour 200ms
+  `cubic-bezier(0.16, 1, 0.3, 1)`; tick delay 120ms.
+- **Build**: CSS/Tailwind. Pass the retimed transition through `className` at the
+  call site (`:740`) so `progress.tsx` stays shared and the ten other consumers
+  are unaffected. One flag while in here, not a motion issue but adjacent:
+  `ResetPasswordPage.tsx:223` passes `getStrengthColor()` (`bg-destructive` …
+  `bg-green-500`) to `Progress`'s **Root**, so tailwind-merge overrides the
+  `bg-surface-3` *track* while the indicator stays `bg-primary` — the wrong
+  element is coloured. Do not animate a colour onto that class until it lands on
+  the indicator.
+- **Reduced motion**: the existing `SIGNUP_MOTION_CSS` rule already zeroes the
+  indicator's transition; add a sibling
+  `[data-signup] [data-strength-tick] { transition: none; transform: none; }` to
+  the same block. The bar still jumps to its new value, the tick still turns
+  green: both are state, and state must survive.
+- **Perf**: `transform: translateX` on the indicator (already the mechanism at
+  `progress.tsx:24`) and `transform: scale` on a 12px icon. No layout property.
+  The block itself mounts on the first keystroke into the field, and that first
+  mount does change page height — leave it un-animated rather than fight it;
+  `strengthPanelMotion` is an opacity/offset entrance, not a height animation,
+  which is the right call.
+
+### 71. Player vs owner — the choice that changes the form
+
+- **Where**: `/signup`, the `RadioGroup` at `src/pages/SignupPage.tsx:600-640`;
+  the two visible controls are `Label`s (the radios are `peer sr-only`).
+- **Already built, partially**: the downstream half ships. The name field's label
+  is a keyed `motion.span` — `<motion.span key={userType} {...swapMotion}>`
+  rendering "Full name" or "Business name" (`:649-651`) — with `swapMotion`
+  defined at `:352-358` and gated on `prefersReduced`. The comment at `:335-345`
+  is explicit that text replaced by other text in the same slot is what this
+  motion is for.
+- **Motion**: what remains is the *cause*. Selecting a card is not cosmetic — it
+  rewrites that label and placeholder and changes where submit lands
+  (`/onboarding/player` vs `/owner-dashboard`, `:255`). Give the click its own
+  answer: the chosen card's border goes
+  `border-border-interactive → border-primary` and its fill
+  `transparent → bg-primary/5` over 200ms, and its icon scales `1 → 1.08` and
+  back over 240ms — the existing `transition-all` on the `peer-data-[state=checked]:`
+  chain has no duration, so this is a retime, not a new mechanism. The user
+  understands the second change was caused by the first, which is otherwise easy
+  to miss because it happens 200px below the click.
+- **Timing**: card 200ms `cubic-bezier(0.16, 1, 0.3, 1)`; icon 240ms
+  `cubic-bezier(0.34, 1.56, 0.64, 1)`; the label crossfade is already
+  `transitionFast` via `swapMotion`, starting when the keyed span remounts.
+- **Build**: CSS/Tailwind — `duration-200` on the existing
+  `peer-data-[state=checked]:` chain. No library needed for this half; the
+  framer-motion half is already there.
+- **Reduced motion**: colour and border still change (they are the selected
+  state, and the `peer-focus-visible:ring-2` must stay intact); the icon scale
+  drops to none via the page's own `SIGNUP_MOTION_CSS` block, and `swapMotion`
+  already returns `{}`. The label's new text simply appears.
+- **Perf**: `border-color` and `background-color` are paint-only on a 2-up grid;
+  the icon `scale` is a 24px transform. No reflow — both cards keep their box,
+  and the comment at `:369` records that this is deliberate: transforms do not
+  affect layout, so the row's text never moves.
+
+### 72. Inline errors that do not shake, and one that celebrates
+
+- **Where**: `/signup` — the per-field error paragraphs at
+  `src/pages/SignupPage.tsx:667-673` and the sibling blocks for email, password
+  and confirmation, written by `validateField` on **every keystroke** (`:216`),
+  plus the "Passwords match" line. Same pattern at
+  `ForgotPasswordPage.tsx:141-143` and `ResetPasswordPage.tsx:208-210,254-256`.
+- **Already built**: the error half ships, and correctly. Each error `<p>` is a
+  keyed `motion.p` inside `<AnimatePresence initial={false}>` (`:667-673`), using
+  `errorMotion` (`:315-322`): `initial { opacity: 0, y: -4 }`, `animate
+  { opacity: 1, y: 0 }`, `exit { opacity: 0, y: -2 }` on `transitionBase`. No
+  shake, which is the point — `validateField` fires on keydown, so "Passwords
+  don't match" appears the instant the first character of the confirmation is
+  typed, and shaking the field for an error that is usually about to be resolved
+  by the next keystroke is a punishment for typing.
+- **Motion**: what remains is the positive counterpart. "Passwords match" should
+  earn more than an error does: `opacity 0 → 1`, `translateY(4px) → 0` **and**
+  its `Check` icon scaling `0.6 → 1` over 220ms on `EASE_SPRING`. The user
+  understands the difference between "keep going" and "this one is done". Note
+  the file's own header comment at `:36` already names this as one of the two
+  moments worth marking.
+- **Timing**: error 160ms `cubic-bezier(0.16, 1, 0.3, 1)` (as shipped, via
+  `transitionBase`); border colour 160ms same curve — currently
+  `transition-colors` with no duration, so this is nearly a no-op and can be
+  left alone if the 10ms is not worth the diff; match line 220ms
+  `cubic-bezier(0.34, 1.56, 0.64, 1)`.
+- **Build**: framer-motion for the match line, matching the shape of
+  `errorMotion` rather than reaching for `tailwindcss-animate` on a page that
+  already has a presence tree open for exactly this.
+- **Reduced motion**: `errorMotion` already collapses to `{}`; give the match
+  line the same branch. The text still appears and the border still turns red;
+  only the 4px slide and the icon pop are removed.
+- **Perf**: `transform` + `opacity`, but flag the real cost honestly — mounting
+  an error `<p>` under a field pushes every field below it down by ~24px, and
+  there is no transition on that reflow. It is a genuine layout shift on a form
+  that validates per keystroke. If it becomes objectionable, reserve the line's
+  height with `min-h-[1.25rem]` on the error slot rather than animating the
+  shift; do not animate the container's height on a per-keystroke event.
+
+### 73. Two confirmation panels, and the 3-second exit nobody sees coming
+
+- **Where**: `/forgot-password`, `isEmailSent` panel at
+  `src/pages/ForgotPasswordPage.tsx:91-112`; `/reset-password`, `isSuccess`
+  panel at `src/pages/ResetPasswordPage.tsx:148-160` — which then calls
+  `signOut()` and `navigate("/login")` from a `setTimeout` at `:105-108`, 3000ms
+  later, with nothing on screen saying so.
+- **Motion**: Both panels replace a form with a centred tick in one frame. Stage
+  the entry so the eye lands in reading order: (1) the icon circle
+  (`ForgotPasswordPage.tsx:93-95`, `ResetPasswordPage.tsx:150-152`) scales
+  `0.6 → 1` over 380ms; (2) the `h2` and body copy rise `translateY(8px) → 0`
+  with `opacity 0 → 1` starting at 140ms; (3) the actions last, at 280ms. On
+  `/reset-password` add the missing piece — a 2px rule under the "Go to login"
+  button depleting `scaleX(1) → scaleX(0)` over exactly the 3000ms the
+  `setTimeout` runs. The user understands they are about to be moved *and signed
+  out*, instead of having the page change under them mid-sentence.
+- **Timing**: icon 380ms `cubic-bezier(0.34, 1.56, 0.64, 1)`; text stages 260ms
+  `cubic-bezier(0.16, 1, 0.3, 1)` with a 140ms stagger; the redirect rule 3000ms
+  `linear`, started in the same effect that arms the timeout so the two cannot
+  drift.
+- **Build**: CSS/Tailwind for the entrance (`animate-in fade-in-0
+  slide-in-from-bottom-2` with `delay-150` / `delay-300` on the two later stages
+  — `tailwindcss-animate`, `tailwind.config.ts:158`). The countdown rule is a
+  single `transition-transform duration-[3000ms] ease-linear` toggled by a
+  `useState` flipped in the same `useEffect`. Neither of these two pages imports
+  framer-motion today and neither needs to: these panels never animate *out*,
+  they navigate away.
+- **Reduced motion**: `motion-reduce:animate-none` on all three stages — the
+  tick, the heading and the button appear together, instantly. The countdown
+  rule keeps its 3000ms `transition` even under reduce, because it is a timer and
+  removing it would leave the user with no warning at all; if that is judged too
+  strict, replace it with a static "Redirecting in 3 seconds" line, but do not
+  simply delete it.
+- **Perf**: `transform` + `opacity` throughout; the countdown is `scaleX` on a
+  composited 2px layer. Note the panel swap itself changes the centred column's
+  height (form → short panel) and that reflow is not animated in this case —
+  deliberately, since the user's next action is elsewhere on the page.
+
+### 74. /auth/callback: a page that is 100% waiting
+
+- **Where**: `/auth/callback`, `src/pages/AuthCallbackPage.tsx:105-131` —
+  `loading` (`:108-113`), `success` (`:114-121`), `error` (`:122-130`). The
+  success state holds for 1500ms before `navigate` (`:75,80-88`); the error
+  states hold 3000ms (`:21,40,47,92,98`).
+- **Motion**: This is where a magic-link click lands, and it currently offers a
+  48px `Loader2` on `animate-spin` (`:110`) against a bare background. Two
+  changes. (1) The `loading` → `success` transition: the spinner scales
+  `1 → 0.8` and fades out over 150ms, then the emerald tick circle (`:116-118`)
+  scales `0.7 → 1` over 320ms in its place, and `message` crossfades in 200ms —
+  the user understands the check that just completed *succeeded*, rather than
+  seeing one round green thing replaced by another. (2) The `success` state's
+  1500ms dead wait gets the same depleting 2px rule as case 73, and the `error`
+  state's 3000ms one too, under the "Redirecting to login..." line already at
+  `:128`. Landing here from an email client is the most disorienting entry point
+  in the app; a page that visibly counts down is a page that has not hung.
+- **Timing**: spinner out 150ms `cubic-bezier(0.16, 1, 0.3, 1)`; tick in 320ms
+  `cubic-bezier(0.34, 1.56, 0.64, 1)`; message 200ms
+  `cubic-bezier(0.16, 1, 0.3, 1)`; the rules 1500ms / 3000ms `linear`, matching
+  the real `setTimeout` values exactly — if either is retimed, both must move
+  together.
+- **Build**: CSS/Tailwind. The three states are already mutually exclusive JSX
+  branches; `animate-in fade-in-0 zoom-in-95 duration-300` on the success and
+  error blocks plus `animate-out fade-out-0 zoom-out-95 duration-150` on the
+  spinner covers it via `tailwindcss-animate` (`tailwind.config.ts:158`).
+  framer-motion would buy an exit animation this page does not need — it
+  navigates away rather than unmounting into another state.
+- **Reduced motion**: `motion-reduce:animate-none` on the state blocks, and the
+  spinner's `animate-spin` (`:110`) swapped for a static `Loader2` at 60% opacity
+  beside the existing message text — that `animate-spin` is uncovered by
+  `index.css:619-630` today and is the most aggressive motion on any auth route.
+  The countdown rules keep their linear transition for the same reason as case
+  73. Add `role="status" aria-live="polite"` to the message paragraph while here
+  — the state change is currently announced to nobody.
+- **Perf**: `transform` + `opacity` only; the whole page is one centred
+  `text-center` block with at most three children, so even the swap costs nothing
+  measurable. The countdown rule is `scaleX` on a composited layer, one
+  transition per page visit.
+
+---
+
+## 10. Owner dashboard & earnings
+
+Scope: the five owner screens where an owner reads money and commitments —
+`/owner/bookings` (`src/pages/owner/OwnerBookingsPage.tsx`), `/owner/earnings`
+(`src/pages/owner/OwnerEarningsPage.tsx`), `/owner/analytics`
+(`src/pages/owner/OwnerAnalyticsPage.tsx`), `/owner-dashboard`
+(`src/pages/owner/OwnerOverviewPage.tsx`) and the calendar-sync pair
+`/owner/integrations` + `/owner/integrations/callback`. All five are mounted
+behind `ProtectedRoute` + `RequireRole role="owner"` in `src/App.tsx:183-196`
+and all five render inside `src/components/owner/OwnerLayout.tsx`.
+
+**`OwnerOverviewPage` is the one owner page with motion already.** It imports
+`motion` and `useReducedMotion` (`:3`) plus `easeOutExpo` (`:22`), wraps `Card`
+as `MotionCard` (`:50`), staggers the four stat cards through `statVariants`
+(`:74-78`, `STAT_STAGGER_STEP = 0.05`), staggers the activity feed rows through
+`feedVariants` with a cap (`:80-91`, `FEED_STAGGER_CAP = 8`), and ships a
+`useCountUp` helper (`:93-160`) already driving four figures (`:168-171`). Its
+docstring records the two decisions worth keeping: the last frame assigns
+`target` itself rather than a rounded interpolation, "a count-up that settled on
+its own approximation would be a dashboard quietly reporting the wrong revenue";
+and the tween starts from whatever is currently displayed, so a react-query
+refetch animates the difference instead of dropping to zero and climbing back.
+No other owner page imports framer-motion yet.
+
+**Reduced motion, honestly.** `src/lib/motion.ts:6-8` claims reduced motion is
+"already honoured" without a `<MotionConfig>`. Do not build new owner motion on
+that assumption: framer-motion only auto-degrades when `MotionConfig
+reducedMotion` says so, and no owner page wraps anything. Every case below gates
+explicitly on `useReducedMotion()`, as `OwnerOverviewPage.tsx:110,162` already
+does, and every CSS-side fallback belongs in the existing block at
+`src/index.css:619-630`.
+
+**recharts** `^2.15.4` drives both charts. Chart colours are already tokens
+(`CHART_COLORS` at `OwnerAnalyticsPage.tsx:19-25` → `--chart-1..5`,
+`index.css:102-106` / `:211-220`), so nothing below needs to name a hex.
+
+### 75. Filtering the bookings table narrows a list, it does not reload one **[HIGH IMPACT]**
+
+- **Where**: `/owner/bookings` — `src/pages/owner/OwnerBookingsPage.tsx:85-97`
+  (the `filteredBookings` computation driven by `searchQuery`,
+  `selectedVenueId`, `statusFilter`) and the `<TableBody>` it feeds at
+  `:232-283`.
+- **Motion**: rows dropped by the filter fade `opacity 1 → 0` and slide
+  `translateX(0 → -8px)`; rows that survive slide to their new row position
+  instead of teleporting; rows newly admitted enter `opacity 0 → 1`,
+  `translateY(6px → 0)` with **no** stagger — a filter result is one set, not a
+  sequence, and staggering it would imply arrival order that does not exist.
+  (Contrast the activity feed on `/owner-dashboard`, which *is* chronological and
+  therefore does stagger, capped at 8.) What the owner understands: the four
+  summary cards above (`:112-147`) are computed from `allBookings` and
+  `analytics`, and deliberately never respond to the filter. With nothing moving,
+  "Total Bookings 63" sitting over a four-row table reads as a contradiction and
+  the owner re-checks their filters. Watching 59 rows leave makes the 63 read as
+  *of* 63.
+- **Timing**: exit 140ms `cubic-bezier(.4,0,1,1)`; enter 200ms
+  `cubic-bezier(.16,1,.3,1)` (`--ease-out-expo`); survivors reflow 240ms
+  `cubic-bezier(.2,.8,.2,1)`.
+- **Build**: framer-motion. `AnimatePresence initial={false}` around
+  `motion(TableRow)` is the only way to hold a `<tr>` on screen after React has
+  unmounted it — CSS cannot animate an element that no longer exists.
+- **Reduced motion**: `useReducedMotion()` → drop `AnimatePresence` and render
+  the plain `<TableRow>` list. Because the motion was carrying real
+  information, replace it with text: an `aria-live="polite"` line above the
+  table reading `Showing {filteredBookings.length} of {allBookings.length}`.
+  That line is worth shipping unconditionally.
+- **Perf**: exit and enter are opacity + transform only. The survivor reflow is
+  the risk — framer's `layout` measures every row every frame, and this table
+  is unpaginated. Gate it: apply `layout` only when
+  `filteredBookings.length <= 40`; above that, let survivors jump and keep just
+  the fade-out.
+
+### 76. The clicked row stays marked while the drawer is open
+
+- **Where**: `/owner/bookings` — the row at `OwnerBookingsPage.tsx:234`
+  (`cursor-pointer hover:bg-muted/50`) and its View button at `:273-279`, which
+  sets `selectedBooking` and opens
+  `src/components/owner/schedule/BookingDetailDrawer.tsx` (a shadcn `Sheet`,
+  `side="right"`). Same pairing on `/owner-dashboard` via the activity feed rows
+  at `OwnerOverviewPage.tsx:380-403`, whose drawer is mounted at `:539`.
+- **Motion**: the source row takes a persistent selected treatment for as long
+  as the sheet is open — a 2px rule in `hsl(var(--primary))` on its leading
+  edge scales `scaleY(0) → scaleY(1)` from `transform-origin: center`, and the
+  row background settles to `hsl(var(--muted) / 0.5)` and stays there (today
+  the hover tint vanishes the moment the pointer moves to the sheet). The sheet
+  itself slides in from the right, retimed. The owner understands *which* of
+  sixty near-identical six-column rows the panel is describing, and can find
+  their place again when it closes.
+- **Timing**: rule 180ms `cubic-bezier(.16,1,.3,1)`; background 120ms linear;
+  sheet in 260ms `cubic-bezier(.2,.8,.2,1)`; rule out 120ms.
+- **Build**: Tailwind/CSS — a `data-selected` attribute on the row plus
+  `transition-transform`. The sheet is already Radix + `tailwindcss-animate`
+  (`tailwind.config.ts:158`); `src/components/ui/sheet.tsx:32` currently
+  hardcodes `data-[state=open]:duration-500` / `data-[state=closed]:duration-300`,
+  and 500ms is slow enough that owners click the row twice. Retiming that one
+  class is the whole change — no new dependency.
+- **Reduced motion**: the rule renders at full height with `transition: none`
+  and the background changes instantly — the identity signal is the colour and
+  the rule, not their arrival, so nothing is lost. The sheet swaps its
+  translate for `opacity 0 → 1` over 120ms.
+- **Perf**: `scaleY` + `opacity` only. Do not animate `border-left-width` or
+  the row's `width` — either reflows all six cells on every frame, and the
+  table is unvirtualised.
+
+### 77. Revenue bars grow from the axis, so height reads as magnitude
+
+- **Where**: `/owner/analytics` —
+  `src/pages/owner/OwnerAnalyticsPage.tsx:88-111`, the `<BarChart
+  data={analytics?.revenueByMonth}>` with `<Bar dataKey="revenue"
+  fill="hsl(var(--chart-1))" radius={[4,4,0,0]} />`. Six months, built by
+  `src/hooks/useOwnerAnalytics.ts`.
+- **Motion**: every bar grows from the zero baseline to its value. Recharts
+  animates one `<Bar>` series as a unit, so all six rise together — do not
+  claim a left-to-right stagger, `animationBegin` is per-series and there is
+  one series. What the owner understands: the Y axis is formatted
+  `֏${(v/1000).toFixed(0)}k` (`:103`) with `axisLine={false}`, so there is no
+  drawn baseline; bars that visibly start at zero are what tells the owner the
+  axis starts at zero and that a bar twice as tall is twice the revenue.
+- **Timing**: `animationDuration={520}`, `animationEasing="ease-out"`. Runs
+  once on data arrival.
+- **Build**: recharts props only (`isAnimationActive`, `animationDuration`,
+  `animationEasing`). No framer-motion — the thing being animated is an SVG
+  `<rect>` recharts already owns and re-renders.
+- **Reduced motion**: `isAnimationActive={!prefersReduced}` from
+  `useReducedMotion()`; recharts then paints final geometry on the first frame.
+  The `Skeleton` states at `:39-43` keep `animate-pulse`, which should also be
+  neutralised — add `.animate-pulse { animation: none; }` to the block at
+  `index.css:619-630`, since `Skeleton` is used on ten screens (and see case 7,
+  which replaces the pulse outright).
+- **Perf**: recharts animates the SVG `height`/`y` attributes, not `transform`
+  — every frame is a layout + paint inside the SVG. Fine for 6 rects at 250px
+  tall; it would not be for a 30-day series, so do not reuse this treatment if
+  the range picker ever ships. `ResponsiveContainer` re-measures on resize, so
+  key the chart on data identity rather than width or the animation replays
+  every time the sidebar collapses at the `lg` breakpoint.
+
+### 78. The donut sweeps once, then hover isolates the wedge the tooltip means
+
+- **Where**: `/owner/analytics` — `OwnerAnalyticsPage.tsx:121-152`, the `<Pie
+  innerRadius={60} outerRadius={100} dataKey="count" nameKey="venue">` with one
+  `<Cell>` per venue cycling `CHART_COLORS` (`:19-25`, five tokens).
+- **Motion**: on mount the ring sweeps clockwise from 12 o'clock
+  (`startAngle={90} endAngle={-270}`). On hover, the pointed-at wedge's
+  `outerRadius` grows 100 → 106 and every other cell drops to `opacity 0.55`.
+  The sweep says the wedges sum to a whole, so a wedge is a share of total
+  bookings and not a count. The isolate answers the real defect here: the
+  `<Tooltip>` at `:143-150` prints a venue and a number with no visual tie to
+  any arc, and with `label={({venue, count}) => ...}` at `:136` also printing
+  venue names around the ring, there are two places showing the same venue and
+  nothing linking them.
+- **Timing**: sweep 600ms `ease-out` (recharts easing keyword); hover in 160ms
+  `cubic-bezier(.2,.8,.2,1)`; hover out 220ms — leaving is slower than
+  arriving so a pointer crossing wedges does not strobe.
+- **Build**: recharts props only — `activeIndex` + `activeShape` are built in,
+  and the arc geometry is recharts'. Reaching for framer-motion here would mean
+  re-implementing the arc.
+- **Reduced motion**: `isAnimationActive={false}` kills the sweep; the hover
+  isolate keeps its `opacity` change but applies it instantly and drops the
+  radius growth. Opacity-as-state survives, opacity-as-motion does not.
+- **Perf**: five arcs maximum (`CHART_COLORS[i % CHART_COLORS.length]`), so the
+  per-frame path recomputation during the sweep is bounded. The sibling dim is
+  paint-only. Do not animate `innerRadius` — that moves every `labelLine`
+  (`:137`) and re-lays the label text around the ring.
+
+### 79. Occupancy fills to its figure; the month-over-month claim lands after it
+
+- **Where**: `/owner-dashboard` — `src/pages/owner/OwnerOverviewPage.tsx:515-519`
+  (the "This Week" `<Progress value={analytics?.occupancyRate || 0} className="h-2" />`)
+  and `:289-298` (the change `<Badge>` produced by `changeOf()` at `:209-217`).
+- **Already built, partially**: the *figure* half ships — `occupancyCount` is one
+  of the four `useCountUp` values (`:171`), and the stat cards arrive on
+  `statVariants` with a 50ms stagger (`:74-78`). What is not built is the bar and
+  the badge's separate landing.
+- **Motion**: the progress indicator slides
+  `translateX(-100%) → translateX(-(100 − occupancyRate)%)` on first data
+  arrival only, not on every background refetch. Separately, each stat card's
+  value paints immediately while its change badge arrives 180ms later with
+  `opacity 0 → 1` and `translateX(6px → 0)`. What the owner understands: the
+  figure and the comparison are two assertions, not one string. The code
+  comment at `:63-72` records that these badges used to be hardcoded `+12%`
+  literals; now they are real month-over-month, and `title="Compared with last
+  month"` is the only thing saying so. Landing the badge separately is the
+  visual half of that sentence.
+- **Timing**: progress 640ms `cubic-bezier(.16,1,.3,1)`; badge 200ms
+  `cubic-bezier(.16,1,.3,1)` at a 180ms delay. A negative change gets the same
+  curve as a positive one — no `--ease-spring` overshoot on a number that means
+  the owner lost revenue.
+- **Build**: CSS/Tailwind for the bar. `src/components/ui/progress.tsx:22-24`
+  already sets `style={{ transform: translateX(-${100 - value}%) }}` with a bare
+  `transition-all` and no stated duration, so it currently animates at
+  Tailwind's 150ms default and transitions colour and shadow along with it. Pass
+  `transition-transform duration-[640ms] ease-[cubic-bezier(.16,1,.3,1)]` at the
+  call site (`:519`), not inside `progress.tsx` — case 70 needs a different
+  number on the same component. The badge can reuse `statVariants`' shape as a
+  third variant rather than the CSS `animate-fade-in` keyframe.
+- **Reduced motion**: `prefersReduced` (`:162`) already gates the card stagger
+  and `useCountUp` (`:110`). For the bar, add to `index.css:619-630` —
+  `[role="progressbar"] > * { transition: none }` — Radix's `Progress.Root`
+  carries that role and the indicator is its only child, so the bar paints at
+  its final width. Both figures are text and remain readable with neither
+  running.
+- **Perf**: `translateX` on the indicator is compositor-only; the badge is
+  opacity + transform. Never animate the indicator by `width`: that reflows the
+  card on every frame. `Progress` is used in ten places per the comment at
+  `progress.tsx:12-19`, so any retiming written *inside* that file is a shared
+  change — check password strength (case 70) and listing health before shipping
+  one.
+
+### 80. The balance leaves the figure the owner last saw
+
+- **Where**: `/owner/earnings` —
+  `src/pages/owner/OwnerEarningsPage.tsx:136`,
+  `<CardTitle as="h2" className="text-3xl tabular-nums">{formatAmd(balance?.balance_minor ?? 0)}</CardTitle>`,
+  fed by the `owner-balance` query at `:45-53`.
+- **Motion**: when `owner-balance` resolves to a value different from the one
+  already on screen, the digits count from old to new, re-formatted through
+  `formatAmd` (`src/features/booking/hooks/useBookingFlow.ts:49-51`) on every
+  frame so the ֏ and the thousands grouping never flicker. A drop and a rise
+  use the same curve; only the delta's sign differs. What the owner
+  understands: the line beneath it (`:139-141`) reads "Paid out automatically
+  when it reaches ֏10,000 · weekly runs". After a run the balance is ֏0, and
+  with no motion ֏0-because-it-was-paid is indistinguishable from
+  ֏0-because-nothing-was-earned. A number that visibly leaves ֏42,000 states
+  that money moved, and pairs with the new "Scheduled" row appearing in the
+  Payouts table at `:269-287`.
+- **Timing**: 520ms `cubic-bezier(.16,1,.3,1)` (`--ease-out-expo`), no delay,
+  once per mount. Skipped entirely when `|delta| < 100` minor units — `formatAmd`
+  divides by 100, so that is under ֏1 and not worth animating.
+- **Build**: the `useCountUp` helper at `OwnerOverviewPage.tsx:93-160` already
+  implements the two hard parts — tween from the currently displayed value, and
+  assign the exact target on the last frame — so lift it to a shared hook rather
+  than writing a second one. It returns a number, so wrap `formatAmd()` around
+  the result at render; do not interpolate the formatted string. `tabular-nums`
+  is already on the element, which is what holds the glyph advance steady while
+  it counts.
+- **Reduced motion**: `useCountUp` already returns `target` immediately under
+  `prefersReduced`. Either way, the counting span must be `aria-hidden` with a
+  visually-hidden sibling carrying the final value in an `aria-live="polite"`
+  region — thirty per-frame text updates read aloud is worse than no
+  announcement.
+- **Perf**: one text node repainting ~30 times over 520ms, no layout because
+  `tabular-nums` fixes the advance width. Keep it inside the existing
+  `CardHeader` so the card's height cannot change mid-count; a height change
+  would push the whole `lg:grid-cols-3` row at `:130`.
+
+### 81. Only the payout that is actually in flight moves
+
+- **Where**: `/owner/earnings` — `OwnerEarningsPage.tsx:278-283`, the
+  `<Badge className={PAYOUT_TONE[payoutStatusDescriptor(payout.status).tone]}>`
+  in the Payouts table. Four states from `src/features/booking/payout.ts`:
+  Scheduled (`neutral`), On its way (`warning`), Paid (`positive`), Failed
+  (`danger`); the tone→class map is `PAYOUT_TONE` at `:31-36`.
+- **Motion**: exactly one tone animates. `warning` — "On its way", which
+  `payout.ts` defines as *sent to the bank, usually arrives within a few
+  working days* — carries a highlight travelling left→right across the badge:
+  `background-image: linear-gradient(90deg, transparent, hsl(var(--warning) /
+  0.28), transparent)` at `background-size: 200% 100%`, driven by the existing
+  `shimmer` keyframe (`tailwind.config.ts:114-117`). Scheduled, Paid and Failed
+  are completely static. Four badges in one column differ today only by a word
+  and a hue; motion makes "in flight" a category the eye finds without reading
+  — and, by its absence, says a Failed payout is not being retried and a
+  Scheduled one has not left.
+- **Timing**: 2400ms linear, infinite — an override of the config's 2s. The
+  slower rate is the point: a 2s shimmer next to money reads as a loading
+  skeleton, 2.4s reads as a background process that will finish on its own.
+- **Build**: Tailwind. `animate-shimmer` already exists in the config, so this
+  is `animate-shimmer [animation-duration:2400ms]` plus the gradient, added to
+  the `warning` branch of `PAYOUT_TONE`. No JavaScript.
+- **Reduced motion**: in `index.css:619-630`, `.payout-inflight { animation:
+  none; background-image: none; }`. The state survives intact — the warning
+  tone keeps its own audited colour pair (`border-warning/20 bg-warning/10
+  text-warning`) and the `title` attribute at `:280` already carries
+  `payoutStatusDescriptor(...).hint`, the full sentence.
+- **Perf**: `background-position` is paint-only, not composited. Scoped to a
+  ~90×22px badge that repaints continuously — acceptable at that size, and
+  bounded because the query at `:76-89` is `.limit(20)`. Do not extend the
+  gradient to the whole `<TableRow>`: that repaints the date, status and amount
+  text every frame.
+
+### 82. Switching payout method re-labels the field you already typed in
+
+- **Where**: `/owner/earnings` — `OwnerEarningsPage.tsx:153-173`. The `<Select>`
+  at `:156` flips `method` between `bank_transfer` and `idram`, which at the
+  same instant changes the card's icon (`Banknote` ⇄ `Wallet`, `:148`), the
+  field label ("IBAN" ⇄ "Idram ID", `:167`) and the placeholder ("AM…" ⇄
+  "1000…", `:168`) — while the `iban` state at `:41` keeps whatever was typed.
+- **Motion**: three coordinated beats. (1) Icon: outgoing `opacity 1→0, scale
+  1→0.8`, incoming `opacity 0→1, scale 0.8→1`, crossfaded in place. (2) Label:
+  outgoing `opacity 1→0, translateY(0→-6px)`, incoming `opacity 0→1,
+  translateY(6px→0)`, offset so the old text is gone before the new arrives.
+  (3) The `<Input>` at `:168` takes a single ring pulse —
+  `box-shadow: var(--shadow-ring-primary)` (`index.css:130` / `:228`) in then
+  out — and its value is not touched. What the owner understands: the field
+  they already filled now expects a different kind of value. That matters
+  because `saveAccount` at `:111-120` writes `details.destination` verbatim
+  under the new `method`, so an IBAN left in the box is silently stored as an
+  Idram ID, and the copy at `:178` promises verification only "before the first
+  payout".
+- **Timing**: icon 140ms `cubic-bezier(.16,1,.3,1)`; label out 120ms, in 160ms
+  starting at +60ms; ring 200ms in, 380ms out, once per switch.
+- **Build**: framer-motion `AnimatePresence mode="wait"` keyed on `method` for
+  the icon and the label — both are unmount/mount swaps of different nodes,
+  which CSS transitions cannot bridge. This is the same shape as the keyed
+  `motion.span` already shipping on `/signup` (`SignupPage.tsx:649`); copy that
+  pattern rather than inventing one. The ring is a Tailwind class toggled for
+  580ms with `transition-shadow`; no library needed for that part.
+- **Reduced motion**: `useReducedMotion()` → both swaps render instantly with
+  no `AnimatePresence`, and the ring becomes a static `ring-2 ring-primary`
+  held for 1200ms then removed. The "this field changed meaning" signal
+  survives as a state rather than a motion, which is the whole point of it. The
+  `<Label>`/`<Input>` pairing already announces the new label text to screen
+  readers on focus.
+- **Perf**: opacity + transform on two ~16-20px nodes, plus one `box-shadow`
+  transition. `box-shadow` is paint-only but it is one element, once per
+  switch. Give the `<Label>` a `min-w` so "IBAN" → "Idram ID" cannot reflow the
+  `sm:grid-cols-3` row at `:153`.
+
+### 83. Calendar sync: leaving for the provider, and the timed return
+
+- **Where**: `/owner/integrations` —
+  `src/pages/owner/OwnerIntegrationsPage.tsx:206-224` (the Connect button,
+  `isConnecting === integration.id`, ending in a full-page redirect from
+  `initiateOAuth` in `src/hooks/useCalendarIntegrations.ts`) — and the return
+  leg at `/owner/integrations/callback`,
+  `src/pages/owner/CalendarCallbackPage.tsx:53-108`, whose `success` branch
+  auto-navigates back after 2000ms (`:41-43`).
+- **Motion**: **(a) leaving.** On press, the *other* integration card recedes:
+  `opacity 1 → 0.55`. The pressed card is deliberately not animated out —
+  the browser leaves the document, so an exit animation would be cut mid-frame
+  — it only swaps its button label to "Connecting…" beside the existing
+  `Loader2` spin at `:213-215`. **(b) returning.** The callback card holds all
+  three bodies in one frame: `loading → success` crossfades while the card's
+  height animates to the new body, and a 2px hairline in `hsl(var(--primary))`
+  fills `scaleX(0) → scaleX(1)` along the card's bottom edge across exactly the
+  2000ms of the pending `navigate()`. What the owner understands: (a) which of
+  two providers they authorised, and that they are about to leave Sportsbnb;
+  (b) that "Redirecting you back to integrations…" (`:79`) is a measured wait
+  and not a hang, and that the connection had one outcome rather than three
+  screens.
+- **Timing**: sibling recede 200ms `cubic-bezier(.2,.8,.2,1)`; body crossfade
+  200ms; card height 240ms `cubic-bezier(.16,1,.3,1)`; redirect hairline
+  **2000ms linear** — it is a clock, and any easing would misreport how much
+  time is left.
+- **Build**: Tailwind/CSS for (a) — dimming a sibling is a class toggle driven
+  by the `isConnecting` state that already exists. framer-motion for (b),
+  because animating a card between three differently-sized bodies needs a
+  measured `height: auto`, which CSS cannot do; `motion.div` with `layout` is
+  the whole implementation.
+- **Reduced motion**: (a) the sibling drops to `opacity 0.55` with
+  `transition: none`. (b) bodies swap with no crossfade and no height
+  animation, and the hairline is replaced by a static "Redirecting in 2
+  seconds…" line in place of the `CardDescription` at `:78-80`. Both terminal
+  states already carry non-motion signals — icon plus colour at `:71-96` — so
+  nothing about success or failure depends on movement.
+- **Perf**: (a) opacity only; if a saturation filter is ever added here it
+  forces a full-card paint, so leave it out. (b) `layout` measures the card
+  each frame — one node, bounded, but keep `layout` off the `<main>` wrapper in
+  `src/components/owner/OwnerLayout.tsx:216`, or every owner page pays the
+  measurement cost. The hairline is `scaleX` on a 2px element:
+  compositor-only, and `transform-origin: left` so it grows rather than
+  stretches its own pixels.
+
+---
+
+## 11. Games, teams & community
+
+Scope: the seven real routes declared in `src/App.tsx:153-174` —
+
+```
+/games                 src/pages/GamesPage.tsx                      (public)
+/community             src/pages/CommunityPage.tsx                  (public)
+/game/:id              src/pages/GameDetailsPage.tsx                (public)
+/game/:id/join-status  src/features/booking/GameJoinStatusPage.tsx  (protected)
+/teams                 src/pages/TeamsPage.tsx                      (public)
+/create-team           src/pages/CreateTeamPage.tsx                 (protected)
+/team/:id              src/pages/TeamDetailsPage.tsx                (public)
+```
+
+**Real state.** Nothing below invents a state the app does not already render:
+`GamesPage.tsx:312` `viewMode "grid" | "map"`; `:641` FilterChips, 0–4 chips,
+each individually removable; `GameDetailsPage.tsx:531-625` the five-way join
+panel (`isCancelled | isHost | isParticipant | isPendingParticipant | default`),
+`:398-454` the host-only pending queue, `:457-491` the confirmed roster;
+`TeamCard.tsx:26-33` `fill` (0–1), `isFull`, `rosterLabel`; `TeamForm.tsx:62`
+`isGeneratingLogo`.
+
+`GamesPage` is a framer-motion page (`:4-6`) with the same results-region shape
+as `/venues`: `<AnimatePresence mode="wait">` at `:652` over skeleton, map, grid,
+error and empty branches, with `skeletonMotion` / `gridMotion` / `cardMotion` at
+`:411-425`. `GameDetailsPage`, `TeamsPage`, `TeamCard` and `TeamForm` do not
+import it, so cases reaching for it there add the first use in that file — weigh
+that against the CSS option each time.
+
+### One thing to fix before cases 84 and 85
+
+`useGames` keys on the filter object itself — `queryKey: ["games", filters]`
+(`src/hooks/useGames.ts:71`) — with no `placeholderData`, and `GamesPage.tsx:325`
+passes `search: searchQuery || undefined` straight from the input's `onChange`
+(`:463`) with no debounce. So typing `bas` mints three cold query keys, and each
+one puts `isLoading: true` back on the page, which tears the grid down and
+replaces it with six skeletons. Per keystroke. The `AnimatePresence` now in place
+animates that strobing rather than fixing it. Debounce the search term into the
+query key (250ms, the same `--dur-base` everything else uses) and add
+`placeholderData: (prev) => prev` so the previous rows stay on screen while the
+next set resolves. `isFetching` is already destructured at `:321` and ready to
+drive case 84.
+
+### 84. The grid answers the filter, instead of being replaced by one
+
+- **Where**: `/games` → `src/pages/GamesPage.tsx` — result region `:652-718`,
+  the count line above it, `useGames(...)` call `:322-330`.
+- **Already built, partially**: the branch swap and the capped card stagger ship
+  — `cardMotion(index)` on each keyed `motion.div` (`:424-425, 691-693`) and the
+  same two source comments as `/venues` explaining `initial: false` on the
+  skeletons and the deliberate absence of `initial={false}` on `AnimatePresence`
+  (`:409-420`). What is missing is the *in-flight* state, which needs the
+  `placeholderData` fix above.
+- **Motion**: with `placeholderData` in place, `isFetching && !isLoading` is
+  true while the new set resolves. During that window the grid container drops
+  to `opacity: .5` and the count line above it (`{games.length} games looking
+  for players`) drops to `opacity: 0`. When the new array lands, the count line
+  returns to 1 and the existing card stagger runs. What the user understands:
+  the rows in front of them are the answer to the filter they just changed, and
+  the answer has finished arriving. Right now a filter change and a slow network
+  are indistinguishable — both look like "the page is the same", or, worse, both
+  look like a full teardown.
+- **Timing**: dim out 120ms `cubic-bezier(.4,0,1,1)`; cards in 260ms
+  `cubic-bezier(0.16,1,0.3,1)` (`--ease-out-expo`) with the existing 30ms
+  stagger capped at eight — cards nine onward appear at their final state,
+  because a 40-result stagger is a 1.2-second wait for the bottom of the list.
+- **Build**: CSS/Tailwind for the dim — one class toggled off `isFetching`, no
+  new dependency for a single opacity change on a container framer-motion is
+  already inside.
+- **Reduced motion**: `cardMotion` already returns `{}` under `prefersReduced`.
+  Keep the opacity dim even then: it is a 120ms fade with no transform and it is
+  the only thing telling a user their filter is still in flight. Fading is not
+  the class of motion `reduce` is about.
+- **Perf**: opacity and transform only. The stagger cap matters — an
+  uncapped delay on 40 cards keeps 40 elements on the compositor for
+  1.2s. No layout properties touched.
+
+### 85. Grid and map are one set of games, not two pages
+
+- **Where**: `/games` → `ToggleGroup` at `GamesPage.tsx:627-634`, branch at
+  `:668-696`, map component `src/components/games/GamesMapView.tsx:41-98`.
+- **Already built, partially**: both branches now live inside the same
+  `<AnimatePresence mode="wait">`, the map as a keyed `motion.div` with
+  `mapMotion` (`:669-671`), so the crossfade exists. The **height** does not.
+- **Motion**: the map container is a fixed `height: "600px"`
+  (`GamesMapView.tsx:43`); the grid is whatever six-to-forty cards need. Today
+  the toggle swaps one for the other and the page height jumps by a screen or
+  more, so the scroll position lands somewhere unrelated. Fix the results region
+  to the outgoing view's measured height, keep the existing crossfade — grid out
+  140ms, map in 200ms starting at 60ms so the two overlap — then animate the
+  container height to the incoming view's height over 260ms and release it to
+  `auto`. What the user understands: these are the same games, redrawn — not a
+  navigation. The overlap is what carries that; a hard cut reads as a page
+  change.
+- **Timing**: out 140ms `cubic-bezier(.4,0,1,1)`; in 200ms `--ease-out-expo`
+  delayed 60ms; height 260ms `--ease-out-expo`.
+- **Build**: framer-motion — a `motion.div` wrapper with `layout` around the
+  existing `AnimatePresence`. Doing this in CSS needs the incoming height before
+  it is rendered, which means measuring it yourself; that is the thing `layout`
+  exists to stop you writing.
+- **Reduced motion**: `mapMotion` and `gridMotion` already collapse to `{}`;
+  pass `layout={!prefersReduced}` on the wrapper so the height snaps too. Keep
+  one concession that is not motion: `scrollIntoView({ block: "start", behavior:
+  "auto" })` on the results heading after the swap, so a 600px height change does
+  not leave the user staring at the footer.
+- **Perf**: the crossfade is opacity only. The height animation is the flagged
+  risk — animating `height` triggers layout on every frame, and inside it sits a
+  Google Maps canvas that reflows with its container. Mitigate by animating
+  height on the *wrapper* while the map keeps its fixed 600px, so only one
+  element relayouts and the map never sees an intermediate size.
+
+### 86. The join panel is five screens in one slot
+
+- **Where**: `/game/:id` → `src/pages/GameDetailsPage.tsx` — the sticky sidebar
+  card `:496`, its title `:503`, the spots badge `:504-506`, and the action
+  block `:531-625`, which is a five-way ternary: `isCancelled` → `isHost` →
+  `isParticipant` → `isPendingParticipant` → default.
+- **Motion**: on a free game, pressing "Request to Join" resolves
+  `requestToJoin` (`src/hooks/useGames.ts:306`), which invalidates `["game", id]`
+  (`:349`); the refetch flips `isPendingParticipant` and the button is
+  *replaced* — new label, new disabled state, new second button underneath, all
+  in the frame the query settles. The only acknowledgement is a sonner toast
+  that is gone in four seconds. Instead: the outgoing block fades `1 → 0` and
+  lifts `0 → -6px` over 130ms; the incoming block fades in and settles from
+  `+6px` over 220ms; the card's own height animates between the two (the pending
+  state is two buttons tall, the default is one). In parallel the title at `:503`
+  crossfades "Join Game" → "You're in" on the same 220ms — same slot, so it must
+  not slide. What the user understands: the request landed, this panel is now
+  about waiting rather than joining, and the change is a consequence of what
+  they just pressed.
+- **Timing**: out 130ms `cubic-bezier(.4,0,1,1)`; in 220ms
+  `cubic-bezier(0.16,1,0.3,1)`; height 220ms, same easing, run concurrently with
+  the incoming block.
+- **Build**: framer-motion. `<AnimatePresence mode="wait">` keyed on a derived
+  `panelState` string (`"cancelled" | "host" | "in" | "pending" | "open"`), with
+  the card body wrapped in a `layout` motion.div for the height — the same shape
+  as `/login`'s three-branch slot (case 66), which is worth copying rather than
+  re-deriving. `mode="wait"` is what buys the clean 130ms/220ms sequence; CSS
+  would need both blocks mounted and absolutely positioned, which breaks the
+  sticky card's height.
+- **Reduced motion**: `useReducedMotion()` → `transition={{ duration: 0 }}` on
+  the height and `exit`/`initial` reduced to opacity `0 → 1` over 100ms. The
+  panel still visibly changes; it just does not move. The toast at `:165` stays
+  either way — it is the only thing that reaches a screen reader, and it should
+  not be load-bearing for sighted users either.
+- **Perf**: opacity + transform on the blocks; the height animation is a real
+  layout cost, but it is one sticky card, once per state change, and the card is
+  `position: sticky` so it does not push page content. Do not put `layout` on
+  the whole sidebar — the `<ChatButton>` at `:629` and the share button below it
+  do not need measuring.
+
+### 87. Pay & Join: the last frame before the bank
+
+- **Where**: `/game/:id` → `GameDetailsPage.tsx:121-160` (`handleRequestToJoin`,
+  paid branch), button at `:604-624`, `isProcessingPayment` state `:48`.
+- **Motion**: for a paid game this does not open a page — it either builds a
+  hidden `<form>` and calls `form.submit()` (`:131-147`) or assigns
+  `window.location.href` (`:149-151`). Either way the next paint belongs to
+  Ameria or Idram, and there is no interstitial to animate. Between the click
+  and that paint the app currently shows a spinner inside a button on an
+  otherwise fully live page, so a second click, a filter, or the back gesture
+  all still look available. Instead: on `setIsProcessingPayment(true)`, a scrim
+  fades in over the sidebar card only (`hsl(var(--background) / 0.72)`, opacity
+  `0 → 1` over 160ms), the button label crossfades to "Taking you to the bank…",
+  and the card's border colour transitions to `hsl(var(--primary) / 0.4)` over
+  the same 160ms. Nothing pulses and nothing loops — a looping animation on a
+  handoff that may complete in 400ms reads as a hang. What the user understands:
+  this page has stopped being interactive because it is about to stop being
+  this page. This is case 57's argument applied to the one other place in the
+  app where a confused second click is a second payment.
+- **Timing**: 160ms `cubic-bezier(0.16,1,0.3,1)` for scrim, label and border,
+  all one transition.
+- **Build**: CSS/Tailwind. Three properties on two elements, driven by one
+  boolean already in state. Reaching for framer-motion here would add the
+  library to `GameDetailsPage` for a fade.
+- **Reduced motion**: the scrim appears at `opacity: 1` with no transition —
+  `@media (prefers-reduced-motion: reduce) { .pay-scrim { transition: none; } }`.
+  The block itself is not decoration; removing it would remove the only signal
+  that the page is now inert.
+- **Perf**: opacity and `border-color`. `border-color` is a paint, not a
+  layout — safe on a single card. Do not animate `backdrop-filter` here even
+  though `.glass` exists (`index.css:430-439`): the scrim covers a sticky
+  element and blur on a sticky container forces a new stacking context mid-
+  transition on Safari.
+
+### 88. Approve moves a person into the squad **[HIGH IMPACT]**
+
+- **Where**: `/game/:id` → `GameDetailsPage.tsx` — pending queue `:398-454`
+  (host only), confirmed roster `:457-491`, handler `handleApprove` `:193-204`,
+  mutation `useApproveParticipant` (`src/hooks/useGames.ts:385-416`).
+- **Motion**: this is the same person rendered twice, sixty pixels apart, by two
+  different loops — avatar plus name in a pending row at `:413-449`, avatar plus
+  name in a roster tile at `:472-485`. Approving invalidates `["game", id]`
+  (`useGames.ts:378`) and on refetch the row disappears from one list and a tile
+  appears in the other, with no relationship drawn between them. Instead: give
+  the avatar+name pair a shared identity so approval *moves* it — the pending
+  row's approve/reject buttons fade out (110ms), the row's avatar and name
+  travel to their position in the roster grid (320ms), the roster grid reflows
+  to make room, the vacated row height collapses, and the "Players (n/max)"
+  heading at `:458-460` increments as the traveller lands. What the user
+  understands: approving is not a form submission, it is admitting a person to
+  the squad — and the roster is now one closer to full. This is the moment the
+  whole feature exists for, and today it is indistinguishable from a list
+  refresh.
+- **Timing**: buttons out 110ms `cubic-bezier(.4,0,1,1)`; travel 320ms
+  `cubic-bezier(0.16,1,0.3,1)`; queue row collapse 200ms same easing, starting
+  at 120ms; heading count crossfade 180ms at the end of the travel.
+- **Build**: framer-motion, and only framer-motion. `layoutId={`p-${participant.user_id}`}`
+  on the avatar+name element in *both* loops, both wrapped in `<AnimatePresence>`
+  — that is the entire mechanism, and it is the one thing CSS cannot express,
+  because the two elements are in different DOM subtrees with different
+  ancestors. Requires optimistic handling: `useApproveParticipant` currently
+  waits for a server round trip before either list changes, so add
+  `onMutate` that moves the participant between `participants` and
+  `pending_participants` in the `["game", id]` cache and rolls back on error.
+  Without that the travel starts ~400ms after the click and reads as unrelated.
+- **Reduced motion**: `useReducedMotion()` → drop `layoutId` from both elements
+  (passing `layoutId={reduce ? undefined : ...}` disables the shared transition
+  cleanly) and let the row and tile swap instantly. The count still updates and
+  the toast at `:200` still fires, so nothing is lost but the travel.
+- **Perf**: `layoutId` animates transform and opacity — no layout properties on
+  the moving element. The measured cost is the FLIP read on both lists at the
+  start of the transition: with a 22-player roster that is ~25
+  `getBoundingClientRect()` calls in one frame, on a click. Fine. It would not
+  be fine if it ran on every refetch, so key the transition to the mutation, not
+  to data identity.
+- **Why this one**: it is the only case in this section that changes what the
+  user *believes* rather than how smoothly they see it. `/games`, `/teams` and
+  `/create-team` are browse and form surfaces where motion improves comprehension
+  at the margin; the approve action is the product's core transaction — a host
+  deciding who plays — and it currently renders as two unrelated lists changing
+  at once. Making the person visibly move from the request queue into the squad
+  is the difference between "the data updated" and "I just let someone into my
+  game", and the `layoutId` that does it is roughly fifteen lines across two
+  existing loops.
+
+### 89. The roster meter fills from where it was
+
+- **Where**: `/teams` → `src/components/teams/TeamCard.tsx` — meter `:113-124`,
+  `fill` computed `:26`, `rosterLabel` `:29-33`, skeleton twin `:144-165`.
+  Also rendered on the "My Teams" and "Browse" grids at
+  `src/pages/TeamsPage.tsx:145-162,259-263`.
+- **Motion**: the bar carries `transition-[width] duration-300` (`:119`) but its
+  width comes from an inline style on an element that mounts with that width
+  already set — so the transition never fires on first paint. Coming out of
+  `TeamCardSkeleton`, six meters snap from 0 to their value with no motion at
+  all, and the one time the class *does* fire is a re-render, where it animates
+  a layout property. Both halves are wrong. Rebuild the bar as a full-width
+  child with `transform: scaleX(var(--fill)); transform-origin: left`, mounted at
+  `scaleX(0)` and raised to its real value on the frame after mount; then
+  `rosterLabel` ("7 spots open") crossfades in as the bar settles. What the user
+  understands: how full this squad is, as a quantity that grew to that point —
+  and, across a grid, which teams are nearly full at a glance, because six bars
+  growing at once are readable in a way six static bars are not.
+- **Timing**: 520ms `cubic-bezier(0.16,1,0.3,1)` for the scale, 40ms stagger per
+  card capped at six; label crossfade 200ms starting at 300ms.
+- **Build**: CSS/Tailwind. `transition: transform 520ms var(--ease-out-expo)`
+  plus a `--fill` custom property set inline from the existing
+  `Math.min(members / size, 1)`. A `useEffect`-free version works: render at
+  `scaleX(0)` and add the value in a `requestAnimationFrame`. No library, and
+  the component stays presentational.
+- **Reduced motion**: `@media (prefers-reduced-motion: reduce) { .roster-meter
+  { transition: none; } }` — the bar paints at its final width immediately, and
+  the label appears with it. The numeric roster is already stated as text
+  directly above (`:98-101`), so nothing is only carried by the bar; the
+  existing `aria-hidden="true"` at `:116` stays correct.
+- **Perf**: this case is here *because* of layout thrash. `transition-[width]`
+  on the current markup relayouts the meter's parent chain on every frame, and
+  `TeamsPage` renders up to nine of these at once. `scaleX` is composited. It is
+  the same defect the gallery dot rail already fixed (case 37) — flag the
+  pattern anywhere else it appears before copying it.
+
+### 90. The logo slot exists before the logo does
+
+- **Where**: `/create-team` (and `/team/:id/edit`, same component) →
+  `src/features/teams/TeamForm.tsx` — `handleGenerateLogo` `:68-92`,
+  `isGeneratingLogo` `:62`, preview `:193-201`, generate button `:212-225`.
+- **Motion**: the preview block is mounted only when `values.logoUrl` is truthy
+  (`:193`), so an AI generation that takes several seconds ends with a 96px
+  image plus its wrapper appearing above the prompt field and shoving the whole
+  card — prompt, upload target, visibility radios, submit button — down by
+  ~120px. If the user was reaching for "Upload image" they now miss it. Instead:
+  mount the 96×96 slot the moment `isGeneratingLogo` goes true, filled with a
+  `bg-surface-3` rounded-xl block running the existing `shimmer` animation
+  (`tailwind.config.ts:114-117,123`); when `logoUrl` arrives, the image
+  crossfades over the placeholder in the same box — opacity `0 → 1` over 260ms
+  with a `scale(1.03) → 1` settle. Nothing below it ever moves. What the user
+  understands: the thing being generated will appear *there*, it is 96px square,
+  and the page is not about to rearrange itself under their cursor.
+- **Timing**: slot appears instantly (no entrance — it is reserving space, not
+  announcing itself); shimmer 2s linear infinite, already defined; image in
+  260ms `cubic-bezier(0.16,1,0.3,1)`.
+- **Build**: CSS/Tailwind. `animate-shimmer` is already in the config, the
+  crossfade is two absolutely-positioned children in one 96px box. No library.
+- **Reduced motion**: `@media (prefers-reduced-motion: reduce)` sets
+  `animation: none` on the shimmer — the slot becomes a flat `bg-surface-3`
+  square, which still reserves the space, which is the entire point — and drops
+  the image transition to `opacity 1`. Pair it with a `role="status"` on the
+  slot carrying "Generating team logo", because today the only feedback for a
+  multi-second wait is a spinner glyph inside a button (`:219-223`).
+- **Perf**: opacity and transform only; `background-position` on the shimmer is
+  a paint on a 96px box, which is the cheapest possible version of that effect.
+  Reserving the box is itself the layout fix — it removes a ~120px reflow of the
+  form rather than animating one.
+
+### 91. The team you just made is already there
+
+- **Where**: `/create-team` → `src/pages/CreateTeamPage.tsx:15-33`, submit
+  button `src/features/teams/TeamForm.tsx:286-303`, arrival
+  `src/pages/TeamDetailsPage.tsx:139-147` (loading) and `:180-278` (team card).
+  Mutation `useCreateTeam` at `src/hooks/useTeams.ts:230-267`.
+- **Motion**: `useCreateTeam` returns the full inserted row (`useTeams.ts:260`)
+  but its `onSuccess` (`:262-265`) invalidates only `["teams"]` and
+  `["user-teams"]` — it never seeds `["team", team.id]` (key at `:83`) or
+  `["team-members", team.id]` (`:100`). So `navigate(\`/team/${team.id}\`)`
+  (`CreateTeamPage.tsx:29`) lands on a lazy chunk, then a full-page 32px spinner
+  (`TeamDetailsPage.tsx:142-144`), to fetch a team the client is holding in a
+  local variable. Seed both caches in `onSuccess` — the team from the mutation
+  result, the members array as the single captain row it just inserted
+  (`useTeams.ts:254-258`) — and the destination renders populated on first
+  paint. Then the motion is worth having: the team card at `:180` enters with
+  opacity `0 → 1` and `translateY(12px) → 0`, and inside it the 80px avatar
+  (`:183-188`) settles from `scale(0.92)` while the name, sport badge and
+  member count follow on a 60ms stagger. What the user understands: creation
+  succeeded and this is the thing they made — rather than "submitted, now wait,
+  now here is a page".
+- **Timing**: card 300ms `cubic-bezier(0.16,1,0.3,1)`; avatar 340ms
+  `cubic-bezier(0.34,1.56,0.64,1)` (`--ease-spring` — the one place in this
+  section where a slight overshoot is right, because this is a completion);
+  children 220ms each, 60ms stagger.
+- **Build**: framer-motion, using `staggerChildren` and `fadeUp` already
+  exported from `src/lib/motion.ts:28-46` — a `motion.div variants={staggerChildren}`
+  around the card with `motion.div variants={fadeUp}` on the three text rows.
+  Reuses the app's existing vocabulary instead of inventing a second one in CSS.
+- **Reduced motion**: `useReducedMotion()` → render the card without the
+  `variants` props at all; everything is at its final state on first paint. The
+  cache-seeding fix is independent of motion and stands on its own — a page that
+  spins for a second before showing data you already have is a bug under any
+  motion preference.
+- **Perf**: transform and opacity. Gate the entrance on "arrived from create" —
+  e.g. `navigate(..., { state: { justCreated: true } })` read via
+  `useLocation()` — so `/team/:id` opened from a shared link or the teams grid
+  does not replay a celebration for a team the visitor had no hand in making.
+
+---
+
+## 12. Empty states, errors & micro-interactions
+
+Scope: the app-wide feedback layer rather than any one route — the two toasters
+mounted at `src/App.tsx:131-132`, the shared `Button` at
+`src/components/ui/button.tsx`, `Switch` at `src/components/ui/switch.tsx`, the
+`.focus-ring` utility at `src/index.css:418-420`, the two "nothing / broken"
+panels (`src/components/ui/empty-state.tsx`,
+`src/components/common/StatusPanel.tsx`), the route-level crash screen
+(`src/components/common/RouteErrorBoundary.tsx`) and `/*` →
+`src/pages/NotFound.tsx` (`src/App.tsx:250`).
+
+Nothing here is a route-specific idea. These components render on almost every
+one of the ~60 routes declared in `App.tsx:146-250`, which is the argument for
+treating them as one system.
+
+**Two toasters, both mounted, both live** — `src/App.tsx:131-132`:
+
+```tsx
+<Toaster />   // Radix — src/components/ui/toaster.tsx → ui/toast.tsx
+<Sonner />    // sonner — src/components/ui/sonner.tsx
+```
+
+Sonner is the app's real one: 56 modules under `src/` import `from "sonner"`,
+55 of them call sites (the 56th is the wrapper itself). The Radix one has
+exactly three consumers — `src/hooks/useBlogPosts.ts`,
+`src/hooks/useOutreach.ts`, `src/components/operator/outreach/TargetDrawer.tsx`
+— all behind `AdminRoute` on `/admin` and `/operator/outreach`.
+
+**Sonner's shipped motion**, read from `node_modules/sonner/dist/styles.css`:
+entry/exit is `transition: transform 400ms, opacity 400ms, height 400ms,
+box-shadow 200ms` on `[data-sonner-toast]`, position defaults to
+`bottom-right`, lifetime defaults to `4000ms` (`4e3` in `dist/index.mjs`), with
+a `200ms` unmount delay after removal. Its reduced-motion block is:
+
+```css
+@media (prefers-reduced-motion) {
+  [data-sonner-toast], [data-sonner-toast] > *, .sonner-loading-bar {
+    transition: none !important; animation: none !important;
+  }
+}
+```
+
+**Radix toast motion** — `src/components/ui/toast.tsx:26`: `data-[state=open]`
+→ `slide-in-from-top-full`, `sm:slide-in-from-bottom-full`; `data-[state=closed]`
+→ `fade-out-80 slide-out-to-right-full`; swipe follows the pointer through
+`--radix-toast-swipe-move-x`. Viewport is `fixed top-0 … sm:bottom-0
+sm:right-0` (`toast.tsx:17`). Queue config at `src/hooks/use-toast.ts:5-6`:
+`TOAST_LIMIT = 1`, `TOAST_REMOVE_DELAY = 1000000`.
+
+### 92. The toast is the app's whole answer to "did that work?" **[HIGH IMPACT]**
+
+- **Where**: every route. `src/components/ui/sonner.tsx:10-42`, mounted at
+  `src/App.tsx:132`. Representative call sites:
+  `src/features/profile/hooks/useProfileSettings.ts:112,116,134,137` (`/profile`),
+  `src/features/booking/CheckoutPage.tsx` and
+  `src/features/booking/BookingPanel.tsx` (`/book/:bookingId`, `/venue/:id`),
+  `src/pages/GamesPage.tsx` (`/games`).
+- **Motion**: Today success and failure enter identically — sonner's default
+  rise from below at `bottom-right`, same 400ms, same curve, distinguished only
+  by the words. Split them on arrival, because the two demand different amounts
+  of attention. **Success**: `translateY(14px) → 0` with `opacity 0 → 1`, the
+  default lift, nothing else. **Error**: no lift at all — `opacity 0 → 1` plus
+  `scale 0.97 → 1` from the toast's own bottom-right corner (`transform-origin:
+  100% 100%`), so it arrives *in place* rather than sliding past the eye, and
+  the left edge picks up a 3px `--destructive-solid` rule that wipes down over
+  the same interval. The user reads urgency before they read the sentence: a
+  thing that grew where it is has stopped, a thing that slid in is passing
+  through. This matters most on `/book/:bookingId`, where the difference between
+  "Booking confirmed" and a payment failure is the difference between leaving
+  the page and not.
+- **Timing**: Success `400ms cubic-bezier(0.16, 1, 0.3, 1)` (sonner's own 400ms,
+  re-curved to `--ease-out-expo`). Error `250ms cubic-bezier(0.16, 1, 0.3, 1)`
+  for opacity+scale, with the edge rule wiping `scaleY(0) → 1` over the same
+  250ms, `transform-origin: 0 0`. Error lifetime raised from the 4000ms default
+  to `6000ms` via `toastOptions.duration`; exit stays sonner's 400ms.
+- **Build**: CSS, in the `classNames` map already open at `sonner.tsx:34-38`
+  (add `error:` and `success:` keys, which sonner applies alongside `toast:`).
+  No new dependency, no wrapper around 55 call sites, and it stays inside the
+  file that already owns toast presentation.
+- **Reduced motion**: sonner's own `@media (prefers-reduced-motion)` block kills
+  `transition` and `animation` on `[data-sonner-toast]` **and all its children**
+  with `!important` — so today a reduced-motion user gets toasts that appear and
+  vanish with zero transition, which is easier to miss than a fade, not harder.
+  Fix it deliberately: in `src/index.css`, inside a
+  `@media (prefers-reduced-motion: reduce)` block, re-enable opacity only —
+  `[data-sonner-toast] { transition: opacity 200ms linear !important; }` — and
+  leave `transform` and `height` unset so nothing moves. Reduced motion means no
+  motion, not no feedback. Case 64 proposes a blanket
+  `transition: none !important` on the same selector; this rule supersedes it.
+- **Perf**: `transform` + `opacity` for everything added here. Flag inherited
+  from sonner, not introduced here: its base transition includes `height 400ms`,
+  which is a layout-animated property on every toast that stacks or collapses.
+  Leave it — overriding sonner's height animation breaks its stack maths — but
+  do not add a second height-animated element inside the toast.
+- **Why this is the strongest case**: it is the only motion in the app that
+  fires from 55 different modules, it is the sole confirmation channel for
+  bookings and payments, and the fix is confined to one file's `classNames` map.
+
+### 93. Two toasters, two corners, two curves
+
+- **Where**: `src/App.tsx:131-132`. The Radix stack —
+  `src/components/ui/toaster.tsx` → `src/components/ui/toast.tsx` — fires from
+  `src/hooks/useBlogPosts.ts`, `src/hooks/useOutreach.ts` and
+  `src/components/operator/outreach/TargetDrawer.tsx` (`/admin`,
+  `/operator/outreach`).
+- **Motion**: On `/operator/outreach` an admin saving a target gets a Radix
+  toast, and any sonner call on the same screen gets a sonner toast. On a phone
+  those arrive from **opposite edges** — Radix's viewport is `fixed top-0` below
+  `sm` (`toast.tsx:17`) while sonner sits bottom-right — with different exits
+  (Radix leaves rightward via `slide-out-to-right-full`, sonner drops downward)
+  and different queue rules (`TOAST_LIMIT = 1` at `use-toast.ts:5` replaces the
+  previous message; sonner stacks). Two notification systems in one viewport is
+  not a motion problem you can style away. The change is to route the three
+  Radix call sites through sonner and drop `<Toaster />` from `App.tsx:131`, so
+  that "the app told me something" has one arrival, one corner, one curve.
+  Until that lands, at minimum pin the Radix viewport to `bottom-0 right-0` at
+  all breakpoints and swap `slide-in-from-top-full` for
+  `slide-in-from-bottom-full` in `toast.tsx:26`, so the two at least agree about
+  which edge messages come from.
+- **Timing**: If reconciled to sonner, this case has no timings of its own — it
+  inherits case 92. If kept, match Radix to it: `duration-[400ms]
+  ease-[cubic-bezier(0.16,1,0.3,1)]` on open, `duration-200` on close, replacing
+  `tailwindcss-animate`'s defaults.
+- **Build**: Neither CSS nor framer-motion — a deletion. Three imports change
+  from `@/hooks/use-toast` to `sonner`, one mount goes, and
+  `ui/toast.tsx` + `ui/toaster.tsx` + `hooks/use-toast.ts` become dead code.
+  Cheapest motion fix in this document.
+- **Reduced motion**: falls out for free once there is one toaster — it inherits
+  the opacity-only override from case 92. If the Radix stack survives, its
+  `animate-in`/`animate-out` classes need the same `@media (prefers-reduced-motion:
+  reduce)` treatment, which they do not currently have anywhere in `index.css`.
+- **Perf**: `transform`/`opacity` only, both stacks. No risk either way; the
+  cost of keeping both is bundle weight (`@radix-ui/react-toast` stays) and user
+  confusion, not frames.
+
+### 94. A button entering its pending state changes two things at two speeds
+
+- **Where**: `src/components/ui/button.tsx:8` (the shared base string), as seen
+  at `src/components/common/StatusPanel.tsx:91-100` ("Try again" → spinner +
+  "Retrying…", rendered by every `ErrorPanel` in the app) and
+  `src/features/profile/NotificationsTab.tsx:79-88` ("Save Preferences" →
+  spinner + "Saving..." on `/profile`).
+- **Motion**: The base class carries `transition-all duration-200` *and*
+  `disabled:opacity-50`. So when `isRetrying` flips, the opacity change
+  interpolates over 200ms while the label — a different string, a different
+  intrinsic width — snaps in a single frame, because `width: auto → auto` has no
+  interpolable computed value and no transition fires on it. The result is a
+  button that jumps size instantly and then dims slowly: one state change
+  rendered as two events. Make it one. Give the pending label the same box:
+  measure the widest of the two labels once and set `min-width` on the button,
+  then crossfade the label content — resting label `opacity 1 → 0` over 90ms,
+  spinner+pending label `opacity 0 → 1` over 90ms starting at 60ms, both
+  absolutely positioned in the same grid cell so nothing reflows. The dimming
+  drops to 120ms to land with them. What the user understands: the button they
+  pressed is still the same button, now working — not a new control that
+  appeared where the old one was.
+- **Timing**: Label crossfade `90ms linear`, incoming delayed `60ms`; opacity to
+  the disabled state `120ms cubic-bezier(0.16, 1, 0.3, 1)`. Total settle 150ms,
+  matching `--dur-fast`. The `Loader2 animate-spin` already in place
+  (`StatusPanel.tsx:94`, `NotificationsTab.tsx:82`) keeps Tailwind's 1s linear
+  rotation — do not re-time it, it is the one thing in the app that already
+  reads as "still going".
+- **Build**: CSS/Tailwind, inside `buttonVariants`. Replace the blanket
+  `transition-all` with
+  `transition-[background-color,border-color,color,box-shadow,opacity,transform]`
+  and add a `pending` treatment via a small wrapper (a `grid` with both labels in
+  `grid-area: 1/1`). framer-motion's `layout` prop would animate the width for
+  free but would put a layout-animating library on every button in the app to
+  solve a problem a `min-width` solves. Note that narrowing `transition-all` is
+  also what case 95 needs, and case 71 separately relies on the `active:scale`
+  and `peer-data-[state=checked]` chains surviving — keep `transform` in the
+  list.
+- **Reduced motion**: in the `@media (prefers-reduced-motion: reduce)` block at
+  `src/index.css:619`, set the crossfade to `transition: none` and swap labels
+  instantly. The `min-width` stays — it is layout, not motion, and it is what
+  stops the jump. The spinner also stops: add
+  `.animate-spin { animation: none; }` scoped to buttons and replace it with a
+  static `Loader2` at 60% opacity, since an infinite rotation is exactly what
+  this media query exists to suppress.
+- **Perf**: `opacity` only, on two absolutely-stacked text nodes. Explicitly
+  avoids the layout thrash of animating `width`, which is the naive fix and
+  would reflow the flex row the button sits in (`StatusPanel.tsx:60` — a
+  `flex-wrap` row of two buttons, so a width animation can trigger a wrap
+  mid-transition).
+
+### 95. The focus ring should appear, not fade in
+
+- **Where**: `src/components/ui/button.tsx:8` — the same base string carries
+  `transition-all duration-200` and `focus-visible:ring-2 focus-visible:ring-ring
+  focus-visible:ring-offset-2`. Every `Button` in the app, on every route.
+- **Motion**: Tailwind implements `ring-2` as `box-shadow`. `transition-all`
+  transitions `box-shadow`. So focusing a button interpolates the ring from
+  transparent to `--ring` (`151 90% 47%` in the shipped dark theme,
+  `index.css:200`) over 200ms — the indicator arrives *after* the focus does,
+  and a user tabbing at speed through a form runs ahead of their own ring. The
+  correct motion here is none: the ring must be at full strength on the frame
+  focus lands. Excluding `box-shadow` from the transition list (see case 94's
+  replacement) fixes it for every button at once. If a settle is wanted, animate
+  only the **offset** — `ring-offset-width 0 → 2px` over 120ms — while the ring
+  itself is opaque from frame one; the indicator is never absent, it just
+  breathes outward.
+  This is read from the class string rather than measured; a two-shot screenshot
+  diff at focus + 1 frame is the check, and it is worth running before and after.
+  Note the surrounding code is already careful here for good reasons —
+  `src/components/ui/sonner.tsx:16-33` and
+  `src/pages/NearbyFieldsPage.tsx:184-204` both document focus indicators that
+  were painted and then invisible. This is the same class of defect arriving
+  through timing instead of colour.
+- **Timing**: Ring opacity 0ms (instant). Optional offset growth `120ms
+  cubic-bezier(0.16, 1, 0.3, 1)`, i.e. under `--dur-fast`.
+- **Build**: CSS/Tailwind — one class string in `buttonVariants`. Not
+  framer-motion: a focus indicator that depends on JS having hydrated is a worse
+  indicator than one that does not.
+- **Reduced motion**: instant is already the reduced-motion answer, so the fixed
+  version needs no fallback. If the optional offset growth is adopted, add
+  `.focus-ring, [class*="focus-visible:ring"] { transition-property: none; }`
+  to the block at `src/index.css:619`.
+- **Perf**: `box-shadow` is a paint-only property — no layout, no thrash — but
+  it is not compositor-accelerated, so animating it on a long list of focusable
+  rows would repaint each one. Another reason the answer is "don't animate it".
+  Note the `.focus-ring` utility (`index.css:418-420`) is *not* affected: its
+  eight call sites (`VenueCard.tsx:55`, `TeamCard.tsx:36`, `filter-chips.tsx:55`,
+  `Footer.tsx:62`, `PlayerDashboard.tsx:103`, `NearbyFieldsPage.tsx` ×2) all sit
+  on elements carrying `transition-colors` or no transition at all, and
+  `transition-colors` does not include `box-shadow`. The bug is specific to
+  `Button`.
+
+### 96. A switch that moves but has not saved anything
+
+- **Where**: `/profile` → `src/features/profile/NotificationsTab.tsx:70-76`
+  (four `Switch`es) and the "Save Preferences" button at `:79-88`. Component:
+  `src/components/ui/switch.tsx:12,20`.
+- **Motion**: The thumb already translates 20px (`translate-x-5` — track `w-11`
+  44px, less `border-2` ×2, less thumb `w-5` 20px) in Tailwind's default
+  `transition-transform` 150ms `cubic-bezier(0.4, 0, 0.2, 1)`, with the track
+  colour crossfading to `--primary` under `transition-colors`. That reads as
+  "done". It is not done: `onCheckedChange` only calls `setNotifications`
+  (`:72-74`) and nothing persists until the button below is pressed. So four
+  switches can sit in a state the server has never heard of, looking exactly
+  like four saved switches. Motion is where to say so. On the first change, the
+  Save button — which is static and easy to miss under a `Separator` — rises
+  `translateY(6px) → 0` with `opacity 0.55 → 1` and its label changes to
+  "Save 2 changes"; each subsequent toggle re-runs a 1px settle on it. Nothing
+  about the switch itself changes, because the switch is telling the truth about
+  the *control*; the button is what has to say the *record* is behind. On
+  successful save (`useProfileSettings.ts:134`), the button returns to
+  `opacity 0.55` in 250ms as the sonner toast arrives — two channels, one fact.
+- **Timing**: Thumb stays at 150ms `cubic-bezier(0.4, 0, 0.2, 1)` — it is
+  already correct and already matches `--dur-fast`; do not re-curve it to
+  `--ease-out-expo`, a switch thumb should not overshoot its own track. Button
+  entrance `250ms cubic-bezier(0.16, 1, 0.3, 1)` (`--dur-base`). Per-toggle
+  settle `translateY(-1px) → 0`, `120ms`. Return to rest `250ms`.
+- **Build**: CSS/Tailwind, driven off a derived `isDirty` boolean compared
+  against `profile.notification_preferences` (already read at
+  `NotificationsTab.tsx:48`). No framer-motion: it is one element, two states,
+  and a class toggle.
+- **Reduced motion**: the button's opacity change survives (0.55 → 1 is
+  information, not decoration); the `translateY` and the per-toggle settle both
+  go to `transform: none` in the `src/index.css:619` block. The changed-count in
+  the label is the non-visual carrier and works regardless.
+- **Perf**: `transform` + `opacity` only. One caveat worth stating: do **not**
+  implement the "unsaved" cue by mounting or unmounting a bar under the switch
+  list — the card is inside a tabbed panel on `/profile` and a mount would
+  reflow the tab body on every toggle.
+
+### 97. The empty state arrives as one thought, in order
+
+- **Where**: `src/components/ui/empty-state.tsx:63-127`, rendered at
+  `src/pages/MyBookingsPage.tsx:157-163` ("No bookings yet" → "Find a venue"),
+  `src/pages/GamesPage.tsx:702-716`, `src/pages/TeamsPage.tsx`,
+  `src/pages/CommunityPage.tsx`, `src/pages/MessagesPage.tsx`,
+  `src/pages/BlogPage.tsx` — 17 call sites, eleven of them under `/owner/*`.
+- **Motion**: The component's own docstring makes the case better than I can:
+  sign up, and Games, Teams, the community feed and the dashboard are all empty
+  at once, so these are the first four screens a new account meets. Today all of
+  them snap in fully formed the instant the query resolves, which is
+  indistinguishable from a page that failed to render its content. Stagger the
+  four parts in reading order — icon tile, `h2`, description, action row — each
+  `opacity 0 → 1` with `translateY(10px) → 0`. The eye is led from the symbol to
+  the sentence to the button, which is the order the copy was written in, and
+  the arrival makes clear the screen is *finished* rather than *loading*.
+  Deliberately not a `scaleIn` on the icon tile: `scale` resamples the
+  `rounded-2xl bg-primary/10` chip's edge, and `index.css:588-616` already
+  settled the lift-not-scale argument for this codebase.
+- **Timing**: `staggerChildren: 0.07`, `delayChildren: 0.05` and `transitionSlow`
+  (400ms, `[0.16, 1, 0.3, 1]`) — i.e. `staggerChildren` + `fadeUp` from
+  `src/lib/motion.ts:28-46` unchanged, but with `y: 10` instead of `16`, because
+  a 16px rise on a centred panel with `py-16` reads as the whole page settling.
+  Last element lands at ~610ms.
+- **Build**: framer-motion. `EmptyState` renders a variable subtree (`hasPrimary`
+  / `hasSecondary` / `tip` are all conditional, `empty-state.tsx:60-61,116`), and
+  `staggerChildren` handles a variable child count without hard-coded
+  `delay-[Nms]` classes per slot. It is already in the entry chunk via
+  `HomePage`, so this adds no bytes to any route. Note that on `/venues` and
+  `/games` the empty branch is already inside an `AnimatePresence`
+  (`DiscoverPage.tsx:867`, `GamesPage.tsx:702`) with `panelMotion` on the
+  wrapper — this case adds the *internal* stagger, and the two must not both
+  animate the same node.
+- **Reduced motion**: `useReducedMotion()` → render without the `variants` props,
+  matching the `prefersReduced ? {} : {...}` shape every other animated page in
+  this repo uses. The measurement recorded at `src/lib/motion.ts:3-20` (17
+  elements staged at `no-preference`, 0 at `reduce`) says framer resolves
+  entrances to their final state anyway, but gate it explicitly rather than
+  depending on that measurement continuing to hold.
+- **Perf**: `transform` + `opacity` only. Both are composited; a four-child
+  stagger on a mounting panel has no layout implications because the panel's
+  height is fixed by `py-12`/`py-16` before any child animates
+  (`empty-state.tsx:67`).
+
+### 98. A failed request and an empty shelf must not arrive the same way
+
+- **Where**: `src/components/common/StatusPanel.tsx:37-62` (the shared shell,
+  `tone: "neutral" | "danger" | "positive"`) and
+  `StatusPanel.tsx:75-104` (`ErrorPanel`, which is `tone="danger"` + `WifiOff` +
+  a retry button). Live on `/venue/:id`, `/my-bookings`, `/games`, `/messages`,
+  `/team/:id`, `/blog/:slug`, `/owner/*` — 23 files import one of the two.
+- **Motion**: The component exists precisely because these two facts kept
+  getting merged — the docstring records pages rendering "Venue not found" when
+  the venue was fine and only the request had failed. The rendering is now
+  separate; the *arrival* is not. Split it. **Empty** (`tone="neutral"`) uses
+  case 97's staggered rise: unhurried, finished, nothing wrong. **Error**
+  (`tone="danger"`) does not rise at all — the whole panel is `opacity 0 → 1`
+  over 180ms with no `translateY`, and the icon chip alone gets a single
+  outward ring: a pseudo-element at `inset: 0`, `border: 2px solid
+  hsl(var(--destructive) / 0.5)`, `scale(1) → scale(1.5)` with `opacity 0.5 → 0`,
+  played **once**, not looped. The absence of the rise is the signal: an empty
+  state settles into place, an error is already there and stopped. A user who has
+  seen both twice can tell which one they are looking at before reading a word —
+  which matters because the recovery differs (retry vs. go somewhere else).
+- **Timing**: Error panel `opacity 180ms linear` — deliberately shorter than the
+  empty state's 400ms and deliberately linear, since an ease-out curve is what
+  makes the empty state feel settled. Ring pulse `520ms cubic-bezier(0.16, 1,
+  0.3, 1)`, single iteration, starting at 80ms. Reuse the geometry of
+  `live-ping` (`index.css:578-581`) but not its `infinite` — a looping pulse on
+  an error reads as "still trying", which is false.
+- **Build**: CSS. Add a `@keyframes status-ping` to `tailwind.config.ts:101-118`
+  beside the existing `fade-in`/`shimmer`, and apply it from the `toneChip` map
+  at `StatusPanel.tsx:31-35`, which already branches on tone and is the single
+  place all call sites pass through. No JS, because these panels render on
+  the failure path and should not depend on anything more than the page already
+  needed.
+- **Reduced motion**: add `status-ping` to the block at `src/index.css:619-630`
+  with `animation: none`, leaving the `bg-destructive/10 text-destructive` chip
+  (`StatusPanel.tsx:33`) to carry the tone by colour — which already clears AA
+  per the `--destructive` note at `index.css:55-65`. The panel's own opacity fade
+  can stay: 180ms of opacity is not vestibular motion.
+- **Perf**: `transform` + `opacity` on a pseudo-element that is `position:
+  absolute` inside the `h-14 w-14` chip, so the ring cannot affect layout even
+  as it scales past the chip's bounds. No `box-shadow` animation.
+
+### 99. The 404 should be the first thing seen, not the second
+
+- **Where**: `/*` → `src/pages/NotFound.tsx:29-42`, mounted at `App.tsx:250`.
+  `NotFound` is `lazy()` (`App.tsx:60`) inside the `Suspense` whose fallback is
+  the full-screen spinner at `App.tsx:112-116`.
+- **Motion**: Following a dead venue link today gives you a centred spinner on
+  `bg-background`, then — cut, no transition — a compass and "We can't find that
+  page". The spinner is a lie about a page that is already decided: nothing is
+  being fetched, only a chunk. Two changes. (a) Delay the `PageLoader`'s own
+  appearance: it renders at `opacity 0` and animates to `1` starting at 250ms,
+  so a chunk that loads in 80ms — the common case for a warm cache — shows no
+  spinner at all and the 404 panel is the first frame. This is the same fix as
+  case 4 and should be one implementation, not two. (b) When the panel does
+  follow a visible spinner, hand over instead of cutting: spinner
+  `opacity 1 → 0` over 120ms, panel `opacity 0 → 1` with `translateY(8px) → 0`
+  over 300ms, overlapping by 60ms. The compass icon (`NotFound.tsx:31`) rotates
+  `-12deg → 0deg` across the same 300ms — a compass settling on a bearing, which
+  is the one place in this app where an icon's own metaphor earns its motion.
+  The two `Button`s (`NotFound.tsx:35-40`) come in on case 97's stagger, so
+  "Browse venues" and "Back to home" are the last things to land and the eye
+  finishes on the way out.
+- **Timing**: Loader delay 250ms then `opacity 0 → 1` over 150ms. Panel
+  `300ms cubic-bezier(0.16, 1, 0.3, 1)` (between `--dur-base` and `--dur-slow`).
+  Compass rotation same 300ms, same curve — no spring; `--ease-spring`
+  overshoots ~10% and a compass needle that overshoots its bearing is a
+  different, wronger idea.
+- **Build**: CSS/Tailwind for the loader delay (`animate-in fade-in-0
+  duration-150 delay-[250ms] fill-mode-backwards` — `tailwindcss-animate` is
+  already a plugin and `fill-mode-backwards` keeps it invisible during the
+  delay). framer-motion for the panel, reusing `staggerChildren` from case 97
+  so the 404 and every empty state in the app share one entrance. The Suspense
+  boundary cannot cross-fade its fallback out without `AnimatePresence` around
+  `<Routes>`, which is case 5's territory — the delayed loader gets ~90% of the
+  benefit with none of that.
+- **Reduced motion**: gate the panel and the compass rotation on
+  `useReducedMotion()` alongside case 97's branch. The loader's delay is *kept*
+  under `reduce` — a 250ms delay is not motion, it is a decision not to render —
+  but its fade becomes instant via the
+  `@media (prefers-reduced-motion: reduce)` block, where `animate-in` utilities
+  need an explicit `animation: none`.
+- **Perf**: `opacity` + `transform` (`rotate` is a transform) only. The 404 is
+  inside `<Layout>` (`NotFound.tsx:25`) under a sticky glass header
+  (`index.css:427-448`), so keep the animated subtree to the `StatusPanel` and
+  never animate the container — a `backdrop-filter: blur(18px)` bar composited
+  above a large animating element is the one combination in this app that
+  reliably costs frames on mobile.
+
+### 100. Retry has to look like it happened, even when it fails again
+
+- **Where**: `src/components/common/RouteErrorBoundary.tsx:53-69` — the
+  route-level crash screen, wrapping every route (`App.tsx:137`). The retry
+  button is `RouteErrorBoundary.tsx:62`:
+  `onClick={() => this.setState({ error: null })}`.
+- **Motion**: If the child throws again — the likely outcome, since the docstring
+  records a bad data shape reaching `AchievementsSection` and blanking the
+  dashboard — React re-runs `getDerivedStateFromError` and the boundary renders
+  the *identical* panel. Zero pixels change. The user has no way to tell whether
+  the button did nothing, or did everything and failed. Give the attempt a
+  visible duration and a visible outcome. On press: the button enters case 94's
+  pending state, the panel drops to `opacity 0.5` over 140ms and holds; after
+  360ms the error clears and the child remounts. If it succeeds, the panel
+  unmounts and the page arrives on its own terms. If it throws again, the panel
+  returns to `opacity 1` over 200ms and its description gains a line that was not
+  there before — "Tried twice. If this keeps happening, the pages in the nav
+  above still work." — driven by an `attempts` counter on state. The words are
+  what carry the failure; the dim-and-return is what carries "your press was
+  received".
+- **Timing**: Dim `140ms linear` to `opacity 0.5`; hold `220ms`; restore
+  `200ms cubic-bezier(0.16, 1, 0.3, 1)`. Total 360ms before the remount — long
+  enough to perceive, short enough that a successful retry does not feel
+  throttled. Explicitly **no shake, no horizontal displacement**: `/signup`
+  already decided against shaking on validation error (case 72), the payment
+  result screens decided against it too (case 62), and a crash screen is the
+  worst place to reintroduce it.
+- **Build**: CSS/Tailwind on a `retrying` boolean added to the boundary's `State`
+  (`RouteErrorBoundary.tsx:28-30`), plus one `setTimeout` in the click handler.
+  This is a class component that must keep working when the tree below it is
+  broken — do not put framer-motion inside an error boundary's fallback, because
+  the fallback's job is to render when other things have failed.
+- **Reduced motion**: the opacity dim stays (it is opacity, not movement, and it
+  is the only feedback a keyboard user gets before the text updates); the 360ms
+  delay stays, since it is timing rather than motion. Nothing to add to the
+  `index.css:619` block — but `attempts` must be surfaced non-visually too:
+  render the new description line inside an `aria-live="polite"` region so a
+  screen-reader user hears "Tried twice" rather than silence.
+- **Perf**: `opacity` on a single container. Irrelevant to frame budget — the
+  panel is roughly ten nodes — and the 360ms delay is deliberate cost, not
+  incidental. Worth noting the remount itself is the expensive part and is
+  unchanged by any of this.
+
+---
+
+## Implement these 12 first
+
+The cases marked **[HIGH IMPACT]** across the twelve areas. They are the ones
+where motion changes what the user *believes* rather than how smoothly they see
+it — and, in four instances, where the fix is removing motion that lies.
+
+| # | Case | Why it goes first |
+| --- | --- | --- |
+| 1 | Cold-boot-only splash gate | Deletes 2.3s of opaque sheet from every single page load, including deep links and payment returns; the largest motion defect in the app and among the cheapest to fix. |
+| 8 | Splash-to-hero handoff | The entire hero choreography is already built and tuned, and 100% of it currently plays behind that overlay — pure recovered value, no new motion. |
+| 22 | The slot grid demonstrates the promise | Converts the landing page's one differentiating claim from copy into evidence, using markup that already exists. |
+| 29 | Result grid closes the gap when a filter is removed | The difference between a filter that reads as a query and one that reads as a page reload; the only `/venues` case that changes what the user believes about the data. |
+| 35 | The clicked photo becomes the lightbox photo | On the screen where someone decides to spend money, "which photo am I looking at" stops being an open question. |
+| 44 | Slot grid answers the date | The only place in the booking flow where identical pixels change meaning — without it, tapping Thursday looks like nothing happened. |
+| 54 | Two-minute escalation | Marks a threshold crossing rather than a value change, on the timer that decides whether a held slot is paid for or lost. |
+| 60 | Confirmation mark — draw, then settle | The one frame in the product where money has irreversibly left the account; 410ms of one SVG turns "did that go through?" into "that went through". |
+| 66 | The /login panel is three screens in one slot | Highest-traffic signed-out surface, and the only place a user is silently signed out by a control labelled "Back". Already shipped; add direction. |
+| 75 | Filtering the bookings table narrows a list | Summary cards deliberately ignore the filter, so a static repaint makes "Total Bookings 63" over four rows read as a contradiction. |
+| 88 | Approve moves a person into the squad | The product's core transaction — a host deciding who plays — currently renders as two unrelated lists changing at once. ~15 lines of `layoutId`. |
+| 92 | The toast is the app's whole answer to "did that work?" | Fires from 55 modules, is the sole confirmation channel for bookings and payments, and the entire fix lives in one file's `classNames` map. |
+
+Suggested order within the twelve, if they ship one at a time: **92** (one file,
+most-fired motion) → **1** and **8** together (they are one change to the boot
+path) → **60** and **54** (the payment path, in the order the user meets them) →
+**44** and **35** (the venue screen) → **29** and **75** (the two filtered lists,
+sharing `layout="position"` machinery) → **66** and **88** (`AnimatePresence`
+direction and `layoutId`, the two framer-motion primitives not yet used in the
+app) → **22** last, since it is the only one on the marketing surface.
+
