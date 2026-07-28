@@ -241,10 +241,19 @@ export default function CheckoutPage() {
                 <span className="text-muted-foreground">Venue</span>
                 <span>{formatAmd(booking.owner_amount_minor ?? 0)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Service fee</span>
-                <span>{formatAmd(booking.platform_fee_minor ?? 0)}</span>
-              </div>
+              {/* Only rendered when a fee was actually charged. Sportsbnb takes
+                  no commission, so this row is a permanent "֏0" for every
+                  booking made today — a line item that exists only to say
+                  nothing happened. The row is kept rather than deleted so a
+                  future non-zero commission still itemises correctly; the
+                  booking carries the fee it was priced with, so historical
+                  bookings that did pay one keep showing it. */}
+              {(booking.platform_fee_minor ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Service fee</span>
+                  <span>{formatAmd(booking.platform_fee_minor ?? 0)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t pt-2 mt-2 text-base font-semibold">
                 <span>Total</span>
                 <span>{formatAmd(booking.amount_minor ?? 0)}</span>

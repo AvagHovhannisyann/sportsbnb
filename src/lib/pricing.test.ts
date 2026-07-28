@@ -8,18 +8,22 @@ import {
 } from "./pricing";
 
 describe("pricing", () => {
-  it("adds the platform fee on top of the owner price, rounding up", () => {
-    expect(getCustomerPrice(40)).toBe(42);
-    expect(getCustomerPrice(100)).toBe(105);
+  // Zero commission: the player pays the listed price, to the dram. This used
+  // to assert 40 → 42 and 33 → 35; those figures were the 5% fee, which the
+  // platform no longer charges.
+  it("charges the player exactly the owner's listed price", () => {
+    expect(getCustomerPrice(40)).toBe(40);
+    expect(getCustomerPrice(100)).toBe(100);
     expect(getCustomerPrice(0)).toBe(0);
-    // 33 * 1.05 = 34.65 → ceil → 35
-    expect(getCustomerPrice(33)).toBe(35);
+    expect(getCustomerPrice(33)).toBe(33);
+    expect(getCustomerPrice(12000)).toBe(12000);
   });
 
-  it("platform fee is the difference between customer and owner price", () => {
-    expect(getPlatformFee(40)).toBe(2);
-    expect(getPlatformFee(33)).toBe(2);
+  it("platform fee is the difference between customer and owner price — zero", () => {
+    expect(getPlatformFee(40)).toBe(0);
+    expect(getPlatformFee(33)).toBe(0);
     expect(getPlatformFee(0)).toBe(0);
+    expect(getPlatformFee(12000)).toBe(0);
   });
 
   it("getOwnerPrice inverts getCustomerPrice within rounding tolerance", () => {

@@ -302,18 +302,24 @@ export function BookingPanel({
 
       {selected && (
         <div className="mb-4 rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+          {/* No service-fee row: Sportsbnb charges no commission, so the venue
+              price and the total are the same figure. This used to add a
+              hardcoded 5% here (`* 0.05`) and again in the total (`* 1.05`) —
+              a fee the platform no longer takes, quoted to the player before
+              the server had priced anything. The venue line and the total are
+              now both the listed rate, which is what create_booking_hold()
+              returns and what actually gets charged. */}
           <div className="flex justify-between">
             <span className="text-muted-foreground">1 hour</span>
             <span>{formatAmd(pricePerHour * 100)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Service fee (5%)</span>
-            <span>{formatAmd(Math.round(pricePerHour * 100 * 0.05))}</span>
-          </div>
           <div className="flex justify-between font-semibold border-t pt-1 mt-1">
             <span>Total</span>
-            <span>{formatAmd(Math.round(pricePerHour * 100 * 1.05))}</span>
+            <span>{formatAmd(pricePerHour * 100)}</span>
           </div>
+          <p className="pt-1 text-xs text-muted-foreground">
+            No booking fee — you pay the venue's listed price.
+          </p>
         </div>
       )}
 

@@ -641,7 +641,7 @@ export const VenueForm = ({
       <CardHeader>
         <CardTitle as="h2">Pricing & Settings</CardTitle>
         {mode === "create" && (
-          <CardDescription>You'll receive 90% of each booking</CardDescription>
+          <CardDescription>You keep 100% of every booking — we take no commission</CardDescription>
         )}
       </CardHeader>
       <CardContent className="space-y-6">
@@ -658,7 +658,7 @@ export const VenueForm = ({
           />
           {mode === "create" && (
             <p className="text-xs text-muted-foreground">
-              You will receive exactly ֏{(parseFloat(formData.pricePerHour) || 30).toLocaleString()}/hour. Players pay ֏{Math.ceil((parseFloat(formData.pricePerHour) || 30) * 1.05).toLocaleString()} (includes 5% platform fee).
+              Players pay ֏{(parseFloat(formData.pricePerHour) || 30).toLocaleString()}/hour and you receive all of it. No commission, no listing fee, nothing added on top.
             </p>
           )}
         </div>

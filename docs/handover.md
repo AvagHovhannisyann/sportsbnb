@@ -339,10 +339,11 @@ bug (see the commit for `ManualBookingDialog`) filled in `venue_uuid`,
 `starts_at` and `ends_at`, which is what availability and the overlap constraint
 need. It left `amount_minor`, `platform_fee_minor` and `owner_amount_minor`
 NULL, so an owner's walk-in booking still appears in no payout or commission
-figure. That is deliberate: whether the platform takes its 5% on a cash booking
-the owner arranged and collected themselves is a commercial decision, not a
-missing line of code. If the answer is yes, the fields are a one-line addition
-alongside the ones I did fill in.
+figure. That is deliberate, and the commercial question behind it — whether the
+platform takes a cut of a cash booking the owner arranged and collected
+themselves — is now moot: commission is 0 platform-wide, so there is no fee to
+take on a manual booking either. If a commission is ever reintroduced, the
+fields are a one-line addition alongside the ones I did fill in.
 
 ---
 

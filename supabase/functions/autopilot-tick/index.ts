@@ -172,8 +172,8 @@ function buildChannelKeyboard(target: any): { inline_keyboard: Array<Array<Recor
     : (enriched.phone ? [enriched.phone] : []);
   const formUrl: string | undefined = research.contact_form_url;
   const website: string | undefined = enriched.website || research.website;
-  const pitchEn = `Hi! I'm from the Sportsbnb team. We're onboarding ${target.city ?? 'local'} venues with 0% commission for 3 months. Open to a quick chat?`;
-  const pitchHy = `Բարև! Ես Sportsbnb-ի թիմից եմ։ Առաջին 3 ամիսը 0% միջնորդավճար։ Կարո՞ղ ենք կարճ զրուցել։`;
+  const pitchEn = `Hi! I'm from the Sportsbnb team. We're onboarding ${target.city ?? 'local'} venues with 0% commission — permanently, so you keep 100% of every booking. Open to a quick chat?`;
+  const pitchHy = `Բարև! Ես Sportsbnb-ի թիմից եմ։ 0% միջնորդավճար՝ ընդմիշտ. դուք ստանում եք յուրաքանչյուր ամրագրման ողջ գումարը։ Կարո՞ղ ենք կարճ զրուցել։`;
   const msg = target.language === 'hy' ? pitchHy : pitchEn;
   const enc = encodeURIComponent(msg);
 

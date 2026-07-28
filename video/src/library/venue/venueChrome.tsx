@@ -1,0 +1,469 @@
+/**
+ * venueChrome — the static furniture the venue family paints on top of its
+ * moving parts: stage dressing, the listing plate, sport chip, price line,
+ * star row, the amenity icon set and the glyphs that recur everywhere.
+ * Not a composition. Everything here is deliberately motionless, so a loop that
+ * mounts it stays seamless without having to reason about the chrome at all.
+ */
+
+import type { CSSProperties, FC } from "react";
+import { AbsoluteFill } from "remotion";
+
+import {
+  BRAND,
+  DISPLAY_FONT,
+  MONO_FONT,
+  NOISE_TILE,
+  PIN_PATH,
+  SANS_FONT,
+  STAR_PATH,
+  TICK_PATH,
+  chalk,
+  clamp01,
+  formatDram,
+  ink,
+  tint,
+} from "./venueKit";
+
+/* ───────────────────────────── stage dressing ──────────────────────────── */
+
+/**
+ * Vignette + grain, always last in the tree. The grain is an inline data URI,
+ * not a fetch; the vignette keeps the corners from competing with the plate.
+ */
+export const StageDressing: FC<{ strength?: number }> = ({ strength = 1 }) => (
+  <>
+    <AbsoluteFill
+      style={{
+        background: `radial-gradient(88% 72% at 50% 44%, transparent 38%, ${ink(0.82 * strength)} 100%)`,
+        pointerEvents: "none",
+      }}
+    />
+    <AbsoluteFill
+      style={{
+        backgroundImage: NOISE_TILE,
+        opacity: 0.045 * strength,
+        pointerEvents: "none",
+      }}
+    />
+  </>
+);
+
+/* ───────────────────────────────── glyphs ──────────────────────────────── */
+
+export const PinGlyph: FC<{ size: number; color: string; weight?: number }> = ({
+  size,
+  color,
+  weight = 1.8,
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d={PIN_PATH} stroke={color} strokeWidth={weight} strokeLinejoin="round" />
+    <circle cx={12} cy={10} r={2.6} stroke={color} strokeWidth={weight} />
+  </svg>
+);
+
+export const TickGlyph: FC<{
+  size: number;
+  color: string;
+  /** 0–1 draw-on. 1 is a finished tick. */
+  draw?: number;
+  weight?: number;
+}> = ({ size, color, draw = 1, weight = 2.6 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path
+      d={TICK_PATH}
+      stroke={color}
+      strokeWidth={weight}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray={24}
+      strokeDashoffset={24 * (1 - clamp01(draw))}
+    />
+  </svg>
+);
+
+/* ────────────────────────────── amenity glyphs ─────────────────────────── */
+
+/**
+ * The eight facilities a venue can tick on the listing form. Drawn rather than
+ * fetched: an icon font would be a network request, and this folder does not
+ * make any.
+ */
+export type AmenityIcon =
+  | "parking"
+  | "showers"
+  | "floodlights"
+  | "lockers"
+  | "cafe"
+  | "wifi"
+  | "seating"
+  | "equipment";
+
+/** Strokes plus filled dots, all on the same 24×24 grid as the other glyphs. */
+type GlyphSpec = {
+  paths: readonly string[];
+  dots: readonly (readonly [number, number, number])[];
+};
+
+const AMENITY_GLYPHS: Record<AmenityIcon, GlyphSpec> = {
+  parking: {
+    paths: ["M8.5 19V5h4.2a3.9 3.9 0 010 7.8H8.5"],
+    dots: [],
+  },
+  showers: {
+    paths: ["M4.5 8.4h15", "M12 8.4V4"],
+    dots: [
+      [8, 13, 1.05],
+      [12, 15.6, 1.05],
+      [16, 13, 1.05],
+      [9.8, 19, 0.9],
+      [14.2, 19, 0.9],
+    ],
+  },
+  floodlights: {
+    paths: [
+      "M12 21V11.4",
+      "M6.6 11.4h10.8l-1.7-4.8H8.3z",
+      "M4 4.6l2.3 1.7",
+      "M20 4.6l-2.3 1.7",
+    ],
+    dots: [],
+  },
+  lockers: {
+    paths: ["M5 3.6h14v16.8H5z", "M12 3.6v16.8"],
+    dots: [
+      [9.2, 12, 0.9],
+      [14.8, 12, 0.9],
+    ],
+  },
+  cafe: {
+    paths: [
+      "M4.6 7.6h11.8v6.2a5 5 0 01-5 5H9.6a5 5 0 01-5-5z",
+      "M16.4 9.6h1.7a2.6 2.6 0 010 5.2h-1.7",
+    ],
+    dots: [],
+  },
+  wifi: {
+    paths: [
+      "M3.4 9.1a13 13 0 0117.2 0",
+      "M6.8 12.6a8.4 8.4 0 0110.4 0",
+      "M10.1 16a3.4 3.4 0 013.8 0",
+    ],
+    dots: [[12, 19.3, 1.15]],
+  },
+  seating: {
+    paths: ["M4 20.4v-5.6a2.5 2.5 0 015 0v1.9h6v-1.9a2.5 2.5 0 015 0v5.6", "M6.6 12V6.2h10.8V12"],
+    dots: [],
+  },
+  equipment: {
+    paths: ["M3.4 9.4h3.2v5.2H3.4z", "M17.4 9.4h3.2v5.2h-3.2z", "M6.6 12h10.8"],
+    dots: [],
+  },
+};
+
+export const AmenityGlyph: FC<{
+  icon: AmenityIcon;
+  size: number;
+  color: string;
+  weight?: number;
+}> = ({ icon, size, color, weight = 1.7 }) => {
+  const spec = AMENITY_GLYPHS[icon];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {spec.paths.map((d, i) => (
+        <path
+          key={i}
+          d={d}
+          stroke={color}
+          strokeWidth={weight}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+      {spec.dots.map((dot, i) => (
+        <circle key={`d${i}`} cx={dot[0]} cy={dot[1]} r={dot[2]} fill={color} />
+      ))}
+    </svg>
+  );
+};
+
+/* ──────────────────────────────── star row ─────────────────────────────── */
+
+export const StarRow: FC<{
+  /** 0–5, fractional. The partial star is clipped, not rounded. */
+  rating: number;
+  size: number;
+  gap: number;
+  /** Per-star scale, for staggered reveals. Defaults to all-visible. */
+  fillOf?: (index: number) => number;
+  idPrefix: string;
+}> = ({ rating, size, gap, fillOf, idPrefix }) => {
+  const value = Math.min(5, Math.max(0, rating));
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap }}>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const shown = fillOf ? clamp01(fillOf(i)) : 1;
+        const fill = clamp01(value - i) * shown;
+        const clipId = `${idPrefix}-star-${i}`;
+        return (
+          <svg key={i} width={size} height={size} viewBox="0 0 24 24">
+            <defs>
+              <clipPath id={clipId}>
+                <rect x={0} y={0} width={24 * fill} height={24} />
+              </clipPath>
+            </defs>
+            <path d={STAR_PATH} fill={chalk(0.12)} />
+            {fill > 0 ? (
+              <path d={STAR_PATH} fill={BRAND.warning} clipPath={`url(#${clipId})`} />
+            ) : null}
+          </svg>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ─────────────────────────────── sport chip ────────────────────────────── */
+
+export const SportChip: FC<{
+  label: string;
+  accent: string;
+  unit: number;
+  style?: CSSProperties;
+}> = ({ label, accent, unit, style }) => (
+  <div
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 10 * unit,
+      height: 44 * unit,
+      padding: `0 ${20 * unit}px`,
+      borderRadius: 999,
+      backgroundColor: tint(accent, 0.14),
+      border: `${1 * unit}px solid ${tint(accent, 0.42)}`,
+      ...style,
+    }}
+  >
+    <span
+      style={{
+        width: 8 * unit,
+        height: 8 * unit,
+        borderRadius: "50%",
+        backgroundColor: accent,
+        boxShadow: `0 0 ${12 * unit}px ${tint(accent, 0.9)}`,
+      }}
+    />
+    <span
+      style={{
+        fontFamily: MONO_FONT,
+        fontSize: 15 * unit,
+        fontWeight: 500,
+        letterSpacing: 0.18 * 15 * unit,
+        textTransform: "uppercase",
+        color: accent,
+      }}
+    >
+      {label}
+    </span>
+  </div>
+);
+
+/* ─────────────────────────────── price line ────────────────────────────── */
+
+/**
+ * `12,000 ֏ / hour`, and nothing else. There is no fee line because there is
+ * no fee: what a listing shows is what the player pays and what the owner
+ * banks. Any composition tempted to add a second row here is wrong about the
+ * product.
+ */
+export const PriceLine: FC<{
+  price: number;
+  unit: number;
+  accent: string;
+  /** Per-hour is the default; day passes and lane hires override it. */
+  per?: string;
+  size?: number;
+}> = ({ price, unit, accent, per = "hour", size = 54 }) => (
+  <div style={{ display: "flex", alignItems: "baseline", gap: 10 * unit }}>
+    <span
+      style={{
+        fontFamily: MONO_FONT,
+        fontSize: size * unit,
+        fontWeight: 500,
+        fontVariantNumeric: "tabular-nums",
+        letterSpacing: -0.03 * size * unit,
+        color: BRAND.foreground,
+        lineHeight: 1,
+      }}
+    >
+      {formatDram(price)}
+    </span>
+    <span
+      style={{
+        fontFamily: SANS_FONT,
+        fontSize: 0.36 * size * unit,
+        fontWeight: 500,
+        color: tint(accent, 0.92),
+      }}
+    >
+      / {per}
+    </span>
+  </div>
+);
+
+/* ────────────────────────────── listing plate ──────────────────────────── */
+
+export type ListingPlateProps = {
+  venueName: string;
+  city: string;
+  sportLabel: string;
+  accent: string;
+  price: number;
+  /** What the price buys. "hour" for courts, "lane hour" for pools. */
+  per?: string;
+  rating: number;
+  reviewCount: number;
+  unit: number;
+  /** Rendered width of the plate in px. */
+  width: number;
+  /** Distance from the bottom of the frame, in px. */
+  bottom: number;
+  idPrefix: string;
+};
+
+/**
+ * The bottom third of every per-sport promo: chip, name, city, rating, price.
+ * Identical across all eight so the eight clips read as one campaign and only
+ * the court behind them changes.
+ */
+export const ListingPlate: FC<ListingPlateProps> = ({
+  venueName,
+  city,
+  sportLabel,
+  accent,
+  price,
+  per = "hour",
+  rating,
+  reviewCount,
+  unit,
+  width,
+  bottom,
+  idPrefix,
+}) => (
+  <div
+    style={{
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom,
+      display: "flex",
+      justifyContent: "center",
+      pointerEvents: "none",
+    }}
+  >
+    <div
+      style={{
+        width: width * 0.84,
+        padding: `${28 * unit}px ${30 * unit}px`,
+        borderRadius: 26 * unit,
+        background: `linear-gradient(160deg, ${BRAND.surface2} 0%, ${BRAND.card} 54%, ${BRAND.surface1} 100%)`,
+        border: `${1 * unit}px solid ${BRAND.borderStrong}`,
+        boxShadow: `0 ${24 * unit}px ${52 * unit}px ${-16 * unit}px ${ink(0.9)}`,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <SportChip label={sportLabel} accent={accent} unit={unit} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 * unit }}>
+          <StarRow rating={rating} size={18 * unit} gap={2 * unit} idPrefix={idPrefix} />
+          <span
+            style={{
+              fontFamily: MONO_FONT,
+              fontSize: 16 * unit,
+              fontWeight: 500,
+              fontVariantNumeric: "tabular-nums",
+              color: BRAND.foreground,
+            }}
+          >
+            {rating.toFixed(1)}
+          </span>
+          <span
+            style={{
+              fontFamily: SANS_FONT,
+              fontSize: 14 * unit,
+              color: BRAND.mutedForeground,
+            }}
+          >
+            ({reviewCount})
+          </span>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 20 * unit,
+          fontFamily: DISPLAY_FONT,
+          fontSize: (venueName.length > 20 ? 42 : 52) * unit,
+          fontWeight: 700,
+          letterSpacing: -0.04 * 52 * unit,
+          lineHeight: 1.02,
+          color: BRAND.foreground,
+        }}
+      >
+        {venueName}
+      </div>
+
+      <div
+        style={{
+          marginTop: 10 * unit,
+          display: "flex",
+          alignItems: "center",
+          gap: 8 * unit,
+        }}
+      >
+        <PinGlyph size={20 * unit} color={BRAND.mutedForeground} />
+        <span
+          style={{
+            fontFamily: SANS_FONT,
+            fontSize: 20 * unit,
+            fontWeight: 500,
+            color: BRAND.foregroundSoft,
+          }}
+        >
+          {city}, Armenia
+        </span>
+      </div>
+
+      <div
+        style={{
+          marginTop: 22 * unit,
+          paddingTop: 22 * unit,
+          borderTop: `${1 * unit}px solid ${BRAND.border}`,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+        }}
+      >
+        <PriceLine price={price} unit={unit} accent={accent} per={per} />
+        <span
+          style={{
+            fontFamily: MONO_FONT,
+            fontSize: 13 * unit,
+            fontWeight: 500,
+            letterSpacing: 0.16 * 13 * unit,
+            textTransform: "uppercase",
+            color: BRAND.primary,
+            paddingBottom: 4 * unit,
+          }}
+        >
+          0% commission
+        </span>
+      </div>
+    </div>
+  </div>
+);

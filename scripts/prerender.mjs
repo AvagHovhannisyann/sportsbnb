@@ -90,7 +90,8 @@ const shell = readFileSync(join(DIST, 'index.html'), 'utf8');
  * `description` is the meta description. `body` is what goes in the document —
  * it has to be genuinely about the page, because its whole job is to be the
  * thing an answer engine quotes. Every factual claim here is one this app can
- * substantiate: the 5% fee is `PLATFORM_FEE_PERCENTAGE`, the 20-minute hold is
+ * substantiate: the zero commission is `platform_settings.commission_bps` (0)
+ * and `PLATFORM_FEE_PERCENTAGE`, the 20-minute hold is
  * `create_booking_hold`, the 24-hour default cancellation is the
  * `venue_policies` column default, and the providers are the two adapters in
  * `supabase/functions/_shared/providers/`.
@@ -104,7 +105,7 @@ const PAGES = [
     h1: 'Book a sports venue in Armenia',
     body: [
       'Sportsbnb is a sports venue booking marketplace for Armenia. Search by sport, city and price, see which hours are genuinely free, and pay in the app in Armenian dram — by card through Ameriabank or with Idram.',
-      'Venues are listed by their owners with an hourly rate. Sportsbnb adds a 5% platform fee on top of that rate, so a court listed at ֏10,000 an hour costs ֏10,500 and the owner receives ֏10,000. Choosing a time holds it for 20 minutes while you pay.',
+      'Venues are listed by their owners with an hourly rate, and that rate is what you pay. Sportsbnb charges no commission and no booking fee, so a court listed at ֏10,000 an hour costs ֏10,000 and the owner receives all of it. Choosing a time holds it for 20 minutes while you pay.',
       // The twelve in SPORTS_OPTIONS, which is what VenueForm offers an owner —
       // not the twenty in sportTypes. A venue cannot be listed for the other
       // eight, so naming them here would advertise inventory that cannot exist.
@@ -182,7 +183,7 @@ const PAGES = [
     h1: 'List your venue on Sportsbnb',
     body: [
       'If you run a court, pitch, pool or gym in Armenia, Sportsbnb puts it in front of people looking to book one and handles the payment.',
-      'You set the hourly rate and keep it — Sportsbnb charges players a 5% fee on top rather than taking a cut of what you asked for. You set your own cancellation terms: full refund up to a cut-off you choose, a partial refund after it, or no refunds at all.',
+      'You set the hourly rate and keep all of it — Sportsbnb takes no commission, charges players nothing on top, and has no listing or monthly fee. You set your own cancellation terms: full refund up to a cut-off you choose, a partial refund after it, or no refunds at all.',
       'Payments come in by card through Ameriabank or by Idram, are recorded to a double-entry ledger against your venue, and are paid out on a schedule. Double bookings are prevented by the database itself, not by anyone remembering to check.',
     ],
   },
@@ -194,7 +195,7 @@ const PAGES = [
     h1: 'Frequently asked questions',
     body: [
       'How do I book a venue? Search for one, pick a date, choose a free hour, and pay. The slot is held for 20 minutes while you complete payment and is confirmed as soon as it goes through.',
-      'What does it cost? Whatever hourly rate the venue sets, plus a 5% platform fee. Prices are in Armenian dram and the total is shown before you pay.',
+      'What does it cost? Exactly the hourly rate the venue sets — there is no platform fee or commission on top. Prices are in Armenian dram and the total is shown before you pay.',
       'How do I pay? By card through Ameriabank, or with Idram. Payment happens in the app at the time of booking.',
       'Can I cancel? That depends on the venue. The default is a full refund up to 24 hours before the booking starts; some owners offer a partial refund after that, and some make bookings non-refundable. The terms are shown before you pay and stored with the booking.',
       'How do I list my venue? Create an owner account and add your venue with its rate, sports and photos. There is no listing fee.',

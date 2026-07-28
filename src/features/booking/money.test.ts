@@ -48,6 +48,11 @@ describe("money conversion", () => {
  * Mirrors the commission split done in create_booking_hold(): owner earns the
  * listed price, the platform adds commission_bps on top, and the player pays
  * the sum. Encodes the money invariants so a change to the split is deliberate.
+ *
+ * The live rate is now 0 — `platform_settings.commission_bps = '0'` — so the
+ * cases that matter in production are the zero-bps ones. `split` stays
+ * parameterised on the rate rather than hardcoding "no fee", because the rate
+ * is a setting and the arithmetic has to stay correct if one is reintroduced.
  */
 describe("commission split (create_booking_hold parity)", () => {
   const split = (pricePerHour: number, hours: number, commissionBps: number) => {
@@ -56,7 +61,35 @@ describe("commission split (create_booking_hold parity)", () => {
     return { ownerMinor, feeMinor, totalMinor: ownerMinor + feeMinor };
   };
 
-  it("adds 5% on top of the owner's price", () => {
+  // ── Zero commission: the shipped behaviour ──
+
+  it("takes no fee at 0 bps — the player pays exactly the listed price", () => {
+    const { ownerMinor, feeMinor, totalMinor } = split(12000, 1, 0);
+    expect(ownerMinor).toBe(1_200_000);
+    expect(feeMinor).toBe(0);
+    expect(totalMinor).toBe(1_200_000);
+  });
+
+  it("gives the owner 100% at 0 bps, at every price and duration", () => {
+    for (const price of [1000, 3333, 8000, 12000, 47000]) {
+      for (const hours of [1, 2, 3]) {
+        const s = split(price, hours, 0);
+        expect(s.feeMinor).toBe(0);
+        expect(s.ownerMinor).toBe(s.totalMinor);
+        expect(s.totalMinor).toBe(Math.round(price * hours * 100));
+      }
+    }
+  });
+
+  it("never produces NaN or a negative fee at 0 bps", () => {
+    const { feeMinor } = split(0, 1, 0);
+    expect(feeMinor).toBe(0);
+    expect(Number.isNaN(feeMinor)).toBe(false);
+  });
+
+  // ── Non-zero rates: kept so a future commission stays correct ──
+
+  it("adds the configured rate on top of the owner's price", () => {
     const { ownerMinor, feeMinor, totalMinor } = split(8000, 1, 500);
     expect(ownerMinor).toBe(800_000);
     expect(feeMinor).toBe(40_000);
@@ -69,9 +102,11 @@ describe("commission split (create_booking_hold parity)", () => {
   });
 
   it("total is always owner + fee (no money created or lost)", () => {
-    for (const price of [1000, 3333, 12500, 47000]) {
-      const s = split(price, 1, 500);
-      expect(s.totalMinor).toBe(s.ownerMinor + s.feeMinor);
+    for (const bps of [0, 250, 500]) {
+      for (const price of [1000, 3333, 12500, 47000]) {
+        const s = split(price, 1, bps);
+        expect(s.totalMinor).toBe(s.ownerMinor + s.feeMinor);
+      }
     }
   });
 });

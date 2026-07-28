@@ -173,7 +173,7 @@ const ForOwnersPage = () => {
   // payout cadence (payouts-run cron) and the settlement currency, both of
   // which are facts about the system rather than promises about outcomes.
   const stats = [
-    { value: "5%", label: "Platform commission — the only fee" },
+    { value: "0%", label: "Commission — you keep every dram" },
     { value: "0", label: "Monthly fees or hidden costs" },
     { value: "Weekly", label: "Payouts, every booking itemised" },
     { value: "AMD", label: "Settled in dram — card or Idram" },
@@ -200,7 +200,7 @@ const ForOwnersPage = () => {
            and no measurement behind either half of it. Replaced with the four
            facts the stats block settled on. */
         title="List Your Sports Venue in Armenia — Sportsbnb for Owners"
-        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card and Idram payments in dram, and keep 100% of your price — players pay a 5% fee on top. No listing fee, no monthly cost."
+        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card and Idram payments in dram, and keep 100% of your price. Zero commission, no listing fee, no monthly cost."
         canonical="/for-owners"
       />
       {/* ── Hero ── */}
@@ -333,16 +333,16 @@ const ForOwnersPage = () => {
                 Simple & Transparent
               </p>
               <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-secondary-foreground tracking-tighter leading-[1.05] mb-5 md:mb-8">
-                No monthly fees.<br />Ever.
+                Zero commission.<br />Ever.
               </h2>
               <p className="text-base md:text-xl text-secondary-foreground/70 leading-relaxed mb-8">
-                We only succeed when you do. Sportsbnb charges a simple 5% commission on each booking — that's it. No setup fees, no subscriptions, no hidden costs.
+                Sportsbnb takes no cut of your bookings. Not a percentage, not a listing fee, not a monthly subscription — you set a price, the player pays it, and all of it is yours.
               </p>
               <div className="space-y-4">
                 {[
-                  "You set your own prices — we add 5% on top for the player",
-                  "You receive 100% of your listed price — the 5% is what the player pays on top",
-                  "Players see the final price upfront — no surprises",
+                  "You set your own prices — we add nothing on top",
+                  "You receive 100% of every booking, down to the dram",
+                  "Players pay exactly the price they see — no surprises",
                   "Weekly payouts to your bank account or Idram wallet",
                   "No minimum commitment — cancel anytime",
                 ].map((item, i) => (
@@ -356,8 +356,8 @@ const ForOwnersPage = () => {
 
             <motion.div {...onScroll(1)} className="bg-secondary-foreground/5 rounded-3xl p-8 md:p-12 text-center">
               <p className="text-secondary-foreground/60 text-sm font-medium uppercase tracking-widest mb-4">Commission</p>
-              <p className="text-6xl md:text-8xl font-bold text-primary tracking-tighter mb-2">5%</p>
-              <p className="text-secondary-foreground/70 text-base md:text-lg mb-8">per booking, paid by the player</p>
+              <p className="text-6xl md:text-8xl font-bold text-primary tracking-tighter mb-2">0%</p>
+              <p className="text-secondary-foreground/70 text-base md:text-lg mb-8">on every booking — you keep the lot</p>
               <div className="border-t border-secondary-foreground/10 pt-6 space-y-3">
                 <div className="flex justify-between text-sm md:text-base">
                   <span className="text-secondary-foreground/60">Monthly fee</span>
