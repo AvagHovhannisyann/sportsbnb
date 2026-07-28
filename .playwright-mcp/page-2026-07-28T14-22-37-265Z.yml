@@ -1,0 +1,217 @@
+- generic [ref=f3e2]:
+  - img "Sportsbnb" [ref=f3e5]
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=f3e8]:
+    - banner [ref=f3e9]:
+      - generic [ref=f3e10]:
+        - link "Sportsbnb home" [ref=f3e12] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f3e13]: Sportsbnb
+        - button [ref=f3e18] [cursor=pointer]
+    - main [ref=f3e19]:
+      - generic [ref=f3e20]:
+        - generic [ref=f3e22]:
+          - generic [ref=f3e23]:
+            - generic [ref=f3e24]: Live availability
+            - heading "Book the court. Skip the call." [level=1] [ref=f3e29]: Book the court.Skip the call.
+            - paragraph [ref=f3e30]: Verified sports venues across Armenia, with live availability and instant confirmation. Pay by card or Idram — your slot is locked the moment you do.
+            - generic [ref=f3e31]:
+              - link "Browse venues" [ref=f3e32] [cursor=pointer]:
+                - /url: /venues
+              - link "List your venue" [ref=f3e33] [cursor=pointer]:
+                - /url: /for-owners
+            - paragraph [ref=f3e34]:
+              - generic [ref=f3e35]: Every venue verified
+              - generic [ref=f3e39]: Confirmed in seconds
+          - generic [ref=f3e42]:
+            - img "Floodlit five-a-side pitch at dusk with players mid-game" [ref=f3e44]
+            - generic [ref=f3e51]:
+              - paragraph [ref=f3e52]: Confirmed — Thursday, 19:00
+              - paragraph [ref=f3e53]: Ararat Arena · 90 min · ֏12,000
+        - button [ref=f3e56] [cursor=pointer]:
+          - generic [ref=f3e61]:
+            - paragraph [ref=f3e62]: Where do you want to play?
+            - paragraph [ref=f3e63]: Any sport · Any time · Near you
+      - region [ref=f3e64]:
+        - generic [ref=f3e66]:
+          - generic [ref=f3e67]:
+            - paragraph [ref=f3e68]: How it works
+            - heading "Three taps between you and the game." [level=2] [ref=f3e69]
+          - list [ref=f3e70]:
+            - listitem [ref=f3e71]:
+              - generic [ref=f3e72]: "01"
+              - heading "Find your court" [level=3] [ref=f3e78]
+              - paragraph [ref=f3e79]: Filter by sport, neighbourhood and time. Every venue is verified, with real photos and the actual price.
+            - listitem [ref=f3e80]:
+              - generic [ref=f3e81]: "02"
+              - heading "Pick a real slot" [level=3] [ref=f3e87]
+              - paragraph [ref=f3e88]: Availability is live, not a guess. The slot you tap is the slot you get — held for twenty minutes while you pay.
+            - listitem [ref=f3e89]:
+              - generic [ref=f3e90]: "03"
+              - heading "Pay and play" [level=3] [ref=f3e95]
+              - paragraph [ref=f3e96]: Card or Idram, inside the app. Confirmed instantly, and the venue knows you're coming.
+      - region [ref=f3e97]:
+        - generic [ref=f3e99]:
+          - generic [ref=f3e100]:
+            - generic [ref=f3e101]:
+              - paragraph [ref=f3e102]: What you can book
+              - link "See all venues" [ref=f3e103] [cursor=pointer]:
+                - /url: /venues
+            - heading "Every sport has a court. Pick yours." [level=2] [ref=f3e106]
+          - generic [ref=f3e107]:
+            - link [ref=f3e109] [cursor=pointer]:
+              - /url: /venues?sport=Football
+              - generic [ref=f3e111]:
+                - heading "Football" [level=3] [ref=f3e112]
+                - paragraph [ref=f3e113]: Pitches & futsal
+            - link [ref=f3e115] [cursor=pointer]:
+              - /url: /venues?sport=Tennis
+              - generic [ref=f3e117]:
+                - heading "Tennis" [level=3] [ref=f3e118]
+                - paragraph [ref=f3e119]: Clay, hard & padel
+            - link [ref=f3e121] [cursor=pointer]:
+              - /url: /venues?sport=Basketball
+              - generic [ref=f3e123]:
+                - heading "Basketball" [level=3] [ref=f3e124]
+                - paragraph [ref=f3e125]: Indoor & street
+            - link [ref=f3e127] [cursor=pointer]:
+              - /url: /venues?sport=Swimming
+              - generic [ref=f3e129]:
+                - heading "Swimming" [level=3] [ref=f3e130]
+                - paragraph [ref=f3e131]: Lanes by the hour
+      - region [ref=f3e132]:
+        - generic [ref=f3e134]:
+          - generic [ref=f3e135]:
+            - generic [ref=f3e136]:
+              - paragraph [ref=f3e137]: Why it's different
+              - heading "The slot is yours the moment you pay." [level=2] [ref=f3e138]
+              - paragraph [ref=f3e139]: No messaging an owner and hoping. No turning up to find someone else on the pitch. Payment and reservation happen together, so a confirmed booking means exactly that.
+            - list [ref=f3e140]:
+              - listitem [ref=f3e141]:
+                - generic [ref=f3e144]: Double-booking is impossible — enforced by the database, not by trust
+              - listitem [ref=f3e145]:
+                - generic [ref=f3e148]: Cancellation terms shown before you pay, never discovered afterwards
+              - listitem [ref=f3e149]:
+                - generic [ref=f3e152]: Card or Idram, both settled in Armenian dram
+          - generic [ref=f3e154]:
+            - generic [ref=f3e155]:
+              - heading "Thursday, 24 July" [level=3] [ref=f3e156]
+              - generic [ref=f3e157]: 90 min
+            - list [ref=f3e158]:
+              - listitem [ref=f3e159]:
+                - text: 17:00
+                - generic [ref=f3e160]: — unavailable
+              - listitem [ref=f3e161]:
+                - text: 18:30
+                - generic [ref=f3e162]: — available
+              - listitem [ref=f3e163]:
+                - text: 19:00
+                - generic [ref=f3e164]: — selected
+              - listitem [ref=f3e165]:
+                - text: 20:30
+                - generic [ref=f3e166]: — available
+              - listitem [ref=f3e167]:
+                - text: 21:00
+                - generic [ref=f3e168]: — unavailable
+              - listitem [ref=f3e169]:
+                - text: 22:00
+                - generic [ref=f3e170]: — available
+            - generic [ref=f3e171]:
+              - generic [ref=f3e172]:
+                - term [ref=f3e173]: 90 minutes
+                - definition [ref=f3e174]: ֏12,000
+              - generic [ref=f3e175]:
+                - term [ref=f3e176]: Booking fee
+                - definition [ref=f3e177]: ֏0
+              - generic [ref=f3e178]:
+                - term [ref=f3e179]: Total
+                - definition [ref=f3e180]: ֏12,000
+            - paragraph [ref=f3e181]: Slot held until 20:00
+      - region [ref=f3e184]:
+        - generic [ref=f3e186]:
+          - generic [ref=f3e187]:
+            - paragraph [ref=f3e188]: For venue owners
+            - heading "Fill the empty hours. Keep the paperwork out of it." [level=2] [ref=f3e189]
+            - paragraph [ref=f3e190]: List once, set your hours and price, then take bookings around the clock. We collect payment; you get a weekly payout with every booking itemised.
+            - link "List your venue" [ref=f3e191] [cursor=pointer]:
+              - /url: /for-owners
+          - generic [ref=f3e192]:
+            - generic [ref=f3e193]:
+              - term [ref=f3e194]: Commission
+              - definition [ref=f3e195]: 0%
+              - paragraph [ref=f3e196]: No listing fee, no monthly cost
+            - generic [ref=f3e197]:
+              - term [ref=f3e198]: Payouts
+              - definition [ref=f3e199]: Weekly
+              - paragraph [ref=f3e200]: Itemised, straight to your account
+            - generic [ref=f3e201]:
+              - term [ref=f3e202]: Setup
+              - definition [ref=f3e203]: 10 min
+              - paragraph [ref=f3e204]: Photos, hours, price — that's it
+            - generic [ref=f3e205]:
+              - term [ref=f3e206]: Support
+              - definition [ref=f3e207]: Direct
+              - paragraph [ref=f3e208]: Message players inside the app
+      - generic [ref=f3e210]:
+        - heading "Your next game is one tap away." [level=2] [ref=f3e211]
+        - paragraph [ref=f3e212]: Free to join. No card needed until you book.
+        - generic [ref=f3e213]:
+          - link "Get started" [ref=f3e214] [cursor=pointer]:
+            - /url: /signup
+          - link "Browse first" [ref=f3e215] [cursor=pointer]:
+            - /url: /venues
+        - paragraph [ref=f3e216]: Built for players in Yerevan — message venue owners directly
+    - contentinfo [ref=f3e219]:
+      - generic [ref=f3e220]:
+        - generic [ref=f3e221]:
+          - generic [ref=f3e222]:
+            - link "Sportsbnb home" [ref=f3e223] [cursor=pointer]:
+              - /url: /
+              - generic [ref=f3e224]: Sportsbnb
+            - paragraph [ref=f3e229]: The simplest way to find and book sports venues. Built for players, designed for owners.
+          - generic [ref=f3e230]:
+            - generic [ref=f3e231]:
+              - heading "Product" [level=2] [ref=f3e232]
+              - list [ref=f3e233]:
+                - listitem [ref=f3e234]:
+                  - link "Browse venues" [ref=f3e235] [cursor=pointer]:
+                    - /url: /venues
+                - listitem [ref=f3e236]:
+                  - link "For venue owners" [ref=f3e237] [cursor=pointer]:
+                    - /url: /for-owners
+                - listitem [ref=f3e238]:
+                  - link "List your venue" [ref=f3e239] [cursor=pointer]:
+                    - /url: /add-venue
+            - generic [ref=f3e240]:
+              - heading "Company" [level=2] [ref=f3e241]
+              - list [ref=f3e242]:
+                - listitem [ref=f3e243]:
+                  - link "About" [ref=f3e244] [cursor=pointer]:
+                    - /url: /about
+                - listitem [ref=f3e245]:
+                  - link "Blog" [ref=f3e246] [cursor=pointer]:
+                    - /url: /blog
+                - listitem [ref=f3e247]:
+                  - link "Contact" [ref=f3e248] [cursor=pointer]:
+                    - /url: /contact
+                - listitem [ref=f3e249]:
+                  - link "FAQ" [ref=f3e250] [cursor=pointer]:
+                    - /url: /faq
+            - generic [ref=f3e251]:
+              - heading "Legal" [level=2] [ref=f3e252]
+              - list [ref=f3e253]:
+                - listitem [ref=f3e254]:
+                  - link "Privacy" [ref=f3e255] [cursor=pointer]:
+                    - /url: /privacy
+                - listitem [ref=f3e256]:
+                  - link "Terms" [ref=f3e257] [cursor=pointer]:
+                    - /url: /terms
+                - listitem [ref=f3e258]:
+                  - link "Cookies" [ref=f3e259] [cursor=pointer]:
+                    - /url: /cookies
+        - generic [ref=f3e260]:
+          - paragraph [ref=f3e261]: © 2026 Sportsbnb. All rights reserved.
+          - paragraph [ref=f3e262]: Made for players. Built with care.
+    - button "Open AI assistant" [ref=f3e263] [cursor=pointer]

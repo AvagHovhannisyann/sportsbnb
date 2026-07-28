@@ -1,7 +1,7 @@
 /**
  * venueChrome — the static furniture the venue family paints on top of its
  * moving parts: stage dressing, the listing plate, sport chip, price line,
- * star row and the two glyphs that recur everywhere.
+ * star row, the amenity icon set and the glyphs that recur everywhere.
  * Not a composition. Everything here is deliberately motionless, so a loop that
  * mounts it stays seamless without having to reason about the chrome at all.
  */
@@ -81,6 +81,111 @@ export const TickGlyph: FC<{
     />
   </svg>
 );
+
+/* ────────────────────────────── amenity glyphs ─────────────────────────── */
+
+/**
+ * The eight facilities a venue can tick on the listing form. Drawn rather than
+ * fetched: an icon font would be a network request, and this folder does not
+ * make any.
+ */
+export type AmenityIcon =
+  | "parking"
+  | "showers"
+  | "floodlights"
+  | "lockers"
+  | "cafe"
+  | "wifi"
+  | "seating"
+  | "equipment";
+
+/** Strokes plus filled dots, all on the same 24×24 grid as the other glyphs. */
+type GlyphSpec = {
+  paths: readonly string[];
+  dots: readonly (readonly [number, number, number])[];
+};
+
+const AMENITY_GLYPHS: Record<AmenityIcon, GlyphSpec> = {
+  parking: {
+    paths: ["M8.5 19V5h4.2a3.9 3.9 0 010 7.8H8.5"],
+    dots: [],
+  },
+  showers: {
+    paths: ["M4.5 8.4h15", "M12 8.4V4"],
+    dots: [
+      [8, 13, 1.05],
+      [12, 15.6, 1.05],
+      [16, 13, 1.05],
+      [9.8, 19, 0.9],
+      [14.2, 19, 0.9],
+    ],
+  },
+  floodlights: {
+    paths: [
+      "M12 21V11.4",
+      "M6.6 11.4h10.8l-1.7-4.8H8.3z",
+      "M4 4.6l2.3 1.7",
+      "M20 4.6l-2.3 1.7",
+    ],
+    dots: [],
+  },
+  lockers: {
+    paths: ["M5 3.6h14v16.8H5z", "M12 3.6v16.8"],
+    dots: [
+      [9.2, 12, 0.9],
+      [14.8, 12, 0.9],
+    ],
+  },
+  cafe: {
+    paths: [
+      "M4.6 7.6h11.8v6.2a5 5 0 01-5 5H9.6a5 5 0 01-5-5z",
+      "M16.4 9.6h1.7a2.6 2.6 0 010 5.2h-1.7",
+    ],
+    dots: [],
+  },
+  wifi: {
+    paths: [
+      "M3.4 9.1a13 13 0 0117.2 0",
+      "M6.8 12.6a8.4 8.4 0 0110.4 0",
+      "M10.1 16a3.4 3.4 0 013.8 0",
+    ],
+    dots: [[12, 19.3, 1.15]],
+  },
+  seating: {
+    paths: ["M4 20.4v-5.6a2.5 2.5 0 015 0v1.9h6v-1.9a2.5 2.5 0 015 0v5.6", "M6.6 12V6.2h10.8V12"],
+    dots: [],
+  },
+  equipment: {
+    paths: ["M3.4 9.4h3.2v5.2H3.4z", "M17.4 9.4h3.2v5.2h-3.2z", "M6.6 12h10.8"],
+    dots: [],
+  },
+};
+
+export const AmenityGlyph: FC<{
+  icon: AmenityIcon;
+  size: number;
+  color: string;
+  weight?: number;
+}> = ({ icon, size, color, weight = 1.7 }) => {
+  const spec = AMENITY_GLYPHS[icon];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {spec.paths.map((d, i) => (
+        <path
+          key={i}
+          d={d}
+          stroke={color}
+          strokeWidth={weight}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+      {spec.dots.map((dot, i) => (
+        <circle key={`d${i}`} cx={dot[0]} cy={dot[1]} r={dot[2]} fill={color} />
+      ))}
+    </svg>
+  );
+};
 
 /* ──────────────────────────────── star row ─────────────────────────────── */
 
