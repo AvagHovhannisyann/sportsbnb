@@ -96,7 +96,6 @@ export const SlotPickerTapSelect: FC<SlotPickerTapSelectProps> = ({
 
   const list = slots.length > 0 ? slots : slotPickerTapSelectDefaultProps.slots;
   const cols = Math.max(1, columns);
-  const rows = Math.ceil(list.length / cols);
   const pick = Math.min(Math.max(0, pickIndex), list.length - 1);
 
   const padX = 70 * unit;

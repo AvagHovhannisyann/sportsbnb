@@ -462,7 +462,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                   gap: 24,
                 }}
               >
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <Eyebrow size={16} color={BRAND.muted}>
                     Reference
                   </Eyebrow>
@@ -502,7 +502,6 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                         fontFamily: FONT_SANS,
                         fontSize: 21,
                         color: BRAND.muted,
-                        whiteSpace: "nowrap",
                       }}
                     >
                       {squadNote}
@@ -516,7 +515,7 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                     flexDirection: "column",
                     alignItems: "center",
                     gap: 12,
-                    padding: "22px 26px",
+                    padding: "20px 22px",
                     borderRadius: 20,
                     flexShrink: 0,
                     border: `2px solid ${alpha(BRAND.primary, 0.5)}`,
@@ -529,11 +528,11 @@ export const FeaturePlayScene: FC<FeaturePlaySceneProps> = ({
                     )})`,
                   }}
                 >
-                  <IconCheck size={34} />
+                  <IconCheck size={30} />
                   <span
                     style={{
                       fontFamily: FONT_DISPLAY,
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: 700,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",

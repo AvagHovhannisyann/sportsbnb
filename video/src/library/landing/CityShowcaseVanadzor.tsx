@@ -196,7 +196,7 @@ const SeasonStrip: FC<{
   readonly months: readonly Month[];
   readonly startAt: number;
 }> = ({ frame, fps, months, startAt }) => (
-  <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 250 }}>
+  <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 340 }}>
     {months.map((month, i) => {
       const p = spring({
         frame,
@@ -424,7 +424,7 @@ export const CityShowcaseVanadzor: FC<CityShowcaseVanadzorProps> = ({
             <Sequence name="Sports" layout="none">
               <div
                 style={{
-                  marginTop: 34,
+                  marginTop: 44,
                   display: "flex",
                   flexWrap: "wrap",
                   gap: 12,
