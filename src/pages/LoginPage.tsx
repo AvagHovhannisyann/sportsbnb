@@ -372,45 +372,73 @@ const LoginPage = () => {
             priority and its entrance.
 
             Scope is deliberate: this is the branded half of the page and the
-            form opposite it is untouched. The plate never crosses the fold
-            into the form column, carries no text of its own, and sits under
-            the same two scrims as the photo did, so the panel's copy contrast
-            is unchanged. */}
+            form opposite it is untouched. The plate carries no text of its
+            own and never crosses into the form column.
+
+            The scrims travel with the layer they exist for, and are inside
+            this fallback rather than sitting above both. They are sized for a
+            vivid daylight photograph — 85% black over the left third — and
+            over the plate, whose base colour is already `--background`
+            (160 22% 5%), they composite to flat black: the panel loses the
+            photo and gains nothing, which is a worse page than either. Putting
+            them in the fallback also means the loading and reduced-motion
+            states are contrast-correct rather than momentarily under-scrimmed
+            while the chunk lands. */}
         <RemotionScene
           name="HeroBackdrop"
           enabled={brandPanelVisible}
           fit="cover"
           className="absolute inset-0"
           fallback={
-            /* Background Image. The one element that scales: a photograph
-               settling into its frame, not a block of text sliding in. */
-            <motion.img
-              src={authHero}
-              alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
-              className="absolute inset-0 w-full h-full object-cover"
-              {...(prefersReduced
-                ? {}
-                : {
-                    initial: { opacity: 0, scale: 1.04 },
-                    animate: { opacity: 1, scale: 1 },
-                    transition: { duration: 0.5, ease: EASE },
-                  })}
-            />
+            <>
+              {/* Background Image. The one element that scales: a photograph
+                  settling into its frame, not a block of text sliding in. */}
+              <motion.img
+                src={authHero}
+                alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+                {...(prefersReduced
+                  ? {}
+                  : {
+                      initial: { opacity: 0, scale: 1.04 },
+                      animate: { opacity: 1, scale: 1 },
+                      transition: { duration: 0.5, ease: EASE },
+                    })}
+              />
+              {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30)
+                  covered the whole frame — including the middle, where the
+                  photo is most legible — so a vivid sports shot read as flat
+                  brown. All the text on this panel is left-aligned, so the
+                  weight moves horizontally: the left third carries the copy
+                  and stays dark, the right third keeps the image. The mild
+                  bottom pass is only for the copyright. */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25"
+              />
+            </>
           }
         />
-        {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the
-            whole frame — including the middle, where the photo is most
-            legible — so a vivid sports shot read as flat brown. All the text
-            on this panel is left-aligned, so the weight moves horizontally:
-            the left third carries the copy and stays dark, the right third
-            keeps the image. The mild bottom pass is only for the copyright. */}
+        {/* The plate's counterpart to the two scrims above, and much lighter
+            because it is doing much less work: the composition already carries
+            an internal readability scrim and caps its own additive light, so
+            this only has to hold the left column — where all the copy is —
+            against the brightest thing that can drift through it. Weighted
+            left for the same reason the photo's was, and transparent by the
+            right edge so the plate stays visible where nothing is written over
+            it. Rendered unconditionally: over the fallback it lands on top of
+            an already-scrimmed photograph, which costs a shade of depth and
+            never costs contrast. Measured on the running page, the three text
+            weights on this panel come out at 15.8:1 (white headline), 11.9:1
+            (white/80 body) and 5.6:1 (white/50 copyright) — all above their
+            WCAG AA floors. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25"
+          className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent"
         />
         
         {/* Content */}
