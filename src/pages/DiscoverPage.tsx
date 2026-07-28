@@ -1,6 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { Link, useSearchParams } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import type { MotionProps, Variants } from "framer-motion";
+import { easeOutExpo, transitionBase, transitionFast } from "@/lib/motion";
 import { Check, Filter, Loader2, MapPin, Navigation, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +58,98 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 /** Starting ceiling for the price filter, before the catalogue is known. */
 const PRICE_FLOOR_CEILING = 200000;
+
+/* ------------------------------------------------------------------
+   Motion.
+
+   Durations and easings come from lib/motion, which mirrors the
+   --dur-* / --ease-out-expo custom properties in index.css, so the two
+   halves of the page that move — the framer-motion results region and
+   the CSS-driven filter chips below — agree on what "fast" means.
+
+   Under `prefers-reduced-motion: reduce` the animation props are not
+   passed at all rather than being given a zero duration: the final
+   state renders outright, so nothing here depends on a frame that
+   never runs. That is the convention HomePage already established.
+   ------------------------------------------------------------------ */
+
+/** Gap between one card's entrance and the next. */
+const CARD_STAGGER_STEP = 0.05;
+/**
+ * The index past which every remaining card shares the last delay.
+ *
+ * This grid is unpaginated — "Any sport, any city" renders the whole
+ * catalogue — so an uncapped stagger would still be dealing out cards
+ * two seconds after the data landed, and the further down the page you
+ * look the more it reads as slowness rather than sequence. Capped, the
+ * stagger costs 500ms whether there are eleven venues or a hundred,
+ * and the cards past the fold arrive together (which is what someone
+ * scrolling down to them wants anyway).
+ */
+const CARD_STAGGER_CAP = 10;
+
+/**
+ * The grid itself only fades on the way *out*; the entrance belongs to
+ * the cards. Giving both an opacity animation would double it up.
+ */
+const resultsVariants: Variants = {
+  hidden: {},
+  visible: {},
+  exit: { opacity: 0, transition: transitionFast },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: easeOutExpo,
+      delay: Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP,
+    },
+  }),
+};
+
+/**
+ * Entrance and press feedback for the filter chips.
+ *
+ * Scoped here, and in CSS, for two reasons. `FilterChips` is shared with
+ * /games, which another page owns — reaching into it would change a
+ * component this page does not own. And a chip's entrance is triggered
+ * by the node being created, which is exactly when a CSS animation
+ * fires, so keying off React's own reconciliation gets it for free: an
+ * added filter animates, the chips already on screen do not re-run.
+ *
+ * `backwards` rather than `forwards`/`both` on purpose — a filled-forwards
+ * animation keeps winning the cascade after it ends, which would beat the
+ * `:active` transform below and leave the press feedback dead.
+ */
+const CHIP_MOTION_CSS = `
+[data-venues-chips] button {
+  animation: venues-chip-in var(--dur-base, 250ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  /* Longhand, not the shorthand: the chips carry Tailwind's
+     transition-colors, and a "transition" shorthand here would reset
+     transition-property to "transform" alone and kill the hover fade. */
+  transition-property: color, background-color, border-color, transform;
+  transition-duration: var(--dur-fast, 150ms);
+  transition-timing-function: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+[data-venues-chips] button:active {
+  transform: scale(0.96);
+}
+@keyframes venues-chip-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-venues-chips] button {
+    animation: none;
+    transition-property: color, background-color, border-color;
+  }
+  [data-venues-chips] button:active { transform: none; }
+}
+`;
 
 const DiscoverPage = () => {
   const { profile } = useAuth();
@@ -351,6 +446,36 @@ const DiscoverPage = () => {
     return formatPrice(getCustomerPrice(ownerPrice));
   };
 
+  // ── Motion props for the results region (see the block above) ──
+  const prefersReduced = useReducedMotion();
+
+  // `initial: false` so the skeletons are simply *there* on first paint.
+  // Fading a placeholder in delays the one thing it exists to do, which is
+  // to say "something is coming" as early as possible. It still fades out.
+  const skeletonMotion: MotionProps = prefersReduced
+    ? {}
+    : { initial: false, exit: { opacity: 0 }, transition: transitionFast };
+
+  // Deliberately not `initial={false}` on <AnimatePresence>: react-query
+  // serves this page from cache for a minute, so a return visit renders the
+  // grid as the first branch, and suppressing that would drop the stagger on
+  // exactly the loads where the page is quick enough to enjoy it.
+  const gridMotion: MotionProps = prefersReduced
+    ? {}
+    : { variants: resultsVariants, initial: "hidden", animate: "visible", exit: "exit" };
+
+  const cardMotion = (index: number): MotionProps =>
+    prefersReduced ? {} : { variants: cardVariants, custom: index };
+
+  const panelMotion: MotionProps = prefersReduced
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0 },
+        transition: transitionBase,
+      };
+
   return (
     <Layout>
       <SEOHead
@@ -362,6 +487,7 @@ const DiscoverPage = () => {
           { name: "Venues", url: "/venues" },
         ])}
       />
+      <style dangerouslySetInnerHTML={{ __html: CHIP_MOTION_CSS }} />
       <div className="bg-background min-h-screen">
         {/* Search Header */}
         <div className="bg-card border-b border-border sticky top-16 z-40">
@@ -603,18 +729,35 @@ const DiscoverPage = () => {
               them: desktop had a single Clear that dropped all five, mobile
               had a badge on the Filters button reading "!". A grid narrowed to
               two results was indistinguishable from an empty catalogue. */}
-          <FilterChips
-            className="mb-6"
-            chips={activeFilters}
-            onRemove={(key) => clearFilter(key as FilterKey)}
-            onClearAll={clearFilters}
-          />
+          {/* The wrapper is the animation's hook, nothing more: FilterChips is
+              shared with /games, so the chip entrance and press feedback are
+              attached from out here rather than by editing it. It renders null
+              with no filters set, so this contributes no height of its own. */}
+          <div data-venues-chips="">
+            <FilterChips
+              className="mb-6"
+              chips={activeFilters}
+              onRemove={(key) => clearFilter(key as FilterKey)}
+              onClearAll={clearFilters}
+            />
+          </div>
 
+          {/* Skeletons, results, the error and the two empty states are one
+              swappable region rather than five independent branches, so the
+              outgoing one can fade before the incoming one arrives — `mode
+              ="wait"` sequences them, which is what turns a cold load from a
+              hard cut into a crossfade. Sequential rather than overlapped
+              deliberately: overlapping two grids means taking one of them out
+              of flow, and a placeholder that reserves the wrong space is worse
+              than a 150ms handover. */}
+          <AnimatePresence mode="wait">
           {isLoading ? (
             // Skeletons rather than a centred spinner: same grid, same card
             // geometry, so the results land in place instead of shifting the
             // page down when they arrive.
-            <div
+            <motion.div
+              key="loading"
+              {...skeletonMotion}
               className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
               role="status"
               aria-label="Loading venues"
@@ -645,38 +788,55 @@ const DiscoverPage = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
           ) : isError ? (
             /* Without this branch a failed query left the skeletons pulsing
                forever — the most misleading state available, since it promises
                content that is never coming and offers no way to retry. */
-            <ErrorPanel
-              what="venues"
-              description="The connection dropped on the way to our servers. Your filters are still set — retrying will keep them."
-              onRetry={() => refetch()}
-              isRetrying={isRefetching}
-              className="rounded-2xl border border-destructive/25 bg-destructive/5"
-            />
+            <motion.div key="error" {...panelMotion}>
+              <ErrorPanel
+                what="venues"
+                description="The connection dropped on the way to our servers. Your filters are still set — retrying will keep them."
+                onRetry={() => refetch()}
+                isRetrying={isRefetching}
+                className="rounded-2xl border border-destructive/25 bg-destructive/5"
+              />
+            </motion.div>
           ) : filteredVenues.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredVenues.map((venue: any) => (
-                <VenueCard
-                  key={venue.id}
-                  id={venue.id}
-                  name={venue.name}
-                  image={getVenueImage(venue)}
-                  location={venue.address || venue.city}
-                  sports={venue.sports}
-                  price={venue.price_per_hour}
-                  rating={venue.rating}
-                  reviewCount={venue.review_count}
-                  available={venue.is_active}
-                  distance={venue.distance}
-                  isPromoted={promotedVenueIds.has(venue.id)}
-                />
+            /* The key stays "results" across filter changes on purpose. Only a
+               change of key runs an exit, so narrowing the grid re-flows it
+               rather than fading the whole thing out and back — and the cards
+               that survive the change never re-animate. What does animate is a
+               card that has just become a result: it mounts under a parent
+               already at "visible" and plays its own entrance. */
+            <motion.div
+              key="results"
+              {...gridMotion}
+              className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              {filteredVenues.map((venue: any, index: number) => (
+                /* The wrapper takes the transform so VenueCard keeps its own:
+                   `.card-lift` translates the article on hover, and one element
+                   cannot hold an entrance and a hover response at once. */
+                <motion.div key={venue.id} {...cardMotion(index)}>
+                  <VenueCard
+                    id={venue.id}
+                    name={venue.name}
+                    image={getVenueImage(venue)}
+                    location={venue.address || venue.city}
+                    sports={venue.sports}
+                    price={venue.price_per_hour}
+                    rating={venue.rating}
+                    reviewCount={venue.review_count}
+                    available={venue.is_active}
+                    distance={venue.distance}
+                    isPromoted={promotedVenueIds.has(venue.id)}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           ) : hasActiveFilters && venues.length > 0 ? (
+            <motion.div key="no-match" {...panelMotion}>
             <StatusPanel
               icon={SearchX}
               title="Nothing matches those filters"
@@ -695,6 +855,7 @@ const DiscoverPage = () => {
                 </Button>
               )}
             </StatusPanel>
+            </motion.div>
           ) : (
             /* The catalogue itself is empty — which is the dominant fact even
                if filters happen to be set, so this branch is guarded ahead of
@@ -703,6 +864,7 @@ const DiscoverPage = () => {
                with an empty catalogue "widening the search" is simply false.
                Until venues are listed this is the most-seen screen in the app,
                so it gets a real next step instead. */
+            <motion.div key="empty" {...panelMotion}>
             <StatusPanel
               icon={MapPin}
               tone="positive"
@@ -717,7 +879,9 @@ const DiscoverPage = () => {
                 <Link to="/games">Find a game instead</Link>
               </Button>
             </StatusPanel>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </div>
     </Layout>

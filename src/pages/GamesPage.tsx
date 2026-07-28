@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo } from "react";
 import SEOHead from "@/components/seo/SEOHead";
 import { Link, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import type { MotionProps, Variants } from "framer-motion";
+import { easeOutExpo, transitionBase, transitionFast } from "@/lib/motion";
 import { Search, Filter, X, Plus, Loader2, Calendar, MapPin, Users, Clock, LayoutGrid, Map, Navigation, MapPinOff, Banknote } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,13 +34,110 @@ import { skillLevelChip, skillLevelLabel } from "@/lib/chips";
 
 type GameWithDistance = Game & { distance?: number | null };
 
-const GameCard = ({ game }: { game: GameWithDistance }) => {
+/* ------------------------------------------------------------------
+   Motion.
+
+   Durations and easings come from lib/motion, which mirrors the
+   --dur-* / --ease-out-expo custom properties in index.css, so this
+   page agrees with /venues and / on what "fast" means.
+
+   Under `prefers-reduced-motion: reduce` the animation props are not
+   passed at all rather than given a zero duration: the final state
+   renders outright, so nothing here depends on a frame that never
+   runs. That is the convention HomePage and DiscoverPage established.
+
+   Only transform and opacity are animated. The roster bar in
+   particular scales rather than growing its width, so a grid of
+   twenty-odd cards costs no layout work while it fills.
+   ------------------------------------------------------------------ */
+
+/** Gap between one card's entrance and the next. */
+const CARD_STAGGER_STEP = 0.045;
+/**
+ * The index past which every remaining card shares the last delay.
+ *
+ * `/games` is unpaginated, so an uncapped stagger would still be dealing
+ * out cards a second after the data landed and would read as slowness
+ * rather than sequence. Capped, the stagger costs 360ms whether there
+ * are nine games or ninety, and the cards past the fold arrive together.
+ */
+const CARD_STAGGER_CAP = 8;
+/**
+ * How long after its card settles the roster bar starts filling.
+ *
+ * The bar is a consequence of the card, not a second thing arriving at
+ * the same time — the eye reads "here is a game", then "and it is
+ * two-thirds full". Overlapping them turns both into noise.
+ */
+const ROSTER_FILL_LEAD = 0.12;
+
+/**
+ * The grid only fades on the way *out*; the entrance belongs to the
+ * cards. Giving both an opacity animation would double it up.
+ */
+const resultsVariants: Variants = {
+  hidden: {},
+  visible: {},
+  exit: { opacity: 0, transition: transitionFast },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: easeOutExpo,
+      delay: Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP,
+    },
+  }),
+};
+
+/**
+ * Press feedback, and the reduced-motion answer to it.
+ *
+ * The shared `Button` carries `active:scale-[0.98]` for every button in
+ * the app and no `prefers-reduced-motion` escape, so the join CTA
+ * shrinks under the finger even for someone who has asked the system
+ * for less movement. Scoped to this grid rather than fixed in
+ * `components/ui/button.tsx`, which this page does not own.
+ *
+ * Deliberately narrow: it names `:active` transforms on the two
+ * controls only. A blanket `transform: none` here would also flatten
+ * the roster bar's scaleX and render every game as full.
+ */
+const GAMES_MOTION_CSS = `
+@media (prefers-reduced-motion: reduce) {
+  [data-games-grid] a:active,
+  [data-games-grid] button:active {
+    transform: none;
+  }
+}
+`;
+
+const GameCard = ({
+  game,
+  entranceDelay = 0,
+}: {
+  game: GameWithDistance;
+  entranceDelay?: number;
+}) => {
+  const prefersReduced = useReducedMotion();
   const spotsLeft = game.max_players - (game.participant_count || 0);
   const isFull = spotsLeft <= 0;
 
+  /**
+   * How much of the roster is taken, 0–1. Clamped both ends: a game can
+   * be over-subscribed (`spotsLeft` goes negative), and a bar past 100%
+   * would overflow its track.
+   */
+  const taken = Math.min(Math.max(game.participant_count || 0, 0), game.max_players);
+  const fillRatio = game.max_players > 0 ? taken / game.max_players : 0;
+
   return (
     <div className="card-lift rounded-xl border border-border bg-card p-5">
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary">{game.sport}</Badge>
@@ -65,6 +165,38 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
             </>
           )}
         </div>
+      </div>
+
+      {/* Roster fill.
+          The counter above says how many places remain; this says how far
+          along the game already is, which is the thing you compare between
+          two cards. It restates numbers the card already carries and adds no
+          reading of its own, so it is hidden from assistive tech rather than
+          announced twice.
+
+          scaleX, not width: the bar is one composited transform on a grid
+          that can hold every open game at once, and it cannot reflow the card
+          mid-fill. */}
+      <div
+        className="mb-4 h-1 w-full overflow-hidden rounded-full bg-surface-3"
+        aria-hidden="true"
+      >
+        <motion.div
+          className={`h-full w-full origin-left rounded-full ${
+            isFull ? "bg-muted-foreground/40" : "bg-primary"
+          }`}
+          initial={prefersReduced ? false : { scaleX: 0 }}
+          animate={{ scaleX: fillRatio }}
+          transition={
+            prefersReduced
+              ? { duration: 0 }
+              : {
+                  duration: 0.45,
+                  ease: easeOutExpo,
+                  delay: entranceDelay + ROSTER_FILL_LEAD,
+                }
+          }
+        />
       </div>
 
       <div className="space-y-2 mb-4">
@@ -133,11 +265,12 @@ const GameCard = ({ game }: { game: GameWithDistance }) => {
  * skeleton says "here is what is arriving, and where".
  *
  * Every block mirrors a real element: the two chips, the title, the spots
- * counter on the right, three rows of metadata, and the two footer buttons.
+ * counter on the right, the roster bar, three rows of metadata, and the two
+ * footer buttons.
  */
 const GameCardSkeleton = () => (
   <div className="rounded-xl border border-border bg-card p-5">
-    <div className="mb-4 flex items-start justify-between gap-4">
+    <div className="mb-3 flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
         <div className="mb-2 flex items-center gap-2">
           <Skeleton className="h-5 w-16 rounded-full bg-surface-2" />
@@ -150,6 +283,11 @@ const GameCardSkeleton = () => (
         <Skeleton className="ml-auto h-4 w-16 bg-surface-2" />
       </div>
     </div>
+
+    {/* The roster bar's own footprint. Without it the real cards are 20px
+        taller than their placeholders and the whole grid steps down on
+        load — the shift this skeleton exists to prevent. */}
+    <div className="mb-4 h-1 w-full rounded-full bg-surface-3" />
 
     <div className="mb-4 space-y-2">
       <Skeleton className="h-4 w-2/3 bg-surface-2" />
@@ -265,8 +403,49 @@ const GamesPage = () => {
     navigate("/create-game");
   };
 
+  // ── Motion props for the results region (see the block above) ──
+  const prefersReduced = useReducedMotion();
+
+  // `initial: false` so the skeletons are simply *there* on first paint.
+  // Fading a placeholder in delays the one thing it exists to do, which is
+  // to say "something is coming" as early as possible. It still fades out.
+  const skeletonMotion: MotionProps = prefersReduced
+    ? {}
+    : { initial: false, exit: { opacity: 0 }, transition: transitionFast };
+
+  // Not `initial={false}` on <AnimatePresence>: react-query serves this page
+  // from cache for a minute, so a return visit renders the grid as the first
+  // branch, and suppressing that would drop the stagger on exactly the loads
+  // quick enough to enjoy it.
+  const gridMotion: MotionProps = prefersReduced
+    ? {}
+    : { variants: resultsVariants, initial: "hidden", animate: "visible", exit: "exit" };
+
+  const cardMotion = (index: number): MotionProps =>
+    prefersReduced ? {} : { variants: cardVariants, custom: index };
+
+  /** The delay the card at `index` settles on, handed to its roster bar. */
+  const cardDelay = (index: number) =>
+    prefersReduced ? 0 : Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP;
+
+  // Opacity only, no transform: the map is a live Google Maps canvas and an
+  // animating transform on an ancestor makes it re-rasterise every frame.
+  const mapMotion: MotionProps = prefersReduced
+    ? {}
+    : { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: transitionBase };
+
+  const panelMotion: MotionProps = prefersReduced
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0 },
+        transition: transitionBase,
+      };
+
   return (
     <Layout>
+      <style dangerouslySetInnerHTML={{ __html: GAMES_MOTION_CSS }} />
       <SEOHead
         title="Find Pickup Games & Open Matches"
         description="Join pickup basketball, football, tennis, and other sports games near you. Create your own game and find players to fill your team."
@@ -466,10 +645,17 @@ const GamesPage = () => {
             onClearAll={clearFilters}
           />
 
+          {/* `mode="wait"` so the outgoing branch is gone before the next one
+              measures itself. Overlapping two of these would mean taking one
+              out of flow, and a placeholder that reserves the wrong space is
+              worse than a 150ms handover. */}
+          <AnimatePresence mode="wait">
           {isLoading ? (
             // Same grid, same card footprint, so nothing moves when the real
             // games land in it.
-            <div
+            <motion.div
+              key="loading"
+              {...skeletonMotion}
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               role="status"
               aria-label="Loading games"
@@ -477,34 +663,59 @@ const GamesPage = () => {
               {Array.from({ length: 6 }, (_, i) => (
                 <GameCardSkeleton key={i} />
               ))}
-            </div>
+            </motion.div>
           ) : games.length > 0 ? (
             viewMode === "map" ? (
-              <GamesMapView games={games} />
+              <motion.div key="map" {...mapMotion}>
+                <GamesMapView games={games} />
+              </motion.div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {games.map((game) => (
-                  <GameCard key={game.id} game={game} />
+              /* The key stays "results" across filter changes on purpose.
+                 Only a change of key runs an exit, so narrowing the list
+                 re-flows the grid rather than fading the whole thing out and
+                 back — and the cards that survive the change never re-animate.
+                 What does animate is a game that has just become a result: it
+                 mounts under a parent already at "visible" and plays its own
+                 entrance. */
+              <motion.div
+                key="results"
+                {...gridMotion}
+                className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+                data-games-grid
+              >
+                {games.map((game, index) => (
+                  /* The wrapper takes the entrance transform so the card keeps
+                     its own: `.card-lift` translates it on hover, and one
+                     element cannot hold an entrance and a hover response at
+                     once. */
+                  <motion.div key={game.id} {...cardMotion(index)}>
+                    <GameCard game={game} entranceDelay={cardDelay(index)} />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )
           ) : isError ? (
-            <ErrorPanel what="games" onRetry={() => refetch()} isRetrying={isFetching} />
+            <motion.div key="error" {...panelMotion}>
+              <ErrorPanel what="games" onRetry={() => refetch()} isRetrying={isFetching} />
+            </motion.div>
           ) : (
-            <EmptyState
-              icon={Search}
-              title="No games found"
-              description={
-                hasActiveFilters
-                  ? "Try adjusting your filters or create your own game"
-                  : "Be the first to create a game and find players!"
-              }
-              actionLabel="Create Game"
-              onAction={handleCreateGame}
-              secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
-              onSecondaryAction={clearFilters}
-            />
+            <motion.div key="empty" {...panelMotion}>
+              <EmptyState
+                icon={Search}
+                title="No games found"
+                description={
+                  hasActiveFilters
+                    ? "Try adjusting your filters or create your own game"
+                    : "Be the first to create a game and find players!"
+                }
+                actionLabel="Create Game"
+                onAction={handleCreateGame}
+                secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+                onSecondaryAction={clearFilters}
+              />
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </div>
     </Layout>

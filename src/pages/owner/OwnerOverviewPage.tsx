@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
+import type { MotionProps, Variants } from "framer-motion";
 import { Loader2, Plus, Calendar, Banknote, Users, TrendingUp, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +19,128 @@ import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { easeOutExpo } from "@/lib/motion";
 import { bookingStatusDescriptor } from "@/features/booking/status";
+
+/* ------------------------------------------------------------------
+   Motion.
+
+   Three things move on this page, and each one is answering a question
+   the owner is already asking:
+
+     the four figures count up   — "did this number change?"
+     the occupancy bar draws in  — the same answer, drawn
+     the booking feed staggers   — "how many are coming, and in what order?"
+
+   Nothing else does. The calendar, the venue list and the quick
+   actions arrive with the region they sit in and then hold still; a
+   dashboard someone reads every morning should not re-perform itself
+   every morning.
+
+   Easing comes from lib/motion, which mirrors --ease-out-expo in
+   index.css, so this page agrees with the rest of the app about what a
+   settle looks like. Under `prefers-reduced-motion: reduce` the motion
+   props are not passed at all rather than given a zero duration, and
+   the counters render their final figure on the first frame — the
+   convention HomePage and DiscoverPage already established.
+   ------------------------------------------------------------------ */
+
+/** Card is a forwardRef div, so this animates it in place — no extra wrapper
+    element inside the stats grid, and therefore no change to the layout. */
+const MotionCard = motion.create(Card);
+
+/** Gap between one stat card's entrance and the next. Four cards, so no cap
+    is needed: the row is fully dealt in 150ms. */
+const STAT_STAGGER_STEP = 0.05;
+
+/** Gap between one booking row and the next. */
+const FEED_STAGGER_STEP = 0.045;
+/**
+ * The index past which every remaining row shares the last delay.
+ *
+ * The overview slices its feed to five, so the cap is inert here — it exists
+ * so that raising that slice later cannot turn the stagger into a queue. Past
+ * this index rows arrive together, which is what someone scanning a list for
+ * "what's next" wants anyway.
+ */
+const FEED_STAGGER_CAP = 8;
+
+/** How long a figure takes to reach its value. */
+const COUNT_UP_MS = 550;
+
+const statVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: easeOutExpo, delay: index * STAT_STAGGER_STEP },
+  }),
+};
+
+const feedRowVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.35,
+      ease: easeOutExpo,
+      delay: Math.min(index, FEED_STAGGER_CAP) * FEED_STAGGER_STEP,
+    },
+  }),
+};
+
+/**
+ * Counts a figure up once it is real, and lands on it exactly.
+ *
+ * Two details matter more than the animation. The last frame assigns
+ * `target` itself rather than a rounded interpolation, so what finally sits
+ * on screen is the analytics figure formatted exactly as it was before —
+ * a count-up that settled on its own approximation would be a dashboard
+ * quietly reporting the wrong revenue. And the tween starts from whatever is
+ * currently displayed, not from zero, so a react-query refetch that nudges a
+ * figure animates the difference instead of dropping to nothing and climbing
+ * back up.
+ *
+ * `active` gates it on the data having arrived: the first render has no
+ * analytics, and counting 0 → 0 before the fetch resolves would spend the
+ * animation on a placeholder and leave the real number to appear abruptly.
+ */
+const useCountUp = (target: number, active: boolean) => {
+  const prefersReduced = useReducedMotion();
+  const [display, setDisplay] = useState(target);
+  const displayRef = useRef(target);
+
+  useEffect(() => {
+    displayRef.current = display;
+  }, [display]);
+
+  useEffect(() => {
+    if (prefersReduced || !active || displayRef.current === target) {
+      setDisplay(target);
+      displayRef.current = target;
+      return;
+    }
+
+    const from = displayRef.current;
+    const delta = target - from;
+    const start = performance.now();
+    let frame = requestAnimationFrame(function tick(now: number) {
+      const t = Math.min((now - start) / COUNT_UP_MS, 1);
+      if (t >= 1) {
+        setDisplay(target);
+        return;
+      }
+      // Expo-out — the curve --ease-out-expo approximates as a bezier.
+      setDisplay(Math.round(from + delta * (1 - Math.pow(2, -10 * t))));
+      frame = requestAnimationFrame(tick);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [target, active, prefersReduced]);
+
+  return display;
+};
 
 const OwnerOverviewPage = () => {
   const navigate = useNavigate();
@@ -36,6 +159,16 @@ const OwnerOverviewPage = () => {
     isFetching: analyticsFetching,
   } = useOwnerAnalytics();
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const prefersReduced = useReducedMotion();
+
+  // The four figures the page animates. Declared here, above the `authLoading`
+  // early return, because they are hooks — and read straight off `analytics`,
+  // so each one is the same number it always was, just on its way there.
+  const hasAnalytics = !!analytics;
+  const revenueCount = useCountUp(analytics?.totalRevenue ?? 0, hasAnalytics);
+  const bookingsCount = useCountUp(analytics?.totalBookings ?? 0, hasAnalytics);
+  const customersCount = useCountUp(analytics?.uniqueCustomers ?? 0, hasAnalytics);
+  const occupancyCount = useCountUp(analytics?.occupancyRate ?? 0, hasAnalytics);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -82,7 +215,7 @@ const OwnerOverviewPage = () => {
   const stats = [
     {
       label: "Total Revenue",
-      value: analytics ? `֏${analytics.totalRevenue.toLocaleString()}` : "֏0",
+      value: `֏${revenueCount.toLocaleString()}`,
       change: changeOf(thisMonth?.revenue, lastMonth?.revenue),
       icon: Banknote,
       color: "text-emerald-600",
@@ -90,7 +223,7 @@ const OwnerOverviewPage = () => {
     },
     {
       label: "Total Bookings",
-      value: analytics?.totalBookings?.toString() || "0",
+      value: bookingsCount.toString(),
       change: changeOf(thisMonth?.bookings, lastMonth?.bookings),
       icon: Calendar,
       color: "text-primary",
@@ -98,7 +231,7 @@ const OwnerOverviewPage = () => {
     },
     {
       label: "Unique Customers",
-      value: analytics?.uniqueCustomers?.toString() || "0",
+      value: customersCount.toString(),
       change: null,
       icon: Users,
       color: "text-chart-4",
@@ -106,7 +239,7 @@ const OwnerOverviewPage = () => {
     },
     {
       label: "Occupancy Rate",
-      value: analytics ? `${analytics.occupancyRate}%` : "0%",
+      value: `${occupancyCount}%`,
       change: null,
       icon: TrendingUp,
       color: "text-amber-600",
@@ -138,10 +271,15 @@ const OwnerOverviewPage = () => {
     <OwnerLayout title="Overview" subtitle="Welcome back! Here's what's happening today.">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => {
+        {stats.map((stat, index) => {
           const Icon = stat.icon;
+          // Reduced motion: the props are omitted entirely rather than given a
+          // zero duration, so the card mounts in its final state.
+          const motionProps: MotionProps = prefersReduced
+            ? {}
+            : { variants: statVariants, initial: "hidden", animate: "visible", custom: index };
           return (
-            <Card key={stat.label} className="relative overflow-hidden">
+            <MotionCard key={stat.label} className="relative overflow-hidden" {...motionProps}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className={`w-10 h-10 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
@@ -163,7 +301,7 @@ const OwnerOverviewPage = () => {
                 <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
               </CardContent>
-            </Card>
+            </MotionCard>
           );
         })}
       </div>
@@ -234,8 +372,12 @@ const OwnerOverviewPage = () => {
                     if (isToday(bookingDate)) dateLabel = "Today";
                     else if (isTomorrow(bookingDate)) dateLabel = "Tomorrow";
 
+                    const rowMotion: MotionProps = prefersReduced
+                      ? {}
+                      : { variants: feedRowVariants, initial: "hidden", animate: "visible", custom: index };
+
                     return (
-                      <div key={booking.id}>
+                      <motion.div key={booking.id} {...rowMotion}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -258,7 +400,7 @@ const OwnerOverviewPage = () => {
                           </div>
                         </div>
                         {index < upcomingReservations.length - 1 && <Separator className="mt-4" />}
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>

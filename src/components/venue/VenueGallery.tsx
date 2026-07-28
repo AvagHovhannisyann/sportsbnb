@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import type { MotionProps } from "framer-motion";
+import { easeOutExpo } from "@/lib/motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X, ImageOff } from "lucide-react";
@@ -34,9 +37,26 @@ const GalleryImage = ({
   return <img src={src} alt={alt} onError={() => setFailed(true)} className={className} />;
 };
 
+/**
+ * How far the incoming lightbox photo travels, in px, before settling.
+ *
+ * Small on purpose. The photo is the content, not a card being dealt —
+ * the offset exists to say which way the set moved, and anything larger
+ * turns a step through a gallery into a carousel ride.
+ */
+const PHOTO_SHIFT = 24;
+
 const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  /**
+   * Which way the last move went: 1 forward, -1 back, 0 for the first
+   * photo shown when the lightbox opens (which came from nowhere, so it
+   * only fades). Presentational — it feeds the entrance offset below and
+   * nothing else reads it.
+   */
+  const [direction, setDirection] = useState(0);
+  const prefersReduced = useReducedMotion();
 
   // A blank URL is not a photo. `venue_images.image_url` is nullable and can
   // hold an empty string, and `<img src="">` resolves to the page itself, so it
@@ -70,12 +90,41 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
   }
 
   const openLightbox = (index: number) => {
+    setDirection(0);
     setSelectedIndex(index);
     setLightboxOpen(true);
   };
 
-  const next = () => setSelectedIndex((i) => (i + 1) % allImages.length);
-  const prev = () => setSelectedIndex((i) => (i - 1 + allImages.length) % allImages.length);
+  const next = () => {
+    setDirection(1);
+    setSelectedIndex((i) => (i + 1) % allImages.length);
+  };
+  const prev = () => {
+    setDirection(-1);
+    setSelectedIndex((i) => (i - 1 + allImages.length) % allImages.length);
+  };
+  const goTo = (i: number) => {
+    setDirection(Math.sign(i - selectedIndex));
+    setSelectedIndex(i);
+  };
+
+  /**
+   * The incoming photo's entrance.
+   *
+   * A fade with a directional nudge rather than a true crossfade: an
+   * overlapping fade needs both photos stacked, which means taking the
+   * image out of the flow and positioning it absolutely, and the sizing
+   * here (`max-h-[80vh] max-w-full object-contain` against a `min-h-[60vh]`
+   * box) is load-bearing. Motion is not worth relaying out the one element
+   * on the page that is purely the photograph.
+   */
+  const photoMotion: MotionProps = prefersReduced
+    ? {}
+    : {
+        initial: { opacity: 0, x: direction * PHOTO_SHIFT },
+        animate: { opacity: 1, x: 0 },
+        transition: { duration: 0.25, ease: easeOutExpo },
+      };
 
   const thumbnails = allImages.slice(1, 5);
   // Most venues carry a single image. The grid used to pad the empty slots with
@@ -84,14 +133,23 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
   // full width instead.
   const hasThumbnails = thumbnails.length > 0;
 
+  // The press dip is on the tile and the zoom is on the picture inside it —
+  // two different jobs, as index.css puts it: the picture moves, the frame
+  // does not. Both are composited transforms, and both are dropped outright
+  // when the visitor asks for reduced motion rather than being given a zero
+  // duration, so nothing depends on a frame that never runs. (An instant
+  // untransitioned jump on hover is still movement, which is why the class
+  // comes off in JS instead of being overridden by a `motion-reduce:` rule.)
   const tileBase =
-    "group relative overflow-hidden rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+    "group relative overflow-hidden rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background" +
+    (prefersReduced ? "" : " transition-transform duration-150 ease-out active:scale-[0.99]");
   // At md and up the grid itself is a definite height (see below) and every
   // tile fills it. Below md there is one stacked image and the ratio governs.
   const tileClass = `${tileBase} aspect-[4/3] md:aspect-auto md:h-full md:w-full`;
   const thumbClass = `${tileBase} h-full w-full`;
   const imgClass =
-    "h-full w-full object-cover transition-transform duration-300 group-hover:scale-105";
+    "h-full w-full object-cover" +
+    (prefersReduced ? "" : " transition-transform duration-300 ease-out group-hover:scale-105");
   // One hero height for every venue, at md and up.
   //
   // It used to depend on the photo count: a venue with a single image got
@@ -207,11 +265,25 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
                 </Button>
               )}
 
-              <GalleryImage
-                src={allImages[selectedIndex].image_url}
-                alt={allImages[selectedIndex].caption || venueName}
-                className="max-h-[80vh] max-w-full object-contain"
-              />
+              {/* Keyed on the index so each photo is its own node and plays
+                  its entrance. It also gives `GalleryImage` a fresh instance
+                  per photo, which its `failed` flag needs: as one reused
+                  element it kept the flag set after a 404, so the photo
+                  *after* a broken one showed the placeholder too. The wrapper
+                  is bounded by `max-w-full` for the same reason the image is —
+                  a shrink-to-fit box in between would let a wide photo resolve
+                  its own `max-w-full` against nothing. */}
+              <motion.div
+                key={selectedIndex}
+                className="flex min-w-0 max-w-full items-center justify-center"
+                {...photoMotion}
+              >
+                <GalleryImage
+                  src={allImages[selectedIndex].image_url}
+                  alt={allImages[selectedIndex].caption || venueName}
+                  className="max-h-[80vh] max-w-full object-contain"
+                />
+              </motion.div>
 
               {allImages.length > 1 && (
                 <Button
@@ -233,19 +305,36 @@ const VenueGallery = ({ images, venueName, mainImage }: VenueGalleryProps) => {
             )}
 
             {allImages.length > 1 && (
-              <div className="flex justify-center gap-1 pb-4">
+              // The pill that marks the current photo used to grow from 6px
+              // to 24px on `transition-all`, which animates `width` — a
+              // layout property, so every dot after it was re-laid-out on
+              // each frame of a transition whose whole purpose is decorative.
+              // Same two sizes, reached by scaling a 24px pill down to a
+              // quarter, which the compositor does for free. The colour step
+              // rides along as opacity for the same reason.
+              //
+              // The button around it is now a 24px square. It was the pill
+              // itself — a 6x1.5px target, well under the 24x24 minimum, on
+              // the control that steps through a venue's photos.
+              <div className="flex justify-center gap-0.5 pb-4">
                 {allImages.map((_, i) => (
                   <button
                     key={i}
                     type="button"
                     aria-label={`Go to photo ${i + 1}`}
                     aria-current={i === selectedIndex}
-                    className={cn(
-                      "h-1.5 rounded-full transition-all",
-                      i === selectedIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"
-                    )}
-                    onClick={() => setSelectedIndex(i)}
-                  />
+                    className="flex h-6 w-6 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                    onClick={() => goTo(i)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "h-1.5 w-6 rounded-full bg-white",
+                        !prefersReduced && "transition-[transform,opacity] duration-200 ease-out",
+                        i === selectedIndex ? "scale-x-100 opacity-100" : "scale-x-[0.25] opacity-40",
+                      )}
+                    />
+                  </button>
                 ))}
               </div>
             )}
