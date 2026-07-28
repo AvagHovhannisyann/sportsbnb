@@ -1,4 +1,5 @@
 import "./index.css";
+import type { ComponentType, ReactElement } from "react";
 import { Composition } from "remotion";
 
 import { MyComposition } from "./Composition";
@@ -33,6 +34,81 @@ import {
 } from "./SkeletonLoop";
 import { StatCounter } from "./StatCounter";
 import { VenuePromo, venuePromoDefaultProps } from "./VenuePromo";
+import { authCompositions } from "./library/auth";
+import { brandCompositions } from "./library/brand";
+import { dashboardCompositions } from "./library/dashboard";
+import { landingCompositions } from "./library/landing";
+import { loadingCompositions } from "./library/loading";
+import { microCompositions } from "./library/micro";
+import { socialCompositions } from "./library/social";
+import { venueCompositions } from "./library/venue";
+
+/*
+ * ─────────────────────────── the library ────────────────────────────────
+ *
+ * Eight families live under `src/library/*`, each exporting a manifest array
+ * describing every composition it owns. They were authored at different times
+ * and their entry types are NOT identical:
+ *
+ *   auth / dashboard / micro / social / venue
+ *       { id, component: FC<never>, durationInFrames, fps, width, height,
+ *         defaultProps, seamless }
+ *   brand
+ *       readonly { id, component: FC<Record<string, unknown>>, …, defaultProps }
+ *       — no `seamless` flag at all
+ *   landing
+ *       readonly { id, component: ComponentType<Record<string, unknown>>, …,
+ *         defaultProps, group, seamlessLoop }
+ *   loading
+ *       { id, component: ComponentType<any>, …, defaultProps } — no flag
+ *
+ * What every one of them *does* share is the seven fields `<Composition>`
+ * actually needs. `LibraryEntry` below is exactly that intersection, and
+ * `registerFamily` maps a family onto it. The families are deliberately left
+ * alone — the adapter lives here, on the consumer side, so a family can keep
+ * carrying whatever extra metadata (`seamless`, `group`, …) its own callers
+ * want without Root having to know about it.
+ */
+
+type LibraryEntry = {
+  readonly id: string;
+  /**
+   * Prop types are already erased inside each family (every one of them casts
+   * exactly once, after type-checking `defaultProps` against the component).
+   * The four erased forms — `FC<never>`, `FC<Record<string, unknown>>`,
+   * `ComponentType<Record<string, unknown>>`, `ComponentType<any>` — have no
+   * common supertype that `<Composition>` will accept, so the adapter
+   * re-erases to the one shape it wants. Nothing is weakened by this: the
+   * component/`defaultProps` pairing was already proven in the family.
+   */
+  readonly component: ComponentType<Record<string, unknown>>;
+  readonly durationInFrames: number;
+  readonly fps: number;
+  readonly width: number;
+  readonly height: number;
+  readonly defaultProps: Record<string, unknown>;
+};
+
+/** The widest shape all eight manifests structurally satisfy. */
+type ManifestEntry = Omit<LibraryEntry, "component"> & {
+  readonly component: unknown;
+};
+
+const registerFamily = (
+  family: readonly ManifestEntry[],
+): ReactElement[] =>
+  family.map((entry) => (
+    <Composition
+      key={entry.id}
+      id={entry.id}
+      component={entry.component as ComponentType<Record<string, unknown>>}
+      durationInFrames={entry.durationInFrames}
+      fps={entry.fps}
+      width={entry.width}
+      height={entry.height}
+      defaultProps={entry.defaultProps}
+    />
+  ));
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -113,6 +189,22 @@ export const RemotionRoot: React.FC = () => {
       {/* 6s ambient landscape loop used behind the marketing hero — mounted
           live in the app, so its metadata is shared. See BrandLoader above. */}
       <Composition id="HeroBackdrop" component={HeroBackdrop} {...HERO_BACKDROP} />
+
+      {/* ── the library ──────────────────────────────────────────────────
+          202 compositions across eight families. Ids are namespaced by the
+          families themselves ("Auth…", "Brand-…", "Dashboard…", "Landing…",
+          "Loading…", "Micro…", "Social…", "Venue…"), which is what keeps them
+          from colliding with each other or with the nine registrations above —
+          verified by counting `remotion compositions`, since a duplicate id is
+          a startup failure rather than a compile error. */}
+      {registerFamily(brandCompositions)}
+      {registerFamily(loadingCompositions)}
+      {registerFamily(landingCompositions)}
+      {registerFamily(authCompositions)}
+      {registerFamily(venueCompositions)}
+      {registerFamily(dashboardCompositions)}
+      {registerFamily(socialCompositions)}
+      {registerFamily(microCompositions)}
     </>
   );
 };

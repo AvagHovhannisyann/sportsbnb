@@ -150,7 +150,7 @@ export const HeadlineBookTheCourt: FC<HeadlineBookTheCourtProps> = ({
           justifyContent: "center",
         }}
       >
-        <Sequence name="Eyebrow pill" layout="none" from={0}>
+        <Sequence name="Eyebrow pill" layout="none">
           <div style={riseStyle(frame, fps, 0, 18, 26)}>
             <LivePill frame={frame} label={eyebrow} />
           </div>
