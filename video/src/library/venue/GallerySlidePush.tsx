@@ -216,7 +216,12 @@ export const GallerySlidePush: FC<GallerySlidePushProps> = ({
         </div>
       </div>
 
-      {/* Progress rail — segment per photo, filling within the current step. */}
+      {/* Progress rail — one segment per photo. Only the *current* segment
+          fills, and it empties as the strip advances. The tempting version,
+          where past segments stay filled, would be a one-way sweep across the
+          loop: full at the last frame, empty at frame 0. This one is a
+          function of (step, position-within-step) alone, so it holds the same
+          picture at t=1 as at t=0. */}
       <div
         style={{
           position: "absolute",
@@ -241,7 +246,7 @@ export const GallerySlidePush: FC<GallerySlidePushProps> = ({
             <div
               style={{
                 height: "100%",
-                width: `${100 * (i === current ? withinStep : i < current ? 1 : 0)}%`,
+                width: `${100 * (i === current ? withinStep : 0)}%`,
                 backgroundColor: tint(accent, 0.85),
               }}
             />

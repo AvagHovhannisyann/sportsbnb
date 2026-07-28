@@ -69,7 +69,7 @@ export const PayoutStatusPending: FC<PayoutStatusPendingProps> = ({
   turnsPerLoop,
 }) => {
   const rawFrame = useCurrentFrame();
-  const { durationInFrames, width, height } = useVideoConfig();
+  const { durationInFrames, width } = useVideoConfig();
   const unit = width / CANVAS_W;
 
   // Loop: frame 0 both opens and closes the cycle.
@@ -213,8 +213,6 @@ export const PayoutStatusPending: FC<PayoutStatusPendingProps> = ({
           </span>
         </div>
       </div>
-
-      <div style={{ position: "absolute", width: 0, height: height * 0 }} />
     </AbsoluteFill>
   );
 };

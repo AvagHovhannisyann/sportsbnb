@@ -158,6 +158,13 @@ export const ScenePlayer = ({
       // sound to emit; muted is belt-and-braces against that changing upstream
       // and turning an ambient loop into an autoplaying noise.
       initiallyMuted
+      // …and no audio plumbing either. <Player> pre-creates five shared
+      // <audio> elements by default so that compositions with sound can start
+      // without a user gesture. With no sound to play they are five dead
+      // elements per player — ten on the landing page mid-navigation, when the
+      // hero plate and the loading screen are both mounted — for a feature
+      // neither composition uses. Zero disables the pool.
+      numberOfSharedAudioTags={0}
     />
   );
 
