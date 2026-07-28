@@ -16,7 +16,7 @@
 # resolve to the stub ids the script serves. Dynamic routes were the
 # uncovered half of the router until now — /venue/:id and the whole
 # checkout chain had never loaded in CI once.
-PLAYER="/ /about /blog /blog/:slug /community /contact /cookies /discover
+PLAYER="/ /about /blog /blog/:slug /community /contact /cookies /demo /discover
   /faq /for-owners /forgot-password /games /game/:game /game/:game/join-status /game/:game/join-success
   /login /nearby /privacy /reset-password /signup /teams /team/:team
   /join-team/SMOKE1 /terms /venues /venues/map /venue/:venue /dashboard
@@ -45,7 +45,7 @@ ADMIN="/admin /operator /operator/outreach /create-game /create-team
 # different header signed out, so they are worth the pass too.
 ANON="/ /login /signup /forgot-password /reset-password /venues /games
   /community /teams /about /for-owners /faq /contact /nearby
-  /venue/:venue /blog"
+  /venue/:venue /blog /demo"
 
 # The other branch of every list page: a signed-in account with no
 # data. The fixtures here are populated on purpose — an audit

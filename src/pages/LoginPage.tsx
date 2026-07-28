@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  AnimatePresence,
+  motion,
+  useAnimationControls,
+  useReducedMotion,
+  type MotionProps,
+  type Variants,
+} from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +22,60 @@ import { safeRedirect } from "@/lib/redirect";
 import authHero from "@/assets/auth-hero.jpg";
 
 type AuthMode = "password" | "magic-link";
+
+/* ------------------------------------------------------------------
+   Motion on this page has three jobs and no others: bring the form in
+   in reading order, answer a focus, and answer a failure. Numbers are
+   the app's own motion primitives from index.css (--ease-out-expo,
+   --dur-*), restated as literals because framer-motion needs values
+   rather than CSS variables.
+
+   Everything below moves opacity and transform only, so nothing here
+   can trigger layout while it runs, and every one of them is skipped
+   outright when the visitor has asked for reduced motion.
+------------------------------------------------------------------ */
+const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]; // --ease-out-expo
+const EASE_SPRING: [number, number, number, number] = [0.34, 1.56, 0.64, 1]; // --ease-spring
+const ENTER = 0.42; // an element arriving
+const EXIT = 0.16; // an element leaving, always quicker than it arrived
+const FEEDBACK = 0.28; // --dur-base-ish: the page answering an event
+const STAGGER = 0.05; // 50ms between siblings
+
+/*
+ * Order in a reveal → its delay. Capped, because stagger is a reading cue
+ * and not a queue: past the sixth sibling the extra delay stops describing
+ * sequence and merely makes the tail arrive late. Nothing on this page is
+ * that long today; the cap is here so nothing added later can be.
+ */
+const STAGGER_CAP = 6; // ⇒ 300ms, whatever the length
+const step = (i: number) => Math.min(i, STAGGER_CAP) * STAGGER;
+
+const reveal: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: ENTER, ease: EASE, delay: step(i) },
+  }),
+};
+
+/*
+ * Field affordance, one string so all three fields cannot drift apart: the
+ * leading icon answers focus by taking the primary colour and growing a
+ * tenth. `motion-safe:` guards the scale alone — under reduced motion the
+ * colour cue, which is the half that carries the meaning, still lands.
+ */
+const FIELD_ICON =
+  "absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground " +
+  "transition-[color,transform] duration-200 group-focus-within:text-primary " +
+  "motion-safe:group-focus-within:scale-110";
+
+/* One gesture for "that did not work", used by every failure path so the
+   form answers in a single voice rather than a different one per provider. */
+const SHAKE = {
+  x: [0, -8, 8, -6, 6, 0],
+  transition: { duration: 0.3, ease: "easeInOut" as const },
+};
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -61,6 +123,41 @@ const LoginPage = () => {
   const [totpCode, setTotpCode] = useState("");
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
+  /* ── Motion state ──────────────────────────────────────────────── */
+  const prefersReduced = useReducedMotion();
+  /* Two controls rather than one: the card and the OTP group are never
+     mounted at the same time, and starting a control nothing is bound to
+     is a no-op that logs. */
+  const cardShake = useAnimationControls();
+  const otpShake = useAnimationControls();
+  /* Set the moment sign-in succeeds. The navigate that follows is awaited
+     behind a profile fetch, so this fills that gap with a hand-off instead
+     of a frozen form — it adds no delay of its own and defers to nothing. */
+  const [handingOff, setHandingOff] = useState(false);
+
+  const shake = (controls: typeof cardShake) => {
+    if (prefersReduced) return;
+    void controls.start(SHAKE);
+  };
+
+  /* Under reduced motion we render the final state outright rather than
+     animating into it, so no content depends on an animation that never runs. */
+  const enter = (i: number): MotionProps =>
+    prefersReduced ? {} : { initial: "hidden", animate: "visible", variants: reveal, custom: i };
+
+  /* The two secondary panels arrive as a unit — they are a change of subject,
+     not a form being assembled, so they do not stagger internally. */
+  const swap: MotionProps = prefersReduced
+    ? {}
+    : {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0, transition: { duration: ENTER, ease: EASE } },
+        exit: { opacity: 0, y: -8, transition: { duration: EXIT, ease: "easeIn" } },
+      };
+  const swapOut: MotionProps = prefersReduced
+    ? {}
+    : { exit: { opacity: 0, y: -8, transition: { duration: EXIT, ease: "easeIn" } } };
+
   // Redirect if already authenticated.
   //
   // `redirectTo` here too: arriving at /login?redirect=/join-team/CODE with a
@@ -89,6 +186,7 @@ const LoginPage = () => {
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
+      shake(cardShake);
       setIsLoading(false);
       return;
     }
@@ -114,6 +212,7 @@ const LoginPage = () => {
     e.preventDefault();
     if (!formData.email) {
       toast.error("Please enter your email address");
+      shake(cardShake);
       return;
     }
 
@@ -123,6 +222,7 @@ const LoginPage = () => {
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
+      shake(cardShake);
       setIsLoading(false);
       return;
     }
@@ -157,6 +257,7 @@ const LoginPage = () => {
 
     if (challengeError) {
       toast.error("Failed to create MFA challenge");
+      shake(otpShake);
       setIsVerifyingMfa(false);
       return;
     }
@@ -169,6 +270,7 @@ const LoginPage = () => {
 
     if (verifyError) {
       toast.error("Invalid verification code");
+      shake(otpShake);
       setTotpCode("");
       setIsVerifyingMfa(false);
       return;
@@ -181,6 +283,7 @@ const LoginPage = () => {
   };
 
   const handleLoginSuccess = async (userId: string | undefined) => {
+    setHandingOff(true);
     toast.success("Welcome back!");
 
     if (userId) {
@@ -221,6 +324,7 @@ const LoginPage = () => {
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
+      shake(cardShake);
       setIsLoading(false);
     }
   };
@@ -231,6 +335,7 @@ const LoginPage = () => {
 
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
+      shake(cardShake);
       setIsLoading(false);
     }
   };
@@ -248,11 +353,19 @@ const LoginPage = () => {
     <div className="min-h-screen flex">
       {/* Left Panel - Emotional Brand Side */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Background Image */}
-        <img
+        {/* Background Image. The one element that scales: a photograph
+            settling into its frame, not a block of text sliding in. */}
+        <motion.img
           src={authHero}
           alt="Athletes playing sports" loading="eager" fetchPriority="high" decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
+          {...(prefersReduced
+            ? {}
+            : {
+                initial: { opacity: 0, scale: 1.04 },
+                animate: { opacity: 1, scale: 1 },
+                transition: { duration: 0.5, ease: EASE },
+              })}
         />
         {/* Two-axis scrim. A uniform top-to-bottom veil (80/50/30) covered the
             whole frame — including the middle, where the photo is most
@@ -272,37 +385,39 @@ const LoginPage = () => {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 w-full">
           {/* Logo */}
-          <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center group">
-            <img
-              src="/favicon.png"
-              alt="Sportsbnb"
-              className="h-10 w-10 object-contain transition-transform group-hover:scale-105 drop-shadow-[0_4px_24px_rgba(22,163,74,0.45)]"
-            />
-            <span className="ml-3 font-display text-xl font-bold text-white tracking-tight">Sportsbnb</span>
-          </Link>
-          
+          <motion.div {...enter(0)}>
+            <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center group">
+              <img
+                src="/favicon.png"
+                alt="Sportsbnb"
+                className="h-10 w-10 object-contain transition-transform group-hover:scale-105 drop-shadow-[0_4px_24px_rgba(22,163,74,0.45)]"
+              />
+              <span className="ml-3 font-display text-xl font-bold text-white tracking-tight">Sportsbnb</span>
+            </Link>
+          </motion.div>
+
           {/* Hero Text */}
           <div className="max-w-lg">
-            <h1 className="auth-hero-title text-white">
+            <motion.h1 className="auth-hero-title text-white" {...enter(1)}>
               Find your game.<br />Join your people.
-            </h1>
-            <p className="text-lg text-white/80 leading-relaxed">
+            </motion.h1>
+            <motion.p className="text-lg text-white/80 leading-relaxed" {...enter(2)}>
               Sportsbnb helps you discover venues, join open games, and stay active with your community.
-            </p>
-            
+            </motion.p>
+
             {/* Trust Indicators */}
             <div className="flex items-center gap-6 mt-8">
-              <div className="flex items-center gap-2">
+              <motion.div className="flex items-center gap-2" {...enter(3)}>
                 <Users className="h-5 w-5 text-primary" />
                 <span className="text-white/70 text-sm">Free to join</span>
-              </div>
-              <div className="flex items-center gap-2">
+              </motion.div>
+              <motion.div className="flex items-center gap-2" {...enter(4)}>
                 <Shield className="h-5 w-5 text-primary" />
                 <span className="text-white/70 text-sm">Verified venues</span>
-              </div>
+              </motion.div>
             </div>
           </div>
-          
+
           {/* Footer */}
           {/* /40 composited to #6c706e on this near-black panel: 3.81:1,
               under the 4.5:1 body copy needs. /50 measures 5.29:1 and is
@@ -311,18 +426,27 @@ const LoginPage = () => {
               earlier; these two were invisible to every audit here, because
               /login and /signup redirect to /dashboard under the stubbed
               signed-in session. */}
-          <div className="text-sm text-white/50">
+          <motion.div className="text-sm text-white/50" {...enter(5)}>
             © {new Date().getFullYear()} Sportsbnb. All rights reserved.
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Right Panel - Form Side */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-16 bg-background">
-        <div className="w-full max-w-md">
+        {/* The hand-off. On success the column eases back and lifts a little
+            instead of sitting frozen until the route changes; it never fades
+            out entirely, so a slow profile fetch cannot leave a blank panel. */}
+        <motion.div
+          className="w-full max-w-md"
+          initial={false}
+          animate={handingOff && !prefersReduced ? { opacity: 0.4, y: -8, scale: 0.99 } : { opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: FEEDBACK, ease: EASE }}
+        >
+        <AnimatePresence mode="wait">
           {/* Magic Link Sent State */}
           {magicLinkSent ? (
-            <>
+            <motion.div key="magic-sent" {...swap}>
               <button
                 onClick={handleBackToLogin}
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-10"
@@ -332,9 +456,19 @@ const LoginPage = () => {
               </button>
 
               <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-6">
+                {/* The one place a spring is earned: a confirmation landing. */}
+                <motion.div
+                  className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-6"
+                  {...(prefersReduced
+                    ? {}
+                    : {
+                        initial: { opacity: 0, scale: 0.82 },
+                        animate: { opacity: 1, scale: 1 },
+                        transition: { duration: 0.36, ease: EASE_SPRING, delay: 0.08 },
+                      })}
+                >
                   <CheckCircle className="h-8 w-8 text-emerald-600" />
-                </div>
+                </motion.div>
                 <h2 className="auth-form-title">Check your email</h2>
                 <p className="text-muted-foreground mb-6">
                   We sent a login link to<br />
@@ -363,9 +497,9 @@ const LoginPage = () => {
                   Didn't receive it? Check your spam folder or try another email.
                 </p>
               </div>
-            </>
+            </motion.div>
           ) : mfaRequired ? (
-            <>
+            <motion.div key="mfa" {...swap}>
               <button
                 onClick={handleBackToLogin}
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-10"
@@ -385,7 +519,7 @@ const LoginPage = () => {
               </div>
 
               <div className="space-y-8">
-                <div className="flex justify-center">
+                <motion.div className="flex justify-center" animate={otpShake}>
                   <InputOTP
                     maxLength={6}
                     value={totpCode}
@@ -400,12 +534,12 @@ const LoginPage = () => {
                       <InputOTPSlot index={5} />
                     </InputOTPGroup>
                   </InputOTP>
-                </div>
+                </motion.div>
 
-                <Button 
-                  onClick={handleMfaVerify} 
-                  className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all" 
-                  size="lg" 
+                <Button
+                  onClick={handleMfaVerify}
+                  className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all motion-safe:active:scale-[0.99]"
+                  size="lg"
                   disabled={totpCode.length !== 6 || isVerifyingMfa}
                 >
                   {isVerifyingMfa ? "Verifying..." : "Verify & Continue"}
@@ -415,34 +549,45 @@ const LoginPage = () => {
                   Open your authenticator app to view your verification code
                 </p>
               </div>
-            </>
+            </motion.div>
           ) : (
-            <>
+            <motion.div key="form" {...swapOut}>
               {/* Mobile Logo */}
-              <div className="lg:hidden mb-8">
+              <motion.div className="lg:hidden mb-8" {...enter(0)}>
                 <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
                   <Logo variant="full" className="h-8 w-auto" />
                 </Link>
-              </div>
+              </motion.div>
 
-              <Link
-                to="/"
-                className="hidden lg:inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-10"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to home
-              </Link>
+              {/* `lg:flex` on the wrapper rather than `lg:block`: a flex
+                  container takes the link's exact height, where a block one
+                  would add line-box leading and shift the header down. */}
+              <motion.div className="hidden lg:flex mb-10" {...enter(0)}>
+                <Link
+                  to="/"
+                  className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to home
+                </Link>
+              </motion.div>
 
               {/* Welcome Header */}
-              <div className="mb-8">
+              <motion.div className="mb-8" {...enter(1)}>
                 <h2 className="auth-form-title">Welcome back</h2>
                 <p className="text-muted-foreground">
                   Sign in to continue your sports journey
                 </p>
-              </div>
+              </motion.div>
 
-              {/* Form Card */}
-              <div className="bg-card rounded-2xl border border-border/50 shadow-xl shadow-black/5 p-8">
+              {/* Form Card. Two layers on purpose: the outer one carries the
+                  entrance, the inner one the failure shake, so neither has to
+                  own an `animate` the other also wants. */}
+              <motion.div {...enter(2)}>
+              <motion.div
+                className="bg-card rounded-2xl border border-border/50 shadow-xl shadow-black/5 p-8"
+                animate={cardShake}
+              >
                 {/* Third-party buttons render only when the project actually
                     has that provider enabled — see useAuthProviders. */}
                 {providers.google && (
@@ -519,8 +664,8 @@ const LoginPage = () => {
                   <form onSubmit={handleMagicLinkSubmit} className="space-y-5">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <div className="relative group">
+                        <Mail className={FIELD_ICON} />
                         <Input
                           id="email"
                           type="email"
@@ -534,10 +679,10 @@ const LoginPage = () => {
                       </div>
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all" 
-                      size="lg" 
+                    <Button
+                      type="submit"
+                      className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all motion-safe:active:scale-[0.99]"
+                      size="lg"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -565,8 +710,8 @@ const LoginPage = () => {
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <div className="relative group">
+                        <Mail className={FIELD_ICON} />
                         <Input
                           id="email"
                           type="email"
@@ -587,8 +732,8 @@ const LoginPage = () => {
                           Forgot password?
                         </Link>
                       </div>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <div className="relative group">
+                        <Lock className={FIELD_ICON} />
                         <Input
                           id="password"
                           type="password"
@@ -602,20 +747,21 @@ const LoginPage = () => {
                       </div>
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all" 
-                      size="lg" 
+                    <Button
+                      type="submit"
+                      className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all motion-safe:active:scale-[0.99]"
+                      size="lg"
                       disabled={isLoading}
                     >
                       {isLoading ? "Signing in..." : "Sign in"}
                     </Button>
                   </form>
                 )}
-              </div>
+              </motion.div>
+              </motion.div>
 
               {/* Sign Up Link */}
-              <p className="text-center text-muted-foreground mt-8">
+              <motion.p className="text-center text-muted-foreground mt-8" {...enter(3)}>
                 Don't have an account?{" "}
                 {/* Carries the destination across the hop. Someone who
                     followed a team invite and does not have an account yet
@@ -627,10 +773,11 @@ const LoginPage = () => {
                 >
                   Create one
                 </Link>
-              </p>
-            </>
+              </motion.p>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );

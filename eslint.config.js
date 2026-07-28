@@ -5,7 +5,10 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // `video` is a standalone Remotion project with its own eslint.config.mjs,
+  // parser and rule set. Linting it from here applies the app's React/browser
+  // rules to code that isn't the app, so it is excluded and linted on its own.
+  { ignores: ["dist", "video"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

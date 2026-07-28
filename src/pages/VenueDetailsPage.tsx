@@ -2,6 +2,9 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import { formatTimeOfDay } from "@/lib/time";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import type { MotionProps, Variants } from "framer-motion";
+import { easeOutExpo } from "@/lib/motion";
 import { MapPin, Star, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +26,100 @@ import { useVenueReviews, useUserReviewForVenue, useDeleteReview } from "@/hooks
 import { useVenueHours, useBlockedDates, DAYS_OF_WEEK } from "@/hooks/useAvailability";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+/* ------------------------------------------------------------------
+   Motion.
+
+   Three things move on this page and nothing else: the gallery arrives,
+   the amenities deal in as they come into view, and the mobile booking
+   bar rises into place. The heading, the opening hours and the reviews
+   stay still — they are what someone opened this page to read, and
+   staging them only puts a delay between the click and the answer.
+
+   Durations and easing come from lib/motion, which mirrors the --dur-*
+   and --ease-out-expo custom properties in index.css, so this page's
+   framer-motion side and VenueGallery's CSS side agree on what "fast"
+   means.
+
+   Under `prefers-reduced-motion: reduce` the animation props are not
+   passed at all rather than being given a zero duration: the final
+   state renders outright, so nothing here depends on a frame that never
+   runs. That is the convention HomePage and DiscoverPage established.
+   ------------------------------------------------------------------ */
+
+/**
+ * The gallery's entrance — the only thing above the fold that moves.
+ *
+ * It is deliberately the whole gallery rather than each tile: the tiles
+ * are one photograph cropped four ways, and dealing them out separately
+ * turns a single object into four, which is the opposite of what the
+ * hero is for.
+ */
+const galleryVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOutExpo } },
+};
+
+/** Gap between one amenity's entrance and the next. */
+const AMENITY_STAGGER_STEP = 0.05;
+/**
+ * The index past which every remaining amenity shares the last delay.
+ *
+ * `venues.amenities` is an owner-supplied array and nothing in the venue
+ * form caps its length, so the run has to be bounded here instead.
+ * Capped at six it costs 300ms whether a venue lists four amenities or
+ * forty, and the tail arrives together — which is what someone who has
+ * already scrolled past them wants anyway.
+ */
+const AMENITY_STAGGER_CAP = 6;
+
+/** The grid only carries the variant label down to its children. */
+const amenityListVariants: Variants = { hidden: {}, visible: {} };
+
+const amenityVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: easeOutExpo,
+      delay: Math.min(index, AMENITY_STAGGER_CAP) * AMENITY_STAGGER_STEP,
+    },
+  }),
+};
+
+/**
+ * Amenities sit below the description and the hours, so on every screen
+ * narrower than a desktop they are off-screen at load. Playing the
+ * stagger on mount would spend it where nobody is looking; this waits
+ * until the section is actually approaching. `as const` keeps `margin`
+ * a literal, which is what framer's MarginType wants.
+ */
+const amenityViewport = { once: true, margin: "-64px" } as const;
+
+/**
+ * The mobile booking bar's reveal.
+ *
+ * `y: "100%"` is the bar's own height rather than a fixed distance, so
+ * it starts exactly clear of its resting position however the price
+ * line wraps. It is a transform on a fixed element, so nothing behind it
+ * reflows, and at its start position the bar is behind the mobile nav
+ * (z-50 against this bar's z-40) and the viewport edge.
+ *
+ * The short delay lets the page settle first. A persistent piece of
+ * chrome that appears in the same frame as everything else reads as
+ * part of the layout arriving late; arriving just after, moving, it
+ * reads as an offer being made.
+ */
+const bookingBarVariants: Variants = {
+  hidden: { opacity: 0, y: "100%" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: easeOutExpo, delay: 0.12 },
+  },
+};
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
@@ -46,6 +143,10 @@ const VenueDetailsPage = () => {
   const deleteReview = useDeleteReview();
 
   const [showReviewForm, setShowReviewForm] = useState(false);
+
+  // Above the early returns, with the other hooks — the loading, error and
+  // not-found branches all return before the render below.
+  const prefersReduced = useReducedMotion();
 
   // Declares the sticky mobile booking bar to the rest of the app, so the
   // floating AI launcher lifts clear of the Reserve button. See index.css.
@@ -125,6 +226,27 @@ const VenueDetailsPage = () => {
     );
   }
 
+  // ── Motion props (see the block above the component) ──
+  const galleryMotion: MotionProps = prefersReduced
+    ? {}
+    : { variants: galleryVariants, initial: "hidden", animate: "visible" };
+
+  const amenityListMotion: MotionProps = prefersReduced
+    ? {}
+    : {
+        variants: amenityListVariants,
+        initial: "hidden",
+        whileInView: "visible",
+        viewport: amenityViewport,
+      };
+
+  const amenityMotion = (index: number): MotionProps =>
+    prefersReduced ? {} : { variants: amenityVariants, custom: index };
+
+  const bookingBarMotion: MotionProps = prefersReduced
+    ? {}
+    : { variants: bookingBarVariants, initial: "hidden", animate: "visible" };
+
   const amenityIcons: Record<string, React.ReactNode> = {
     Parking: <Car className="h-5 w-5" />,
     Showers: <Droplets className="h-5 w-5" />,
@@ -188,13 +310,13 @@ const VenueDetailsPage = () => {
         </div>
 
         {/* Image Gallery */}
-        <div className="container pb-8">
+        <motion.div className="container pb-8" {...galleryMotion}>
           <VenueGallery
             images={venueImages}
             venueName={venue.name}
             mainImage={venueImage}
           />
-        </div>
+        </motion.div>
 
         <div className="container pb-28 lg:pb-16">
           {/* min-w-0 on both columns, not decoration. A grid item defaults to
@@ -325,17 +447,21 @@ const VenueDetailsPage = () => {
               {venue.amenities.length > 0 && (
                 <section className="panel">
                   <h2 className="section-title">Amenities</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {venue.amenities.map((amenity) => (
-                      <div
+                  <motion.div
+                    className="grid grid-cols-2 md:grid-cols-3 gap-4"
+                    {...amenityListMotion}
+                  >
+                    {venue.amenities.map((amenity, index) => (
+                      <motion.div
                         key={amenity}
                         className="flex items-center gap-3 text-muted-foreground"
+                        {...amenityMotion(index)}
                       >
                         {amenityIcons[amenity] || <CheckCircle className="h-5 w-5" />}
                         <span>{amenity}</span>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 </section>
               )}
 
@@ -446,7 +572,10 @@ const VenueDetailsPage = () => {
             bottom-14 clears the fixed mobile nav (h-14, md:hidden); at md the
             nav is gone so the bar sits on the edge, and at lg the sticky
             sidebar takes over and this disappears entirely. */}
-        <div className="fixed inset-x-0 bottom-14 z-40 border-t border-border bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/85 md:bottom-0 lg:hidden">
+        <motion.div
+          className="fixed inset-x-0 bottom-14 z-40 border-t border-border bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/85 md:bottom-0 lg:hidden"
+          {...bookingBarMotion}
+        >
           <div className="container flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
               <p className="truncate">
@@ -470,7 +599,7 @@ const VenueDetailsPage = () => {
               <a href="#booking">Reserve</a>
             </Button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </Layout>
   );

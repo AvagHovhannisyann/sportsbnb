@@ -8,7 +8,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import HeroSearch from "@/components/home/HeroSearch";
 import SEOHead, { createWebsiteJsonLd } from "@/components/seo/SEOHead";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-landing.jpg";
 import venueFootball from "@/assets/venue-football.jpg";
@@ -21,18 +21,48 @@ import venueSwimming from "@/assets/venue-swimming.jpg";
    when the visitor asks for reduced motion. A single consistent
    entrance reads as intent; a different animation per section reads
    as decoration.
+
+   Numbers come from the app's own motion primitives in index.css
+   (--ease-out-expo, --dur-base), restated here because framer-motion
+   needs values rather than CSS variables. Everything below moves
+   opacity and transform only, so no entrance on this page can
+   trigger layout while it runs.
 ------------------------------------------------------------------ */
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]; // --ease-out-expo
+const ENTER = 0.42; // an element arriving
+const FEEDBACK = 0.22; // --dur-base: something answering an event
+const STAGGER = 0.05; // 50ms between siblings
 
-const reveal = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+/*
+ * Order in a reveal → its delay. Capped, because stagger is a reading
+ * cue and not a queue: past the seventh sibling the extra delay stops
+ * describing sequence and just makes the tail of a list arrive late.
+ * Nothing on this page is that long today, but the lists are rendered
+ * from arrays and the next one added should not be able to change that.
+ */
+const STAGGER_CAP = 6; // ⇒ 300ms, whatever the list length
+const step = (i: number) => Math.min(i, STAGGER_CAP) * STAGGER;
+
+const reveal: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: ENTER, ease: EASE, delay: step(i) },
+  }),
 };
 
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+/* The hero image is the one element that scales: it is a picture
+   settling into its frame, not a block of text sliding in. */
+const heroFrame: Variants = {
+  hidden: { opacity: 0, scale: 0.98 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: EASE, delay: 0.1 } },
 };
+
+/* Parents orchestrate only. They carry the variant label their
+   children read and animate nothing themselves, so no child ever
+   fades in through a second fade. */
+const sequence: Variants = { hidden: {}, visible: {} };
 
 const viewportOnce = { once: true, margin: "-80px" };
 
@@ -101,7 +131,22 @@ const HomePage = () => {
   // animating into it, so no content depends on an animation that never runs.
   const revealProps = prefersReduced
     ? {}
-    : { initial: "hidden", whileInView: "visible", viewport: viewportOnce, variants: stagger };
+    : { initial: "hidden", whileInView: "visible", viewport: viewportOnce, variants: sequence };
+
+  // Hover affordances are decided here rather than with `motion-reduce:`
+  // utilities: those have to out-specify the class they are undoing, and
+  // two utilities of equal specificity are settled by stylesheet order.
+  // Withholding the class is unambiguous.
+  //
+  // The arrow leaning into its direction of travel — already the treatment
+  // on the "See all venues" link — is the page's only CTA embellishment.
+  // Buttons get their press feedback from the shared component.
+  const ctaArrow = `ml-1.5 h-4 w-4${
+    prefersReduced ? "" : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+  }`;
+  const cardZoom = `aspect-[4/5] w-full object-cover${
+    prefersReduced ? "" : " transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+  }`;
 
   const sports = [
     { name: "Football", image: venueFootball, detail: "Pitches & futsal" },
@@ -151,12 +196,17 @@ const HomePage = () => {
             <motion.div
               initial={prefersReduced ? undefined : "hidden"}
               animate={prefersReduced ? undefined : "visible"}
-              variants={stagger}
+              variants={sequence}
             >
               <motion.div variants={reveal}>
                 <span className="eyebrow inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-1.5 text-foreground-soft">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+                    {/* The one perpetual animation on the page, and the only
+                        one that earns it: it is the claim the badge makes.
+                        `animate-none` has no competing utility to outrank
+                        here, so the CSS guard is safe and works even in the
+                        prerendered HTML, before any JS has run. */}
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70 motion-reduce:animate-none" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                   </span>
                   Live availability
@@ -165,6 +215,7 @@ const HomePage = () => {
 
               <motion.h1
                 variants={reveal}
+                custom={1}
                 className="mt-6 text-balance font-display text-[clamp(2.5rem,5.2vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-foreground"
               >
                 Book the court.
@@ -174,6 +225,7 @@ const HomePage = () => {
 
               <motion.p
                 variants={reveal}
+                custom={2}
                 className="mt-6 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
               >
                 Verified sports venues across Armenia, with live availability and
@@ -181,11 +233,15 @@ const HomePage = () => {
                 the moment you do.
               </motion.p>
 
-              <motion.div variants={reveal} className="mt-9 flex flex-wrap items-center gap-3">
-                <Button asChild size="lg" className="h-12 rounded-xl px-6 text-[15px] font-semibold">
+              <motion.div variants={reveal} custom={3} className="mt-9 flex flex-wrap items-center gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="group h-12 rounded-xl px-6 text-[15px] font-semibold"
+                >
                   <Link to="/venues">
                     Browse venues
-                    <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                    <ArrowRight className={ctaArrow} aria-hidden="true" />
                   </Link>
                 </Button>
                 {/* No inset on mobile: stacked under the primary button, the
@@ -208,6 +264,7 @@ const HomePage = () => {
 
               <motion.p
                 variants={reveal}
+                custom={4}
                 className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground"
               >
                 <span className="inline-flex items-center gap-1.5">
@@ -222,12 +279,15 @@ const HomePage = () => {
             </motion.div>
 
             <motion.div
-              initial={prefersReduced ? undefined : { opacity: 0, scale: 0.97 }}
-              animate={prefersReduced ? undefined : { opacity: 1, scale: 1 }}
-              transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}
+              initial={prefersReduced ? undefined : "hidden"}
+              animate={prefersReduced ? undefined : "visible"}
+              variants={sequence}
               className="relative"
             >
-              <div className="relative overflow-hidden rounded-[1.75rem] border border-border shadow-2xl">
+              <motion.div
+                variants={heroFrame}
+                className="relative overflow-hidden rounded-[1.75rem] border border-border shadow-2xl"
+              >
                 <img
                   src={heroImage}
                   alt="Floodlit five-a-side pitch at dusk with players mid-game"
@@ -238,9 +298,16 @@ const HomePage = () => {
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent"
                 />
-              </div>
+              </motion.div>
 
-              <div className="glass absolute -bottom-5 left-4 right-4 rounded-2xl p-4 md:left-8 md:right-8">
+              {/* Lands while the frame behind it is still settling, so the
+                  card reads as sitting on the photograph rather than as a
+                  second, unrelated entrance. */}
+              <motion.div
+                variants={reveal}
+                custom={5}
+                className="glass absolute -bottom-5 left-4 right-4 rounded-2xl p-4 md:left-8 md:right-8"
+              >
                 <div className="flex items-center gap-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                     <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
@@ -255,15 +322,26 @@ const HomePage = () => {
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
+              {/* This one is not part of the entrance — it appears when the
+                  count arrives from the network, which may be long after.
+                  Explicit values rather than a variant label so it animates
+                  on its own mount instead of inheriting a sequence that
+                  finished before it existed. Feedback timing, not entrance
+                  timing: it is answering an event. */}
               {venueCount !== null && venueCount > 0 && (
-                <div className="glass absolute -top-4 right-2 hidden items-center gap-2.5 rounded-xl px-3.5 py-2.5 sm:flex md:right-6">
+                <motion.div
+                  initial={prefersReduced ? undefined : { opacity: 0, scale: 0.92 }}
+                  animate={prefersReduced ? undefined : { opacity: 1, scale: 1 }}
+                  transition={{ duration: FEEDBACK, ease: EASE }}
+                  className="glass absolute -top-4 right-2 hidden items-center gap-2.5 rounded-xl px-3.5 py-2.5 sm:flex md:right-6"
+                >
                   <Activity className="h-4 w-4 text-primary" aria-hidden="true" />
                   <span className="font-mono text-xs tabular-nums text-foreground">
                     {venueCount} venues live
                   </span>
-                </div>
+                </motion.div>
               )}
             </motion.div>
           </div>
@@ -292,24 +370,24 @@ const HomePage = () => {
           </motion.div>
 
           <ol className="mt-12 grid gap-10 md:mt-14 md:grid-cols-3 md:gap-8">
-            {steps.map((step, i) => (
-              <motion.li key={step.title} variants={reveal}>
+            {steps.map((s, i) => (
+              <motion.li key={s.title} variants={reveal} custom={i + 1}>
                 <div className="mb-5 flex items-center gap-3">
                   <span className="font-mono text-sm tabular-nums text-primary">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span aria-hidden="true" className="h-px flex-1 bg-border" />
                 </div>
-                <step.icon
+                <s.icon
                   className="mb-4 h-6 w-6 text-primary"
                   strokeWidth={1.75}
                   aria-hidden="true"
                 />
                 <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
-                  {step.title}
+                  {s.title}
                 </h3>
                 <p className="mt-2.5 text-[15px] leading-relaxed text-foreground-soft">
-                  {step.body}
+                  {s.body}
                 </p>
               </motion.li>
             ))}
@@ -334,7 +412,11 @@ const HomePage = () => {
               >
                 See all venues
                 <ArrowRight
-                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  className={`h-4 w-4${
+                    prefersReduced
+                      ? ""
+                      : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+                  }`}
                   aria-hidden="true"
                 />
               </Link>
@@ -348,8 +430,8 @@ const HomePage = () => {
           </motion.div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {sports.map((sport) => (
-              <motion.div key={sport.name} variants={reveal}>
+            {sports.map((sport, i) => (
+              <motion.div key={sport.name} variants={reveal} custom={i + 1}>
                 <Link
                   to={`/venues?sport=${encodeURIComponent(sport.name)}`}
                   className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-border outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -358,7 +440,7 @@ const HomePage = () => {
                     src={sport.image}
                     alt=""
                     loading="lazy"
-                    className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                    className={cardZoom}
                   />
                   {/* Scrim weighted to the bottom third: the caption has to stay
                       legible over a bright basketball floor as well as a dark
@@ -385,19 +467,24 @@ const HomePage = () => {
       ============================================================ */}
       <Section tone="raised" aria-labelledby="lock-heading">
         <motion.div {...revealProps} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <motion.div variants={reveal}>
-            <Eyebrow>Why it's different</Eyebrow>
-            <h2
-              id="lock-heading"
-              className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
-            >
-              The slot is yours the moment you pay.
-            </h2>
-            <p className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
-              No messaging an owner and hoping. No turning up to find someone
-              else on the pitch. Payment and reservation happen together, so a
-              confirmed booking means exactly that.
-            </p>
+          {/* Plain wrapper: it is a grid cell, not something that enters.
+              The heading block and each claim reveal separately, so the
+              list reads as three points rather than one paragraph. */}
+          <div>
+            <motion.div variants={reveal}>
+              <Eyebrow>Why it's different</Eyebrow>
+              <h2
+                id="lock-heading"
+                className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
+              >
+                The slot is yours the moment you pay.
+              </h2>
+              <p className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
+                No messaging an owner and hoping. No turning up to find someone
+                else on the pitch. Payment and reservation happen together, so a
+                confirmed booking means exactly that.
+              </p>
+            </motion.div>
 
             <ul className="mt-8 space-y-3.5">
               {[
@@ -410,9 +497,11 @@ const HomePage = () => {
                 // claim that survives both rails is the one about disclosure.
                 "Cancellation terms shown before you pay, never discovered afterwards",
                 "Card or Idram, both settled in Armenian dram",
-              ].map((line) => (
-                <li
+              ].map((line, i) => (
+                <motion.li
                   key={line}
+                  variants={reveal}
+                  custom={i + 1}
                   className="flex gap-3 text-[15px] leading-relaxed text-foreground-soft"
                 >
                   <Check
@@ -421,12 +510,12 @@ const HomePage = () => {
                     aria-hidden="true"
                   />
                   <span>{line}</span>
-                </li>
+                </motion.li>
               ))}
             </ul>
-          </motion.div>
+          </div>
 
-          <motion.div variants={reveal}>
+          <motion.div variants={reveal} custom={4}>
             <div className="rounded-2xl border border-border bg-card p-5 shadow-xl md:p-6">
               <div className="flex items-baseline justify-between">
                 <h3 className="font-display text-base font-semibold text-foreground">
@@ -520,29 +609,34 @@ const HomePage = () => {
             <Button
               asChild
               size="lg"
-              className="mt-8 h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
+              className="group mt-8 h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
             >
               <Link to="/for-owners">
                 List your venue
-                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                <ArrowRight className={ctaArrow} aria-hidden="true" />
               </Link>
             </Button>
           </motion.div>
 
-          <motion.dl variants={reveal} className="grid grid-cols-2 gap-4">
+          <dl className="grid grid-cols-2 gap-4">
             {[
               { k: "Commission", v: "5%", note: "No listing fee, no monthly cost" },
               { k: "Payouts", v: "Weekly", note: "Itemised, straight to your account" },
               { k: "Setup", v: "10 min", note: "Photos, hours, price — that's it" },
               { k: "Support", v: "Direct", note: "Message players inside the app" },
-            ].map(({ k, v, note }) => (
-              <div key={k} className="rounded-2xl bg-secondary-foreground/5 p-5">
+            ].map(({ k, v, note }, i) => (
+              <motion.div
+                key={k}
+                variants={reveal}
+                custom={i + 1}
+                className="rounded-2xl bg-secondary-foreground/5 p-5"
+              >
                 <dt className="eyebrow text-current opacity-60">{k}</dt>
                 <dd className="mt-2 font-display text-2xl font-bold tabular-nums">{v}</dd>
                 <p className="mt-1.5 text-[13px] leading-snug opacity-65">{note}</p>
-              </div>
+              </motion.div>
             ))}
-          </motion.dl>
+          </dl>
         </motion.div>
       </Section>
 
@@ -563,15 +657,20 @@ const HomePage = () => {
           </motion.h2>
           <motion.p
             variants={reveal}
+            custom={1}
             className="mx-auto mt-5 max-w-[44ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
           >
             Free to join. No card needed until you book.
           </motion.p>
-          <motion.div variants={reveal} className="mt-9 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-xl px-7 text-[15px] font-semibold">
+          <motion.div variants={reveal} custom={2} className="mt-9 flex flex-wrap justify-center gap-3">
+            <Button
+              asChild
+              size="lg"
+              className="group h-12 rounded-xl px-7 text-[15px] font-semibold"
+            >
               <Link to={user ? "/venues" : "/signup"}>
                 {user ? "Find a court" : "Get started"}
-                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                <ArrowRight className={ctaArrow} aria-hidden="true" />
               </Link>
             </Button>
             <Button
@@ -586,6 +685,7 @@ const HomePage = () => {
 
           <motion.p
             variants={reveal}
+            custom={3}
             className="mt-8 inline-flex items-center gap-2 text-sm text-muted-foreground"
           >
             <Star className="h-4 w-4 fill-primary text-primary" aria-hidden="true" />
