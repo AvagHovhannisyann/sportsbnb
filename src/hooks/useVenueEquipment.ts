@@ -63,7 +63,11 @@ export const useUpdateEquipment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; venueId: string } & Partial<VenueEquipment>) => {
+    // `venueId` is destructured out deliberately: it identifies which query to
+    // invalidate in onSuccess, it is not a column on venue_equipment. Leaving
+    // it in `updates` sent it to PostgREST, which rejected the whole write with
+    // "column venueId does not exist" — every equipment edit failed.
+    mutationFn: async ({ id, venueId: _venueId, ...updates }: { id: string; venueId: string } & Partial<VenueEquipment>) => {
       const { data, error } = await supabase
         .from('venue_equipment')
         .update(updates)

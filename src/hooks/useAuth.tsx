@@ -80,6 +80,23 @@ interface AuthContextType {
     code: string;
   }) => ReturnType<typeof supabase.auth.mfa.verify>;
   fetchOnboardingStatus: (userId: string) => Promise<OnboardingStatus | null>;
+  /* ── Passkeys (WebAuthn) ──────────────────────────────────────────────
+     Thin pass-throughs, exactly like the OAuth and MFA wrappers above: the
+     ceremony itself lives in supabase-js. Callers must still gate on
+     usePasskeySupport — these will reject rather than no-op on a browser or a
+     project that cannot do passkeys. */
+  registerPasskey: (
+    signal?: AbortSignal
+  ) => ReturnType<typeof supabase.auth.registerPasskey>;
+  signInWithPasskey: (
+    signal?: AbortSignal
+  ) => ReturnType<typeof supabase.auth.signInWithPasskey>;
+  listPasskeys: () => ReturnType<typeof supabase.auth.passkey.list>;
+  deletePasskey: (passkeyId: string) => ReturnType<typeof supabase.auth.passkey.delete>;
+  renamePasskey: (
+    passkeyId: string,
+    friendlyName: string
+  ) => ReturnType<typeof supabase.auth.passkey.update>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -219,6 +236,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const verifyMfa = (params: { factorId: string; challengeId: string; code: string }) =>
     supabase.auth.mfa.verify(params);
 
+  /* ── Passkeys (WebAuthn) ──────────────────────────────────────────────
+     `registerPasskey` and `signInWithPasskey` each run the whole ceremony:
+     fetch a challenge, call navigator.credentials, verify with the server.
+     Both resolve to `{ data, error }` rather than throwing, with one exception
+     — supabase-js throws synchronously if the client was built without
+     `experimental.passkey`, which is why the client sets it.
+
+     An AbortSignal is threaded through so a component that unmounts mid-prompt
+     can cancel its own ceremony instead of leaving it pending; supabase-js
+     otherwise installs a module-level signal shared by every caller. */
+  const registerPasskey = (signal?: AbortSignal) =>
+    supabase.auth.registerPasskey(signal ? { options: { signal } } : undefined);
+
+  const signInWithPasskey = (signal?: AbortSignal) =>
+    supabase.auth.signInWithPasskey(signal ? { options: { signal } } : undefined);
+
+  const listPasskeys = () => supabase.auth.passkey.list();
+
+  const deletePasskey = (passkeyId: string) => supabase.auth.passkey.delete({ passkeyId });
+
+  const renamePasskey = (passkeyId: string, friendlyName: string) =>
+    supabase.auth.passkey.update({ passkeyId, friendlyName });
+
   const fetchOnboardingStatus = async (userId: string): Promise<OnboardingStatus | null> => {
     const { data } = await supabase
       .from("profiles")
@@ -250,6 +290,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         challengeMfa,
         verifyMfa,
         fetchOnboardingStatus,
+        registerPasskey,
+        signInWithPasskey,
+        listPasskeys,
+        deletePasskey,
+        renamePasskey,
       }}
     >
       {children}

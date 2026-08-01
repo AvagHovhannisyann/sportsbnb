@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizePhoneE164 } from "@/lib/phone";
 import { MIN_PHOTOS, type VenueFormValues } from "../venueSchema";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 
 export function useCreateVenue() {
   const queryClient = useQueryClient();
@@ -146,7 +147,7 @@ export function useUpdateVenue() {
         imageUrl = null;
       }
 
-      const updateData: Record<string, unknown> = {
+      const updateData: TablesUpdate<'venues'> = {
         name: values.name.trim(),
         description: values.description.trim() || null,
         address: values.address.trim() || null,

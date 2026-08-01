@@ -269,7 +269,9 @@ export const useCreateTeam = () => {
 export const useUpdateTeam = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ teamId, ...updates }: { teamId: string } & Partial<Team>) => {
+    // `member_count` is an aggregate the list query computes, not a column on
+    // `teams`, so it is excluded from what callers may hand to `.update()`.
+    mutationFn: async ({ teamId, ...updates }: { teamId: string } & Partial<Omit<Team, "member_count">>) => {
       const { data, error } = await supabase
         .from("teams")
         .update(updates)

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 
 export type IntentStatus =
   | "clicked"
@@ -55,7 +56,7 @@ export function useUpdateBookingIntent() {
       status?: IntentStatus;
       admin_notes?: string;
     }) => {
-      const update: Record<string, unknown> = {};
+      const update: TablesUpdate<"booking_intents"> = {};
       if (status) update.status = status;
       if (admin_notes !== undefined) update.admin_notes = admin_notes;
       const { error } = await supabase

@@ -60,5 +60,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    /**
+     * Passkeys (WebAuthn) are behind an explicit opt-in in supabase-js: without
+     * this flag `auth.registerPasskey()`, `auth.signInWithPasskey()` and the
+     * `auth.passkey.*` namespace throw synchronously at call time rather than
+     * returning an error. The API is marked experimental upstream and may
+     * change in a minor release — see src/lib/passkeys.ts, which is where the
+     * shapes this app depends on are isolated.
+     *
+     * Turning the flag on costs nothing when the *project* has passkeys
+     * disabled: the buttons are gated on the server's own `passkeys_enabled`
+     * (see useAuthProviders), so nothing renders until the dashboard says so.
+     */
+    experimental: { passkey: true },
   }
 });

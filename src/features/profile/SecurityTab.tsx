@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Check, Loader2, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import TwoFactorAuth from "@/components/security/TwoFactorAuth";
+import PasskeyManager from "@/components/security/PasskeyManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -221,6 +222,9 @@ const SecurityTab = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Passkeys. Renders nothing when the project has them switched off. */}
+      <PasskeyManager />
 
       {/* Two-Factor Authentication */}
       <TwoFactorAuth />
