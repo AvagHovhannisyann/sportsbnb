@@ -1,11 +1,13 @@
-import { useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { Star, Loader2, Layers, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
 import { useVenues, getVenueImage } from "@/hooks/useVenues";
-import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
-import { MapsReady } from "@/components/maps/GoogleMapsProvider";
+import { MapsReady } from "@/components/maps/YandexMapsProvider";
+import { YandexMap, YandexMarker, YandexPopup } from "@/components/maps/YandexMap";
+import { MapPinMarker, MapMarkerButton } from "@/components/maps/MapPinMarker";
+import { boundsOf, type LatLng } from "@/lib/yandexGeo";
 import { sportTypes } from "@/data/constants";
 import { formatPrice, getCustomerPrice } from "@/lib/pricing";
 import { useRegion } from "@/hooks/useRegion";
@@ -22,17 +24,16 @@ const VenueMapPage = () => {
     return true;
   });
 
-  const center = filteredVenues.length > 0
+  const center: LatLng = filteredVenues.length > 0
     ? { lat: filteredVenues[0].latitude!, lng: filteredVenues[0].longitude! }
     : regionCenter;
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    if (filteredVenues.length > 1) {
-      const bounds = new google.maps.LatLngBounds();
-      filteredVenues.forEach(v => bounds.extend({ lat: v.latitude!, lng: v.longitude! }));
-      map.fitBounds(bounds, 50);
-    }
-  }, [filteredVenues]);
+  // A prop rather than a one-shot `fitBounds` in `onLoad`, so changing the
+  // sport filter re-frames the map instead of leaving it where it was.
+  const bounds = useMemo(
+    () => boundsOf(filteredVenues.map(v => ({ lat: v.latitude!, lng: v.longitude! }))),
+    [filteredVenues],
+  );
 
   return (
     <Layout>
@@ -66,40 +67,54 @@ const VenueMapPage = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <MapsReady><GoogleMap
-              mapContainerStyle={{ width: "100%", height: "100%" }}
-              center={center}
-              zoom={12}
-              onLoad={onLoad}
-            >
-              {filteredVenues.map((venue) => (
-                <Marker
-                  key={venue.id}
-                  position={{ lat: venue.latitude!, lng: venue.longitude! }}
-                  onClick={() => setSelectedVenue(venue)}
-                />
-              ))}
+            <MapsReady>
+              <YandexMap
+                style={{ width: "100%", height: "100%" }}
+                ariaLabel="Map of venues"
+                center={center}
+                zoom={12}
+                bounds={bounds}
+              >
+                {filteredVenues.map((venue) => (
+                  <YandexMarker
+                    key={venue.id}
+                    position={{ lat: venue.latitude!, lng: venue.longitude! }}
+                    anchor="bottom"
+                  >
+                    <MapMarkerButton
+                      label={venue.name}
+                      onClick={() => setSelectedVenue(venue)}
+                    >
+                      <MapPinMarker />
+                    </MapMarkerButton>
+                  </YandexMarker>
+                ))}
 
-              {selectedVenue && (
-                <InfoWindow
-                  position={{ lat: selectedVenue.latitude!, lng: selectedVenue.longitude! }}
-                  onCloseClick={() => setSelectedVenue(null)}
-                >
-                  <div style={{ minWidth: 200, padding: 4 }}>
+                {selectedVenue && (
+                  <YandexPopup
+                    position={{ lat: selectedVenue.latitude!, lng: selectedVenue.longitude! }}
+                    onClose={() => setSelectedVenue(null)}
+                    closeLabel="Close venue details"
+                  >
+                    {/* Was inline hex on Google's own white balloon surface.
+                        This popup is our DOM, so it uses the app's tokens and
+                        follows the dark theme. */}
                     <img
                       src={getVenueImage(selectedVenue)}
                       alt={selectedVenue.name}
-                      style={{ width: "100%", height: 96, objectFit: "cover", borderRadius: 8, marginBottom: 8 }}
+                      className="mb-2 h-24 w-full rounded-lg object-cover"
                     />
-                    <h3 style={{ fontWeight: 600 }}>{selectedVenue.name}</h3>
-                    <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0", display: "flex", alignItems: "center", gap: 4 }}>
-                      <MapPin size={12} aria-hidden="true" />
+                    <h3 className="pr-5 text-sm font-semibold">{selectedVenue.name}</h3>
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" aria-hidden="true" />
                       {selectedVenue.address || selectedVenue.city}
                     </p>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                      <strong>{formatPrice(getCustomerPrice(selectedVenue.price_per_hour))}/hr</strong>
+                    <div className="mt-2 flex items-center justify-between">
+                      <strong className="text-sm">
+                        {formatPrice(getCustomerPrice(selectedVenue.price_per_hour))}/hr
+                      </strong>
                       {selectedVenue.rating > 0 && (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <span className="inline-flex items-center gap-1 text-sm">
                           <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden="true" />
                           {selectedVenue.rating}
                         </span>
@@ -107,14 +122,14 @@ const VenueMapPage = () => {
                     </div>
                     <a
                       href={`/venue/${selectedVenue.id}`}
-                      style={{ display: "block", textAlign: "center", padding: 8, background: "#3b82f6", color: "white", borderRadius: 6, textDecoration: "none", marginTop: 8, fontSize: 14 }}
+                      className="mt-2 block rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                       View Details
                     </a>
-                  </div>
-                </InfoWindow>
-              )}
-            </GoogleMap></MapsReady>
+                  </YandexPopup>
+                )}
+              </YandexMap>
+            </MapsReady>
           )}
         </div>
       </div>

@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { GoogleMap, Marker } from "@react-google-maps/api";
-import { MapsReady } from "@/components/maps/GoogleMapsProvider";
+import React, { useState, useEffect, useCallback } from "react";
+import { MapsReady } from "@/components/maps/YandexMapsProvider";
+import { YandexMap, YandexMarker } from "@/components/maps/YandexMap";
+import { MapPinMarker } from "@/components/maps/MapPinMarker";
+import { geocode, type LatLng } from "@/lib/yandexGeo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, Search, Check, Loader2, X } from "lucide-react";
 import { useRegion } from "@/hooks/useRegion";
+
+/** Browser-callable geocoder key, the same one SmartSearch uses. */
+const YANDEX_GEOCODER_API_KEY = import.meta.env.VITE_YANDEX_GEOCODER_KEY ?? "";
 
 interface LocationPickerProps {
   address: string;
@@ -33,16 +38,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   validationErrors = {},
 }) => {
   const { defaultCenter: regionDefault } = useRegion();
-  const [selectedPosition, setSelectedPosition] = useState<google.maps.LatLngLiteral | null>(
+  const [selectedPosition, setSelectedPosition] = useState<LatLng | null>(
     latitude && longitude ? { lat: latitude, lng: longitude } : null
   );
-  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(
+  const [mapCenter, setMapCenter] = useState<LatLng>(
     latitude && longitude ? { lat: latitude, lng: longitude } : regionDefault
   );
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(locationConfirmed);
-  const mapRef = useRef<google.maps.Map | null>(null);
 
   useEffect(() => {
     if (latitude && longitude) {
@@ -53,42 +57,48 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     setIsConfirmed(locationConfirmed);
   }, [latitude, longitude, locationConfirmed]);
 
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-      const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-      setSelectedPosition(pos);
-      setIsConfirmed(false);
-      onLocationConfirm(pos.lat, pos.lng, false);
-    }
+  const applyPosition = useCallback((pos: LatLng) => {
+    setSelectedPosition(pos);
+    setIsConfirmed(false);
+    onLocationConfirm(pos.lat, pos.lng, false);
   }, [onLocationConfirm]);
 
+  /**
+   * Find the typed address on the map.
+   *
+   * Was `new google.maps.Geocoder()`, which needed the Maps script loaded
+   * before it could be constructed. The Yandex geocoder is a plain HTTP
+   * endpoint, so this works whether or not the map itself rendered — which
+   * matters, because the map is the thing that fails without a key.
+   */
   const searchAddress = async () => {
     const fullAddress = `${address}, ${city}`.trim();
     if (!fullAddress || fullAddress === ",") {
       setSearchError("Please enter an address and city first");
       return;
     }
+    if (!YANDEX_GEOCODER_API_KEY) {
+      setSearchError("Address lookup is not configured. Click the map to set the location.");
+      return;
+    }
     setIsSearching(true);
     setSearchError(null);
-    try {
-      const geocoder = new google.maps.Geocoder();
-      const result = await geocoder.geocode({ address: fullAddress });
-      if (result.results.length > 0) {
-        const loc = result.results[0].geometry.location;
-        const pos = { lat: loc.lat(), lng: loc.lng() };
-        setSelectedPosition(pos);
-        setMapCenter(pos);
-        mapRef.current?.panTo(pos);
-        setIsConfirmed(false);
-        onLocationConfirm(pos.lat, pos.lng, false);
-      } else {
-        setSearchError("Address not found. Try clicking on the map.");
-      }
-    } catch {
-      setSearchError("Failed to search address. Try clicking on the map.");
-    } finally {
-      setIsSearching(false);
+    const places = await geocode({
+      apiKey: YANDEX_GEOCODER_API_KEY,
+      geocode: fullAddress,
+      results: 1,
+      ll: regionDefault,
+    });
+    setIsSearching(false);
+
+    const place = places[0];
+    if (!place) {
+      setSearchError("Address not found. Try clicking on the map.");
+      return;
     }
+    const pos = { lat: place.latitude, lng: place.longitude };
+    setMapCenter(pos);
+    applyPosition(pos);
   };
 
   const handleConfirmLocation = () => {
@@ -159,17 +169,28 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         )}
 
         <div className="relative rounded-lg overflow-hidden border border-border">
-          <MapsReady><GoogleMap
-            mapContainerStyle={{ width: "100%", height: "300px" }}
-            center={mapCenter}
-            zoom={13}
-            onClick={handleMapClick}
-            onLoad={(map) => { mapRef.current = map; }}
-          >
-            {selectedPosition && <Marker position={selectedPosition} />}
-          </GoogleMap></MapsReady>
+          <MapsReady>
+            <YandexMap
+              style={{ width: "100%", height: "300px" }}
+              ariaLabel="Venue location"
+              center={mapCenter}
+              zoom={13}
+              onClick={applyPosition}
+            >
+              {selectedPosition && (
+                <YandexMarker
+                  position={selectedPosition}
+                  anchor="bottom"
+                  draggable
+                  onDragEnd={applyPosition}
+                >
+                  <MapPinMarker />
+                </YandexMarker>
+              )}
+            </YandexMap>
+          </MapsReady>
           <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded px-2 py-1 text-xs text-muted-foreground">
-            Click on map to select exact location
+            Click the map or drag the pin to select the exact location
           </div>
         </div>
 

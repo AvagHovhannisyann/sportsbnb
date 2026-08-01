@@ -9,7 +9,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "
 import { AuthProvider } from "@/hooks/useAuth";
 import { CurrencyProvider } from "@/hooks/useCurrency";
 import { RegionProvider } from "@/hooks/useRegion";
-import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
+import { YandexMapsProvider } from "@/components/maps/YandexMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { RequireRole } from "@/components/auth/RequireRole";
@@ -158,7 +158,7 @@ const App = () => {
     <>
       {showSplash && <SplashScreen onFinished={handleSplashFinished} />}
       <QueryClientProvider client={queryClient}>
-        <GoogleMapsProvider>
+        <YandexMapsProvider>
         <AuthProvider>
           <RegionProvider>
           <CurrencyProvider>
@@ -291,7 +291,7 @@ const App = () => {
           </CurrencyProvider>
           </RegionProvider>
         </AuthProvider>
-        </GoogleMapsProvider>
+        </YandexMapsProvider>
       </QueryClientProvider>
     </>
   );

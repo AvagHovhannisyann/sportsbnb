@@ -3,24 +3,40 @@ import { MapPin, Loader2, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useRegion } from "@/hooks/useRegion";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  formatYandexLl,
+  geocode,
+  geosuggestFullText,
+  toLocationPlace,
+  type GeosuggestItem,
+  type LocationPlace,
+} from "@/lib/yandexGeo";
 
-export interface LocationPlace {
-  name: string;
-  city?: string;
-  country?: string;
-  formattedAddress: string;
-  latitude: number;
-  longitude: number;
-  type?: string;
-}
+/** Browser-callable geocoder key, same one SmartSearch uses. */
+const YANDEX_GEOCODER_API_KEY = import.meta.env.VITE_YANDEX_GEOCODER_KEY ?? "";
 
-interface Prediction {
-  description: string;
-  place_id: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text?: string;
-  };
+/** What this component hands back. Unchanged, so callers did not move. */
+export type { LocationPlace };
+
+/**
+ * One row in the dropdown.
+ *
+ * Was a `google.maps.places.AutocompletePrediction`, keyed by `place_id` and
+ * resolved through the Places geocoder. Yandex's equivalent is Geosuggest,
+ * which the app already proxies through the `geosuggest` edge function — the
+ * key for it is server-side, so the suggest quota is not exposed in the
+ * bundle the way Places' was.
+ */
+interface Suggestion {
+  /** Stable key. Geosuggest has no id, so position in the response is it. */
+  id: string;
+  mainText: string;
+  secondaryText?: string;
+  /** Full line, used as the input's value and as the geocode fallback. */
+  fullText: string;
+  /** `ymapsbm1://…`, when Geosuggest gives one. Resolves precisely. */
+  uri?: string;
 }
 
 interface LocationAutocompleteProps {
@@ -61,15 +77,15 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 }) => {
   const { defaultCenter } = useRegion();
   const [inputValue, setInputValue] = useState(value);
-  const [suggestions, setSuggestions] = useState<Prediction[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  /** Guards against an earlier, slower request overwriting a later one. */
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     setInputValue(value);
@@ -85,90 +101,80 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const getAutocompleteService = () => {
-    if (!autocompleteServiceRef.current && typeof google !== "undefined" && google.maps?.places) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-    }
-    return autocompleteServiceRef.current;
-  };
+  const centerLat = defaultLatitude ?? defaultCenter.lat;
+  const centerLng = defaultLongitude ?? defaultCenter.lng;
 
-  const getGeocoder = () => {
-    if (!geocoderRef.current && typeof google !== "undefined" && google.maps) {
-      geocoderRef.current = new google.maps.Geocoder();
-    }
-    return geocoderRef.current;
-  };
-
-  const searchLocations = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const service = getAutocompleteService();
-      if (!service) {
-        setIsLoading(false);
+  const searchLocations = useCallback(
+    async (query: string) => {
+      if (query.length < 2) {
+        setSuggestions([]);
         return;
       }
 
-      const centerLat = defaultLatitude ?? defaultCenter.lat;
-      const centerLng = defaultLongitude ?? defaultCenter.lng;
+      const seq = ++requestSeq.current;
+      setIsLoading(true);
+      try {
+        // The bias window is expressed the Yandex way — `ll` is
+        // "longitude,latitude" — and matches what SmartSearch and the edge
+        // function already send.
+        const ll = formatYandexLl({ lat: centerLat, lng: centerLng });
+        const { data, error: fnError } = await supabase.functions.invoke("geosuggest", {
+          body: { text: query, lang: "en", results: 6, ll, spn: "2,2", ull: ll },
+        });
+        if (seq !== requestSeq.current) return;
 
-      service.getPlacePredictions(
-        {
-          input: query,
-          locationBias: new google.maps.Circle({
-            center: { lat: centerLat, lng: centerLng },
-            radius: 50000,
-          }),
-        },
-        (predictions, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-            setSuggestions(predictions as unknown as Prediction[]);
-            setIsOpen(predictions.length > 0);
-            setSelectedIndex(-1);
-          } else {
-            setSuggestions([]);
-          }
-          setIsLoading(false);
+        if (fnError) {
+          console.error("Geosuggest lookup failed", fnError);
+          setSuggestions([]);
+          return;
         }
-      );
-    } catch (err) {
-      console.error("Autocomplete error:", err);
-      setSuggestions([]);
-      setIsLoading(false);
-    }
-  }, [defaultLatitude, defaultLongitude]);
 
-  const resolvePlace = async (prediction: Prediction): Promise<LocationPlace | null> => {
-    try {
-      const geocoder = getGeocoder();
-      if (!geocoder) return null;
+        const items: GeosuggestItem[] = Array.isArray(data?.results) ? data.results : [];
+        const next = items
+          .map((item, index) => ({
+            id: `geosuggest-${index}`,
+            mainText: item.title?.text ?? "",
+            secondaryText: item.subtitle?.text,
+            fullText: geosuggestFullText(item),
+            uri: item.uri,
+          }))
+          .filter((s) => s.mainText || s.fullText);
 
-      const result = await geocoder.geocode({ placeId: prediction.place_id });
-      if (!result.results.length) return null;
+        setSuggestions(next);
+        setIsOpen(next.length > 0);
+        setSelectedIndex(-1);
+      } catch (err) {
+        if (seq !== requestSeq.current) return;
+        console.error("Autocomplete error:", err);
+        setSuggestions([]);
+      } finally {
+        if (seq === requestSeq.current) setIsLoading(false);
+      }
+    },
+    [centerLat, centerLng],
+  );
 
-      const geoResult = result.results[0];
-      const loc = geoResult.geometry.location;
-
-      const getComponent = (type: string) =>
-        geoResult.address_components?.find(c => c.types.includes(type))?.long_name;
-
-      return {
-        name: prediction.structured_formatting.main_text,
-        city: getComponent("locality") || getComponent("administrative_area_level_1"),
-        country: getComponent("country"),
-        formattedAddress: geoResult.formatted_address,
-        latitude: loc.lat(),
-        longitude: loc.lng(),
-        type: geoResult.types?.[0],
-      };
-    } catch (err) {
-      console.error("Geocoder resolve error:", err);
+  /**
+   * Turn a suggestion into coordinates.
+   *
+   * Geosuggest returns text, not a position, so this is the second half of
+   * what Places' `getDetails` did in one call. The `uri` is preferred over
+   * the text because it names one place; the text can match several.
+   */
+  const resolvePlace = async (suggestion: Suggestion): Promise<LocationPlace | null> => {
+    if (!YANDEX_GEOCODER_API_KEY) {
+      console.error("VITE_YANDEX_GEOCODER_KEY is not set; cannot resolve a location");
       return null;
     }
+    const [place] = await geocode({
+      apiKey: YANDEX_GEOCODER_API_KEY,
+      uri: suggestion.uri,
+      geocode: suggestion.fullText,
+      results: 1,
+      ll: { lat: centerLat, lng: centerLng },
+    });
+    if (!place) return null;
+    return toLocationPlace(place, suggestion);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,8 +185,8 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     debounceRef.current = setTimeout(() => searchLocations(newValue), 250);
   };
 
-  const handleSelect = async (item: Prediction) => {
-    setInputValue(item.description);
+  const handleSelect = async (item: Suggestion) => {
+    setInputValue(item.fullText);
     setSuggestions([]);
     setIsOpen(false);
     setIsLoading(true);
@@ -188,9 +194,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     const place = await resolvePlace(item);
     setIsLoading(false);
 
-    if (place) {
-      onSelect(place);
-    }
+    if (place) onSelect(place);
   };
 
   const handleClear = () => {
@@ -262,7 +266,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           <ul className="max-h-60 overflow-auto py-1">
             {suggestions.map((item, index) => (
               <li
-                key={item.place_id}
+                key={item.id}
                 className={cn(
                   "px-3 py-2 cursor-pointer flex items-start gap-3 transition-colors",
                   index === selectedIndex
@@ -274,10 +278,10 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               >
                 <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{item.structured_formatting.main_text}</div>
-                  {item.structured_formatting.secondary_text && (
+                  <div className="font-medium text-sm truncate">{item.mainText}</div>
+                  {item.secondaryText && (
                     <div className="text-xs text-muted-foreground truncate">
-                      {item.structured_formatting.secondary_text}
+                      {item.secondaryText}
                     </div>
                   )}
                 </div>

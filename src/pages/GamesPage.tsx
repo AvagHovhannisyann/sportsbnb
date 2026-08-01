@@ -428,7 +428,7 @@ const GamesPage = () => {
   const cardDelay = (index: number) =>
     prefersReduced ? 0 : Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP;
 
-  // Opacity only, no transform: the map is a live Google Maps canvas and an
+  // Opacity only, no transform: the map is a live Yandex Maps canvas and an
   // animating transform on an ancestor makes it re-rasterise every frame.
   const mapMotion: MotionProps = prefersReduced
     ? {}

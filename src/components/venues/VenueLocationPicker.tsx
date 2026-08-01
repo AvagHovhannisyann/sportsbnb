@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { GoogleMap, Marker } from "@react-google-maps/api";
-import { MapsReady } from "@/components/maps/GoogleMapsProvider";
+import React, { useState, useEffect, useCallback } from "react";
+import { MapsReady } from "@/components/maps/YandexMapsProvider";
+import { YandexMap, YandexMarker } from "@/components/maps/YandexMap";
+import { MapPinMarker } from "@/components/maps/MapPinMarker";
+import type { LatLng } from "@/lib/yandexGeo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,15 +39,14 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
   locationConfirmed = false,
   validationErrors = {},
 }) => {
-  const [selectedPosition, setSelectedPosition] = useState<google.maps.LatLngLiteral | null>(
+  const [selectedPosition, setSelectedPosition] = useState<LatLng | null>(
     latitude && longitude ? { lat: latitude, lng: longitude } : null
   );
   const { defaultCenter: regionDefault } = useRegion();
-  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(
+  const [mapCenter, setMapCenter] = useState<LatLng>(
     latitude && longitude ? { lat: latitude, lng: longitude } : regionDefault
   );
   const [isConfirmed, setIsConfirmed] = useState(locationConfirmed);
-  const mapRef = useRef<google.maps.Map | null>(null);
 
   useEffect(() => {
     if (latitude && longitude) {
@@ -56,13 +57,21 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
     setIsConfirmed(locationConfirmed);
   }, [latitude, longitude, locationConfirmed]);
 
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-      const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-      setSelectedPosition(pos);
-      setIsConfirmed(false);
-      onLocationConfirm(pos.lat, pos.lng, false);
-    }
+  const handleMapClick = useCallback((pos: LatLng) => {
+    setSelectedPosition(pos);
+    setIsConfirmed(false);
+    onLocationConfirm(pos.lat, pos.lng, false);
+  }, [onLocationConfirm]);
+
+  /**
+   * Dragging the pin is the same edit as clicking the map, so it goes through
+   * the same handler. Yandex reports the drop point as `[lng, lat]`; the
+   * `YandexMarker` wrapper has already converted it.
+   */
+  const handleMarkerDragEnd = useCallback((pos: LatLng) => {
+    setSelectedPosition(pos);
+    setIsConfirmed(false);
+    onLocationConfirm(pos.lat, pos.lng, false);
   }, [onLocationConfirm]);
 
   const handlePlaceSelect = (place: LocationPlace) => {
@@ -70,8 +79,9 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
     if (place.city) onCityChange(place.city);
     const pos = { lat: place.latitude, lng: place.longitude };
     setSelectedPosition(pos);
+    // The map follows its `center` prop, so panning is a state change here
+    // rather than an imperative call on a ref.
     setMapCenter(pos);
-    mapRef.current?.panTo(pos);
     setIsConfirmed(false);
     onLocationConfirm(place.latitude, place.longitude, false);
   };
@@ -139,17 +149,28 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
         </div>
 
         <div className="relative rounded-lg overflow-hidden border border-border">
-          <MapsReady><GoogleMap
-            mapContainerStyle={{ width: "100%", height: "300px" }}
-            center={mapCenter}
-            zoom={13}
-            onClick={handleMapClick}
-            onLoad={(map) => { mapRef.current = map; }}
-          >
-            {selectedPosition && <Marker position={selectedPosition} />}
-          </GoogleMap></MapsReady>
+          <MapsReady>
+            <YandexMap
+              style={{ width: "100%", height: "300px" }}
+              ariaLabel="Venue location"
+              center={mapCenter}
+              zoom={13}
+              onClick={handleMapClick}
+            >
+              {selectedPosition && (
+                <YandexMarker
+                  position={selectedPosition}
+                  anchor="bottom"
+                  draggable
+                  onDragEnd={handleMarkerDragEnd}
+                >
+                  <MapPinMarker />
+                </YandexMarker>
+              )}
+            </YandexMap>
+          </MapsReady>
           <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded px-2 py-1 text-xs text-muted-foreground">
-            Click on map to adjust location
+            Click the map or drag the pin to adjust
           </div>
         </div>
 

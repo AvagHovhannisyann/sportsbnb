@@ -74,13 +74,17 @@ const CandidateCard: React.FC<CandidateCardProps> = ({
           </Button>
         </div>
       )}
+      {/* Yandex's URL parameters are longitude-first, like the rest of its
+          API: `ll` and `pt` are "<lng>,<lat>". Swapping them here would put
+          the reviewer somewhere else entirely — the same trap the in-app
+          maps have, so it is spelled out rather than left to the reader. */}
       <a
-        href={`https://www.google.com/maps/@${candidate.latitude},${candidate.longitude},18z`}
+        href={`https://yandex.com/maps/?ll=${candidate.longitude},${candidate.latitude}&z=18&pt=${candidate.longitude},${candidate.latitude}`}
         target="_blank"
         rel="noopener noreferrer"
         className="text-xs text-primary hover:underline flex items-center gap-1"
       >
-        <Eye className="h-3 w-3" /> View on Google Maps
+        <Eye className="h-3 w-3" /> View on Yandex Maps
       </a>
     </div>
   );

@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
-import { useGoogleMaps } from "@/components/maps/GoogleMapsProvider";
+import { MapsReady } from "@/components/maps/YandexMapsProvider";
+import { YandexMap, YandexMarker, YandexPopup } from "@/components/maps/YandexMap";
+import { MapDotMarker, MapMarkerButton } from "@/components/maps/MapPinMarker";
+import type { LatLng } from "@/lib/yandexGeo";
 import { MapPin, Users, Sun, Moon, Zap, List, Map as MapIcon, Filter, ChevronRight, Plus, Check, Star, Clock, TrendingUp, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,12 +77,15 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => 
 
 const NearbyFieldsPage: React.FC = () => {
   const navigate = useNavigate();
-  // Read directly rather than relying on <MapsReady> to wrap the map: that
-  // component cannot protect its own children, because JSX evaluates them —
-  // including `new google.maps.Size(...)` — before the wrapper decides whether
-  // to render. On CI, where no Maps key is set, that threw
-  // "ReferenceError: google is not defined" and took the page down.
-  const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMaps();
+  // `<MapsReady>` is safe to wrap the map with again.
+  //
+  // It was not, under Google: JSX evaluates children before the wrapper
+  // decides whether to render them, and the markers' `icon` props contained
+  // `new google.maps.Size(...)`. With no Maps key — CI, and any deployment
+  // without one — that threw "google is not defined" and took the whole page
+  // down, so this page had to read the load state itself and branch. The
+  // Yandex markers are plain components with no global in their props, so
+  // there is nothing left to evaluate early.
   const { fields, isLoading, checkIn } = useVerifiedFields();
   const { data: venues } = useVenues();
   const { defaultCenter, regionLabel } = useRegion();
@@ -139,7 +144,7 @@ const NearbyFieldsPage: React.FC = () => {
     return result;
   }, [venues, sportFilter, userLocation]);
 
-  const mapCenter = userLocation || defaultCenter;
+  const mapCenter: LatLng = userLocation || defaultCenter;
 
   return (
     <Layout>
@@ -244,143 +249,156 @@ const NearbyFieldsPage: React.FC = () => {
           // A named region. The Maps API injects its own unnamed pan controls,
           // which are not ours to fix — but the area they sit in is, and it
           // had no name either, so the map read as an anonymous block of the
-          // page. `ariaLabel` on MapOptions would be the tidier home for this,
-          // but it is absent from the installed @types/google.maps.
+          // page.
           <div
             role="region"
             aria-label="Map of nearby fields"
             className="h-[calc(100vh-180px)]"
           >
-            {!mapsLoaded ? (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {mapsError ? "Map unavailable" : "Loading map…"}
-              </div>
-            ) : (
-            <GoogleMap
-              mapContainerStyle={{ width: "100%", height: "100%" }}
-              center={mapCenter}
-              zoom={13}
-            >
-              {/* User location */}
-              {userLocation && (
-                <Marker
-                  position={userLocation}
-                  icon={{
-                    url: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#4285F4" stroke="white" stroke-width="2"/></svg>')}`,
-                    scaledSize: new google.maps.Size(20, 20),
-                  }}
-                />
-              )}
+            <MapsReady>
+              <YandexMap
+                style={{ width: "100%", height: "100%" }}
+                ariaLabel="Map of nearby fields"
+                center={mapCenter}
+                zoom={13}
+              >
+                {/* User location */}
+                {userLocation && (
+                  <YandexMarker position={userLocation} anchor="center" zIndex={10}>
+                    <MapDotMarker size={20} color="hsl(var(--ring))" />
+                  </YandexMarker>
+                )}
 
-              {/* Verified fields - colored by sport */}
-              {filteredFields.map(field => (
-                <Marker
-                  key={field.id}
-                  position={{ lat: field.latitude, lng: field.longitude }}
-                  onClick={() => { setSelectedMarker(field); setSelectedMarkerType("field"); }}
-                  icon={{
-                    url: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="${getSportColor(field.sport_type)}" stroke="white" stroke-width="2"/><text x="14" y="18" text-anchor="middle" fill="white" font-size="12">✓</text></svg>`)}`,
-                    scaledSize: new google.maps.Size(28, 28),
-                  }}
-                />
-              ))}
+                {/* Verified fields - colored by sport */}
+                {filteredFields.map(field => (
+                  <YandexMarker
+                    key={field.id}
+                    position={{ lat: field.latitude, lng: field.longitude }}
+                    anchor="center"
+                  >
+                    <MapMarkerButton
+                      label={`${field.name} — verified ${field.sport_type} field`}
+                      onClick={() => { setSelectedMarker(field); setSelectedMarkerType("field"); }}
+                    >
+                      {/* The tick was an SVG <text> node inside a data URI, so
+                          it set in whatever font the renderer picked. It is a
+                          Lucide icon now, like every other tick in the app. */}
+                      <MapDotMarker size={28} color={getSportColor(field.sport_type)}>
+                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                      </MapDotMarker>
+                    </MapMarkerButton>
+                  </YandexMarker>
+                ))}
 
-              {/* Promoted venues */}
-              {promotedVenues.map(venue => (
-                <Marker
-                  key={`venue-${venue.id}`}
-                  position={{ lat: venue.latitude!, lng: venue.longitude! }}
-                  onClick={() => { setSelectedMarker(venue); setSelectedMarkerType("venue"); }}
-                  icon={{
-                    url: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#2563eb" stroke="white" stroke-width="2"/><text x="16" y="21" text-anchor="middle" fill="white" font-size="16">⭐</text></svg>')}`,
-                    scaledSize: new google.maps.Size(32, 32),
-                  }}
-                />
-              ))}
+                {/* Promoted venues */}
+                {promotedVenues.map(venue => (
+                  <YandexMarker
+                    key={`venue-${venue.id}`}
+                    position={{ lat: venue.latitude!, lng: venue.longitude! }}
+                    anchor="center"
+                    zIndex={5}
+                  >
+                    <MapMarkerButton
+                      label={`${venue.name} — bookable venue`}
+                      onClick={() => { setSelectedMarker(venue); setSelectedMarkerType("venue"); }}
+                    >
+                      {/* Was ⭐ in a data URI on #2563eb — a stock blue that
+                          appears nowhere else in an app whose primary is
+                          green. */}
+                      <MapDotMarker size={32} color="hsl(var(--primary))">
+                        <Star className="h-4 w-4 fill-current" />
+                      </MapDotMarker>
+                    </MapMarkerButton>
+                  </YandexMarker>
+                ))}
 
-              {/* Field info window */}
-              {selectedMarker && selectedMarkerType === "field" && (
-                <InfoWindow
-                  position={{ lat: selectedMarker.latitude, lng: selectedMarker.longitude }}
-                  onCloseClick={() => setSelectedMarker(null)}
-                >
-                  <div style={{ maxWidth: 250, padding: 4 }}>
-                    {/* Google draws this popup on its own white surface, so
-                        these keep literal light-surface colours rather than
-                        app tokens — but the glyphs are icons now, matching the
-                        Star that the venue window below already used. */}
-                    <h3 style={{ fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                      <BadgeCheck size={14} aria-hidden="true" />
-                      {selectedMarker.name}
-                      <span style={{ color: "#15803d", fontSize: 12 }}>
+                {/* Field popup */}
+                {selectedMarker && selectedMarkerType === "field" && (
+                  <YandexPopup
+                    position={{ lat: selectedMarker.latitude, lng: selectedMarker.longitude }}
+                    onClose={() => setSelectedMarker(null)}
+                    closeLabel="Close field details"
+                  >
+                    {/* This is our own DOM, not Google's white balloon, so the
+                        literal light-surface colours these used are gone and
+                        the popup follows the theme. */}
+                    <h3 className="flex items-center gap-1 pr-5 text-sm font-semibold">
+                      <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{selectedMarker.name}</span>
+                      <span className="shrink-0 text-xs text-success">
                         {selectedMarker.is_public ? "FREE" : "PAID"}
                       </span>
                     </h3>
-                    <p style={{ fontSize: 12, margin: "2px 0" }}>
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {selectedMarker.sport_type} • {selectedMarker.surface_type || "N/A"}
                     </p>
-                    <p style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                       {selectedMarker.has_lighting ? (
-                        <Sun size={12} aria-hidden="true" />
+                        <Sun className="h-3 w-3" aria-hidden="true" />
                       ) : (
-                        <Moon size={12} aria-hidden="true" />
+                        <Moon className="h-3 w-3" aria-hidden="true" />
                       )}
                       {selectedMarker.has_lighting ? "Lit" : "No lights"} •
-                      <Star size={12} style={{ fill: "currentColor" }} aria-hidden="true" />
+                      <Star className="h-3 w-3 fill-current" aria-hidden="true" />
                       {selectedMarker.condition_rating}/5
                     </p>
                     {busynessOf(selectedMarker.busyness_score) && (
-                      <p style={{ fontWeight: 600, fontSize: 12 }}>
+                      <p className="mt-1 text-xs font-semibold">
                         {busynessOf(selectedMarker.busyness_score)!.label}
                       </p>
                     )}
                     {selectedMarker.peak_hours && (
-                      <p style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
-                        <TrendingUp size={11} aria-hidden="true" />
+                      <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <TrendingUp className="h-3 w-3" aria-hidden="true" />
                         Peak: {selectedMarker.peak_hours}
                       </p>
                     )}
                     {selectedMarker.active_checkins > 0 && (
-                      <p style={{ color: "#15803d", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                        <Users size={12} aria-hidden="true" />
+                      <p className="mt-1 flex items-center gap-1 text-xs text-success">
+                        <Users className="h-3 w-3" aria-hidden="true" />
                         {selectedMarker.active_checkins} players here now
                       </p>
                     )}
-                    {selectedMarker.address && <p style={{ fontSize: 11, color: "gray" }}>{selectedMarker.address}</p>}
-                  </div>
-                </InfoWindow>
-              )}
+                    {selectedMarker.address && (
+                      <p className="mt-1 text-[11px] text-muted-foreground">{selectedMarker.address}</p>
+                    )}
+                  </YandexPopup>
+                )}
 
-              {/* Venue info window */}
-              {selectedMarker && selectedMarkerType === "venue" && (
-                <InfoWindow
-                  position={{ lat: selectedMarker.latitude!, lng: selectedMarker.longitude! }}
-                  onCloseClick={() => setSelectedMarker(null)}
-                >
-                  <div style={{ maxWidth: 250, padding: 4 }}>
-                    <h3 style={{ fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                      <Star size={14} style={{ fill: "currentColor" }} aria-hidden="true" />
-                      {selectedMarker.name}
-                      {/* Was #2563eb — a stock blue that appears nowhere else
-                          in an app whose primary is green. */}
-                      <span style={{ color: "#0f766e", fontSize: 12 }}>BOOKABLE</span>
+                {/* Venue popup */}
+                {selectedMarker && selectedMarkerType === "venue" && (
+                  <YandexPopup
+                    position={{ lat: selectedMarker.latitude!, lng: selectedMarker.longitude! }}
+                    onClose={() => setSelectedMarker(null)}
+                    closeLabel="Close venue details"
+                  >
+                    <h3 className="flex items-center gap-1 pr-5 text-sm font-semibold">
+                      <Star className="h-3.5 w-3.5 shrink-0 fill-current" aria-hidden="true" />
+                      <span className="truncate">{selectedMarker.name}</span>
+                      <span className="shrink-0 text-xs text-primary">BOOKABLE</span>
                     </h3>
-                    <p style={{ fontSize: 12 }}>{selectedMarker.sports?.join(", ")} • ֏{selectedMarker.price_per_hour}/hr</p>
+                    <p className="mt-1 text-xs">
+                      {selectedMarker.sports?.join(", ")} • ֏{selectedMarker.price_per_hour}/hr
+                    </p>
                     {selectedMarker.rating > 0 && (
-                      <p style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                      <p className="mt-1 flex items-center gap-1 text-xs">
                         <Star className="h-3 w-3 fill-primary text-primary" aria-hidden="true" />
                         {selectedMarker.rating} ({selectedMarker.review_count || 0} reviews)
                       </p>
                     )}
-                    <p style={{ fontSize: 11, color: "gray" }}>{selectedMarker.address || selectedMarker.city}</p>
-                    <a href={`/venue/${selectedMarker.id}`} style={{ display: "block", textAlign: "center", padding: 6, background: "#0f766e", color: "white", borderRadius: 6, textDecoration: "none", marginTop: 6, fontSize: 13 }}>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {selectedMarker.address || selectedMarker.city}
+                    </p>
+                    <a
+                      href={`/venue/${selectedMarker.id}`}
+                      className="mt-2 block rounded-md bg-primary px-3 py-1.5 text-center text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+                    >
                       Book Now →
                     </a>
-                  </div>
-                </InfoWindow>
-              )}
-            </GoogleMap>
-            )}
+                  </YandexPopup>
+                )}
+              </YandexMap>
+            </MapsReady>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
