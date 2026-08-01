@@ -132,7 +132,7 @@ const BOOKING_STEPS = [
   {
     icon: CreditCard,
     title: "Pay",
-    body: "Card or Idram, in Armenian dram, inside the app. Payment and reservation commit together, so a confirmed booking means confirmed.",
+    body: "By card, in Armenian dram, inside the app. Payment and reservation commit together, so a confirmed booking means confirmed.",
   },
 ];
 
@@ -172,8 +172,8 @@ const WORKING_TODAY = [
 
 const BEFORE_LIVE = [
   {
-    title: "Ameria vPOS and Idram, switched to live",
-    body: "Both adapters are written and run end-to-end — Ameria re-verified server-side rather than trusting the redirect, Idram checked against its MD5 signature. What is outstanding is the merchant agreements and production credentials. Until those land, booking payments run against the test provider.",
+    title: "Card payments, switched to live",
+    body: "The card rail is written and runs end-to-end, re-verified server-side rather than trusting the redirect back from the payment page. What is outstanding is the merchant account and production credentials. Until those land, booking payments run against the test provider.",
   },
   {
     title: "Then: onboard owners past the seed set",

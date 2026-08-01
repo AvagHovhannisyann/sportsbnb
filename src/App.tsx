@@ -9,7 +9,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "
 import { AuthProvider } from "@/hooks/useAuth";
 import { CurrencyProvider } from "@/hooks/useCurrency";
 import { RegionProvider } from "@/hooks/useRegion";
-import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
+import { YandexMapsProvider } from "@/components/maps/YandexMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { RequireRole } from "@/components/auth/RequireRole";
@@ -158,7 +158,7 @@ const App = () => {
     <>
       {showSplash && <SplashScreen onFinished={handleSplashFinished} />}
       <QueryClientProvider client={queryClient}>
-        <GoogleMapsProvider>
+        <YandexMapsProvider>
         <AuthProvider>
           <RegionProvider>
           <CurrencyProvider>
@@ -196,7 +196,7 @@ const App = () => {
                         one title between them — a WCAG 2.4.2 duplicate, which
                         nothing noticed because no audit list contained this
                         route and none had ever loaded it. Nothing in the app
-                        links here and the Ameria callback builds
+                        links here and the payment callback builds
                         `/join-status`, so it is redirected rather than removed:
                         a provider configured to it outside this repository
                         keeps working, and there is one canonical page again. */}
@@ -291,7 +291,7 @@ const App = () => {
           </CurrencyProvider>
           </RegionProvider>
         </AuthProvider>
-        </GoogleMapsProvider>
+        </YandexMapsProvider>
       </QueryClientProvider>
     </>
   );

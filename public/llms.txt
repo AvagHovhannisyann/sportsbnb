@@ -5,7 +5,7 @@
 
 Sportsbnb is a sports venue booking marketplace based in Armenia, serving
 Yerevan and other Armenian cities. Players search venues by sport, city and
-price, pick an hour from live availability, and pay by card or Idram. Venue
+price, pick an hour from live availability, and pay securely by card. Venue
 owners list their facilities, set hourly rates and cancellation terms, manage
 bookings, and are paid out from an internal ledger.
 
@@ -16,8 +16,9 @@ can create or be invited to.
 
 - **Currency**: all prices and payments are in Armenian dram (AMD, ֏). Prices
   are quoted per hour.
-- **Payment methods**: card via Ameriabank vPOS, or Idram. Payment is taken in
-  the app at the time of booking; there is no cash-on-arrival flow.
+- **Payment methods**: card (Visa, Mastercard), taken on the payment
+  provider's own hosted page. Payment is taken in the app at the time of
+  booking; there is no cash-on-arrival flow.
 - **Platform fee**: none. Sportsbnb takes zero commission and adds nothing to
   the rate the venue owner sets. A venue listed at ֏10,000/hour costs the
   player ֏10,000, and the owner receives ֏10,000. The commission rate is a
@@ -87,5 +88,5 @@ can create or be invited to.
   contain nothing citable.
 - This file is kept accurate deliberately. It previously stated that payments
   ran through Stripe, which was never true of the shipped product and is not
-  true now — Stripe cannot serve Armenian businesses, which is why the
-  marketplace settles through Ameriabank and Idram.
+  true now: Stripe cannot serve Armenian businesses. Card payments are taken
+  through a merchant-of-record provider, and the marketplace settles in dram.

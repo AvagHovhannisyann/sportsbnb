@@ -1,11 +1,12 @@
-import React, { useCallback } from "react";
+import React, { useMemo, useState } from "react";
 import { formatTimeOfDay } from "@/lib/time";
-import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
 import { Calendar, Clock, Users } from "lucide-react";
-import { MapsReady } from "@/components/maps/GoogleMapsProvider";
+import { MapsReady } from "@/components/maps/YandexMapsProvider";
+import { YandexMap, YandexMarker, YandexPopup } from "@/components/maps/YandexMap";
+import { MapDotMarker, MapMarkerButton } from "@/components/maps/MapPinMarker";
+import { boundsOf, type LatLng } from "@/lib/yandexGeo";
 import { format } from "date-fns";
 import type { Game } from "@/hooks/useGames";
-import { useState } from "react";
 import { useRegion } from "@/hooks/useRegion";
 
 interface GamesMapViewProps {
@@ -17,17 +18,23 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const { defaultCenter } = useRegion();
 
-  const center = gamesWithCoords.length > 0
+  const center: LatLng = gamesWithCoords.length > 0
     ? { lat: gamesWithCoords[0].latitude!, lng: gamesWithCoords[0].longitude! }
     : defaultCenter;
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    if (gamesWithCoords.length > 1) {
-      const bounds = new google.maps.LatLngBounds();
-      gamesWithCoords.forEach(g => bounds.extend({ lat: g.latitude!, lng: g.longitude! }));
-      map.fitBounds(bounds, 50);
-    }
-  }, [gamesWithCoords]);
+  /**
+   * Fit every game on screen.
+   *
+   * Google's `map.fitBounds(new LatLngBounds(), 50)` needed the script loaded
+   * before the bounds object could be constructed, so this ran in `onLoad`.
+   * The Yandex equivalent is a plain array of two corners — computed here,
+   * unit-tested in yandexGeo.test.ts, and handed to the map as a prop, which
+   * also means it re-fits when the filters change instead of only on load.
+   */
+  const bounds = useMemo(
+    () => boundsOf(gamesWithCoords.map(g => ({ lat: g.latitude!, lng: g.longitude! }))),
+    [gamesWithCoords],
+  );
 
   if (gamesWithCoords.length === 0) {
     return (
@@ -39,63 +46,83 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
-      <MapsReady><GoogleMap
-        mapContainerStyle={{ width: "100%", height: "600px" }}
-        center={center}
-        zoom={12}
-        onLoad={onLoad}
-      >
-        {gamesWithCoords.map((game) => {
-          const spotsLeft = game.max_players - (game.participant_count || 0);
-          const isFull = spotsLeft <= 0;
+      <MapsReady>
+        <YandexMap
+          style={{ width: "100%", height: "600px" }}
+          ariaLabel="Map of games"
+          center={center}
+          zoom={12}
+          bounds={bounds}
+        >
+          {gamesWithCoords.map((game) => {
+            const spotsLeft = game.max_players - (game.participant_count || 0);
+            const isFull = spotsLeft <= 0;
 
-          return (
-            <Marker
-              key={game.id}
-              position={{ lat: game.latitude!, lng: game.longitude! }}
-              onClick={() => setSelectedGame(game)}
-              icon={{
-                url: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${isFull ? '#9ca3af' : '#3b82f6'}"><circle cx="12" cy="12" r="10"/></svg>`)}`,
-                scaledSize: new google.maps.Size(24, 24),
-              }}
-            />
-          );
-        })}
+            return (
+              <YandexMarker
+                key={game.id}
+                position={{ lat: game.latitude!, lng: game.longitude! }}
+                anchor="center"
+              >
+                <MapMarkerButton
+                  label={`${game.title} — ${isFull ? "full" : `${spotsLeft} spots left`}`}
+                  onClick={() => setSelectedGame(game)}
+                >
+                  {/* Was an SVG data URI with #9ca3af / #3b82f6 baked in. The
+                      same two states, drawn from tokens, so they follow the
+                      theme like everything else on the page. */}
+                  <MapDotMarker
+                    size={24}
+                    color={isFull ? "hsl(var(--muted-foreground))" : "hsl(var(--primary))"}
+                  />
+                </MapMarkerButton>
+              </YandexMarker>
+            );
+          })}
 
-        {selectedGame && (
-          <InfoWindow
-            position={{ lat: selectedGame.latitude!, lng: selectedGame.longitude! }}
-            onCloseClick={() => setSelectedGame(null)}
-          >
-            <div style={{ minWidth: 220, padding: 4 }}>
-              <h3 style={{ fontWeight: 600, marginBottom: 4 }}>{selectedGame.title}</h3>
-              <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0" }}>
-                {selectedGame.sport} • {selectedGame.skill_level === "all" ? "All levels" : selectedGame.skill_level}
+          {selectedGame && (
+            <YandexPopup
+              position={{ lat: selectedGame.latitude!, lng: selectedGame.longitude! }}
+              onClose={() => setSelectedGame(null)}
+              closeLabel="Close game details"
+            >
+              <h3 className="pr-5 text-sm font-semibold">{selectedGame.title}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {selectedGame.sport} •{" "}
+                {selectedGame.skill_level === "all" ? "All levels" : selectedGame.skill_level}
               </p>
-              {/* Google draws this popup on its own white surface, so these
-                  keep literal light-surface colours rather than app tokens.
-                  The glyphs were 📅 🕐 👥 — emoji as icons, setting in the
-                  system emoji font at a size nothing around them shares. */}
-              <p style={{ fontSize: 12, color: "#6b7280", display: "flex", alignItems: "center", gap: 4 }}>
-                <Calendar size={12} aria-hidden="true" />
+              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" aria-hidden="true" />
                 {format(new Date(selectedGame.game_date), "MMM d, yyyy")}
-                <Clock size={12} aria-hidden="true" style={{ marginLeft: 4 }} />
+                <Clock className="ml-1 h-3 w-3" aria-hidden="true" />
                 {formatTimeOfDay(selectedGame.game_time)}
               </p>
-              <p style={{ fontSize: 12, color: (selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "#6b7280" : "#0f766e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                <Users size={12} aria-hidden="true" />
-                {(selectedGame.max_players - (selectedGame.participant_count || 0)) <= 0 ? "Full" : `${selectedGame.max_players - (selectedGame.participant_count || 0)} spots left`}
-              </p>
+              {(() => {
+                const spotsLeft =
+                  selectedGame.max_players - (selectedGame.participant_count || 0);
+                return (
+                  <p
+                    className={
+                      spotsLeft <= 0
+                        ? "mt-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground"
+                        : "mt-1 flex items-center gap-1 text-xs font-semibold text-primary"
+                    }
+                  >
+                    <Users className="h-3 w-3" aria-hidden="true" />
+                    {spotsLeft <= 0 ? "Full" : `${spotsLeft} spots left`}
+                  </p>
+                );
+              })()}
               <a
                 href={`/game/${selectedGame.id}`}
-                style={{ display: "block", textAlign: "center", padding: 8, background: "#0f766e", color: "white", borderRadius: 6, textDecoration: "none", marginTop: 8, fontSize: 14 }}
+                className="mt-2 block rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 View Game
               </a>
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMap></MapsReady>
+            </YandexPopup>
+          )}
+        </YandexMap>
+      </MapsReady>
     </div>
   );
 };

@@ -19,7 +19,11 @@ booking has been paid for yet — see [Current status](#current-status).
   framer-motion, Recharts, react-hook-form + zod.
 - **Backend** — Supabase: Postgres with RLS on every table (53 migrations),
   Deno edge functions, Realtime for chat, Supabase Auth.
-- **Maps** — Google Maps JS API; Yandex Geocoder for location suggestions.
+- **Maps** — Yandex Maps JS API v3 (vector tiles, DOM markers), Yandex
+  Geocoder for address lookup, Yandex Geosuggest — proxied through the
+  `geosuggest` edge function — for search-box suggestions. Chosen over
+  Google for coverage in Armenia, the launch market. Every map surface
+  degrades to a "Map unavailable" panel when no key is configured.
 - **Hosting** — Vercel (`vercel.json`: SPA rewrite to `app-shell.html`, asset
   caching, security headers).
 - **Tests** — Vitest + Testing Library for units, Playwright for one e2e smoke
@@ -37,8 +41,9 @@ The `.env` is optional in practice: `src/integrations/supabase/client.ts`
 carries the publishable Supabase URL and key as committed defaults, so a build
 with no environment still boots against production data. Environment variables
 override them. Fill in `.env` if you want a different project, and set
-`VITE_GOOGLE_MAPS_BROWSER_KEY` / `VITE_YANDEX_GEOCODER_KEY` if you need maps and
-location search. No service-role key belongs in this file.
+`VITE_YANDEX_MAPS_API_KEY` / `VITE_YANDEX_GEOCODER_KEY` if you need maps and
+location search — they are separate Yandex products with separate keys. No
+service-role key belongs in this file.
 
 ### Scripts (`package.json`)
 

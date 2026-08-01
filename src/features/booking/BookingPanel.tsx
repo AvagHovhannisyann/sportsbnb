@@ -330,7 +330,7 @@ export function BookingPanel({
       <div className="mt-3 space-y-1.5 text-center">
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" />
-          Secure payment via Ameriabank / Idram
+          Pay securely by card — Visa or Mastercard
         </p>
         <p className={policyError ? "text-xs font-medium text-warning" : "text-xs text-muted-foreground"}>
           {policyText}

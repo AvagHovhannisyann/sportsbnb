@@ -77,7 +77,14 @@ verify_jwt = true
 [functions.payments-refund]
 verify_jwt = true
 
-# Provider callbacks verify server-side (Ameria re-verification / Idram checksum)
+# Provider callbacks verify server-side. Lemon Squeezy is the only live
+# provider: its webhook authenticates with an X-Signature HMAC-SHA256 over the
+# raw body. The Ameria and Idram callbacks stay deployed for history but are
+# unreachable — neither provider can be selected any more (registry.ts,
+# payments-init).
+
+[functions.payments-callback-lemonsqueezy]
+verify_jwt = false
 
 [functions.payments-callback-ameria]
 verify_jwt = false

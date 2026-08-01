@@ -187,7 +187,7 @@ const HomePage = () => {
     {
       icon: CreditCard,
       title: "Pay and play",
-      body: "Card or Idram, inside the app. Confirmed instantly, and the venue knows you're coming.",
+      body: "Pay securely by card, inside the app. Confirmed instantly, and the venue knows you're coming.",
     },
   ];
 
@@ -195,7 +195,7 @@ const HomePage = () => {
     <>
       <SEOHead
         title="Book sports venues in Armenia"
-        description="Find and book verified sports venues near you. Live availability, instant confirmation, and secure in-app payment by card or Idram."
+        description="Find and book verified sports venues near you. Live availability, instant confirmation, and secure in-app card payment."
         jsonLd={createWebsiteJsonLd()}
       />
 
@@ -274,7 +274,7 @@ const HomePage = () => {
                 className="mt-6 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
               >
                 Verified sports venues across Armenia, with live availability and
-                instant confirmation. Pay by card or Idram — your slot is locked
+                instant confirmation. Pay securely by card — your slot is locked
                 the moment you do.
               </motion.p>
 
@@ -535,13 +535,11 @@ const HomePage = () => {
               {[
                 "Double-booking is impossible — enforced by the database, not by trust",
                 // "refunds applied automatically" was my own overstatement,
-                // written into this rebuild. It holds for card payments —
-                // Ameria exposes RefundPayment — but idram.ts returns
-                // { ok: false, manual: true }: Idram has no refund API, so
-                // those are processed by hand in the merchant cabinet. The
-                // claim that survives both rails is the one about disclosure.
+                // written into this rebuild. Refunds are requested through the
+                // provider and some are still settled by hand, so the claim
+                // that holds is the one about disclosure, not about speed.
                 "Cancellation terms shown before you pay, never discovered afterwards",
-                "Card or Idram, both settled in Armenian dram",
+                "Paid by card, settled in Armenian dram",
               ].map((line, i) => (
                 <motion.li
                   key={line}

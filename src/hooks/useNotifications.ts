@@ -3,6 +3,75 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 
+/**
+ * One realtime channel per user, shared by every mount of `useNotifications`.
+ *
+ * This hook is mounted twice by a single component: `NotificationDropdown`
+ * calls `useNotifications()` for the list and `useUnreadNotificationCount()`
+ * for the badge, and the latter calls `useNotifications()` itself. Both
+ * effects asked for the same topic, and `supabase.channel(topic)` returns the
+ * *existing* channel rather than a new one — so the second mount called `.on()`
+ * on a channel that had already been subscribed.
+ *
+ * Under supabase-js 2.90 that was tolerated. 2.111 throws:
+ *
+ *   cannot add `postgres_changes` callbacks for realtime:notifications-… after
+ *   `subscribe()`
+ *
+ * The throw happens inside `useEffect`, so the error boundary caught it,
+ * remounted the header, and the new mount threw again — an unbroken render
+ * loop that pinned the CPU on every signed-in page. It was found because the
+ * browser audits stopped finishing: with the main thread spinning, later
+ * navigations timed out and the smoke suites ran for hours instead of minutes.
+ *
+ * Refcounting keeps the fix to this file and keeps exactly one subscription per
+ * user however many components ask for notifications. Callbacks are held in a
+ * set so each mount still gets its own invalidation.
+ */
+type SharedChannel = {
+  channel: ReturnType<typeof supabase.channel>;
+  listeners: Set<() => void>;
+};
+const sharedChannels = new Map<string, SharedChannel>();
+
+function subscribeToNotifications(userId: string, onInsert: () => void) {
+  let shared = sharedChannels.get(userId);
+
+  if (!shared) {
+    const listeners = new Set<() => void>();
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          for (const listener of listeners) listener();
+        }
+      )
+      .subscribe();
+    shared = { channel, listeners };
+    sharedChannels.set(userId, shared);
+  }
+
+  shared.listeners.add(onInsert);
+  const entry = shared;
+
+  return () => {
+    entry.listeners.delete(onInsert);
+    // Last mount out closes the channel, so a signed-out user leaves nothing
+    // subscribed behind.
+    if (entry.listeners.size === 0 && sharedChannels.get(userId) === entry) {
+      sharedChannels.delete(userId);
+      supabase.removeChannel(entry.channel);
+    }
+  };
+}
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -36,30 +105,17 @@ export const useNotifications = () => {
     enabled: !!user,
   });
 
-  // Subscribe to realtime notifications
+  // Subscribe to realtime notifications. Keyed on the id rather than the user
+  // object: `useAuth` hands out a fresh object on every auth event, and the
+  // subscription only ever depended on the id.
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
-    const channel = supabase
-      .channel(`notifications-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
+    return subscribeToNotifications(userId, () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
+    });
+  }, [userId, queryClient]);
 
   return query;
 };

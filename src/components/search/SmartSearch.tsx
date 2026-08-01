@@ -6,12 +6,21 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sportTypes } from "@/data/constants";
 import { orIlike } from "@/lib/postgrest";
+import {
+  YEREVAN,
+  formatYandexLl,
+  geocode,
+  geosuggestFullText,
+  type GeosuggestItem,
+} from "@/lib/yandexGeo";
 
 // Browser-callable geocoder key. It is necessarily public — it ships in the
 // bundle — but it was hardcoded here, which meant it could not be swapped per
 // environment or rotated without a code change, and it sits in git history.
-// Configured like VITE_GOOGLE_MAPS_BROWSER_KEY instead. Restrict it by HTTP
-// referrer in the Yandex console; the quota is billable.
+// Configured like VITE_YANDEX_MAPS_API_KEY instead. Restrict it by HTTP
+// referrer in the Yandex console; the quota is billable. Note that this is a
+// *different* key from the Maps one — Geocoder and JS API are separate Yandex
+// products and neither key authorises the other.
 const YANDEX_GEOCODER_API_KEY = import.meta.env.VITE_YANDEX_GEOCODER_KEY ?? "";
 
 interface SearchSuggestion {
@@ -105,9 +114,10 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
             text: query,
             lang: "en",
             results: 4,
-            ll: "44.5152,40.1872",
+            // "longitude,latitude" — see src/lib/yandexGeo.ts.
+            ll: formatYandexLl(YEREVAN),
             spn: "2,2",
-            ull: "44.5152,40.1872",
+            ull: formatYandexLl(YEREVAN),
           },
         }).then(({ data, error }) => error ? { results: [] } : data).catch(() => ({ results: [] })),
       ]);
@@ -143,31 +153,33 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
       const geosuggestItems = geosuggestRes?.results || [];
 
       if (geosuggestItems.length > 0) {
-        geosuggestItems.forEach((item: any, index: number) => {
+        geosuggestItems.forEach((item: GeosuggestItem, index: number) => {
           allSuggestions.push({
             id: `location-${index}`,
             type: "location",
             title: item.title?.text || "Location",
             subtitle: item.subtitle?.text,
-            data: { uri: item.uri, fullText: item.subtitle?.text ? `${item.title.text}, ${item.subtitle.text}` : item.title.text },
+            data: { uri: item.uri, fullText: geosuggestFullText(item) },
           });
         });
-      } else if (YANDEX_GEOCODER_API_KEY) {
-        const geocodeResponse = await fetch(
-          `https://geocode-maps.yandex.ru/1.x/?apikey=${YANDEX_GEOCODER_API_KEY}&geocode=${encodeURIComponent(query)}&format=json&results=4&lang=en_US&ll=44.5152,40.1872&spn=2,2&rspn=1`
-        );
-        const geocodeData = await geocodeResponse.json();
-        const geoObjects = geocodeData?.response?.GeoObjectCollection?.featureMember || [];
-
-        geoObjects.forEach((member: any, index: number) => {
-          const geoObject = member.GeoObject;
-          const fullText = geoObject.metaDataProperty?.GeocoderMetaData?.text || geoObject.name || "Location";
+      } else {
+        // Geosuggest returned nothing — fall back to the Geocoder, which is
+        // looser about partial names. Response parsing lives in yandexGeo so
+        // the "longitude first" reading is written down once; this used to
+        // dig through `featureMember[].GeoObject.Point.pos` by hand here.
+        const places = await geocode({
+          apiKey: YANDEX_GEOCODER_API_KEY,
+          geocode: query,
+          results: 4,
+          restrictToSpn: true,
+        });
+        places.forEach((place, index) => {
           allSuggestions.push({
             id: `location-fallback-${index}`,
             type: "location",
-            title: geoObject.name || "Location",
-            subtitle: fullText,
-            data: { fullText },
+            title: place.name || "Location",
+            subtitle: place.formattedAddress,
+            data: { fullText: place.formattedAddress, ...place },
           });
         });
       }
@@ -183,23 +195,26 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
   }, []);
 
   const resolveLocationCoords = async (data: any): Promise<{ lat: number; lng: number; address: string } | null> => {
-    // Without a key the request is rejected by Yandex anyway; skipping it keeps
-    // venue and game suggestions working instead of failing the whole search.
-    if (!YANDEX_GEOCODER_API_KEY) return null;
-    try {
-      const geocodeParam = data.uri
-        ? `uri=${encodeURIComponent(data.uri)}`
-        : `geocode=${encodeURIComponent(data.fullText)}`;
-      const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${YANDEX_GEOCODER_API_KEY}&${geocodeParam}&format=json&results=1&lang=en_US`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const geo = json?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
-      if (!geo?.Point?.pos) return null;
-      const [lng, lat] = geo.Point.pos.split(" ").map(Number);
-      return { lat, lng, address: geo.metaDataProperty?.GeocoderMetaData?.text || data.fullText };
-    } catch {
-      return null;
+    // A fallback suggestion already carries its coordinates — it came from the
+    // Geocoder — so there is nothing to look up a second time.
+    if (typeof data?.latitude === "number" && typeof data?.longitude === "number") {
+      return { lat: data.latitude, lng: data.longitude, address: data.fullText };
     }
+    // Without a key the request is rejected by Yandex anyway; `geocode`
+    // short-circuits to an empty list, which keeps venue and game suggestions
+    // working instead of failing the whole search.
+    const [place] = await geocode({
+      apiKey: YANDEX_GEOCODER_API_KEY,
+      uri: data?.uri,
+      geocode: data?.fullText,
+      results: 1,
+    });
+    if (!place) return null;
+    return {
+      lat: place.latitude,
+      lng: place.longitude,
+      address: place.formattedAddress || data?.fullText,
+    };
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

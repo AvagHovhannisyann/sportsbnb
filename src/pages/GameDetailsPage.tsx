@@ -35,6 +35,7 @@ import {
   type GameParticipant
 } from "@/hooks/useGames";
 import { ChatButton } from "@/components/chat/ChatButton";
+import { LIVE_PAYMENT_PROVIDER, submitProviderForm } from "@/features/booking/hooks/useBookingFlow";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -122,27 +123,23 @@ const GameDetailsPage = () => {
     if (isPaidGame) {
       setIsProcessingPayment(true);
       try {
+        // This used to pin the provider to "ameria" — a hardcode that outlived
+        // the rail it named. The live provider is declared once, in
+        // useBookingFlow, so this call site cannot drift from checkout's.
         const { data, error } = await supabase.functions.invoke("payments-init", {
-          body: { gameId: game.id, provider: import.meta.env.DEV ? "mock" : "ameria" },
+          body: {
+            gameId: game.id,
+            provider: import.meta.env.DEV ? "mock" : LIVE_PAYMENT_PROVIDER,
+          },
         });
 
         if (error) throw new Error(error.message);
 
+        // The live rail redirects and sends both of these back null; the branch
+        // is kept for a form-post provider, and guards on both being present so
+        // a null action never reaches document.
         if (data.formAction && data.formFields) {
-          // Form-post providers (Idram)
-          const form = document.createElement("form");
-          form.method = "POST";
-          form.action = data.formAction;
-          form.style.display = "none";
-          for (const [name, value] of Object.entries(data.formFields as Record<string, string>)) {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = name;
-            input.value = value;
-            form.appendChild(input);
-          }
-          document.body.appendChild(form);
-          form.submit();
+          submitProviderForm(data.formAction, data.formFields as Record<string, string>);
           return;
         }
 

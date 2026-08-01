@@ -26,9 +26,18 @@ export interface AuthProviders {
   apple: boolean;
   /** True when at least one third-party provider is usable. */
   anyOAuth: boolean;
+  /**
+   * Whether the project has Passkeys (Authentication → Passkeys) switched on.
+   *
+   * Reported by the same `/auth/v1/settings` payload as the OAuth providers, so
+   * it costs no extra request and follows the backend exactly like they do: the
+   * passkey controls stay hidden until the toggle is flipped in the dashboard,
+   * and appear on the next load once it is — no code change, no redeploy.
+   */
+  passkeys: boolean;
 }
 
-const NONE: AuthProviders = { google: false, apple: false, anyOAuth: false };
+const NONE: AuthProviders = { google: false, apple: false, anyOAuth: false, passkeys: false };
 
 export const useAuthProviders = (): AuthProviders => {
   const { data } = useQuery({
@@ -46,11 +55,19 @@ export const useAuthProviders = (): AuthProviders => {
       });
       if (!res.ok) return NONE;
 
-      const json = (await res.json()) as { external?: Record<string, boolean> };
+      const json = (await res.json()) as {
+        external?: Record<string, boolean>;
+        passkeys_enabled?: boolean;
+      };
       const external = json.external ?? {};
       const google = external.google === true;
       const apple = external.apple === true;
-      return { google, apple, anyOAuth: google || apple };
+      return {
+        google,
+        apple,
+        anyOAuth: google || apple,
+        passkeys: json.passkeys_enabled === true,
+      };
     },
     // Provider configuration changes about as often as a deploy does.
     staleTime: 60 * 60 * 1000,

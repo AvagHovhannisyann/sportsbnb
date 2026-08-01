@@ -1,4 +1,8 @@
-export type ProviderKey = "ameria" | "idram" | "mock";
+/**
+ * "ameria" and "idram" are retained here only so the (unwired) adapter files
+ * still type-check — see registry.ts. Live providers: "lemonsqueezy" and "mock".
+ */
+export type ProviderKey = "lemonsqueezy" | "ameria" | "idram" | "mock";
 
 export interface InitParams {
   orderRef: number;               // numeric order id (payments.order_ref)

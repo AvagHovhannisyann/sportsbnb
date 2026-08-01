@@ -16,10 +16,17 @@ security headers.
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
    - `VITE_SUPABASE_PROJECT_ID`
-   - `VITE_GOOGLE_MAPS_BROWSER_KEY`
-   - `VITE_GOOGLE_MAPS_TRACKING_ID`
-   Copy them from your local `.env` (or your team's secret store). The Google
-   Maps key must be **HTTP-referrer restricted** to the Vercel domain(s).
+   - `VITE_YANDEX_MAPS_API_KEY`
+   - `VITE_YANDEX_GEOCODER_KEY`
+   Copy them from your local `.env` (or your team's secret store). Both
+   Yandex keys must be **HTTP-referrer restricted** to the Vercel domain(s)
+   in the Yandex Developer Dashboard — they ship in the bundle and both are
+   billable. They are separate products: the Maps key does not authorise the
+   Geocoder. Omitting the Maps key is survivable — maps render a "Map
+   unavailable" panel and the rest of every page works.
+
+   `VITE_GOOGLE_MAPS_BROWSER_KEY` and `VITE_GOOGLE_MAPS_TRACKING_ID` are no
+   longer read by anything. Delete them from Vercel and revoke the key.
 4. Deploy. Every push to `main` ships to production; PRs get preview URLs.
 
 ## After the first deploy

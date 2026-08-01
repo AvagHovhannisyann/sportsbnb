@@ -14,11 +14,13 @@ import { useMediaQuery } from "@/remotion/useMediaQuery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Shield, Mail, Lock, Users, Loader2, CheckCircle, ArrowRight } from "lucide-react";
+import { ArrowLeft, Shield, Mail, Lock, Users, Loader2, CheckCircle, ArrowRight, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthProviders } from "@/hooks/useAuthProviders";
+import { usePasskeySupport } from "@/hooks/usePasskeySupport";
+import { getPasskeyFailure } from "@/lib/passkeys";
 import { getGenericAuthError } from "@/lib/authErrors";
 import { safeRedirect } from "@/lib/redirect";
 import authHero from "@/assets/auth-hero.jpg";
@@ -109,11 +111,16 @@ const LoginPage = () => {
     listMfaFactors,
     challengeMfa,
     verifyMfa,
+    signInWithPasskey,
     fetchOnboardingStatus,
   } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("password");
   const providers = useAuthProviders();
+  /* Hidden outright unless this browser can run a ceremony *and* the project
+     has passkeys enabled — a "Sign in with a passkey" button that cannot
+     produce a passkey prompt is worse than no button. */
+  const passkeys = usePasskeySupport();
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [formData, setFormData] = useState({
@@ -344,6 +351,61 @@ const LoginPage = () => {
     if (error) {
       toast.error(getGenericAuthError(error, 'login'));
       shake(cardShake);
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Sign in with a passkey.
+   *
+   * `signInWithPasskey` runs the whole ceremony — challenge,
+   * navigator.credentials.get(), verification — and returns a session. It uses
+   * discoverable credentials, so no email is collected first: the authenticator
+   * resolves the account itself.
+   *
+   * The TOTP gate below deliberately mirrors the password path. A passkey is a
+   * strong factor, but silently exempting it from a second factor the user
+   * chose to enrol would turn this new button into a way around their own 2FA.
+   */
+  const handlePasskeySignIn = async () => {
+    setIsLoading(true);
+    const controller = new AbortController();
+
+    try {
+      const { data, error } = await signInWithPasskey(controller.signal);
+
+      if (error) {
+        const failure = getPasskeyFailure(error, "signin");
+        // Dismissing the OS sheet is a choice, not a failure: no toast, no
+        // shake, the form simply becomes usable again.
+        if (!failure.cancelled) {
+          toast.error(failure.message);
+          shake(cardShake);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: factorsData } = await listMfaFactors();
+      const verifiedFactors = factorsData?.totp?.filter((f) => f.status === "verified") || [];
+
+      if (verifiedFactors.length > 0) {
+        setMfaFactorId(verifiedFactors[0].id);
+        setMfaRequired(true);
+        setIsLoading(false);
+        return;
+      }
+
+      await handleLoginSuccess(data?.user?.id);
+      setIsLoading(false);
+    } catch (err) {
+      // supabase-js throws rather than returning for non-AuthError faults, and
+      // synchronously if the client lacks the experimental passkey flag.
+      const failure = getPasskeyFailure(err, "signin");
+      if (!failure.cancelled) {
+        toast.error(failure.message);
+        shake(cardShake);
+      }
       setIsLoading(false);
     }
   };
@@ -705,12 +767,29 @@ const LoginPage = () => {
                 </Button>
                 )}
 
+                {/* Passkey Button — gated on usePasskeySupport, which requires
+                    both a WebAuthn-capable secure context and the project's
+                    own Passkeys toggle. Same shape as the OAuth buttons above
+                    so the column reads as one set of choices. */}
+                {passkeys.available && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.anyOAuth ? "mt-3" : ""}`}
+                  onClick={handlePasskeySignIn}
+                  disabled={isLoading}
+                >
+                  <KeyRound className="h-5 w-5 mr-3" />
+                  Sign in with a passkey
+                </Button>
+                )}
+
                 {/* Magic Link Button — signInWithOtp only needs the email
                     provider, which is always on, so this is never gated. */}
                 <Button
                   type="button"
                   variant="outline"
-                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.anyOAuth ? "mt-3" : ""}`}
+                  className={`w-full h-12 text-base font-medium border-2 hover:bg-accent transition-all ${providers.anyOAuth || passkeys.available ? "mt-3" : ""}`}
                   onClick={() => setAuthMode("magic-link")}
                   disabled={isLoading}
                 >
