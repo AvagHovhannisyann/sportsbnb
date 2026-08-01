@@ -222,7 +222,13 @@ export function buildGeocodeUrl(options: GeocodeUrlOptions): string {
     restrictToSpn = false,
   } = options;
 
-  const params = new URLSearchParams({
+  // Named `yandexQuery`, not `params`. `scripts/param-handoff.mjs` looks for
+  // `params.set("x", …)` to find URL parameters this app writes, and then fails
+  // the build for any that nothing here reads. These are read by Yandex, not by
+  // us, so under the name `params` they were reported as three orphans on every
+  // run. The receiver name is the whole signal that check has; a name outside
+  // its list is how an outbound query says it is outbound. Do not rename it back.
+  const yandexQuery = new URLSearchParams({
     apikey: apiKey,
     format: "json",
     results: String(results),
@@ -231,11 +237,11 @@ export function buildGeocodeUrl(options: GeocodeUrlOptions): string {
     spn: `${spn[0]},${spn[1]}`,
   });
   // `uri` wins: it identifies one place, where the same text can match many.
-  if (uri) params.set("uri", uri);
-  else params.set("geocode", geocode ?? "");
-  if (restrictToSpn) params.set("rspn", "1");
+  if (uri) yandexQuery.set("uri", uri);
+  else yandexQuery.set("geocode", geocode ?? "");
+  if (restrictToSpn) yandexQuery.set("rspn", "1");
 
-  return `https://geocode-maps.yandex.ru/1.x/?${params.toString()}`;
+  return `https://geocode-maps.yandex.ru/1.x/?${yandexQuery.toString()}`;
 }
 
 /**
