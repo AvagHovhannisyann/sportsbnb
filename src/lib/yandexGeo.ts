@@ -3,12 +3,17 @@
  *
  * The whole reason this module exists is the coordinate-order trap. The app
  * stores and passes coordinates as `{ lat, lng }` — latitude first, the way
- * Google's SDK and our own database columns do it. Yandex does the opposite,
- * everywhere and consistently:
+ * Google's SDK and our own database columns do it. Yandex's HTTP APIs do the
+ * opposite, everywhere and consistently:
  *
- *   - the JS API v3 `LngLat` tuple is `[longitude, latitude]`
  *   - the Geocoder's `Point.pos` is the string `"<longitude> <latitude>"`
  *   - the `ll=` / `ull=` bias parameters are `"<longitude>,<latitude>"`
+ *   - Geosuggest answers in the same order
+ *
+ * The one Yandex surface that does *not* is the JS API v2.1, which is
+ * latitude first. That conversion deliberately lives in YandexMap.tsx rather
+ * than here, so this file has exactly one rule — "Yandex means longitude
+ * first" — and the exception sits next to the code it applies to.
  *
  * Getting that backwards does not throw. It silently relocates every venue —
  * (40.18, 44.51) in Yerevan becomes (44.51, 40.18), a point in the Aral basin
@@ -27,14 +32,17 @@ export interface LatLng {
 export type LngLat = [number, number];
 
 /**
- * A rectangle, as ymaps3 wants it: `[top-left, bottom-right]`.
+ * A rectangle as this app passes it around: `[top-left, bottom-right]`.
  *
  * That is `[[minLng, maxLat], [maxLng, minLat]]` — west/north first, then
- * east/south. Confirmed against the shipped `@yandex/ymaps3-types`
- * (`YMapBoundsLocation`: "coordinates of the top left and bottom right
- * corners") and against the clusterer's own viewport test, which computes its
- * height as `bounds[0].y - bounds[1].y` in a world projection whose y grows
- * northward — i.e. it assumes the first corner is the northern one.
+ * east/south, each pair longitude first, matching `LngLat` above.
+ *
+ * This shape was originally chosen because it is what the JS API v3 consumed
+ * directly. The map binding is v2.1 now (see YandexMapsProvider.tsx), and v2.1
+ * wants `[[south, west], [north, east]]` — the other corner order *and* the
+ * other axis order. The shape is kept because everything that *produces*
+ * bounds here is longitude-first, like the Geocoder; `toYmapsBounds` in
+ * YandexMap.tsx does the one conversion, at the boundary, with a test.
  */
 export type LngLatBounds = [LngLat, LngLat];
 
@@ -55,7 +63,7 @@ export const fromLngLat = (coordinates: LngLat): LatLng => ({
  *
  * Returns null rather than NaN-filled coordinates for anything unparseable,
  * so a malformed response drops the result instead of putting a marker at
- * (NaN, NaN) — which ymaps3 renders as a marker at the antimeridian.
+ * (NaN, NaN), which renders as a marker at the antimeridian.
  */
 export function parseYandexPos(pos: unknown): LatLng | null {
   if (typeof pos !== "string") return null;
@@ -81,10 +89,10 @@ export const formatYandexLl = (point: LatLng): string => `${point.lng},${point.l
 export const reverseGeocodeQuery = (point: LatLng): string => formatYandexLl(point);
 
 /**
- * The smallest rectangle containing every point, in ymaps3 corner order.
+ * The smallest rectangle containing every point, in `LngLatBounds` order.
  *
  * Returns null for an empty list, and for a single point — one point has no
- * extent, and a zero-area rectangle makes ymaps3 pick its maximum zoom, which
+ * extent, and a zero-area rectangle makes the map pick its maximum zoom, which
  * lands the viewer inside a building. Callers fall back to centre + zoom.
  */
 export function boundsOf(points: LatLng[]): LngLatBounds | null {

@@ -116,6 +116,31 @@ const TYPES = {
 const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const rel = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '');
+
+  // `/_vercel/*` is served by the platform at runtime, not from `dist/`.
+  //
+  // `<Analytics />` injects `<script src="/_vercel/insights/script.js">`. That
+  // file exists on Vercel and nowhere else, so without this the catch-all
+  // answers it with `app-shell.html` — HTML, status 200, parsed as JavaScript
+  // by the browser. The result is `SyntaxError: Unexpected token '<'` on every
+  // prerendered route, which failed this check while the app underneath was
+  // mounting perfectly.
+  //
+  // That is precisely the failure mode the comment above warns about for
+  // `/assets/*.js`: a hosting rule breaking the boot for a reason unrelated to
+  // the app. An empty script with the right content-type models what the
+  // platform actually serves closely enough — the tag loads, nothing runs, and
+  // the check goes back to measuring the app.
+  //
+  // Note this is not an error filter. Nothing is being suppressed: a real
+  // uncaught error still fails the run, including one from this script if it
+  // ever ships something that throws.
+  if (rel.startsWith('/_vercel/') || rel.startsWith('_vercel/')) {
+    res.writeHead(200, { 'content-type': TYPES['.js'] });
+    res.end('');
+    return;
+  }
+
   const candidates = [join(DIST, rel), join(DIST, rel, 'index.html')];
   let file = candidates.find((p) => existsSync(p) && statSync(p).isFile());
   if (!file) file = join(DIST, 'app-shell.html');

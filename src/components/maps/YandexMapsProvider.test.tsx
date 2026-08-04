@@ -64,7 +64,7 @@ describe("YandexMapsProvider without a key", () => {
       </YandexMapsProvider>,
     );
     await waitFor(() => expect(screen.getByText("Map unavailable")).toBeInTheDocument());
-    expect(document.getElementById("sportsbnb-ymaps3")).toBeNull();
+    expect(document.getElementById("sportsbnb-ymaps")).toBeNull();
   });
 });
 

@@ -16,6 +16,7 @@ import { RequireRole } from "@/components/auth/RequireRole";
 import RouteMeta from "@/components/seo/RouteMeta";
 import { RemotionScene } from "@/remotion/RemotionScene";
 import { usePreloadScene } from "@/remotion/preload";
+import { Analytics } from "@vercel/analytics/react";
 import Layout from "./components/layout/Layout";
 
 // Eagerly load HomePage since it's the landing page
@@ -293,6 +294,7 @@ const App = () => {
         </AuthProvider>
         </YandexMapsProvider>
       </QueryClientProvider>
+      <Analytics />
     </>
   );
 };
