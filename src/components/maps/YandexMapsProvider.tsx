@@ -19,23 +19,35 @@ const YANDEX_MAPS_API_KEY = import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? "";
 /**
  * Which JS API version, and why.
  *
- * v3, loaded from `https://api-maps.yandex.ru/v3/`. v2.1 and v3 are separate
- * products with incompatible object models — v2.1 is `ymaps.Map` +
- * `Placemark` + `geoObjects`, v3 is `ymaps3.YMap` + entity tree — so this is
- * a one-way decision, not a version bump.
+ * v2.1, loaded from `https://api-maps.yandex.ru/2.1/`. v2.1 and v3 are
+ * separate products with incompatible object models — v2.1 is `ymaps.Map` +
+ * `Placemark` + `geoObjects`, v3 is `ymaps3.YMap` + an entity tree — so this
+ * is a choice about which product, not a version number to bump.
  *
- * v3 wins on three counts that matter here. It is the version Yandex is
- * developing (v2.1 is maintained: critical fixes only, no new features), it
- * is vector-tiled rather than raster, and its markers are plain DOM elements
- * you supply, which lets the app's own React components — the same badges and
- * cards used elsewhere — be the marker content instead of the SVG data-URI
- * icons the Google implementation had to encode by hand.
+ * This was written against v3 first, and that was wrong: v3 is licensed
+ * separately, and the key issued with the standard JavaScript API + Geocoder
+ * plan is not entitled to it. The loader answered every request, from every
+ * referrer including none, with
  *
- * The cost is that v3 has no built-in balloon; popups here are markers whose
- * content happens to be a card. See YandexMap.tsx.
+ *   HTTP 403 {"statusCode":403,"error":"Forbidden","message":"Invalid api key"}
+ *
+ * while the very same key returns 35 KB of API against `/2.1/`, and the
+ * Geocoder key returns real results against `geocode-maps.yandex.ru`. So the
+ * account and the keys were fine; the code was asking for a product nobody had
+ * bought. Every map surface in the app showed "The map could not be loaded".
+ *
+ * What v2.1 costs us, honestly: it is raster rather than vector, it is in
+ * maintenance rather than active development, and its markers are built from
+ * layout templates instead of DOM elements you hand over — so the React-content
+ * markers below take a layout class that adopts our element, rather than the
+ * one-line handover v3 allowed. None of that is visible to a person using the
+ * map, and all of it is available on the key this project actually has.
+ *
+ * Moving to v3 later is a matter of buying the entitlement and reverting this
+ * file plus YandexMap.tsx; the component API either way is the same.
  */
-const SCRIPT_ID = "sportsbnb-ymaps3";
-const LOADER_SRC = `https://api-maps.yandex.ru/v3/?apikey=${encodeURIComponent(
+const SCRIPT_ID = "sportsbnb-ymaps";
+const LOADER_SRC = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(
   YANDEX_MAPS_API_KEY,
 )}&lang=en_US`;
 
@@ -73,20 +85,22 @@ function loadYandexMaps(): Promise<void> {
       return;
     }
     // Already there — either a previous load, or a server-rendered tag.
-    if (window.ymaps3) {
-      window.ymaps3.ready.then(() => resolve(), reject);
+    if (window.ymaps) {
+      window.ymaps.ready(() => resolve(), reject);
       return;
     }
 
     const settle = () => {
-      const api = window.ymaps3;
+      const api = window.ymaps;
       if (!api) {
-        reject(new Error("Yandex Maps script loaded but ymaps3 is missing"));
+        reject(new Error("Yandex Maps script loaded but ymaps is missing"));
         return;
       }
       // `ready` is the only reliable signal: the script tag's load event
-      // fires before the API's own modules and DOM are in place.
-      api.ready.then(() => resolve(), reject);
+      // fires before the API's own modules and DOM are in place. In v2.1 it
+      // takes callbacks rather than being a promise — the one shape difference
+      // from v3 that reaches this file.
+      api.ready(() => resolve(), reject);
     };
 
     const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;

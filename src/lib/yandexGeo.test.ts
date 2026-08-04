@@ -161,7 +161,7 @@ describe("boundsOf", () => {
     expect(boundsOf([])).toBeNull();
     expect(boundsOf([north])).toBeNull();
     // Two markers on the exact same spot have no extent; fitting them would
-    // ask ymaps3 for infinite zoom.
+    // ask the map for infinite zoom.
     expect(boundsOf([north, { ...north }])).toBeNull();
   });
 
