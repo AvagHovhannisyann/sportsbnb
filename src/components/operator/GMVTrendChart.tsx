@@ -17,6 +17,7 @@ import {
   type GMVPoint,
   formatMoney,
 } from "@/hooks/useOperatorMetrics";
+import { Money } from "@/components/operator/Money";
 
 type TrendedMarket = "Yerevan" | "Los Angeles";
 
@@ -97,11 +98,11 @@ export function GMVTrendChart({ data }: { data: GMVPoint[] }) {
                     {data.map((point) => (
                       <TableRow key={point.date}>
                         <TableCell className="font-medium text-foreground">{point.date}</TableCell>
-                        <TableCell className="stat-numeral text-right">
-                          {formatMoney(point.Yerevan, "AMD")}
+                        <TableCell className="text-right">
+                          <Money amount={point.Yerevan} currency="AMD" />
                         </TableCell>
-                        <TableCell className="stat-numeral text-right">
-                          {formatMoney(point["Los Angeles"], "USD")}
+                        <TableCell className="text-right">
+                          <Money amount={point["Los Angeles"]} currency="USD" />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -145,8 +146,8 @@ function MarketTrend({
           </h3>
           <p className="text-xs text-muted-foreground">{currency} · 30-day total</p>
         </div>
-        <p className="stat-numeral break-words text-right text-lg font-semibold text-foreground">
-          {formatMoney(total, currency)}
+        <p className="break-words text-right text-lg font-semibold text-foreground">
+          <Money amount={total} currency={currency} />
         </p>
       </div>
 

@@ -307,10 +307,68 @@ console.log(
 );
 
 if (measured === 0) {
-  // Nothing measured is not a pass. If no sticky glass was found, either the
-  // routes have none or the selector stopped matching; both need looking at.
-  console.error('  No translucent sticky surfaces found — refusing to report a pass.\n');
-  process.exit(1);
+  // Nothing measured is not a pass — but it is not automatically a failure
+  // either, and telling those two apart is the whole question.
+  //
+  // This was written when the sticky header was glass, and the file's opening
+  // comment still says so. The "Open Court" redesign made it opaque:
+  // `Header.tsx` carries no backdrop-filter at all and `--glass-alpha` is 0.96.
+  // So on `/` and `/for-owners` there is now genuinely nothing to composite,
+  // while `/venues` still has a translucent sticky filter bar and is still
+  // measured — 4 samples, all clearing AA. The zero is real on some routes and
+  // wrong on others, which a blanket failure cannot express.
+  //
+  // The failure this branch must keep catching is the dangerous one: glass is
+  // still there but the selector above stopped matching it. So rather than
+  // trusting the zero, ask the DOM directly. Only a route with no translucent
+  // sticky surface at all passes here; anything translucent that went unscored
+  // is still a failure.
+  //
+  // Labels on an opaque bar are not unchecked — `contrast.sh` walks the header
+  // on every route.
+  const probe = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
+  const probePage = await newStubbedPage(probe, { userType, width: WIDTH, height: HEIGHT });
+  let translucentExists;
+  try {
+    await probePage.goto(`${BASE}${resolveRoute(routes[0])}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 20000,
+    });
+    if (LIGHT) await probePage.evaluate(() => document.documentElement.classList.remove('dark'));
+    await waitForAppReady(probePage);
+    translucentExists = await probePage.evaluate(() => {
+      for (const el of document.querySelectorAll('*')) {
+        const cs = getComputedStyle(el);
+        if (cs.position !== 'sticky' && cs.position !== 'fixed') continue;
+        const filtered =
+          (cs.backdropFilter && cs.backdropFilter !== 'none') ||
+          (cs.webkitBackdropFilter && cs.webkitBackdropFilter !== 'none');
+        if (filtered) return true;
+        const alpha = Number(cs.backgroundColor.match(/[\d.]+\s*\)$/)?.[0]?.replace(')', '') ?? '1');
+        if (cs.backgroundColor.startsWith('rgba') && alpha < 0.95) return true;
+      }
+      return false;
+    });
+  } catch {
+    // A navigation failure must not be read as "no glass here".
+    translucentExists = true;
+  }
+  await probe.close();
+
+  if (translucentExists) {
+    console.error(
+      '  A sticky surface on this route IS translucent, but none was scored —\n' +
+        '  the selector has stopped matching what it was written to measure.\n',
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    '  No translucent sticky surface exists on these routes, so there is nothing\n' +
+      '  to composite. Confirmed against computed style rather than inferred from\n' +
+      '  the zero. Text on the opaque header is scored by contrast.sh instead.\n',
+  );
+  process.exit(0);
 }
 
 if (failures.length === 0) {

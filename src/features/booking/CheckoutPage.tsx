@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { CreditCard, Loader2, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Price } from "@/components/ui/price";
 import Layout from "@/components/layout/Layout";
 import { StatusPanel, ErrorPanel } from "@/components/common/StatusPanel";
 import { supabase } from "@/integrations/supabase/client";
@@ -316,7 +317,9 @@ export default function CheckoutPage() {
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between gap-4">
                 <dt className="text-muted-foreground">Venue</dt>
-                <dd className="stat-numeral font-medium">{formatAmd(booking.owner_amount_minor ?? 0)}</dd>
+                <dd>
+                  <Price amount={(booking.owner_amount_minor ?? 0) / 100} className="font-medium" />
+                </dd>
               </div>
               {/* Only rendered when a fee was actually charged. Sportsbnb takes
                   no commission, so this row is a permanent "֏0" for every
@@ -328,14 +331,19 @@ export default function CheckoutPage() {
               {(booking.platform_fee_minor ?? 0) > 0 && (
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-muted-foreground">Service fee</dt>
-                  <dd className="stat-numeral font-medium">
-                    {formatAmd(booking.platform_fee_minor ?? 0)}
+                  <dd>
+                    <Price
+                      amount={(booking.platform_fee_minor ?? 0) / 100}
+                      className="font-medium"
+                    />
                   </dd>
                 </div>
               )}
               <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3 text-base font-semibold">
                 <dt>Total</dt>
-                <dd className="stat-numeral">{formatAmd(booking.amount_minor ?? 0)}</dd>
+                <dd>
+                  <Price amount={(booking.amount_minor ?? 0) / 100} />
+                </dd>
               </div>
             </dl>
 

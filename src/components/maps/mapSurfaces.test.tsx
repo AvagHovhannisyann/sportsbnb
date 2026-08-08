@@ -26,6 +26,22 @@ const mount = (ui: React.ReactNode) =>
 
 const noop = () => {};
 
+/**
+ * The selected-coordinates text, whitespace-normalised.
+ *
+ * Asserted against `document.body.textContent` rather than with `getByText`
+ * because the readout is built from three JSX children — the latitude, a
+ * literal ", ", and the longitude — so it lives in three text nodes and no
+ * string or regex matcher spanning them can match. It was one node when these
+ * tests were written; a redesign split it, the tests failed, and the
+ * coordinate order they exist to protect was never actually in question.
+ *
+ * The order is the point: this app stores { lat, lng } and every Yandex HTTP
+ * API answers longitude-first, so a readout printing lng first would be the
+ * visible symptom of a swap that puts every venue in the wrong country.
+ */
+const coordinateReadout = () => document.body.textContent?.replace(/\s+/g, " ") ?? "";
+
 const game = (over: Partial<Game> = {}): Game =>
   ({
     id: "g1",
@@ -72,7 +88,7 @@ describe("map surfaces degrade rather than crash", () => {
     );
     // The confirm/clear panel is driven by the selected position, not by the
     // map, so it must still be reachable when the map is not.
-    expect(screen.getByText(/Selected: 40\.179200, 44\.499100/)).toBeInTheDocument();
+    expect(coordinateReadout()).toContain("40.179200, 44.499100");
     await waitFor(() => expect(screen.getByText("Map unavailable")).toBeInTheDocument());
   });
 
@@ -104,6 +120,6 @@ describe("selected coordinates are shown latitude first", () => {
         longitude={44.5152}
       />,
     );
-    expect(screen.getByText("Selected: 40.187200, 44.515200")).toBeInTheDocument();
+    expect(coordinateReadout()).toContain("40.187200, 44.515200");
   });
 });

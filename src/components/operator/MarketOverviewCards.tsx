@@ -13,8 +13,9 @@ import {
 import { StatusPanel } from "@/components/common/StatusPanel";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { type MarketMetrics, formatMoney } from "@/hooks/useOperatorMetrics";
+import { type MarketMetrics } from "@/hooks/useOperatorMetrics";
 import { TONE_CHIP } from "@/lib/chips";
+import { Money } from "@/components/operator/Money";
 
 export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
   const primaryMarkets = markets.filter((market) => market.market !== "Other");
@@ -90,7 +91,7 @@ function MarketCard({ market }: { market: MarketMetrics }) {
             icon={CircleDollarSign}
             label="GMV"
             hint="Last 30 days"
-            value={formatMoney(market.gmv30d, market.currency)}
+            value={<Money amount={market.gmv30d} currency={market.currency} />}
           />
           <Metric
             icon={CalendarDays}
@@ -140,7 +141,7 @@ function Metric({
   icon: LucideIcon;
   label: string;
   hint: string;
-  value: string;
+  value: React.ReactNode;
 }) {
   return (
     <div className="min-w-0">

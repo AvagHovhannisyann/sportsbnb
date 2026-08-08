@@ -23,6 +23,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { bookingStatusDescriptor, type BookingStatusTone } from "@/features/booking/status";
+import { Price } from "@/components/ui/price";
 
 interface Booking {
   id: string;
@@ -135,7 +136,7 @@ export function BookingDetailDrawer({
                 <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <div>
                   <dt className="text-xs text-muted-foreground">Total amount</dt>
-                  <dd className="stat-numeral mt-0.5 text-sm font-semibold text-foreground">֏{booking.total_price.toLocaleString()}</dd>
+                  <dd className="mt-0.5 text-sm font-semibold text-foreground"><Price amount={booking.total_price} /></dd>
                 </div>
               </div>
             </dl>
