@@ -32,7 +32,9 @@ account silently redirects away from `/owner-dashboard` instead of showing an
 error. If you land on the player dashboard when you expected the owner one,
 that is the cause.
 
-## 2. List the venue — `/list-venue`
+## 2. List the venue — `/add-venue`
+
+(`/list-venue` also works; it redirects here.)
 
 The form is one page with several cards. It will not submit until every rule
 below passes, and it tells you which ones failed.
@@ -91,12 +93,12 @@ Two ways to set the pin:
 1. **Type your address in the search box** and pick the match.
 2. **Click directly on the map**, then drag the pin to fine-tune it.
 
-Either way, a "Confirm This Location" button appears once a point is selected.
+Either way, a **"Confirm this location"** button appears once a point is selected.
 **You must press it.** Until you do, the form fails with "Please confirm the
 venue location on the map", and nothing else you fill in will save.
 
-Once confirmed you will see "Location confirmed! You can continue with the
-form."
+Once confirmed you will see "Location confirmed. You can continue with the
+listing."
 
 > Note: editing the city or address afterwards **clears the confirmation**, so
 > you have to confirm again. That is deliberate — it stops a pin from silently
@@ -209,7 +211,7 @@ than on general advice:
 
 | Symptom | What it is |
 |---|---|
-| "Please confirm the venue location on the map" | You set a pin but did not press **Confirm This Location**, or you edited the address afterwards and cleared it |
+| "Please confirm the venue location on the map" | You set a pin but did not press **Confirm this location**, or you edited the address afterwards and cleared it |
 | Form will not submit, no obvious reason | Scroll up — description under 100 characters, or fewer than 3 photos |
 | `/owner-dashboard` sends you to the player dashboard | Your account type is not owner |
 | Your venue is not in search | Check it has hours set, and that the sport filter you are testing with matches your tags |
