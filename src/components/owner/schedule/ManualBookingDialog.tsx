@@ -219,9 +219,16 @@ export function ManualBookingDialog({
       queryClient.invalidateQueries({ queryKey: ["owner-analytics"] });
       onBookingCreated?.();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating booking:", error);
-      toast.error(error.message || "Failed to create booking");
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Failed to create booking";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -232,20 +239,19 @@ export function ManualBookingDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-primary" />
-            New Manual Booking
+            <CalendarIcon className="h-5 w-5 text-primary" aria-hidden="true" />
+            New manual booking
           </DialogTitle>
           <DialogDescription>
-            Create a booking on behalf of a customer
+            Reserve a venue for a walk-in, phone, or offline customer.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-          {/* Venue */}
+        <div className="max-h-[60vh] space-y-5 overflow-y-auto overscroll-contain py-2 pr-1">
           <div className="space-y-2">
-            <Label>Venue *</Label>
+            <Label id="manual-venue-label">Venue <span aria-hidden="true">*</span></Label>
             <Select value={venueId} onValueChange={setVenueId}>
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby="manual-venue-label" aria-required="true">
                 <SelectValue placeholder="Select venue" />
               </SelectTrigger>
               <SelectContent>
@@ -258,20 +264,22 @@ export function ManualBookingDialog({
             </Select>
           </div>
 
-          {/* Date */}
           <div className="space-y-2">
-            <Label>Date *</Label>
+            <p id="manual-date-label" className="text-sm font-medium leading-5 text-foreground">
+              Date <span aria-hidden="true">*</span>
+            </p>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  aria-labelledby="manual-date-label manual-date-value"
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : "Select date"}
+                  <CalendarIcon aria-hidden="true" />
+                  <span id="manual-date-value">{date ? format(date, "PPP") : "Select date"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -286,13 +294,12 @@ export function ManualBookingDialog({
             </Popover>
           </div>
 
-          {/* Time & Duration */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Start Time *</Label>
+              <Label id="manual-time-label">Start time <span aria-hidden="true">*</span></Label>
               <Select value={startTime} onValueChange={setStartTime}>
-                <SelectTrigger>
-                  <Clock className="h-4 w-4 mr-2" />
+                <SelectTrigger aria-labelledby="manual-time-label" aria-required="true">
+                  <Clock aria-hidden="true" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -305,9 +312,9 @@ export function ManualBookingDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Duration *</Label>
+              <Label id="manual-duration-label">Duration <span aria-hidden="true">*</span></Label>
               <Select value={duration} onValueChange={setDuration}>
-                <SelectTrigger>
+                <SelectTrigger aria-labelledby="manual-duration-label" aria-required="true">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -321,69 +328,83 @@ export function ManualBookingDialog({
             </div>
           </div>
 
-          {/* Customer Info */}
           <div className="space-y-2">
-            <Label>Customer Name *</Label>
+            <Label htmlFor="manual-customer-name">Customer name <span aria-hidden="true">*</span></Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <Input
+                id="manual-customer-name"
+                name="customerName"
+                autoComplete="name"
                 placeholder="John Smith"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="pl-9"
+                className="pl-10"
+                aria-required="true"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Phone (optional)</Label>
+              <Label htmlFor="manual-customer-phone">Phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  id="manual-customer-phone"
+                  name="customerPhone"
+                  type="tel"
+                  autoComplete="tel"
                   placeholder="+1 234 567 8900"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="pl-9"
+                  className="pl-10"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Email (optional)</Label>
+              <Label htmlFor="manual-customer-email">Email <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  id="manual-customer-email"
+                  name="customerEmail"
                   type="email"
+                  autoComplete="email"
                   placeholder="john@example.com"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="pl-9"
+                  className="pl-10"
                 />
               </div>
             </div>
           </div>
 
-          {/* Price */}
           <div className="space-y-2">
-            <Label>Total Price</Label>
+            <Label htmlFor="manual-total-price">Total price</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">֏</span>
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true">֏</span>
               <Input
+                id="manual-total-price"
+                name="totalPrice"
                 type="number"
+                inputMode="decimal"
                 value={price}
                 onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                className="pl-8"
+                className="pl-9 tabular-nums"
+                aria-describedby="manual-price-hint"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p id="manual-price-hint" className="text-xs text-muted-foreground">
               Auto-calculated based on venue rate. Adjust if needed.
             </p>
           </div>
 
-          {/* Notes */}
           <div className="space-y-2">
-            <Label>Notes (optional)</Label>
+            <Label htmlFor="manual-booking-notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Textarea
+              id="manual-booking-notes"
+              name="notes"
               placeholder="Internal notes about this booking..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -393,17 +414,17 @@ export function ManualBookingDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !venueId || !customerName}>
+          <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={isSubmitting || !venueId || !customerName}>
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating...
+                <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                Creating…
               </>
             ) : (
-              "Create Booking"
+              "Create booking"
             )}
           </Button>
         </DialogFooter>

@@ -22,6 +22,9 @@
 
 export type Hsl = { h: number; s: number; l: number };
 
+/** Open Court's default widget accent. Owners can still replace it freely. */
+export const DEFAULT_WIDGET_PRIMARY_COLOR = "#195d44";
+
 /**
  * `#rgb` or `#rrggbb` to HSL, or null.
  *

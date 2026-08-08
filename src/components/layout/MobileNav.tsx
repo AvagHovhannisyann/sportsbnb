@@ -28,11 +28,62 @@ const MobileNav = () => {
         { href: "/login", label: "Sign in", icon: User },
       ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    const pathname = location.pathname;
+    const isOwnerManagementRoute =
+      pathname === "/owner-dashboard" ||
+      pathname.startsWith("/owner/") ||
+      pathname === "/add-venue" ||
+      /^\/venue\/[^/]+\/(edit|availability)$/.test(pathname);
+
+    switch (path) {
+      case "/venues":
+        return (
+          pathname === "/venues" ||
+          pathname.startsWith("/venues/") ||
+          pathname.startsWith("/nearby") ||
+          pathname === "/games" ||
+          pathname === "/create-game" ||
+          pathname.startsWith("/game/") ||
+          pathname === "/teams" ||
+          pathname === "/create-team" ||
+          pathname.startsWith("/team/") ||
+          pathname.startsWith("/join-team/") ||
+          pathname === "/community" ||
+          (pathname.startsWith("/venue/") && !isOwnerManagementRoute)
+        );
+      case "/messages":
+        return pathname === "/messages" || pathname.startsWith("/messages/");
+      case "/owner-dashboard":
+        return isOwnerManagementRoute;
+      case "/dashboard":
+        return (
+          pathname === "/dashboard" ||
+          pathname === "/my-bookings" ||
+          pathname.startsWith("/booking/") ||
+          pathname.startsWith("/book/") ||
+          pathname.startsWith("/pay/")
+        );
+      case "/profile":
+        return pathname === "/profile";
+      case "/for-owners":
+        return pathname === "/for-owners" || pathname === "/demo";
+      case "/login":
+        return ["/login", "/signup", "/forgot-password", "/reset-password"].includes(pathname);
+      default:
+        return pathname === path;
+    }
+  };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/85 safe-area-bottom shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.06)]">
-      <div className={`grid h-16`} style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}>
+    <nav
+      aria-label="Mobile primary navigation"
+      className="safe-area-bottom fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background shadow-[0_-1px_8px_hsl(var(--foreground)/0.06)] md:hidden"
+    >
+      <div
+        className="grid h-16"
+        style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr)) 4rem` }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -40,7 +91,8 @@ const MobileNav = () => {
             <Link
               key={item.href}
               to={item.href}
-              className="relative flex flex-col items-center justify-center gap-1 transition-colors"
+              aria-current={active ? "page" : undefined}
+              className="relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors duration-150"
             >
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full bg-primary" />
@@ -50,9 +102,10 @@ const MobileNav = () => {
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
                 strokeWidth={active ? 2.25 : 1.75}
+                aria-hidden="true"
               />
               <span
-                className={`text-[10px] tracking-tight leading-none ${
+                className={`max-w-full truncate text-[11px] tracking-tight leading-none ${
                   active ? "text-primary font-semibold" : "text-muted-foreground font-medium"
                 }`}
               >
@@ -61,6 +114,10 @@ const MobileNav = () => {
             </Link>
           );
         })}
+        {/* The final column is reserved for AIChatbot's mobile dock button.
+            Keeping it in the navigation grid prevents the global launcher
+            from covering booking controls, article links, or page copy. */}
+        <span aria-hidden="true" />
       </div>
     </nav>
   );

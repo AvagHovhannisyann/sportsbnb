@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Check, Upload, User, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, Loader2, MapPin, Trophy, User } from "lucide-react";
+import Logo from "@/components/brand/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +17,13 @@ const SPORTS_OPTIONS = [
   "Football", "Basketball", "Tennis", "Swimming", 
   "Volleyball", "Badminton", "Rugby", "Gym",
   "Cricket", "Golf", "Running", "Cycling"
+];
+
+const ONBOARDING_STEPS = [
+  { label: "Profile", icon: User },
+  { label: "Location", icon: MapPin },
+  { label: "Sports", icon: Trophy },
+  { label: "Photo", icon: Camera },
 ];
 
 const PlayerOnboarding = () => {
@@ -203,300 +211,376 @@ const PlayerOnboarding = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="flex flex-col items-center gap-4 text-center" role="status" aria-label="Loading player setup">
+          <Logo variant="mark" className="h-12 w-auto" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+          <p className="text-sm text-muted-foreground">Preparing your profile…</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="container py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <span className="text-lg font-bold text-primary-foreground">S</span>
-            </div>
-            <span className="text-xl font-semibold text-foreground">Sportsbnb</span>
-          </div>
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/90">
+        <div className="container flex h-16 max-w-5xl items-center px-4 sm:px-6">
+          <Logo variant="full" className="h-9 w-auto" />
         </div>
-      </div>
+      </header>
 
-      {/* Progress */}
-      <div className="container max-w-2xl py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-            <span>Step {currentStep} of {totalSteps}</span>
-            <span>{Math.round(progress)}% complete</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-
-        {/* Step 1: Basic Info */}
-        {currentStep === 1 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-                <Sparkles className="h-8 w-8 text-primary" />
-              </div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to Sportsbnb!</h1>
-              <p className="text-muted-foreground">Let's set up your player profile</p>
+      <main className="container max-w-3xl px-4 pb-28 pt-6 sm:px-6 sm:pb-12 sm:pt-10">
+        <section aria-labelledby={`onboarding-step-${currentStep}-title`}>
+          <div className="mb-8">
+            <div className="mb-3 flex items-center justify-between gap-4 text-sm">
+              <span className="font-semibold text-foreground">Player profile</span>
+              <span className="tabular-nums text-muted-foreground">
+                Step {currentStep} of {totalSteps}
+              </span>
             </div>
-
-            <div className="bg-card rounded-2xl border border-border/50 shadow-lg p-6 space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  placeholder="Enter your full name"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="h-12"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="username">Username *</Label>
-                <Input
-                  id="username"
-                  placeholder="Choose a unique username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="h-12"
-                />
-                <p className="text-xs text-muted-foreground">This will be your public display name</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (optional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 234 567 890"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="h-12"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth (optional)</Label>
-                <Input
-                  id="dob"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                  className="h-12"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Gender (optional)</Label>
-                <RadioGroup
-                  value={formData.gender}
-                  onValueChange={(value) => setFormData({ ...formData, gender: value })}
-                  className="flex flex-wrap gap-4"
-                >
-                  {["Male", "Female", "Other", "Prefer not to say"].map((gender) => (
-                    <div key={gender} className="flex items-center space-x-2">
-                      <RadioGroupItem value={gender.toLowerCase()} id={gender.toLowerCase()} />
-                      <Label htmlFor={gender.toLowerCase()} className="font-normal cursor-pointer">
-                        {gender}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Location */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Where are you located?</h1>
-              <p className="text-muted-foreground">This helps us find venues and games near you</p>
-            </div>
-
-            <div className="bg-card rounded-2xl border border-border/50 shadow-lg p-6">
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  placeholder="Enter your city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="h-12"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Sports Preferences */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">What sports do you play?</h1>
-              <p className="text-muted-foreground">Select all that apply</p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {SPORTS_OPTIONS.map((sport) => (
-                // Same div-with-a-dead-checkbox as the profile tab, on the
-                // step a new player hits before they have used anything else.
-                // Keyboard users could not pick a single sport here.
-                <Label
-                  key={sport}
-                  htmlFor={`onboarding-sport-${sport.toLowerCase().replace(/\s+/g, "-")}`}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all font-normal ${
-                    formData.preferredSports.includes(sport)
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <Checkbox
-                    id={`onboarding-sport-${sport.toLowerCase().replace(/\s+/g, "-")}`}
-                    checked={formData.preferredSports.includes(sport)}
-                    onCheckedChange={() => handleSportToggle(sport)}
-                  />
-                  <span className="font-medium">{sport}</span>
-                </Label>
-              ))}
-            </div>
-
-            <div className="space-y-3 pt-4">
-              <Label>Skill Level (optional)</Label>
-              <RadioGroup
-                value={formData.skillLevel}
-                onValueChange={(value) => setFormData({ ...formData, skillLevel: value })}
-                className="grid grid-cols-3 gap-3"
-              >
-                {[
-                  { value: "beginner", label: "Beginner", desc: "Just starting out" },
-                  { value: "intermediate", label: "Intermediate", desc: "Some experience" },
-                  { value: "advanced", label: "Advanced", desc: "Highly skilled" },
-                ].map((level) => (
-                  <div key={level.value}>
-                    <RadioGroupItem value={level.value} id={level.value} className="peer sr-only" />
-                    <Label
-                      htmlFor={level.value}
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-border-interactive bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer text-center"
+            <Progress
+              value={progress}
+              className="h-1.5"
+              aria-label={`Profile setup: step ${currentStep} of ${totalSteps}`}
+            />
+            <ol className="mt-4 grid grid-cols-4 gap-2" aria-label="Profile setup progress">
+              {ONBOARDING_STEPS.map((step, index) => {
+                const stepNumber = index + 1;
+                const isComplete = stepNumber < currentStep;
+                const isCurrent = stepNumber === currentStep;
+                const StepIcon = step.icon;
+                return (
+                  <li
+                    key={step.label}
+                    aria-current={isCurrent ? "step" : undefined}
+                    className={`flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-2 text-xs sm:px-2 sm:text-sm ${
+                      isCurrent ? "bg-primary-soft font-semibold text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+                        isComplete
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : isCurrent
+                            ? "border-primary bg-card text-primary"
+                            : "border-border bg-card text-muted-foreground"
+                      }`}
                     >
-                      <span className="font-medium">{level.label}</span>
-                      <span className="text-xs text-muted-foreground mt-1">{level.desc}</span>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
+                      {isComplete ? (
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      ) : (
+                        <StepIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
+                    </span>
+                    <span className="hidden truncate sm:block">{step.label}</span>
+                    <span className="sr-only sm:hidden">{step.label}</span>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
-        )}
 
-        {/* Step 4: Profile Photo */}
-        {currentStep === 4 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Add a profile photo</h1>
-              <p className="text-muted-foreground">Help others recognize you (optional)</p>
-            </div>
+          <div className="rounded-xl border border-border bg-card shadow-xs">
+            {currentStep === 1 && (
+              <div className="p-5 sm:p-8">
+                <div className="mb-7 max-w-xl">
+                  <p className="text-eyebrow mb-2">Your player identity</p>
+                  <h1 id="onboarding-step-1-title" className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                    Welcome to Sportsbnb
+                  </h1>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">
+                    Add the essentials so other players know who they are meeting on court.
+                  </p>
+                </div>
 
-            <div className="flex flex-col items-center gap-6">
-              <Avatar className="h-32 w-32 border-4 border-primary/20">
-                <AvatarImage src={avatarPreview || undefined} />
-                <AvatarFallback className="bg-muted text-4xl">
-                  <User className="h-16 w-16 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="fullName">Full name *</Label>
+                    <Input
+                      id="fullName"
+                      placeholder="Enter your full name"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      autoComplete="name"
+                      required
+                      aria-required="true"
+                    />
+                  </div>
 
-              <Label
-                htmlFor="avatar-upload"
-                className="flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer transition-colors"
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="username">Username *</Label>
+                    <Input
+                      id="username"
+                      placeholder="Choose a unique username"
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      autoComplete="username"
+                      required
+                      aria-required="true"
+                      aria-describedby="username-help"
+                    />
+                    <p id="username-help" className="text-sm leading-relaxed text-muted-foreground">
+                      This will be your public display name.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone number (optional)</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+374 00 000 000"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      autoComplete="tel"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dob">Date of birth (optional)</Label>
+                    <Input
+                      id="dob"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                      autoComplete="bday"
+                    />
+                  </div>
+
+                  <fieldset className="space-y-3 sm:col-span-2">
+                    <legend className="text-sm font-medium text-foreground">Gender (optional)</legend>
+                    <RadioGroup
+                      value={formData.gender}
+                      onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                      className="grid gap-2 sm:grid-cols-2"
+                      aria-label="Gender"
+                    >
+                      {["Male", "Female", "Other", "Prefer not to say"].map((gender) => {
+                        const id = `gender-${gender.toLowerCase().replace(/\s+/g, "-")}`;
+                        return (
+                          <div key={gender} className="flex min-h-11 items-center gap-3 rounded-lg border border-border px-3.5 py-2">
+                            <RadioGroupItem value={gender.toLowerCase()} id={id} />
+                            <Label htmlFor={id} className="flex min-h-10 flex-1 cursor-pointer items-center font-normal">
+                              {gender}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+                  </fieldset>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 2 && (
+              <div className="p-5 sm:p-8">
+                <div className="mb-7 max-w-xl">
+                  <p className="text-eyebrow mb-2">Local recommendations</p>
+                  <h1 id="onboarding-step-2-title" className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                    Where are you located?
+                  </h1>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">
+                    Your city helps us surface nearby venues, games, and teams.
+                  </p>
+                </div>
+
+                <div className="max-w-xl space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    placeholder="Enter your city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    autoComplete="address-level2"
+                  />
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    You can update this later from your profile settings.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 3 && (
+              <div className="p-5 sm:p-8">
+                <div className="mb-7 max-w-xl">
+                  <p className="text-eyebrow mb-2">Your game</p>
+                  <h1 id="onboarding-step-3-title" className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                    What sports do you play?
+                  </h1>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">Select every sport that belongs in your profile.</p>
+                </div>
+
+                <fieldset>
+                  <legend className="sr-only">Preferred sports</legend>
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                    {SPORTS_OPTIONS.map((sport) => {
+                      const id = `onboarding-sport-${sport.toLowerCase().replace(/\s+/g, "-")}`;
+                      const isSelected = formData.preferredSports.includes(sport);
+                      return (
+                        <Label
+                          key={sport}
+                          htmlFor={id}
+                          className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-lg border px-3.5 py-3 font-normal transition-[background-color,border-color,box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 motion-reduce:transition-none ${
+                            isSelected
+                              ? "border-primary bg-primary-soft text-primary"
+                              : "border-border-interactive bg-background text-foreground hover:bg-surface-1"
+                          }`}
+                        >
+                          <Checkbox
+                            id={id}
+                            checked={isSelected}
+                            onCheckedChange={() => handleSportToggle(sport)}
+                          />
+                          <span className="min-w-0 font-medium leading-tight">{sport}</span>
+                        </Label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                <fieldset className="mt-8 space-y-3">
+                  <legend className="text-sm font-medium text-foreground">Skill level (optional)</legend>
+                  <RadioGroup
+                    value={formData.skillLevel}
+                    onValueChange={(value) => setFormData({ ...formData, skillLevel: value })}
+                    className="grid gap-2.5 sm:grid-cols-3"
+                    aria-label="Skill level"
+                  >
+                    {[
+                      { value: "beginner", label: "Beginner", desc: "Just starting out" },
+                      { value: "intermediate", label: "Intermediate", desc: "Some experience" },
+                      { value: "advanced", label: "Advanced", desc: "Highly skilled" },
+                    ].map((level) => (
+                      <div key={level.value}>
+                        <RadioGroupItem value={level.value} id={`skill-${level.value}`} className="peer sr-only" />
+                        <Label
+                          htmlFor={`skill-${level.value}`}
+                          className="flex min-h-20 cursor-pointer flex-col justify-center rounded-lg border border-border-interactive bg-background px-4 py-3 transition-[background-color,border-color,box-shadow] duration-150 hover:bg-surface-1 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary-soft motion-reduce:transition-none"
+                        >
+                          <span className="font-semibold text-foreground">{level.label}</span>
+                          <span className="mt-0.5 text-sm leading-snug text-muted-foreground">{level.desc}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </fieldset>
+              </div>
+            )}
+
+            {currentStep === 4 && (
+              <div className="p-5 sm:p-8">
+                <div className="mb-7 max-w-xl">
+                  <p className="text-eyebrow mb-2">Recognition</p>
+                  <h1 id="onboarding-step-4-title" className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                    Add a profile photo
+                  </h1>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">A photo helps players recognize you. You can also leave this for later.</p>
+                </div>
+
+                <div className="grid gap-8 md:grid-cols-[13rem_minmax(0,1fr)] md:items-center">
+                  <div className="flex flex-col items-center gap-4 rounded-xl bg-surface-1 p-5 text-center">
+                    <Avatar className="h-28 w-28 border border-border bg-card shadow-sm">
+                      <AvatarImage src={avatarPreview || undefined} alt="" className="object-cover" />
+                      <AvatarFallback className="bg-card">
+                        <User className="h-12 w-12 text-muted-foreground" aria-hidden="true" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium text-foreground">{avatarPreview ? "Photo ready" : "No photo selected"}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="avatar-upload">Profile photo (optional)</Label>
+                    <Input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      aria-describedby="avatar-help"
+                      className="h-auto min-h-12 cursor-pointer py-1.5 text-sm file:mr-3 file:rounded-md file:bg-primary file:px-3 file:py-2 file:text-primary-foreground"
+                    />
+                    <p id="avatar-help" className="text-sm leading-relaxed text-muted-foreground">
+                      Choose an image from this device. Your existing account photo remains in place until you finish setup.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-8 rounded-xl border border-border bg-surface-1/70 p-4 sm:p-5">
+                  <h2 className="font-display text-lg font-semibold text-foreground">Profile summary</h2>
+                  <dl className="mt-3 divide-y divide-border text-sm">
+                    {[
+                      ["Full name", formData.fullName || "Not set"],
+                      ["Username", formData.username || "Not set"],
+                      ["City", formData.city || "Not set"],
+                      [
+                        "Sports",
+                        formData.preferredSports.length > 0
+                          ? formData.preferredSports.slice(0, 3).join(", ") + (formData.preferredSports.length > 3 ? "…" : "")
+                          : "Not set",
+                      ],
+                      ["Skill level", formData.skillLevel || "Not set"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+                        <dt className="text-muted-foreground">{label}</dt>
+                        <dd className={`min-w-0 break-words font-medium text-foreground ${label === "Skill level" ? "capitalize" : ""}`}>
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm supports-[backdrop-filter]:bg-background/90 sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
+            <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                disabled={currentStep === 1}
+                className="shrink-0 gap-2"
               >
-                <Upload className="h-5 w-5" />
-                <span>{avatarPreview ? "Change photo" : "Upload photo"}</span>
-              </Label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="hidden"
-              />
-            </div>
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Back
+              </Button>
 
-            <div className="bg-card rounded-2xl border border-border/50 shadow-lg p-6 mt-8">
-              <h3 className="font-semibold text-foreground mb-4">Profile Summary</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-border/50">
-                  <span className="text-muted-foreground">Full Name</span>
-                  <span className="font-medium">{formData.fullName || "Not set"}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border/50">
-                  <span className="text-muted-foreground">Username</span>
-                  <span className="font-medium">{formData.username || "Not set"}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border/50">
-                  <span className="text-muted-foreground">City</span>
-                  <span className="font-medium">{formData.city || "Not set"}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border/50">
-                  <span className="text-muted-foreground">Sports</span>
-                  <span className="font-medium">
-                    {formData.preferredSports.length > 0 
-                      ? formData.preferredSports.slice(0, 3).join(", ") + (formData.preferredSports.length > 3 ? "..." : "")
-                      : "Not set"}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground">Skill Level</span>
-                  <span className="font-medium capitalize">{formData.skillLevel || "Not set"}</span>
-                </div>
+              <div className="flex min-w-0 items-center justify-end gap-2">
+                {currentStep < totalSteps && (
+                  <Button variant="ghost" onClick={handleNext} className="min-w-0 px-2.5 text-muted-foreground sm:px-4">
+                    Skip this step
+                  </Button>
+                )}
+
+                {currentStep < totalSteps ? (
+                  <Button onClick={handleNext} className="shrink-0 gap-2">
+                    Next
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    aria-busy={isSubmitting}
+                    className="shrink-0 gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                        Saving…
+                      </>
+                    ) : (
+                      <>
+                        Complete setup
+                        <Check className="h-4 w-4" aria-hidden="true" />
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
-          <Button
-            variant="ghost"
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-
-          {currentStep < totalSteps ? (
-            <Button onClick={handleNext} className="gap-2 shadow-lg shadow-primary/20">
-              Next
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 shadow-lg shadow-primary/20">
-              {isSubmitting ? "Saving..." : "Complete Setup"}
-              <Check className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        {/* Skip option */}
-        {currentStep < totalSteps && (
-          <div className="text-center mt-4">
-            <Button
-              variant="link"
-              onClick={handleNext}
-              className="text-muted-foreground"
-            >
-              Skip this step
-            </Button>
-          </div>
-        )}
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

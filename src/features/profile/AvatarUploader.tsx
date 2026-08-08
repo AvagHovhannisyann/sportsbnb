@@ -23,25 +23,27 @@ const AvatarUploader = ({ previewUrl, initials, onFileSelected }: AvatarUploader
   };
 
   return (
-    <div className="relative">
-      <Avatar className="h-24 w-24">
-        <AvatarImage src={previewUrl || undefined} />
-        <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+    <div className="relative w-fit shrink-0 self-start">
+      <Avatar className="h-20 w-20 border border-border bg-card shadow-xs sm:h-24 sm:w-24">
+        <AvatarImage src={previewUrl || undefined} alt="Profile photo" />
+        <AvatarFallback className="bg-primary text-2xl text-primary-foreground">
           {initials}
         </AvatarFallback>
       </Avatar>
       <Label
         htmlFor="avatar-upload"
-        className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors"
+        aria-label="Choose a new profile photo"
+        className="focus-within:ring-ring absolute -bottom-1 -right-1 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary/90 focus-within:ring-2 focus-within:ring-offset-2 motion-reduce:transition-none"
       >
-        <Camera className="h-4 w-4" />
+        <Camera className="h-4 w-4" aria-hidden="true" />
       </Label>
       <input
         id="avatar-upload"
         type="file"
         accept="image/*"
+        aria-label="Profile photo"
         onChange={handleAvatarChange}
-        className="hidden"
+        className="sr-only"
       />
     </div>
   );

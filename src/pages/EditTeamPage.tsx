@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
-import { ErrorPanel } from "@/components/common/StatusPanel";
+import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useTeamById, useUpdateTeam } from "@/hooks/useTeams";
 import { TeamForm, type TeamFormValues } from "@/features/teams/TeamForm";
@@ -65,7 +65,8 @@ const EditTeamPage = () => {
     return (
       <Layout>
         <div className="container py-16 text-center" role="status" aria-label="Loading the team">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" aria-hidden="true" />
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+          <p className="mt-3 text-sm text-muted-foreground">Loading team details…</p>
         </div>
       </Layout>
     );
@@ -92,10 +93,14 @@ const EditTeamPage = () => {
   if (!team) {
     return (
       <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Team Not Found</h1>
-          <p className="text-muted-foreground mb-4">This team doesn't exist or you don't have access.</p>
-          <Button onClick={() => navigate("/teams")}>Back to Teams</Button>
+        <div className="container">
+          <StatusPanel
+            icon={UsersRound}
+            title="Team not found"
+            description="This team doesn't exist or you don't have access."
+          >
+            <Button onClick={() => navigate("/teams")}>Back to teams</Button>
+          </StatusPanel>
         </div>
       </Layout>
     );
@@ -103,15 +108,18 @@ const EditTeamPage = () => {
 
   return (
     <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8 max-w-2xl">
-          <div className="flex items-center gap-4 mb-8">
-            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-3xl py-8 md:py-10">
+          <div className="mb-8 flex items-start gap-3">
+            <Button aria-label="Back" variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
-            <div>
+            <div className="pt-0.5">
+              <p className="eyebrow mb-2">Team settings</p>
               <h1 className="page-title">Edit Team</h1>
-              <p className="text-muted-foreground">Update {team.name}</p>
+              <p className="max-w-xl text-muted-foreground">
+                Update {team.name}'s identity, roster size, and join visibility.
+              </p>
             </div>
           </div>
 

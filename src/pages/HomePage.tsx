@@ -1,110 +1,54 @@
-import { useState, useEffect } from "react";
+import { type HTMLAttributes, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import {
-  ArrowRight, Check, MapPin, ShieldCheck, Zap, CalendarCheck,
-  CreditCard, Building2, Star, Activity,
+  ArrowRight,
+  Building2,
+  CalendarCheck,
+  Check,
+  CreditCard,
+  MapPin,
+  ShieldCheck,
+  Star,
+  Zap,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+
+import { Button } from "@/components/ui/button";
 import HeroSearch from "@/components/home/HeroSearch";
 import SEOHead, { createWebsiteJsonLd } from "@/components/seo/SEOHead";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { RemotionScene } from "@/remotion/RemotionScene";
-import { useMediaQuery } from "@/remotion/useMediaQuery";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-landing.jpg";
-import venueFootball from "@/assets/venue-football.jpg";
-import venueTennis from "@/assets/venue-tennis.jpg";
 import venueBasketball from "@/assets/venue-basketball.jpg";
+import venueFootball from "@/assets/venue-football.jpg";
 import venueSwimming from "@/assets/venue-swimming.jpg";
+import venueTennis from "@/assets/venue-tennis.jpg";
 
-/* ------------------------------------------------------------------
-   Motion: one reveal, reused everywhere, and switched off wholesale
-   when the visitor asks for reduced motion. A single consistent
-   entrance reads as intent; a different animation per section reads
-   as decoration.
-
-   Numbers come from the app's own motion primitives in index.css
-   (--ease-out-expo, --dur-base), restated here because framer-motion
-   needs values rather than CSS variables. Everything below moves
-   opacity and transform only, so no entrance on this page can
-   trigger layout while it runs.
------------------------------------------------------------------- */
-const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]; // --ease-out-expo
-const ENTER = 0.42; // an element arriving
-const FEEDBACK = 0.22; // --dur-base: something answering an event
-const STAGGER = 0.05; // 50ms between siblings
-
-/*
- * Order in a reveal → its delay. Capped, because stagger is a reading
- * cue and not a queue: past the seventh sibling the extra delay stops
- * describing sequence and just makes the tail of a list arrive late.
- * Nothing on this page is that long today, but the lists are rendered
- * from arrays and the next one added should not be able to change that.
- */
-const STAGGER_CAP = 6; // ⇒ 300ms, whatever the list length
-const step = (i: number) => Math.min(i, STAGGER_CAP) * STAGGER;
-
-const reveal: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: ENTER, ease: EASE, delay: step(i) },
-  }),
+type SectionProps = HTMLAttributes<HTMLElement> & {
+  children: ReactNode;
+  tone?: "base" | "raised" | "inverse";
 };
 
-/* The hero image is the one element that scales: it is a picture
-   settling into its frame, not a block of text sliding in. */
-const heroFrame: Variants = {
-  hidden: { opacity: 0, scale: 0.98 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: EASE, delay: 0.1 } },
-};
-
-/* Parents orchestrate only. They carry the variant label their
-   children read and animate nothing themselves, so no child ever
-   fades in through a second fade. */
-const sequence: Variants = { hidden: {}, visible: {} };
-
-const viewportOnce = { once: true, margin: "-80px" };
-
-/* ------------------------------------------------------------------
-   Section shell. Every band shares one rhythm and one tonal step, so
-   the page has a spine instead of eight independently-invented
-   layouts. `invert` is used exactly once — that scarcity is what
-   makes it land.
------------------------------------------------------------------- */
-const Section = ({
-  children,
-  tone = "base",
-  className = "",
-  ...rest
-}: {
-  children: React.ReactNode;
-  tone?: "base" | "raised" | "invert";
-  className?: string;
-} & React.HTMLAttributes<HTMLElement>) => {
+const Section = ({ children, tone = "base", className = "", ...props }: SectionProps) => {
   const tones = {
     base: "bg-background",
-    raised: "bg-surface-1 border-y border-border",
-    invert: "surface-invert bg-secondary text-secondary-foreground",
+    raised: "border-y border-border bg-surface-1",
+    inverse: "bg-secondary text-secondary-foreground",
   };
+
   return (
-    <section className={`${tones[tone]} py-20 md:py-28 ${className}`} {...rest}>
+    <section
+      className={`${tones[tone]} py-16 sm:py-20 lg:py-24 ${className}`}
+      {...props}
+    >
       <div className="container px-5 md:px-6">{children}</div>
     </section>
   );
 };
 
-const Eyebrow = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => (
+const Eyebrow = ({ children, inverse = false }: { children: ReactNode; inverse?: boolean }) => (
   <p
-    className={`eyebrow mb-4 ${className}`}
+    className={`mb-4 text-xs font-semibold uppercase tracking-[0.12em] ${
+      inverse ? "text-secondary-foreground/70" : "text-primary"
+    }`}
   >
     {children}
   </p>
@@ -112,64 +56,11 @@ const Eyebrow = ({
 
 const HomePage = () => {
   const { user } = useAuth();
-  const prefersReduced = useReducedMotion();
-  /*
-   * The ambient hero plate is desktop-only.
-   *
-   * Not a taste call — it is 1920×1080 of stacked SVG filters, blurs and a
-   * grain tile, composited every frame. On a 390px phone that is the most
-   * expensive thing on a page whose job is to load fast on exactly that
-   * device, and it is behind copy that fills the viewport anyway, so almost
-   * none of it is even visible there. Below 768px the section stays the flat
-   * `bg-background` it was, and the chunk is never fetched.
-   *
-   * `useMediaQuery` rather than the app's `useIsMobile`: that one starts at
-   * `false` and corrects itself in an effect, which is one render at the wrong
-   * answer — enough to fire the lazy import and put the player on the wire on
-   * the phones it was meant to spare.
-   */
-  const ambientHero = useMediaQuery("(min-width: 768px)");
-  const [venueCount, setVenueCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .from("venues")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true)
-      .then(({ count }) => {
-        if (!cancelled) setVenueCount(count ?? 0);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Under reduced motion we render the final state outright rather than
-  // animating into it, so no content depends on an animation that never runs.
-  const revealProps = prefersReduced
-    ? {}
-    : { initial: "hidden", whileInView: "visible", viewport: viewportOnce, variants: sequence };
-
-  // Hover affordances are decided here rather than with `motion-reduce:`
-  // utilities: those have to out-specify the class they are undoing, and
-  // two utilities of equal specificity are settled by stylesheet order.
-  // Withholding the class is unambiguous.
-  //
-  // The arrow leaning into its direction of travel — already the treatment
-  // on the "See all venues" link — is the page's only CTA embellishment.
-  // Buttons get their press feedback from the shared component.
-  const ctaArrow = `ml-1.5 h-4 w-4${
-    prefersReduced ? "" : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
-  }`;
-  const cardZoom = `aspect-[4/5] w-full object-cover${
-    prefersReduced ? "" : " transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-  }`;
 
   const sports = [
-    { name: "Football", image: venueFootball, detail: "Pitches & futsal" },
-    { name: "Tennis", image: venueTennis, detail: "Clay, hard & padel" },
-    { name: "Basketball", image: venueBasketball, detail: "Indoor & street" },
+    { name: "Football", image: venueFootball, detail: "Pitches and futsal" },
+    { name: "Tennis", image: venueTennis, detail: "Clay, hard and padel" },
+    { name: "Basketball", image: venueBasketball, detail: "Indoor and street" },
     { name: "Swimming", image: venueSwimming, detail: "Lanes by the hour" },
   ];
 
@@ -177,17 +68,17 @@ const HomePage = () => {
     {
       icon: MapPin,
       title: "Find your court",
-      body: "Filter by sport, neighbourhood and time. Every venue is verified, with real photos and the actual price.",
+      body: "Filter by sport, neighbourhood, and time. Every venue is verified, with real photos and the actual price.",
     },
     {
       icon: CalendarCheck,
       title: "Pick a real slot",
-      body: "Availability is live, not a guess. The slot you tap is the slot you get — held for twenty minutes while you pay.",
+      body: "Availability is live, not a guess. The slot you choose is held while you complete payment.",
     },
     {
       icon: CreditCard,
       title: "Pay and play",
-      body: "Pay securely by card, inside the app. Confirmed instantly, and the venue knows you're coming.",
+      body: "Pay securely by card inside the app. Your booking is confirmed immediately and the venue knows you are coming.",
     },
   ];
 
@@ -199,547 +90,284 @@ const HomePage = () => {
         jsonLd={createWebsiteJsonLd()}
       />
 
-      {/* ============================================================
-          HERO — one sentence, one action. The product is shown, not
-          described: the card underneath is a real booking state.
-      ============================================================ */}
-      <section className="relative overflow-hidden bg-background">
-        {/* Ambient Remotion plate — the `HeroBackdrop` composition, running
-            live rather than as a rendered file, on a seamless 6s loop.
+      <section className="border-b border-border bg-background">
+        <div className="container px-5 pb-14 pt-12 md:px-6 md:pb-20 md:pt-16 lg:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-tuff/25 bg-brand-tuff-soft px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-brand-tuff">
+                <span className="live-dot" aria-hidden="true" />
+                Live availability
+              </div>
 
-            First child, so every existing layer still sits on top of it: the
-            primary blur below, the container, and the copy. It is background
-            in the literal sense — `aria-hidden`, `pointer-events-none`, no
-            focusable content, invisible to the accessibility tree.
+              <h1 className="mt-6 max-w-[12ch] text-balance font-display text-4xl font-bold leading-[1.02] tracking-tighter text-foreground sm:text-5xl lg:text-6xl">
+                Book the court. <span className="text-primary">Skip the call.</span>
+              </h1>
 
-            Readability is the composition's own budget, not an overlay bolted
-            on here. Its base colour *is* `--background` (160 22% 5%), its
-            additive light is capped at ~0.13 alpha per orb, and it carries an
-            internal scrim weighted to the left-centre where this headline
-            lands — measured at 14.1:1 against `--foreground` across the plate.
-            The app ships `class="dark"` on <html>, so that is the theme this
-            is measured against and the only one it renders in.
-
-            No fallback element: without the plate this section is the flat
-            `bg-background` it has always been, which is the correct static
-            state rather than a substitute for one. */}
-        <RemotionScene
-          name="HeroBackdrop"
-          enabled={ambientHero}
-          fit="cover"
-          fallback={null}
-          className="pointer-events-none absolute inset-0"
-        />
-
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-40 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"
-        />
-
-        <div className="container relative px-5 pb-16 pt-14 md:px-6 md:pb-24 md:pt-20">
-          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
-            <motion.div
-              initial={prefersReduced ? undefined : "hidden"}
-              animate={prefersReduced ? undefined : "visible"}
-              variants={sequence}
-            >
-              <motion.div variants={reveal}>
-                <span className="eyebrow inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-1.5 text-foreground-soft">
-                  <span className="relative flex h-1.5 w-1.5">
-                    {/* The one perpetual animation on the page, and the only
-                        one that earns it: it is the claim the badge makes.
-                        `animate-none` has no competing utility to outrank
-                        here, so the CSS guard is safe and works even in the
-                        prerendered HTML, before any JS has run. */}
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70 motion-reduce:animate-none" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                  </span>
-                  Live availability
-                </span>
-              </motion.div>
-
-              <motion.h1
-                variants={reveal}
-                custom={1}
-                className="mt-6 text-balance font-display text-[clamp(2.5rem,5.2vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-foreground"
-              >
-                Book the court.
-                <br />
-                <span className="text-primary">Skip the call.</span>
-              </motion.h1>
-
-              <motion.p
-                variants={reveal}
-                custom={2}
-                className="mt-6 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
-              >
+              <p className="mt-6 max-w-[46ch] text-base leading-7 text-foreground-soft sm:text-lg sm:leading-8">
                 Verified sports venues across Armenia, with live availability and
                 instant confirmation. Pay securely by card — your slot is locked
                 the moment you do.
-              </motion.p>
+              </p>
 
-              <motion.div variants={reveal} custom={3} className="mt-9 flex flex-wrap items-center gap-3">
-                <Button
-                  asChild
-                  size="lg"
-                  className="group h-12 rounded-xl px-6 text-[15px] font-semibold"
-                >
+              <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                <Button asChild size="lg" className="group w-full sm:w-auto">
                   <Link to="/venues">
                     Browse venues
-                    <ArrowRight className={ctaArrow} aria-hidden="true" />
+                    <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
                   </Link>
                 </Button>
-                {/* No inset on mobile: stacked under the primary button, the
-                    ghost's own padding pushed its label ~30px right of the one
-                    above it and read as an accidental indent. */}
                 {!user && (
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="ghost"
-                    className="h-12 rounded-xl px-0 text-[15px] font-semibold md:px-5"
-                  >
+                  <Button asChild size="lg" variant="ghost" className="w-full justify-start px-2 sm:w-auto sm:justify-center sm:px-5">
                     <Link to="/for-owners">
-                      <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                      <Building2 className="h-4 w-4" aria-hidden="true" />
                       List your venue
                     </Link>
                   </Button>
                 )}
-              </motion.div>
+              </div>
 
-              <motion.p
-                variants={reveal}
-                custom={4}
-                className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground"
-              >
-                <span className="inline-flex items-center gap-1.5">
+              <div className="mt-7 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-5">
+                <span className="inline-flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
                   Every venue verified
                 </span>
-                <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-2">
                   <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
                   Confirmed in seconds
                 </span>
-              </motion.p>
-            </motion.div>
+              </div>
+            </div>
 
-            <motion.div
-              initial={prefersReduced ? undefined : "hidden"}
-              animate={prefersReduced ? undefined : "visible"}
-              variants={sequence}
-              className="relative"
-            >
-              <motion.div
-                variants={heroFrame}
-                className="relative overflow-hidden rounded-[1.75rem] border border-border shadow-2xl"
-              >
+            <div className="relative">
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
                 <img
                   src={heroImage}
                   alt="Floodlit five-a-side pitch at dusk with players mid-game"
                   className="aspect-[4/3] w-full object-cover"
                   loading="eager"
                 />
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent"
-                />
-              </motion.div>
+              </div>
 
-              {/* Lands while the frame behind it is still settling, so the
-                  card reads as sitting on the photograph rather than as a
-                  second, unrelated entrance. */}
-              <motion.div
-                variants={reveal}
-                custom={5}
-                className="glass absolute -bottom-5 left-4 right-4 rounded-2xl p-4 md:left-8 md:right-8"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                    <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-[15px] font-semibold leading-tight text-foreground">
-                      Confirmed — Thursday, 19:00
-                    </p>
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">
-                      Ararat Arena · 90 min ·{" "}
-                      <span className="font-mono tabular-nums">֏12,000</span>
-                    </p>
-                  </div>
+              <div className="relative mx-3 -mt-7 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-md sm:mx-8">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                  <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
                 </div>
-              </motion.div>
-
-              {/* This one is not part of the entrance — it appears when the
-                  count arrives from the network, which may be long after.
-                  Explicit values rather than a variant label so it animates
-                  on its own mount instead of inheriting a sequence that
-                  finished before it existed. Feedback timing, not entrance
-                  timing: it is answering an event. */}
-              {venueCount !== null && venueCount > 0 && (
-                <motion.div
-                  initial={prefersReduced ? undefined : { opacity: 0, scale: 0.92 }}
-                  animate={prefersReduced ? undefined : { opacity: 1, scale: 1 }}
-                  transition={{ duration: FEEDBACK, ease: EASE }}
-                  className="glass absolute -top-4 right-2 hidden items-center gap-2.5 rounded-xl px-3.5 py-2.5 sm:flex md:right-6"
-                >
-                  <Activity className="h-4 w-4 text-primary" aria-hidden="true" />
-                  <span className="font-mono text-xs tabular-nums text-foreground">
-                    {venueCount} venues live
-                  </span>
-                </motion.div>
-              )}
-            </motion.div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-sm font-semibold leading-5 text-foreground sm:text-[15px]">
+                    Confirmed — Thursday, 19:00
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground sm:text-[13px]">
+                    Ararat Arena · 90 min · <span className="font-mono tabular-nums">֏12,000</span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Search at the seam: the first thing you can actually do,
-            rather than something buried below the fold. */}
-        <div className="container relative px-5 pb-14 md:px-6 md:pb-20">
-          <HeroSearch />
+          <div className="mt-12 lg:mt-14">
+            <HeroSearch />
+          </div>
         </div>
       </section>
 
-      {/* ============================================================
-          HOW IT WORKS
-      ============================================================ */}
       <Section tone="raised" aria-labelledby="how-heading">
-        <motion.div {...revealProps}>
-          <motion.div variants={reveal} className="max-w-2xl">
-            <Eyebrow>How it works</Eyebrow>
-            <h2
-              id="how-heading"
-              className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
-            >
-              Three taps between you and the game.
-            </h2>
-          </motion.div>
+        <div className="max-w-2xl">
+          <Eyebrow>How it works</Eyebrow>
+          <h2 id="how-heading" className="text-balance font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+            Three clear steps between you and the game.
+          </h2>
+        </div>
 
-          <ol className="mt-12 grid gap-10 md:mt-14 md:grid-cols-3 md:gap-8">
-            {steps.map((s, i) => (
-              <motion.li key={s.title} variants={reveal} custom={i + 1}>
-                <div className="mb-5 flex items-center gap-3">
-                  <span className="font-mono text-sm tabular-nums text-primary">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span aria-hidden="true" className="h-px flex-1 bg-border" />
-                </div>
-                <s.icon
-                  className="mb-4 h-6 w-6 text-primary"
-                  strokeWidth={1.75}
-                  aria-hidden="true"
-                />
-                <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
-                  {s.title}
-                </h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-foreground-soft">
-                  {s.body}
-                </p>
-              </motion.li>
-            ))}
-          </ol>
-        </motion.div>
+        <ol className="mt-10 grid gap-8 md:mt-12 md:grid-cols-3 md:gap-10">
+          {steps.map((step, index) => (
+            <li key={step.title} className="border-t border-border-strong pt-5">
+              <div className="flex items-center justify-between gap-4">
+                <step.icon className="h-6 w-6 text-primary" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">0{index + 1}</span>
+              </div>
+              <h3 className="mt-5 font-display text-lg font-semibold text-foreground">{step.title}</h3>
+              <p className="mt-2 text-[15px] leading-7 text-foreground-soft">{step.body}</p>
+            </li>
+          ))}
+        </ol>
       </Section>
 
-      {/* ============================================================
-          SPORTS — image-led, not a row of text chips.
-      ============================================================ */}
       <Section aria-labelledby="sports-heading">
-        <motion.div {...revealProps}>
-          {/* The "see all" link rides the eyebrow row rather than bottom-aligning
-              against the heading: with a two-line heading the latter left it
-              floating in the middle of the block with no edge to relate to. */}
-          <motion.div variants={reveal}>
-            <div className="flex items-center justify-between gap-4">
-              <Eyebrow className="mb-0">What you can book</Eyebrow>
-              <Link
-                to="/venues"
-                className="group inline-flex shrink-0 items-center gap-1.5 rounded-md text-[15px] font-semibold text-primary outline-none transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                See all venues
-                <ArrowRight
-                  className={`h-4 w-4${
-                    prefersReduced
-                      ? ""
-                      : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
-                  }`}
-                  aria-hidden="true"
-                />
-              </Link>
-            </div>
-            <h2
-              id="sports-heading"
-              className="mt-4 max-w-xl text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
-            >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow>What you can book</Eyebrow>
+            <h2 id="sports-heading" className="max-w-xl text-balance font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
               Every sport has a court. Pick yours.
             </h2>
-          </motion.div>
-
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {sports.map((sport, i) => (
-              <motion.div key={sport.name} variants={reveal} custom={i + 1}>
-                <Link
-                  to={`/venues?sport=${encodeURIComponent(sport.name)}`}
-                  className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-border outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  <img
-                    src={sport.image}
-                    alt=""
-                    loading="lazy"
-                    className={cardZoom}
-                  />
-                  {/* Scrim weighted to the bottom third: the caption has to stay
-                      legible over a bright basketball floor as well as a dark
-                      pitch, and a linear scrim reaching high enough to do that
-                      leaves every image looking veiled. */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 via-45% to-transparent"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <h3 className="font-display text-lg font-semibold text-white">{sport.name}</h3>
-                    <p className="mt-0.5 text-[13px] text-white/70">{sport.detail}</p>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
           </div>
-        </motion.div>
+          <Link
+            to="/venues"
+            className="focus-ring group inline-flex min-h-11 items-center gap-2 self-start rounded-lg text-sm font-semibold text-primary sm:self-auto"
+          >
+            See all venues
+            <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {sports.map((sport) => (
+            <Link
+              key={sport.name}
+              to={`/venues?sport=${encodeURIComponent(sport.name)}`}
+              className="focus-ring group relative block overflow-hidden rounded-xl border border-border bg-secondary"
+            >
+              <img src={sport.image} alt="" loading="lazy" className="aspect-[4/5] w-full object-cover" />
+              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                <h3 className="font-display text-lg font-semibold">{sport.name}</h3>
+                <p className="mt-0.5 text-sm text-white/75">{sport.detail}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </Section>
 
-      {/* ============================================================
-          THE DIFFERENCE — the one claim worth a whole section, shown
-          as the actual booking UI rather than asserted in bullets.
-      ============================================================ */}
       <Section tone="raised" aria-labelledby="lock-heading">
-        <motion.div {...revealProps} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          {/* Plain wrapper: it is a grid cell, not something that enters.
-              The heading block and each claim reveal separately, so the
-              list reads as three points rather than one paragraph. */}
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
           <div>
-            <motion.div variants={reveal}>
-              <Eyebrow>Why it's different</Eyebrow>
-              <h2
-                id="lock-heading"
-                className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground"
-              >
-                The slot is yours the moment you pay.
-              </h2>
-              <p className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
-                No messaging an owner and hoping. No turning up to find someone
-                else on the pitch. Payment and reservation happen together, so a
-                confirmed booking means exactly that.
-              </p>
-            </motion.div>
+            <Eyebrow>Why it is different</Eyebrow>
+            <h2 id="lock-heading" className="text-balance font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+              The slot is yours the moment you pay.
+            </h2>
+            <p className="mt-5 max-w-[52ch] text-base leading-7 text-foreground-soft sm:text-lg sm:leading-8">
+              No messaging an owner and hoping. Payment and reservation happen
+              together, so a confirmed booking means exactly that.
+            </p>
 
-            <ul className="mt-8 space-y-3.5">
+            <ul className="mt-7 space-y-4">
               {[
-                "Double-booking is impossible — enforced by the database, not by trust",
-                // "refunds applied automatically" was my own overstatement,
-                // written into this rebuild. Refunds are requested through the
-                // provider and some are still settled by hand, so the claim
-                // that holds is the one about disclosure, not about speed.
-                "Cancellation terms shown before you pay, never discovered afterwards",
-                "Paid by card, settled in Armenian dram",
-              ].map((line, i) => (
-                <motion.li
-                  key={line}
-                  variants={reveal}
-                  custom={i + 1}
-                  className="flex gap-3 text-[15px] leading-relaxed text-foreground-soft"
-                >
-                  <Check
-                    className="mt-0.5 h-5 w-5 shrink-0 text-primary"
-                    strokeWidth={2.25}
-                    aria-hidden="true"
-                  />
-                  <span>{line}</span>
-                </motion.li>
+                "Double-booking is prevented by the booking system",
+                "Cancellation terms are shown before you pay",
+                "Card payment and prices are handled in Armenian dram",
+              ].map((item) => (
+                <li key={item} className="flex gap-3 text-[15px] leading-6 text-foreground-soft">
+                  <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" strokeWidth={2.25} aria-hidden="true" />
+                  <span>{item}</span>
+                </li>
               ))}
             </ul>
           </div>
 
-          <motion.div variants={reveal} custom={4}>
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-xl md:p-6">
-              <div className="flex items-baseline justify-between">
-                <h3 className="font-display text-base font-semibold text-foreground">
-                  Thursday, 24 July
-                </h3>
-                <span className="font-mono text-xs tabular-nums text-muted-foreground">90 min</span>
-              </div>
-
-              <ul className="mt-5 grid grid-cols-3 gap-2">
-                {[
-                  { t: "17:00", s: "taken" },
-                  { t: "18:30", s: "open" },
-                  { t: "19:00", s: "picked" },
-                  { t: "20:30", s: "open" },
-                  { t: "21:00", s: "taken" },
-                  { t: "22:00", s: "open" },
-                ].map(({ t, s }) => (
-                  <li
-                    key={t}
-                    className={[
-                      "rounded-lg border px-2 py-2.5 text-center font-mono text-[13px] tabular-nums",
-                      s === "picked"
-                        ? "border-primary bg-primary font-semibold text-primary-foreground"
-                        : s === "taken"
-                          ? "border-border bg-surface-3 text-muted-foreground line-through"
-                          : "border-border bg-surface-2 text-foreground",
-                    ].join(" ")}
-                  >
-                    {t}
-                    <span className="sr-only">
-                      {s === "picked"
-                        ? " — selected"
-                        : s === "taken"
-                          ? " — unavailable"
-                          : " — available"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <dl className="mt-6 space-y-2.5 border-t border-border pt-5 text-[15px]">
-                {/* The sample breakdown a player actually sees at checkout.
-                    It carried a ֏600 "Service fee" line and a ֏12,600 total —
-                    the old 5% commission. There is no fee now, so the venue
-                    price is the total. */}
-                <div className="flex justify-between">
-                  <dt className="text-foreground-soft">90 minutes</dt>
-                  <dd className="font-mono tabular-nums text-foreground">֏12,000</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-foreground-soft">Booking fee</dt>
-                  <dd className="font-mono tabular-nums text-foreground">֏0</dd>
-                </div>
-                <div className="flex justify-between border-t border-border pt-3">
-                  <dt className="font-display font-semibold text-foreground">Total</dt>
-                  <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                    ֏12,000
-                  </dd>
-                </div>
-              </dl>
-
-              {/* Status, not an action. Styled as a solid primary bar it was
-                  indistinguishable from the real CTAs elsewhere on the page,
-                  inviting a click on a static illustration. */}
-              <p className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 py-3 text-[15px] font-semibold text-primary">
-                <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-                Slot held until 20:00
-              </p>
+          <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+            <div className="flex items-baseline justify-between gap-4">
+              <h3 className="font-display font-semibold text-foreground">Thursday, 24 July</h3>
+              <span className="font-mono text-xs tabular-nums text-muted-foreground">90 min</span>
             </div>
-          </motion.div>
-        </motion.div>
+
+            <ul className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                { time: "17:00", state: "taken" },
+                { time: "18:30", state: "open" },
+                { time: "19:00", state: "picked" },
+                { time: "20:30", state: "open" },
+                { time: "21:00", state: "taken" },
+                { time: "22:00", state: "open" },
+              ].map(({ time, state }) => (
+                <li
+                  key={time}
+                  className={`rounded-lg border px-2 py-2.5 text-center font-mono text-[13px] tabular-nums ${
+                    state === "picked"
+                      ? "border-primary bg-primary font-semibold text-primary-foreground"
+                      : state === "taken"
+                        ? "border-border bg-surface-1 text-muted-foreground line-through"
+                        : "border-border-strong bg-background text-foreground"
+                  }`}
+                >
+                  {time}
+                  <span className="sr-only"> — {state === "picked" ? "selected" : state === "taken" ? "unavailable" : "available"}</span>
+                </li>
+              ))}
+            </ul>
+
+            <dl className="mt-6 space-y-2.5 border-t border-border pt-5 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-foreground-soft">90 minutes</dt>
+                <dd className="font-mono tabular-nums text-foreground">֏12,000</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-foreground-soft">Booking fee</dt>
+                <dd className="font-mono tabular-nums text-foreground">֏0</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-border pt-3 font-semibold">
+                <dt className="text-foreground">Total</dt>
+                <dd className="font-mono text-base tabular-nums text-foreground">֏12,000</dd>
+              </div>
+            </dl>
+
+            <p className="mt-5 flex items-center justify-center gap-2 rounded-lg border border-primary/25 bg-primary-soft py-3 text-sm font-semibold text-primary">
+              <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+              Slot held until 20:00
+            </p>
+          </div>
+        </div>
       </Section>
 
-      {/* ============================================================
-          OWNERS — the single tonal inversion on the page. Used once,
-          which is what makes it register as a different audience.
-      ============================================================ */}
-      <Section tone="invert" aria-labelledby="owners-heading">
-        <motion.div {...revealProps} className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          <motion.div variants={reveal}>
-            <p className="eyebrow mb-4 text-current opacity-60">
-              For venue owners
-            </p>
-            <h2
-              id="owners-heading"
-              className="text-balance font-display text-[clamp(1.875rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-secondary-foreground"
-            >
+      <Section tone="inverse" aria-labelledby="owners-heading">
+        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
+          <div>
+            <Eyebrow inverse>For venue owners</Eyebrow>
+            <h2 id="owners-heading" className="text-balance font-display text-3xl font-semibold leading-tight tracking-tight text-secondary-foreground sm:text-4xl">
               Fill the empty hours. Keep the paperwork out of it.
             </h2>
-            <p className="mt-5 max-w-[50ch] text-[1.0625rem] leading-relaxed opacity-75">
+            <p className="mt-5 max-w-[50ch] text-base leading-7 text-secondary-foreground/75 sm:text-lg sm:leading-8">
               List once, set your hours and price, then take bookings around the
-              clock. We collect payment; you get a weekly payout with every
-              booking itemised.
+              clock. We collect payment; you receive an itemised payout.
             </p>
-            <Button
-              asChild
-              size="lg"
-              className="group mt-8 h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
-            >
+            <Button asChild size="lg" variant="secondaryOutline" className="group mt-8 bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90">
               <Link to="/for-owners">
                 List your venue
-                <ArrowRight className={ctaArrow} aria-hidden="true" />
+                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
               </Link>
             </Button>
-          </motion.div>
+          </div>
 
-          <dl className="grid grid-cols-2 gap-4">
+          <dl className="grid border-y border-secondary-foreground/20 sm:grid-cols-2">
             {[
-              { k: "Commission", v: "0%", note: "No listing fee, no monthly cost" },
-              { k: "Payouts", v: "Weekly", note: "Itemised, straight to your account" },
-              { k: "Setup", v: "10 min", note: "Photos, hours, price — that's it" },
-              { k: "Support", v: "Direct", note: "Message players inside the app" },
-            ].map(({ k, v, note }, i) => (
-              <motion.div
-                key={k}
-                variants={reveal}
-                custom={i + 1}
-                className="rounded-2xl bg-secondary-foreground/5 p-5"
+              { label: "Commission", value: "0%", note: "No listing fee or monthly cost" },
+              { label: "Payouts", value: "Weekly", note: "Itemised for every booking" },
+              { label: "Setup", value: "10 min", note: "Photos, hours, and price" },
+              { label: "Support", value: "Direct", note: "Message players inside the app" },
+            ].map(({ label, value, note }, index) => (
+              <div
+                key={label}
+                className={`py-5 sm:p-6 ${index > 0 ? "border-t border-secondary-foreground/20 sm:border-t-0" : ""} ${index % 2 === 1 ? "sm:border-l sm:border-secondary-foreground/20" : ""} ${index > 1 ? "sm:border-t sm:border-secondary-foreground/20" : ""}`}
               >
-                <dt className="eyebrow text-current opacity-60">{k}</dt>
-                <dd className="mt-2 font-display text-2xl font-bold tabular-nums">{v}</dd>
-                <p className="mt-1.5 text-[13px] leading-snug opacity-65">{note}</p>
-              </motion.div>
+                <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-secondary-foreground/60">{label}</dt>
+                <dd className="mt-2 font-display text-2xl font-semibold tabular-nums text-secondary-foreground">{value}</dd>
+                <p className="mt-1.5 text-sm leading-6 text-secondary-foreground/65">{note}</p>
+              </div>
             ))}
           </dl>
-        </motion.div>
+        </div>
       </Section>
 
-      {/* ============================================================
-          CLOSE — one action, nothing competing with it.
-      ============================================================ */}
-      <section className="relative overflow-hidden bg-background py-24 md:py-32">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-[-30%] left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"
-        />
-        <motion.div {...revealProps} className="container relative px-5 text-center md:px-6">
-          <motion.h2
-            variants={reveal}
-            className="mx-auto max-w-3xl text-balance font-display text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.02] tracking-[-0.035em] text-foreground"
-          >
-            Your next game is one tap away.
-          </motion.h2>
-          <motion.p
-            variants={reveal}
-            custom={1}
-            className="mx-auto mt-5 max-w-[44ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
-          >
+      <Section aria-labelledby="final-heading">
+        <div className="mx-auto max-w-3xl text-center">
+          <Star className="mx-auto h-5 w-5 fill-brand-tuff text-brand-tuff" aria-hidden="true" />
+          <h2 id="final-heading" className="mt-5 text-balance font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+            Your next game starts with a real available slot.
+          </h2>
+          <p className="mx-auto mt-5 max-w-[44ch] text-base leading-7 text-foreground-soft sm:text-lg">
             Free to join. No card needed until you book.
-          </motion.p>
-          <motion.div variants={reveal} custom={2} className="mt-9 flex flex-wrap justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="group h-12 rounded-xl px-7 text-[15px] font-semibold"
-            >
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Button asChild size="lg" className="group">
               <Link to={user ? "/venues" : "/signup"}>
                 {user ? "Find a court" : "Get started"}
-                <ArrowRight className={ctaArrow} aria-hidden="true" />
+                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
               </Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="h-12 rounded-xl px-6 text-[15px] font-semibold"
-            >
+            <Button asChild size="lg" variant="outline">
               <Link to="/venues">Browse first</Link>
             </Button>
-          </motion.div>
-
-          <motion.p
-            variants={reveal}
-            custom={3}
-            className="mt-8 inline-flex items-center gap-2 text-sm text-muted-foreground"
-          >
-            <Star className="h-4 w-4 fill-primary text-primary" aria-hidden="true" />
-            Built for players in Yerevan — message venue owners directly
-          </motion.p>
-        </motion.div>
-      </section>
+          </div>
+        </div>
+      </Section>
     </>
   );
 };

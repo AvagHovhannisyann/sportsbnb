@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { Eye, EyeOff, Loader2, Save, Sparkles, Upload, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Upload, Sparkles, Users, Eye, EyeOff, Save } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -13,10 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { sportTypes } from "@/data/constants";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 export interface TeamFormValues {
   name: string;
@@ -46,16 +46,7 @@ interface TeamFormProps {
   isSubmitting: boolean;
 }
 
-/**
- * The team form, shared by create and edit.
- *
- * Extracted from `CreateTeamPage` when `EditTeamPage` was built, for the same
- * reason `VenueForm` is shared between adding and editing a venue: a captain
- * editing a team should be looking at the fields they filled in, in the order
- * they filled them, and two copies of a form drift the moment either is
- * touched. The only differences between the modes are the submit label and
- * whether the fields start empty.
- */
+/** Shared presentation and values for team creation and editing. */
 export function TeamForm({ mode, initialValues, onSubmit, isSubmitting }: TeamFormProps) {
   const navigate = useNavigate();
   const [values, setValues] = useState<TeamFormValues>({ ...EMPTY, ...initialValues });
@@ -63,7 +54,7 @@ export function TeamForm({ mode, initialValues, onSubmit, isSubmitting }: TeamFo
   const [aiPrompt, setAiPrompt] = useState("");
 
   const set = <K extends keyof TeamFormValues>(key: K, value: TeamFormValues[K]) =>
-    setValues((v) => ({ ...v, [key]: value }));
+    setValues((current) => ({ ...current, [key]: value }));
 
   const handleGenerateLogo = async () => {
     if (!aiPrompt.trim() && !values.name.trim()) {
@@ -91,8 +82,8 @@ export function TeamForm({ mode, initialValues, onSubmit, isSubmitting }: TeamFo
     }
   };
 
-  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleUploadLogo = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     const path = `${crypto.randomUUID()}.${file.name.split(".").pop()}`;
@@ -106,8 +97,8 @@ export function TeamForm({ mode, initialValues, onSubmit, isSubmitting }: TeamFo
     toast.success("Logo uploaded!");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!values.name.trim() || !values.sport) {
       toast.error("Please fill in required fields");
       return;
@@ -115,189 +106,240 @@ export function TeamForm({ mode, initialValues, onSubmit, isSubmitting }: TeamFo
     await onSubmit({ ...values, name: values.name.trim(), description: values.description.trim() });
   };
 
-  // A team saved before this list existed, or through the API, keeps whatever
-  // size it has — offering only the canonical set would silently rewrite it to
-  // the nearest option the first time anyone edited an unrelated field.
+  // Preserve non-canonical team sizes saved before this picker existed.
   const sizes = TEAM_SIZES.includes(values.teamSize)
     ? TEAM_SIZES
     : [...TEAM_SIZES, values.teamSize].sort((a, b) => a - b);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle as="h2">Team Info</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card shadow-xs">
+      <section className="border-b border-border p-5 md:p-6" aria-labelledby="team-info-heading">
+        <div className="mb-5">
+          <h2 id="team-info-heading" className="text-xl font-semibold text-foreground">
+            Team details
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Give players enough context to recognize the team and its sport.
+          </p>
+        </div>
+
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Team Name *</Label>
             <Input
               id="name"
+              aria-required="true"
               placeholder="e.g., Thunder FC"
               value={values.name}
-              onChange={(e) => set("name", e.target.value)}
+              onChange={(event) => set("name", event.target.value)}
               maxLength={60}
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="Tell others about your team..."
+              placeholder="Tell players what your team is about…"
               value={values.description}
-              onChange={(e) => set("description", e.target.value)}
-              className="min-h-20"
+              onChange={(event) => set("description", event.target.value)}
+              className="min-h-24"
               maxLength={300}
             />
           </div>
-          <div className="grid md:grid-cols-2 gap-4">
+
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="team-sport">Sport *</Label>
-              <Select value={values.sport} onValueChange={(v) => set("sport", v)}>
-                <SelectTrigger id="team-sport" aria-label="Sport">
+              <Select value={values.sport} onValueChange={(value) => set("sport", value)}>
+                <SelectTrigger id="team-sport" aria-label="Sport" aria-required="true">
                   <SelectValue placeholder="Select sport" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sportTypes.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
+                  {sportTypes.map((sport) => (
+                    <SelectItem key={sport} value={sport}>
+                      {sport}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="team-size">Team Size</Label>
-              <Select value={String(values.teamSize)} onValueChange={(v) => set("teamSize", Number(v))}>
+              <Select
+                value={String(values.teamSize)}
+                onValueChange={(value) => set("teamSize", Number(value))}
+              >
                 <SelectTrigger id="team-size" aria-label="Team size">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {sizes.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n} players
+                  {sizes.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size} players
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Logo</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {values.logoUrl && (
-            <div className="flex justify-center">
+      <section className="border-b border-border p-5 md:p-6" aria-labelledby="team-logo-heading">
+        <div className="mb-5">
+          <h2 id="team-logo-heading" className="text-xl font-semibold text-foreground">
+            Team logo
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Optional. Upload a finished mark or generate a starting point.
+          </p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">
+          <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-xl border border-border bg-surface-1">
+            {values.logoUrl ? (
               <img
                 src={values.logoUrl}
-                alt="Team logo"
-                className="h-24 w-24 rounded-xl object-cover border border-border"
+                alt={`${values.name || "Team"} logo preview`}
+                className="h-full w-full object-cover"
               />
-            </div>
-          )}
-          <div className="space-y-3">
+            ) : (
+              <span className="text-3xl font-semibold text-primary" aria-hidden="true">
+                {(values.name || "T").charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+
+          <div className="min-w-0 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="logo-prompt">Generate with AI</Label>
-              <div className="flex gap-2">
+              <Label htmlFor="logo-prompt">Generate a logo</Label>
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="logo-prompt"
-                  placeholder="Describe your team logo..."
+                  placeholder="Describe a simple team mark…"
                   value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onChange={(event) => setAiPrompt(event.target.value)}
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleGenerateLogo}
                   disabled={isGeneratingLogo}
-                  className="shrink-0 gap-2"
+                  className="shrink-0"
                 >
                   {isGeneratingLogo ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
                   )}
                   Generate
                 </Button>
               </div>
             </div>
-            <div className="text-center text-sm text-muted-foreground">or</div>
-            <div>
-              <Label htmlFor="logo-upload" className="cursor-pointer">
-                <div className="flex items-center justify-center gap-2 p-3 border border-dashed border-border rounded-lg hover:border-primary/50 transition-colors">
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Upload image</span>
-                </div>
-              </Label>
+
+            <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+              <span className="h-px flex-1 bg-border" />
+              or
+              <span className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="relative">
               <input
                 id="logo-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleUploadLogo}
-                className="hidden"
+                className="peer sr-only"
               />
+              <Label
+                htmlFor="logo-upload"
+                className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border-interactive bg-background px-4 text-sm font-medium text-foreground transition-[background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:bg-surface-1 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+              >
+                <Upload className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                Upload image
+              </Label>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Visibility</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup
-            value={values.visibility}
-            onValueChange={(v) => set("visibility", v)}
-            className="space-y-3"
-          >
-            <div className="flex items-center space-x-3 p-3 rounded-lg border border-border">
-              <RadioGroupItem value="public" id="public" />
-              <Label htmlFor="public" className="flex items-center gap-2 cursor-pointer flex-1">
-                <Eye className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Public</p>
-                  <p className="text-sm text-muted-foreground">Anyone can find and join</p>
-                </div>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-3 p-3 rounded-lg border border-border">
-              <RadioGroupItem value="private" id="private" />
-              <Label htmlFor="private" className="flex items-center gap-2 cursor-pointer flex-1">
-                <EyeOff className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Private</p>
-                  <p className="text-sm text-muted-foreground">Invite only or approval required</p>
-                </div>
-              </Label>
-            </div>
-          </RadioGroup>
-        </CardContent>
-      </Card>
+      <section className="p-5 md:p-6" aria-labelledby="team-visibility-heading">
+        <div className="mb-5">
+          <h2 id="team-visibility-heading" className="text-xl font-semibold text-foreground">
+            Visibility
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">Control how new players discover and join.</p>
+        </div>
 
-      <div className="flex gap-4">
-        <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">
+        <RadioGroup
+          value={values.visibility}
+          onValueChange={(value) => set("visibility", value)}
+          aria-label="Team visibility"
+          className="grid gap-3 sm:grid-cols-2"
+        >
+          <div className="relative">
+            <RadioGroupItem
+              value="public"
+              id="public"
+              className="peer !absolute !h-px !w-px overflow-hidden whitespace-nowrap !border-0 !p-0 [clip:rect(0,0,0,0)]"
+            />
+            <Label
+              htmlFor="public"
+              className="flex min-h-[5.5rem] cursor-pointer items-start gap-3 rounded-lg border border-border-interactive bg-background p-4 transition-[background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:bg-surface-1 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary-soft peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+            >
+              <Eye className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span>
+                <span className="block font-semibold text-foreground">Public</span>
+                <span className="mt-1 block text-sm font-normal leading-relaxed text-muted-foreground">
+                  Anyone can find and join the team.
+                </span>
+              </span>
+            </Label>
+          </div>
+
+          <div className="relative">
+            <RadioGroupItem
+              value="private"
+              id="private"
+              className="peer !absolute !h-px !w-px overflow-hidden whitespace-nowrap !border-0 !p-0 [clip:rect(0,0,0,0)]"
+            />
+            <Label
+              htmlFor="private"
+              className="flex min-h-[5.5rem] cursor-pointer items-start gap-3 rounded-lg border border-border-interactive bg-background p-4 transition-[background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:bg-surface-1 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary-soft peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+            >
+              <EyeOff className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span>
+                <span className="block font-semibold text-foreground">Private</span>
+                <span className="mt-1 block text-sm font-normal leading-relaxed text-muted-foreground">
+                  Players join through an invite or approval.
+                </span>
+              </span>
+            </Label>
+          </div>
+        </RadioGroup>
+      </section>
+
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex gap-3 rounded-b-xl border-t border-border bg-card/95 p-4 backdrop-blur-sm md:static md:justify-end md:p-5">
+        <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1 md:flex-none">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="flex-1">
+        <Button type="submit" disabled={isSubmitting} className="flex-1 md:min-w-40 md:flex-none">
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {mode === "create" ? "Creating..." : "Saving..."}
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              {mode === "create" ? "Creating…" : "Saving…"}
             </>
           ) : mode === "create" ? (
             <>
-              <Users className="h-4 w-4 mr-2" />
-              Create Team
+              <Users className="h-4 w-4" aria-hidden="true" />
+              Create team
             </>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
+              <Save className="h-4 w-4" aria-hidden="true" />
+              Save changes
             </>
           )}
         </Button>

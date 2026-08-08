@@ -15,7 +15,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
   if (authLoading || adminLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen" role="status" aria-label="Checking your access">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" />
       </div>
     );
   }

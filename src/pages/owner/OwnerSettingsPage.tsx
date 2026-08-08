@@ -1,11 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, Save, Building2, Mail, Phone, Globe, MapPin, Banknote } from "lucide-react";
+import {
+  ArrowUpRight,
+  Banknote,
+  Building2,
+  Globe,
+  Loader2,
+  Mail,
+  MapPin,
+  Save,
+  Settings2,
+} from "lucide-react";
+import { ErrorPanel } from "@/components/common/StatusPanel";
+import { OwnerLayout } from "@/components/owner/OwnerLayout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,30 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { OwnerLayout } from "@/components/owner/OwnerLayout";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
-import { CURRENCIES } from "@/lib/currencies";
 import { supabase } from "@/integrations/supabase/client";
+import { CURRENCIES } from "@/lib/currencies";
 import { toast } from "sonner";
 
-/**
- * The currencies this picker offers — the same list the profile page offers.
- *
- * It was a second, hardcoded list of five, and both pickers write the same
- * `profiles.preferred_currency` column. The profile page offers all fifteen,
- * so an owner who chose, say, Georgian Lari there came here and found the
- * Currency field *blank*: a controlled Radix `Select` whose value matches no
- * item renders neither the value nor its placeholder. Measured — /profile read
- * "₾ Georgian Lari (GEL)" and /owner/settings read "". They could not see what
- * their currency was set to, and touching the control at all would have forced
- * them down to one of five.
- *
- * Deriving it from `CURRENCIES` is what stops the two lists diverging again;
- * `currencies.test.ts` asserts it structurally rather than trusting this
- * comment.
- */
 const currencies = Object.entries(CURRENCIES).map(([code, info]) => ({
   code,
   symbol: info.symbol,
@@ -47,12 +43,16 @@ const OwnerSettingsPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading, refetch } = useOwnerVenues(user?.id);
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch,
+  } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -62,36 +62,18 @@ const OwnerSettingsPage = () => {
     website: "",
     price_per_hour: 0,
   });
-
-  // Profile state for currency
   const [currency, setCurrency] = useState("USD");
 
-  /**
-   * Which venue to open, honouring `?venue=` before falling back to the first.
-   *
-   * `OwnerVenuesPage` sends `/owner/settings?venue=${venue.id}` from the row
-   * menu of a specific venue, and nothing here read it. The page opened on
-   * `myVenues[0]` regardless — so an owner with more than one venue picked
-   * "Settings" on their second, got a form pre-filled with their first
-   * venue's name, address and hourly price, and any edit they saved was
-   * written to the wrong record. Nothing on screen contradicted them: the
-   * form looked exactly as it should, just for a different venue.
-   *
-   * Checked against the owner's own venues rather than trusted, so a stale or
-   * hand-edited id falls back rather than selecting nothing and rendering an
-   * empty form over a venue that exists.
-   */
   useEffect(() => {
     if (myVenues.length === 0 || selectedVenueId) return;
     const requested = searchParams.get("venue");
-    const match = requested ? myVenues.find((v) => v.id === requested) : undefined;
+    const match = requested ? myVenues.find((venue) => venue.id === requested) : undefined;
     setSelectedVenueId(match?.id ?? myVenues[0].id);
   }, [myVenues, selectedVenueId, searchParams]);
 
-  // Load venue data when venue changes
   useEffect(() => {
     if (selectedVenueId) {
-      const venue = myVenues.find((v) => v.id === selectedVenueId);
+      const venue = myVenues.find((candidate) => candidate.id === selectedVenueId);
       if (venue) {
         setFormData({
           name: venue.name || "",
@@ -106,12 +88,13 @@ const OwnerSettingsPage = () => {
     }
   }, [selectedVenueId, myVenues]);
 
-  // Load profile currency (preferred_currency may exist in DB)
   useEffect(() => {
+    // preferred_currency exists in the database but predates the generated
+    // profile type used by this auth context.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const prefCurrency = (profile as any)?.preferred_currency;
-    if (prefCurrency) {
-      setCurrency(prefCurrency);
+    const preferredCurrency = (profile as any)?.preferred_currency;
+    if (preferredCurrency) {
+      setCurrency(preferredCurrency);
     }
   }, [profile]);
 
@@ -119,10 +102,6 @@ const OwnerSettingsPage = () => {
     if (!authLoading && !user) {
       navigate("/login");
     }
-    // isProfileLoading, not just authLoading: authLoading covers the
-    // session only, so without it this reads user_type off a null profile
-    // and bounces the owner. RequireRole already guards this route; keeping
-    // the check correct here means it stays safe if that ever changes.
     if (!authLoading && !isProfileLoading && user && profile?.user_type !== "owner") {
       navigate("/dashboard");
     }
@@ -131,9 +110,27 @@ const OwnerSettingsPage = () => {
   if (authLoading || venuesLoading) {
     return (
       <OwnerLayout title="Settings">
-        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading settings">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex h-64 items-center justify-center" role="status" aria-label="Loading settings">
+          <Loader2
+            aria-hidden="true"
+            className="h-7 w-7 animate-spin text-primary motion-reduce:animate-none"
+          />
         </div>
+      </OwnerLayout>
+    );
+  }
+
+  if (venuesError) {
+    return (
+      <OwnerLayout title="Settings" subtitle="Update listing basics and your dashboard currency.">
+        <Card className="max-w-3xl">
+          <ErrorPanel
+            what="your venues"
+            description="No settings have changed. Try loading your venues again."
+            onRetry={() => refetch()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
       </OwnerLayout>
     );
   }
@@ -143,7 +140,6 @@ const OwnerSettingsPage = () => {
     setIsSaving(true);
 
     try {
-      // Update venue
       const { error: venueError } = await supabase
         .from("venues")
         .update({
@@ -157,7 +153,6 @@ const OwnerSettingsPage = () => {
 
       if (venueError) throw venueError;
 
-      // Update profile currency
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ preferred_currency: currency })
@@ -175,34 +170,49 @@ const OwnerSettingsPage = () => {
     }
   };
 
+  const selectedVenue = myVenues.find((venue) => venue.id === selectedVenueId);
 
   return (
-    <OwnerLayout title="Settings" subtitle="Update your venue's basic information and settings">
+    <OwnerLayout title="Settings" subtitle="Update listing basics and your dashboard currency.">
       {myVenues.length === 0 ? (
-        <Card>
+        <Card className="max-w-3xl">
           <EmptyState
             icon={Building2}
             title="No venues to configure"
             description="Add a venue first to configure settings."
-            actionLabel="Add Your First Venue"
+            actionLabel="Add your first venue"
             actionHref="/add-venue"
           />
         </Card>
       ) : (
-        <div className="max-w-3xl space-y-6">
-          {/* Venue Selector */}
-          {myVenues.length > 1 && (
-            <div>
-              {/* `htmlFor`/`id`, not just proximity. The label was rendered
-                  right above the control and tied to nothing, so Chrome
-                  computed no accessible name for it and a screen reader
-                  announced an unnamed combobox. */}
-              <Label htmlFor="settings-venue" className="mb-2 block">Select Venue</Label>
-              <Select
-                value={selectedVenueId || ""}
-                onValueChange={setSelectedVenueId}
-              >
-                <SelectTrigger id="settings-venue" className="w-full max-w-xs">
+        <div className="max-w-5xl space-y-5">
+          <section
+            aria-labelledby="settings-venue-context"
+            className="rounded-lg border border-border bg-surface-1 p-4 sm:flex sm:items-end sm:justify-between sm:gap-6"
+          >
+            <div className="min-w-0">
+              <p className="eyebrow">Venue context</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <h2
+                  id="settings-venue-context"
+                  className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground"
+                >
+                  {selectedVenue?.name || "Choose a venue"}
+                </h2>
+                {selectedVenue && (
+                  <Badge variant={selectedVenue.is_active ? "default" : "secondary"}>
+                    {selectedVenue.is_active ? "Active" : "Draft"}
+                  </Badge>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Listing changes below are written only to this venue.
+              </p>
+            </div>
+            <div className="mt-4 w-full sm:mt-0 sm:max-w-xs">
+              <Label htmlFor="settings-venue">Venue</Label>
+              <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
+                <SelectTrigger id="settings-venue" className="mt-1.5">
                   <SelectValue placeholder="Select a venue" />
                 </SelectTrigger>
                 <SelectContent>
@@ -214,183 +224,201 @@ const OwnerSettingsPage = () => {
                 </SelectContent>
               </Select>
             </div>
-          )}
+          </section>
 
-          {/* General Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle as="h2" className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                General Information
-              </CardTitle>
-              <CardDescription>
-                Update your venue's basic information and settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Venue Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Venue Name</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+            <Card>
+              <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                  <Building2 aria-hidden="true" className="h-5 w-5 text-primary" />
+                  Listing basics
+                </CardTitle>
+                <CardDescription className="mt-1.5">
+                  Name, location, rate, and description shown across the marketplace.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5 p-5 pt-0 sm:p-6 sm:pt-0">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="settings-name">Venue name</Label>
                     <Input
-                      id="name"
+                      id="settings-name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="pl-10"
+                      onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                       placeholder="Your venue name"
                     />
                   </div>
-                </div>
 
-                {/* Email (from profile) */}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-address">Address</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      autoComplete="email"
-                      value={profile?.email || ""}
-                      disabled
-                      className="pl-10 bg-muted"
-                    />
-                  </div>
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      autoComplete="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="pl-10"
-                      placeholder="+374 XX XXXXXX"
-                    />
-                  </div>
-                </div>
-
-                {/* Currency */}
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger id="currency">
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {c.code} ({c.symbol}) - {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    This will be used throughout your dashboard
-                  </p>
-                </div>
-
-                {/* Website */}
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="website"
-                      type="url"
-                      value={formData.website}
-                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                      className="pl-10"
-                      placeholder="https://yourvenue.com"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Your venue's website URL
-                  </p>
-                </div>
-
-                {/* Address */}
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="address"
+                      id="settings-address"
+                      autoComplete="street-address"
                       value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className="pl-10"
-                      placeholder="123 Sports Lane"
+                      onChange={(event) => setFormData({ ...formData, address: event.target.value })}
+                      placeholder="Street and building"
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-city">City</Label>
+                    <Input
+                      id="settings-city"
+                      autoComplete="address-level2"
+                      value={formData.city}
+                      onChange={(event) => setFormData({ ...formData, city: event.target.value })}
+                      placeholder="Yerevan"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="settings-price">Base price per hour</Label>
+                    <div className="relative">
+                      <Banknote
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <Input
+                        id="settings-price"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        value={formData.price_per_hour}
+                        onChange={(event) =>
+                          setFormData({ ...formData, price_per_hour: Number(event.target.value) })
+                        }
+                        className="pl-10 font-mono tabular-nums"
+                      />
+                    </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      This is the venue base rate. Existing booking and payment pricing rules remain unchanged.
+                    </p>
                   </div>
                 </div>
 
-                {/* City */}
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Yerevan"
+                <div className="space-y-1.5 border-t border-border pt-5">
+                  <Label htmlFor="settings-description">Description</Label>
+                  <Textarea
+                    id="settings-description"
+                    value={formData.description}
+                    onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                    placeholder="Describe the venue, playing surface, and experience."
+                    rows={5}
                   />
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Price per hour */}
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price per Hour</Label>
-                  <div className="relative">
-                    <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="price"
-                      type="number"
-                      min={0}
-                      value={formData.price_per_hour}
-                      onChange={(e) => setFormData({ ...formData, price_per_hour: Number(e.target.value) })}
-                      className="pl-10"
-                    />
+            <div className="space-y-5">
+              <Card>
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <Settings2 aria-hidden="true" className="h-5 w-5 text-primary" />
+                    Dashboard preference
+                  </CardTitle>
+                  <CardDescription className="mt-1.5">
+                    Currency is stored on your owner profile, not on one venue.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-currency">Preferred currency</Label>
+                    <Select value={currency} onValueChange={setCurrency}>
+                      <SelectTrigger id="settings-currency">
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((candidate) => (
+                          <SelectItem key={candidate.code} value={candidate.code}>
+                            {candidate.code} ({candidate.symbol}) — {candidate.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      This changes dashboard display preference; it does not convert booking settlement amounts.
+                    </p>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe your venue..."
-                  rows={4}
-                />
-              </div>
+              <Card>
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <CardTitle as="h2" className="text-lg">Account and contact</CardTitle>
+                  <CardDescription className="mt-1.5">
+                    Identity is read from your profile. Venue contact is managed in the listing editor.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-5 pt-0 sm:p-6 sm:pt-0">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-email">Account email</Label>
+                    <div className="relative">
+                      <Mail
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <Input
+                        id="settings-email"
+                        type="email"
+                        autoComplete="email"
+                        value={profile?.email || ""}
+                        disabled
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
 
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="w-full"
-                size="lg"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Settings
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                  <div className="rounded-lg border border-border bg-surface-1 p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-foreground-soft" />
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground">Venue contact details</h3>
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                          Phone is stored through the venue editor. A venue website field is not part of the current save contract on this page.
+                        </p>
+                        {selectedVenue?.phone && (
+                          <p className="mt-2 truncate text-sm font-medium text-foreground">
+                            Current phone: {selectedVenue.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-4 w-full"
+                      disabled={!selectedVenueId}
+                      onClick={() => navigate(`/venue/${selectedVenueId}/edit`)}
+                    >
+                      <Globe aria-hidden="true" />
+                      Open venue editor
+                      <ArrowUpRight aria-hidden="true" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface-1 p-3 sm:flex sm:items-center sm:justify-between sm:border-0 sm:bg-transparent sm:p-0">
+            <p className="hidden text-sm text-muted-foreground sm:block">
+              Saves listing basics for {selectedVenue?.name || "the selected venue"} and currency for your profile.
+            </p>
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              onClick={handleSave}
+              disabled={isSaving}
+              aria-busy={isSaving}
+            >
+              {isSaving ? (
+                <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Save aria-hidden="true" />
+              )}
+              {isSaving ? "Saving…" : "Save settings"}
+            </Button>
+          </div>
         </div>
       )}
     </OwnerLayout>

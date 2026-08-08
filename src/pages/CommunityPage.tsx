@@ -9,13 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useGames, useUserGames } from "@/hooks/useGames";
-import { useVenues } from "@/hooks/useVenues";
+import { getVenueImage, useVenues } from "@/hooks/useVenues";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { formatTimeOfDay } from "@/lib/time";
-import { Price } from "@/components/ui/price";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorPanel } from "@/components/common/StatusPanel";
+import { Skeleton } from "@/components/ui/skeleton";
+import VenueCard from "@/components/venues/VenueCard";
 
 // Haversine formula for distance calculation
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -62,14 +63,18 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [],
   // Anyone joined but not drawn — either past the four we show, or a profile
   // that came back empty. Counted from the real total, never assumed to be
   // `count - 4`.
-  const hiddenPlayers = participantCount - faces.length;
+  const hiddenPlayers = Math.max(0, participantCount - faces.length);
 
   return (
-    <Link to={`/game/${game.id}`} className="block h-full">
-      <Card className="card-lift group h-full overflow-hidden">
+    <Link
+      to={`/game/${game.id}`}
+      aria-label={`View ${game.title}`}
+      className="group block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <Card className="card-lift h-full overflow-hidden">
         <CardContent className="flex h-full flex-col p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="font-medium">
                 {game.sport}
               </Badge>
@@ -96,19 +101,19 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [],
             )}
           </div>
 
-          <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="mb-2 line-clamp-2 font-semibold leading-snug text-foreground transition-colors duration-150 motion-reduce:transition-none group-hover:text-primary">
             {game.title}
           </h3>
 
-          <div className="space-y-1.5 text-sm text-muted-foreground mb-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5 text-primary" />
+          <div className="mb-3 space-y-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{formatGameDate(game.game_date)}</span>
-              <Clock className="h-3.5 w-3.5 ml-2 text-primary" />
+              <Clock className="ml-2 h-3.5 w-3.5" aria-hidden="true" />
               <span>{formatTimeOfDay(game.game_time)}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
+            <div className="flex min-w-0 items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
               <span className="truncate">{game.location}</span>
               {distance !== undefined && (
                 <span className="text-xs text-primary font-medium ml-auto shrink-0">
@@ -127,8 +132,8 @@ const GameCard: React.FC<GameCardProps> = ({ game, participantCount, faces = [],
                 </span>
               </div>
               <div className="flex -space-x-2">
-                {faces.map((person) => (
-                  <Avatar key={person.user_id} className="h-6 w-6 border-2 border-background">
+                {faces.map((person, index) => (
+                  <Avatar key={`${person.user_id}-${index}`} className="h-6 w-6 border-2 border-background">
                     <AvatarImage src={person.avatar_url ?? undefined} alt="" />
                     <AvatarFallback className="text-xs bg-primary/10">
                       {faceInitial(person)}
@@ -327,18 +332,28 @@ const CommunityPage = () => {
   return (
     <Layout>
       <div className="bg-background min-h-screen">
-        <div className="container py-8">
+        <div className="container py-8 md:py-10">
           {/* Header */}
-          <div className="mb-8">
-            <p className="eyebrow mb-2">Who is playing</p>
-            <h1 className="page-title">Community</h1>
-            <p className="text-muted-foreground">
-              Discover games, connect with players, and join the action near you.
-            </p>
+          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="eyebrow mb-2">Who is playing</p>
+              <h1 className="page-title">Community</h1>
+              <p className="max-w-2xl text-muted-foreground">
+                Find a match first, then keep up with the players and places you know.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild className="flex-1 md:flex-none">
+                <Link to="/games">Find a game</Link>
+              </Button>
+              <Button asChild variant="outline" className="flex-1 md:flex-none">
+                <Link to="/create-game">Create game</Link>
+              </Button>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+            <TabsList className="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
               <TabsTrigger value="discover" className="gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Discover
@@ -351,9 +366,24 @@ const CommunityPage = () => {
 
             <TabsContent value="discover" className="space-y-8">
               {isLoading ? (
-                <div className="text-center py-12" role="status" aria-label="Loading the community">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="text-muted-foreground mt-2">Loading community...</p>
+                <div className="space-y-8" role="status" aria-label="Loading the community">
+                  <div>
+                    <Skeleton className="mb-2 h-6 w-48" />
+                    <Skeleton className="mb-4 h-4 w-64" />
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {Array.from({ length: 3 }, (_, index) => (
+                        <Skeleton key={index} className="h-52 w-full" />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Skeleton className="mb-4 h-6 w-44" />
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {Array.from({ length: 3 }, (_, index) => (
+                        <Skeleton key={index} className="h-52 w-full" />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : loadFailed ? (
                 <ErrorPanel
@@ -365,18 +395,18 @@ const CommunityPage = () => {
                 <>
                   {/* Nearby Open Games */}
                   {nearbyGames.length > 0 && (
-                    <section>
-                      <div className="flex items-center justify-between mb-4">
+                    <section className="rounded-xl border border-border bg-surface-1 p-4 md:p-5">
+                      <div className="mb-4 flex items-end justify-between gap-3">
                         <div>
-                          <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                            <MapPin className="h-5 w-5 text-primary" />
-                            Nearby Open Games
+                          <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                            <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
+                            Games near you
                           </h2>
-                          <p className="text-sm text-muted-foreground">Games happening close to you</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Sorted by distance from your current location</p>
                         </div>
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to="/games">
-                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                        <Button asChild variant="ghost" className="shrink-0">
+                          <Link to="/games" aria-label="View all nearby games">
+                            View all <ChevronRight className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </Button>
                       </div>
@@ -396,11 +426,11 @@ const CommunityPage = () => {
 
                   {/* Trending in Your Area */}
                   <section>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-end justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5 text-primary" />
-                          Trending Games
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                          <TrendingUp className="h-5 w-5 text-primary" aria-hidden="true" />
+                          Popular now
                         </h2>
                         {/* Subtitle describes the list, so it only holds while
                             there is one. "Popular games filling up fast" above
@@ -411,9 +441,9 @@ const CommunityPage = () => {
                       </div>
                       {/* "View all" led to an equally empty list. */}
                       {trendingGames.length > 0 && (
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to="/games">
-                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                        <Button asChild variant="ghost">
+                          <Link to="/games" aria-label="View all popular games">
+                            View all <ChevronRight className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </Button>
                       )}
@@ -449,20 +479,20 @@ const CommunityPage = () => {
                   {/* People You Played With */}
                   {user && playedWith.length > 0 && (
                     <section>
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="mb-4">
                         <div>
-                          <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                            <UserPlus className="h-5 w-5 text-primary" />
-                            People You've Played With
+                          <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                            <UserPlus className="h-5 w-5 text-primary" aria-hidden="true" />
+                            Familiar players
                           </h2>
-                          <p className="text-sm text-muted-foreground">Connect with familiar faces</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Players from games in your activity</p>
                         </div>
                       </div>
-                      <div className="flex gap-4 overflow-x-auto pb-2">
-                        {playedWith.map((person) => (
-                          <Card key={person.id} className="card-lift w-36 shrink-0 p-4 text-center">
-                            <Avatar className="h-16 w-16 mx-auto mb-2">
-                              <AvatarImage src={person.avatar_url} />
+                      <div className="flex gap-3 overflow-x-auto pb-2" role="list">
+                        {playedWith.map((person, index) => (
+                          <Card key={person.user_id || person.id || index} className="w-36 shrink-0 p-4 text-center" role="listitem">
+                            <Avatar className="mx-auto mb-2 h-14 w-14">
+                              <AvatarImage src={person.avatar_url} alt={person.full_name || person.username || "Player"} />
                               <AvatarFallback className="bg-primary/10 text-lg">
                                 {(person.full_name || person.username || 'U').charAt(0).toUpperCase()}
                               </AvatarFallback>
@@ -483,20 +513,20 @@ const CommunityPage = () => {
 
                   {/* Recently Added Venues */}
                   <section>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-end justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                          <Star className="h-5 w-5 text-primary" />
-                          Recently Added Venues
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                          <Star className="h-5 w-5 text-primary" aria-hidden="true" />
+                          New places to play
                         </h2>
                         {recentVenues.length > 0 && (
-                          <p className="text-sm text-muted-foreground">New places to play</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Recently added venues from the marketplace</p>
                         )}
                       </div>
                       {recentVenues.length > 0 && (
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to="/venues">
-                            View all <ChevronRight className="h-4 w-4 ml-1" />
+                        <Button asChild variant="ghost">
+                          <Link to="/venues" aria-label="View all venues">
+                            View all <ChevronRight className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </Button>
                       )}
@@ -505,61 +535,21 @@ const CommunityPage = () => {
                         venues one was a dead end. Owners can seed the
                         catalogue, so send them there. */}
                     {recentVenues.length > 0 ? (
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {recentVenues.map(venue => (
-                          <Link key={venue.id} to={`/venue/${venue.id}`}>
-                            <Card className="card-lift group overflow-hidden">
-                              <div className="aspect-[16/10] relative">
-                                <img
-                                  src={venue.image_url || '/placeholder.svg'}
-                                  alt={venue.name}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                <div className="absolute bottom-2 left-2 right-2">
-                                  <Badge variant="secondary" className="mb-1 text-xs">
-                                    {venue.sports?.[0] || 'Sports'}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <CardContent className="p-3">
-                                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
-                                  {venue.name}
-                                </h3>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                  <MapPin className="h-3 w-3" />
-                                  <span className="truncate">{venue.city}</span>
-                                </div>
-                                {/* Price, not "Added 3 days ago".
-                                    The section is headed "Recently Added
-                                    Venues", so every tile repeating its own
-                                    recency said the same thing a fourth time
-                                    while the number people actually choose on
-                                    was missing entirely. A venue tile without
-                                    a price cannot be compared with the one
-                                    beside it. */}
-                                <div className="flex items-center justify-between mt-2">
-                                  <Price
-                                    amount={venue.price_per_hour}
-                                    suffix="/ hr"
-                                    className="text-sm font-semibold text-foreground"
-                                    suffixClassName="text-xs text-muted-foreground"
-                                  />
-                                  {venue.rating > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      {/* Was fill-amber-500: a hardcoded palette
-                                          colour, and a different star from the
-                                          one every venue card draws. */}
-                                      <Star className="h-3 w-3 fill-primary text-primary" />
-                                      <span className="text-xs font-medium">{venue.rating}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </Link>
+                          <VenueCard
+                            headingLevel="h3"
+                            key={venue.id}
+                            id={venue.id}
+                            name={venue.name}
+                            image={getVenueImage(venue)}
+                            location={venue.address || venue.city}
+                            sports={venue.sports}
+                            price={venue.price_per_hour}
+                            rating={venue.rating}
+                            reviewCount={venue.review_count}
+                            available={venue.is_active}
+                          />
                         ))}
                       </div>
                     ) : (
@@ -590,23 +580,24 @@ const CommunityPage = () => {
                 />
               ) : userGamesLoading ? (
                 <div className="text-center py-12" role="status" aria-label="Loading the community">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+                  <p className="mt-3 text-sm text-muted-foreground">Loading your activity…</p>
                 </div>
               ) : (
                 <>
                   {/* Your Upcoming Sessions */}
                   <section>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-end justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                          <Calendar className="h-5 w-5 text-primary" />
-                          Your Upcoming Sessions
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                          <Calendar className="h-5 w-5 text-primary" aria-hidden="true" />
+                          Your upcoming games
                         </h2>
                         <p className="text-sm text-muted-foreground">Games you're participating in</p>
                       </div>
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to="/dashboard">
-                          View all <ChevronRight className="h-4 w-4 ml-1" />
+                      <Button asChild variant="ghost">
+                        <Link to="/dashboard" aria-label="View all upcoming games">
+                          View all <ChevronRight className="h-4 w-4" aria-hidden="true" />
                         </Link>
                       </Button>
                     </div>
@@ -640,17 +631,17 @@ const CommunityPage = () => {
                   {playedWith.length > 0 && (
                     <section>
                       <div className="mb-4">
-                        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                          <UserPlus className="h-5 w-5 text-primary" />
-                          People You've Played With
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                          <UserPlus className="h-5 w-5 text-primary" aria-hidden="true" />
+                          Familiar players
                         </h2>
-                        <p className="text-sm text-muted-foreground">Your sports network</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Players from games in your activity</p>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                        {playedWith.map((person) => (
-                          <Card key={person.id} className="card-lift p-4 text-center">
+                        {playedWith.map((person, index) => (
+                          <Card key={person.user_id || person.id || index} className="p-4 text-center">
                             <Avatar className="h-16 w-16 mx-auto mb-2">
-                              <AvatarImage src={person.avatar_url} />
+                              <AvatarImage src={person.avatar_url} alt={person.full_name || person.username || "Player"} />
                               <AvatarFallback className="bg-primary/10 text-lg">
                                 {(person.full_name || person.username || 'U').charAt(0).toUpperCase()}
                               </AvatarFallback>

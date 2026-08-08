@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { formatTimeOfDay } from "@/lib/time";
-import { Calendar, Clock, Users } from "lucide-react";
+import { Calendar, Clock, MapPinOff, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { MapsReady } from "@/components/maps/YandexMapsProvider";
 import { YandexMap, YandexMarker, YandexPopup } from "@/components/maps/YandexMap";
 import { MapDotMarker, MapMarkerButton } from "@/components/maps/MapPinMarker";
@@ -38,17 +39,23 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
 
   if (gamesWithCoords.length === 0) {
     return (
-      <div className="bg-card rounded-xl border border-border p-8 text-center">
-        <p className="text-muted-foreground">No games with location data available</p>
+      <div className="rounded-xl border border-border bg-surface-1 px-5 py-12 text-center">
+        <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
+          <MapPinOff className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <h2 className="text-lg font-semibold text-foreground">No games with location data available</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-muted-foreground">
+          These results do not include coordinates. Switch to the list to view every game.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
       <MapsReady>
         <YandexMap
-          style={{ width: "100%", height: "600px" }}
+          className="h-[26rem] w-full sm:h-[32rem] lg:h-[38rem]"
           ariaLabel="Map of games"
           center={center}
           zoom={12}
@@ -113,12 +120,12 @@ const GamesMapView: React.FC<GamesMapViewProps> = ({ games }) => {
                   </p>
                 );
               })()}
-              <a
-                href={`/game/${selectedGame.id}`}
-                className="mt-2 block rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              <Link
+                to={`/game/${selectedGame.id}`}
+                className="focus-ring mt-3 flex min-h-11 items-center justify-center rounded-lg bg-primary px-3 text-center text-sm font-medium text-primary-foreground transition-colors duration-150 motion-reduce:transition-none hover:bg-primary/90"
               >
-                View Game
-              </a>
+                View game
+              </Link>
             </YandexPopup>
           )}
         </YandexMap>

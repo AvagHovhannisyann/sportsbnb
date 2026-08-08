@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, Check, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, CheckCircle2, CircleAlert, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { useCalendarIntegrations } from "@/hooks/useCalendarIntegrations";
 
@@ -11,7 +11,7 @@ const CalendarCallbackPage = () => {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  
+
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
@@ -22,9 +22,7 @@ const CalendarCallbackPage = () => {
     const processCallback = async () => {
       if (error) {
         setStatus("error");
-        setErrorMessage(error === "access_denied" 
-          ? "You cancelled the authorization" 
-          : "Authorization failed");
+        setErrorMessage(error === "access_denied" ? "You cancelled the authorization" : "Authorization failed");
         return;
       }
 
@@ -35,7 +33,7 @@ const CalendarCallbackPage = () => {
       }
 
       const success = await handleOAuthCallback(code, state || "");
-      
+
       if (success) {
         setStatus("success");
         setTimeout(() => {
@@ -51,63 +49,68 @@ const CalendarCallbackPage = () => {
   }, [code, state, error]);
 
   return (
-    <OwnerLayout title="Calendar Integration">
-      <div className="max-w-md mx-auto">
-        <Card>
-          <CardHeader className="text-center">
+    <OwnerLayout title="Calendar integration" subtitle="Completing the provider authorization handoff.">
+      <Card className="mx-auto max-w-md">
+        <CardContent className="px-5 py-10 text-center sm:px-8 sm:py-12">
+          <div aria-live="polite" aria-atomic="true">
             {status === "loading" && (
               <>
-                <div className="flex justify-center mb-4" role="status" aria-label="Connecting your calendar">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                  <Loader2
+                    aria-hidden="true"
+                    className="h-6 w-6 animate-spin motion-reduce:animate-none"
+                  />
                 </div>
-                <CardTitle as="h2">Connecting Calendar...</CardTitle>
-                <CardDescription>
-                  Please wait while we complete the connection
-                </CardDescription>
+                <h2 className="font-display text-xl font-semibold tracking-extra-tight text-foreground">
+                  Connecting calendar
+                </h2>
+                <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  Keep this page open while SportsBnB completes the account connection.
+                </p>
+                <span className="sr-only" role="status">
+                  Connecting your calendar
+                </span>
               </>
             )}
-            
+
             {status === "success" && (
               <>
-                <div className="flex justify-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <Check className="h-6 w-6 text-emerald-600" />
-                  </div>
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-success/20 bg-success/10 text-success">
+                  <CheckCircle2 aria-hidden="true" className="h-6 w-6" />
                 </div>
-                <CardTitle as="h2" className="text-emerald-600">Calendar Connected!</CardTitle>
-                <CardDescription>
-                  Redirecting you back to integrations...
-                </CardDescription>
+                <h2 className="font-display text-xl font-semibold tracking-extra-tight text-foreground">
+                  Calendar connected
+                </h2>
+                <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  Provider access was saved. Returning you to calendar integrations…
+                </p>
               </>
             )}
-            
+
             {status === "error" && (
               <>
-                <div className="flex justify-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <AlertCircle className="h-6 w-6 text-destructive" />
-                  </div>
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/5 text-destructive">
+                  <CircleAlert aria-hidden="true" className="h-6 w-6" />
                 </div>
-                <CardTitle as="h2" className="text-destructive">Connection Failed</CardTitle>
-                <CardDescription>
+                <h2 className="font-display text-xl font-semibold tracking-extra-tight text-foreground">
+                  Connection not completed
+                </h2>
+                <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
                   {errorMessage}
-                </CardDescription>
+                </p>
+                <Button
+                  type="button"
+                  className="mt-6 w-full"
+                  onClick={() => navigate("/owner/integrations")}
+                >
+                  <ArrowLeft aria-hidden="true" />
+                  Back to integrations
+                </Button>
               </>
             )}
-          </CardHeader>
-          
-          {status === "error" && (
-            <CardContent>
-              <Button 
-                onClick={() => navigate("/owner/integrations")} 
-                className="w-full"
-              >
-                Back to Integrations
-              </Button>
-            </CardContent>
-          )}
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </OwnerLayout>
   );
 };

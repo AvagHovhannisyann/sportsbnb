@@ -1,21 +1,40 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Ban, Banknote, Building2, Car, Dumbbell, FileText, Flag, HelpCircle, MapPin, MessageSquare, MoreVertical, XCircle } from "lucide-react";
+import {
+  Ban,
+  Banknote,
+  Car,
+  Dumbbell,
+  FileText,
+  HelpCircle,
+  MessageSquare,
+  MoreVertical,
+  XCircle,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/useAuth";
-import { useInitializeVenueChat, useChatMessages, useSendMessage, useReportMessage, useUpdateLastRead, useBlockUser } from "@/hooks/useChat";
+import { ChatBubble } from "@/components/chat/ChatBubble";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { ErrorPanel } from "@/components/common/StatusPanel";
+import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  useBlockUser,
+  useChatMessages,
+  useInitializeVenueChat,
+  useReportMessage,
+  useSendMessage,
+  useUpdateLastRead,
+} from "@/hooks/useChat";
+import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface VenueChatDialogProps {
   open: boolean;
@@ -42,49 +61,73 @@ export const VenueChatDialog = ({
   ownerId,
 }: VenueChatDialogProps) => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializationStartedRef = useRef(false);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [initializationFailed, setInitializationFailed] = useState(false);
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
 
   const { initializeVenueChat, isLoading: initLoading } = useInitializeVenueChat();
-  const { data: messages, isLoading: messagesLoading } = useChatMessages(roomId || undefined);
+  const {
+    data: messages,
+    isLoading: messagesLoading,
+    isError: messagesError,
+    refetch: refetchMessages,
+    isFetching: messagesFetching,
+  } = useChatMessages(roomId || undefined);
   const sendMessage = useSendMessage();
   const reportMessage = useReportMessage();
-  const updateLastRead = useUpdateLastRead();
+  const { mutate: updateLastRead } = useUpdateLastRead();
   const blockUser = useBlockUser();
 
-  // Initialize chat when dialog opens
+  // Initialize the venue room only after the user deliberately opens chat.
   useEffect(() => {
-    if (open && user && !roomId) {
-      initializeVenueChat(venueId, user.id, ownerId, venueName)
-        .then(setRoomId)
-        .catch((error) => {
-          console.error("Error initializing chat:", error);
-          toast.error("Failed to start chat");
-        });
+    if (!open) {
+      initializationStartedRef.current = false;
+      setInitializationFailed(false);
+      return;
     }
-  }, [open, user, venueId, ownerId, venueName, roomId, initializeVenueChat]);
+    if (!user || roomId || initializationStartedRef.current) return;
 
-  // Update last read and scroll to bottom
+    initializationStartedRef.current = true;
+    setInitializationFailed(false);
+    initializeVenueChat(venueId, user.id, ownerId, venueName)
+      .then(setRoomId)
+      .catch((error) => {
+        console.error("Error initializing chat:", error);
+        setInitializationFailed(true);
+        toast.error("Failed to start chat");
+      });
+  }, [
+    open,
+    user,
+    roomId,
+    venueId,
+    ownerId,
+    venueName,
+    initializeVenueChat,
+    initializationAttempt,
+  ]);
+
+  // Update last read and keep the newest message in view without forcing
+  // smooth scrolling for people who have asked for reduced motion.
   useEffect(() => {
     if (roomId && user?.id && messages?.length) {
-      updateLastRead.mutate(roomId);
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      updateLastRead(roomId);
+      messagesEndRef.current?.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+      });
     }
-  }, [roomId, user?.id, messages?.length]);
+  }, [roomId, user?.id, messages?.length, prefersReducedMotion, updateLastRead]);
 
   const handleSend = (message: string) => {
     if (!roomId) return;
     sendMessage.mutate(
       { roomId, message },
-      {
-        onError: () => toast.error("Failed to send message"),
-      }
+      { onError: () => toast.error("Failed to send message") },
     );
-  };
-
-  const handleQuickQuestion = (message: string) => {
-    if (!roomId) return;
-    handleSend(message);
   };
 
   const handleReport = (messageId: string) => {
@@ -94,7 +137,7 @@ export const VenueChatDialog = ({
       {
         onSuccess: () => toast.success("Message reported"),
         onError: () => toast.error("Failed to report message"),
-      }
+      },
     );
   };
 
@@ -108,167 +151,170 @@ export const VenueChatDialog = ({
           onOpenChange(false);
         },
         onError: () => toast.error("Failed to block user"),
-      }
+      },
     );
   };
 
-  const isLoading = initLoading || messagesLoading;
-  const hasMessages = messages && messages.length > 0;
+  const isLoading = initLoading || (!!roomId && messagesLoading);
+  const hasMessages = !!messages?.length;
+
+  const headerActions = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Conversation actions">
+          <MoreVertical aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={handleBlock}
+          disabled={!roomId || blockUser.isPending}
+          className="text-destructive"
+        >
+          <Ban className="mr-2 h-4 w-4" aria-hidden="true" />
+          Block owner
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const conversation = (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div
+        className="flex-1 space-y-3 overflow-y-auto bg-surface-1/45 p-4 sm:p-5"
+        role="log"
+        aria-label={`Conversation about ${venueName}`}
+        aria-live="polite"
+      >
+        {initializationFailed ? (
+          <ErrorPanel
+            what="this conversation"
+            description="We couldn't connect you with the venue owner. No message was sent."
+            onRetry={() => {
+              initializationStartedRef.current = false;
+              setInitializationAttempt((attempt) => attempt + 1);
+            }}
+            className="flex min-h-full flex-col justify-center"
+          />
+        ) : isLoading || (!roomId && open) ? (
+          <div className="space-y-4" role="status" aria-label="Loading conversation">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className={index % 2 ? "flex justify-end" : "flex gap-2"}>
+                {index % 2 === 0 && <Skeleton className="h-8 w-8 shrink-0 rounded-full" />}
+                <Skeleton className="h-14 w-[min(70%,15rem)] rounded-xl" />
+              </div>
+            ))}
+          </div>
+        ) : messagesError ? (
+          <ErrorPanel
+            what="these messages"
+            onRetry={() => refetchMessages()}
+            isRetrying={messagesFetching}
+            className="flex min-h-full flex-col justify-center"
+          />
+        ) : !hasMessages ? (
+          <div className="flex min-h-full flex-col items-center justify-center px-2 py-8 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-card text-foreground-soft">
+              <MessageSquare className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <p className="font-medium text-foreground">Start a conversation</p>
+            <p className="mt-1 max-w-xs text-sm leading-relaxed text-muted-foreground">
+              Ask the owner about the venue, access, or booking details.
+            </p>
+            <div
+              className="mt-5 flex max-w-sm flex-wrap justify-center gap-2"
+              aria-label="Suggested questions"
+            >
+              {QUICK_QUESTIONS.map((question) => (
+                <Button
+                  key={question.label}
+                  type="button"
+                  variant="outline"
+                  aria-label={`Ask about ${question.label.toLowerCase()}`}
+                  onClick={() => handleSend(question.message)}
+                  disabled={!roomId || sendMessage.isPending}
+                >
+                  <question.icon aria-hidden="true" />
+                  {question.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            {messages?.map((message) => (
+              <ChatBubble
+                key={message.id}
+                message={message}
+                isOwn={message.sender_id === user?.id}
+                onReport={message.is_reported ? undefined : handleReport}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
+      {hasMessages && (
+        <div className="border-t border-border bg-background px-3 py-2 sm:px-4">
+          <div className="flex gap-2 overflow-x-auto" aria-label="Suggested questions">
+            {QUICK_QUESTIONS.slice(0, 4).map((question) => (
+              <Button
+                key={question.label}
+                type="button"
+                variant="ghost"
+                className="shrink-0"
+                aria-label={`Ask about ${question.label.toLowerCase()}`}
+                onClick={() => handleSend(question.message)}
+                disabled={!roomId || sendMessage.isPending}
+              >
+                <question.icon aria-hidden="true" />
+                {question.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <ChatInput
+        onSend={handleSend}
+        disabled={!roomId || initializationFailed || sendMessage.isPending}
+      />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="h-[88dvh] gap-0 rounded-t-xl p-0">
+          <SheetHeader className="border-b border-border px-4 py-3.5 pr-14">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="min-w-0">
+                <SheetTitle>Message owner</SheetTitle>
+                <p className="truncate text-sm text-muted-foreground">About {venueName}</p>
+              </div>
+              {headerActions}
+            </div>
+          </SheetHeader>
+          {conversation}
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
-        {/* Header */}
-        <DialogHeader className="px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  <MapPin className="h-5 w-5" aria-hidden="true" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <DialogTitle className="text-base font-semibold">Message Owner</DialogTitle>
-                <p className="text-xs text-muted-foreground">Question about: {venueName}</p>
-              </div>
+      <DialogContent className="flex h-[min(42rem,calc(100dvh-2rem))] max-w-lg flex-col gap-0 p-0">
+        <DialogHeader className="border-b border-border px-4 py-3.5 pr-14">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <div className="min-w-0">
+              <DialogTitle>Message owner</DialogTitle>
+              <p className="truncate text-sm text-muted-foreground">About {venueName}</p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleBlock} className="text-destructive">
-                  <Ban className="h-4 w-4 mr-2" />
-                  Block owner
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {headerActions}
           </div>
         </DialogHeader>
-
-        {/* Context Header */}
-        <div className="px-4 py-2 bg-muted/50 border-b">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <Building2 className="h-3 w-3" aria-hidden="true" />
-              {venueName}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className={`flex gap-2 ${i % 2 === 0 ? "" : "justify-end"}`}>
-                  {i % 2 === 0 && <Skeleton className="h-8 w-8 rounded-full" />}
-                  <Skeleton className="h-12 w-48 rounded-2xl" />
-                </div>
-              ))}
-            </div>
-          ) : !hasMessages ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground mb-1">Start a conversation</p>
-              <p className="text-xs text-muted-foreground mb-6">
-                Ask the owner about the venue
-              </p>
-              
-              {/* Quick Question Chips */}
-              <div className="flex flex-wrap gap-2 justify-center max-w-sm">
-                {QUICK_QUESTIONS.map((q) => (
-                  <Button
-                    key={q.label}
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs"
-                    onClick={() => handleQuickQuestion(q.message)}
-                    disabled={!roomId}
-                  >
-                    <q.icon className="h-3 w-3" />
-                    {q.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
-              {messages?.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex gap-2",
-                    message.sender_id === user?.id ? "justify-end" : "justify-start"
-                  )}
-                >
-                  {message.sender_id !== user?.id && (
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarImage src={message.sender?.avatar_url || undefined} />
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                        {message.sender?.full_name?.[0] || "O"}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div
-                    className={cn(
-                      "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
-                      message.sender_id === user?.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted",
-                      message.message_type === "system" && "bg-transparent text-muted-foreground text-center text-xs italic w-full max-w-full"
-                    )}
-                  >
-                    {message.message_type !== "system" && message.sender_id !== user?.id && (
-                      <p className="text-xs font-medium mb-1 opacity-70">
-                        {message.sender?.full_name || "Owner"}
-                      </p>
-                    )}
-                    <p className="break-words">{message.message_text}</p>
-                    
-                    {/* Report option for other's messages */}
-                    {message.sender_id !== user?.id && message.message_type !== "system" && !message.is_reported && (
-                      <button
-                        onClick={() => handleReport(message.id)}
-                        className="mt-1 text-xs opacity-50 hover:opacity-100 flex items-center gap-1"
-                      >
-                        <Flag className="h-3 w-3" />
-                        Report
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-
-        {/* Quick Questions (when there are messages) */}
-        {hasMessages && (
-          <div className="px-4 py-2 border-t bg-muted/30">
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {QUICK_QUESTIONS.slice(0, 4).map((q) => (
-                <Button
-                  key={q.label}
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 text-xs shrink-0 h-7"
-                  onClick={() => handleQuickQuestion(q.message)}
-                  disabled={!roomId}
-                >
-                  <q.icon className="h-3 w-3" />
-                  {q.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Input */}
-        <ChatInput onSend={handleSend} disabled={!roomId || sendMessage.isPending} />
+        {conversation}
       </DialogContent>
     </Dialog>
   );

@@ -8,7 +8,10 @@ const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.Compo
   ({ className, containerClassName, ...props }, ref) => (
     <OTPInput
       ref={ref}
-      containerClassName={cn("flex items-center gap-2 has-[:disabled]:opacity-50", containerClassName)}
+      containerClassName={cn(
+        "flex max-w-full items-center gap-2 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50",
+        containerClassName,
+      )}
       className={cn("disabled:cursor-not-allowed", className)}
       {...props}
     />
@@ -32,8 +35,8 @@ const InputOTPSlot = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "relative flex h-10 w-10 items-center justify-center border-y border-r border-border-interactive text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-        isActive && "z-10 ring-2 ring-ring ring-offset-background",
+        "relative flex h-11 w-11 items-center justify-center border-y border-r border-border-interactive bg-background text-base font-medium tabular-nums transition-[background-color,border-color,box-shadow,color] duration-150 ease-out first:rounded-l-lg first:border-l last:rounded-r-lg motion-reduce:transition-none",
+        isActive && "z-10 border-ring ring-2 ring-ring ring-offset-2 ring-offset-background",
         className,
       )}
       {...props}
@@ -41,7 +44,7 @@ const InputOTPSlot = React.forwardRef<
       {char}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="animate-caret-blink h-4 w-px bg-foreground duration-1000" />
+          <div className="h-4 w-px animate-caret-blink bg-foreground motion-reduce:animate-none" />
         </div>
       )}
     </div>
@@ -52,7 +55,7 @@ InputOTPSlot.displayName = "InputOTPSlot";
 const InputOTPSeparator = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(
   ({ ...props }, ref) => (
     <div ref={ref} role="separator" {...props}>
-      <Dot />
+      <Dot aria-hidden="true" />
     </div>
   ),
 );

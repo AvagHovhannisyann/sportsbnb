@@ -1,0 +1,3 @@
+[submodule ".claude/skills/emilkowalski-skills"]
+	path = .claude/skills/emilkowalski-skills
+	url = https://github.com/emilkowalski/skills.git

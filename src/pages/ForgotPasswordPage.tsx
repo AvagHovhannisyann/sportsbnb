@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/brand/Logo";
+import { CheckCircle2, Loader2, Mail } from "lucide-react";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { AuthHeading, AuthPanel, AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
-import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 
@@ -50,115 +51,99 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Panel */}
-      <div className="surface-invert hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
-        <div>
-          <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
-            <Logo variant="full" className="h-8 w-auto" />
-          </Link>
-        </div>
-        
-        <div className="max-w-md">
-          <h1 className="auth-hero-title text-secondary-foreground">
-            Reset your password
-          </h1>
-          <p className="text-lg text-secondary-foreground/70">
-            Enter your email address and we'll send you a link to reset your password.
-          </p>
-        </div>
-        
-        {/* /50 composited to #808582 on this near-white panel: 3.48:1,
-            under the 4.5:1 body copy needs. /60 measures 4.80:1 and is
-            still quieter than the /70 lede above it, so the hierarchy the
-            alpha was drawing survives. */}
-        <div className="text-sm text-secondary-foreground/60">
-          © {new Date().getFullYear()} Sportsbnb
-        </div>
-      </div>
-
-      {/* Right Panel */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <Link
-            to="/login"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to login
-          </Link>
-
-          {isEmailSent ? (
-            <div className="text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto mb-6">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h2 className="auth-form-title">Check your email</h2>
-              <p className="text-muted-foreground mb-6">
-                If an account exists with <strong>{email}</strong>, you'll receive a password reset link shortly.
-              </p>
-              <p className="text-sm text-muted-foreground mb-8">
-                Didn't receive the email? Check your spam folder or{" "}
-                <button
-                  onClick={() => setIsEmailSent(false)}
-                  className="text-primary hover:underline"
-                >
-                  try again
-                </button>
-              </p>
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/login">Return to login</Link>
-              </Button>
+    <AuthShell
+      asideTitle="A quick reset, then back to your game."
+      asideDescription="Use the email linked to your account. We keep the response private whether or not an account is found."
+      backTo="/login"
+      backLabel="Back to sign in"
+    >
+      {isEmailSent ? (
+        <section aria-labelledby="forgot-sent-heading">
+          <AuthHeading id="forgot-sent-heading" title="Check your email" description="Reset instructions are on their way if the account exists." />
+          <AuthPanel className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft text-primary">
+              <CheckCircle2 aria-hidden="true" className="h-7 w-7" />
             </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <Mail className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="auth-form-title">Forgot password?</h2>
-                  <p className="text-muted-foreground">No worries, we'll send you reset instructions.</p>
-                </div>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground" role="status" aria-live="polite">
+              If an account exists with
+              <strong className="mx-1 break-all font-semibold text-foreground">{email}</strong>
+              you will receive a password reset link shortly.
+            </p>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+              Check your spam folder first. You can also{" "}
+              <button
+                type="button"
+                onClick={() => setIsEmailSent(false)}
+                className="inline-flex min-h-11 items-center rounded-md font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                try another email
+              </button>
+              .
+            </p>
+            <Button asChild variant="outline" className="mt-5 w-full">
+              <Link to="/login">Return to sign in</Link>
+            </Button>
+          </AuthPanel>
+        </section>
+      ) : (
+        <section aria-labelledby="forgot-heading">
+          <AuthHeading id="forgot-heading" title="Forgot your password?" description="Enter your email and we will send reset instructions." />
+          <AuthPanel>
+            <div className="mb-6 flex items-center gap-3 rounded-lg bg-surface-1 p-3 text-sm leading-relaxed text-muted-foreground">
+              <Mail aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />
+              The link expires for your security. You can request another if needed.
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-5" aria-labelledby="forgot-heading">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError("");
+                  }}
+                  className="h-12"
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? "forgot-email-error" : undefined}
+                  required
+                />
+                {error && (
+                  <p id="forgot-email-error" role="alert" className="text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setError("");
-                    }}
-                    className={`h-12 ${error ? "border-destructive" : ""}`}
-                    required
-                  />
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
-                </div>
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+                    Sending…
+                  </>
+                ) : (
+                  "Send reset link"
+                )}
+              </Button>
+            </form>
+          </AuthPanel>
 
-                <Button type="submit" className="w-full h-12" size="lg" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Reset password"}
-                </Button>
-              </form>
-
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                Remember your password?{" "}
-                <Link to="/login" className="text-primary hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Remember your password?{" "}
+            <Link
+              to="/login"
+              className="inline-flex min-h-11 items-center rounded-md px-1 font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Sign in
+            </Link>
+          </p>
+        </section>
+      )}
+    </AuthShell>
   );
 };
 

@@ -1,45 +1,117 @@
+import { MapPin } from "lucide-react";
+import { StatusPanel } from "@/components/common/StatusPanel";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { NeighborhoodRow, formatMoney } from "@/hooks/useOperatorMetrics";
+import { type NeighborhoodRow, formatMoney } from "@/hooks/useOperatorMetrics";
+import { TONE_CHIP } from "@/lib/chips";
 
 export function NeighborhoodTable({ rows }: { rows: NeighborhoodRow[] }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Neighborhoods by activity</CardTitle>
-        <CardDescription>Ranked by 30-day GMV across all cities</CardDescription>
+      <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle as="h2" className="text-lg">
+              Activity by area
+            </CardTitle>
+            <CardDescription className="mt-1.5">
+              Cities and neighborhoods ranked by gross booking value in the last 30 days.
+            </CardDescription>
+          </div>
+          {rows.length > 0 && <Badge variant="secondary">{rows.length} areas</Badge>}
+        </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No venue data yet.</p>
+          <StatusPanel
+            icon={MapPin}
+            title="No areas to rank yet"
+            description="Area activity will appear after venue inventory is available in the operator report."
+            className="py-9"
+          />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>City / Area</TableHead>
-                <TableHead>Market</TableHead>
-                <TableHead className="text-right">Venues</TableHead>
-                <TableHead className="text-right">Bookings (30d)</TableHead>
-                <TableHead className="text-right">GMV (30d)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.city}>
-                  <TableCell className="font-medium text-foreground">{r.city}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{r.market}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{r.venues}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.bookings30d}</TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">
-                    {formatMoney(r.gmv30d, r.currency)}
-                  </TableCell>
-                </TableRow>
+          <>
+            <ul className="divide-y divide-border md:hidden" aria-label="Area activity rankings">
+              {rows.map((row, index) => (
+                <li key={row.city} className="py-4 first:pt-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                        <MapPin aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{row.city}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">Rank {index + 1} by GMV</p>
+                    </div>
+                    <Badge variant="outline" className={TONE_CHIP.neutral}>
+                      {row.market}
+                    </Badge>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-3 gap-3 rounded-lg bg-surface-1 p-3">
+                    <div className="min-w-0">
+                      <dt className="text-xs leading-4 text-muted-foreground">Venues</dt>
+                      <dd className="stat-numeral mt-1 font-semibold text-foreground">
+                        {row.venues.toLocaleString()}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-xs leading-4 text-muted-foreground">Bookings</dt>
+                      <dd className="stat-numeral mt-1 font-semibold text-foreground">
+                        {row.bookings30d.toLocaleString()}
+                      </dd>
+                    </div>
+                    <div className="min-w-0 text-right">
+                      <dt className="text-xs leading-4 text-muted-foreground">GMV</dt>
+                      <dd className="stat-numeral mt-1 break-words font-semibold text-foreground">
+                        {formatMoney(row.gmv30d, row.currency)}
+                      </dd>
+                    </div>
+                  </dl>
+                </li>
               ))}
-            </TableBody>
-          </Table>
+            </ul>
+
+            <div className="hidden md:block">
+              <Table className="table-fixed">
+                <caption className="sr-only">
+                  Area activity rankings with market, venue count, bookings, and gross booking value for the last 30 days.
+                </caption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[28%] px-3">City or area</TableHead>
+                    <TableHead className="w-[19%] px-3">Market</TableHead>
+                    <TableHead className="w-[14%] px-3 text-right">Venues</TableHead>
+                    <TableHead className="w-[18%] px-3 text-right">Bookings</TableHead>
+                    <TableHead className="w-[21%] px-3 text-right">GMV</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.city}>
+                      <TableCell className="truncate px-3 font-semibold text-foreground" title={row.city}>
+                        {row.city}
+                      </TableCell>
+                      <TableCell className="px-3">
+                        <Badge variant="outline" className={TONE_CHIP.neutral}>
+                          {row.market}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="stat-numeral px-3 text-right">
+                        {row.venues.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="stat-numeral px-3 text-right">
+                        {row.bookings30d.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="stat-numeral break-words px-3 text-right font-semibold text-foreground">
+                        {formatMoney(row.gmv30d, row.currency)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

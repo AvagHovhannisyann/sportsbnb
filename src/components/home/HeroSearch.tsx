@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CalendarDays, Loader2, MapPin, Navigation, Search } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Calendar, Navigation } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,12 +13,12 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { sportTypes } from "@/data/constants";
-import { toast } from "sonner";
 
 const HeroSearch = () => {
   const navigate = useNavigate();
@@ -62,53 +63,46 @@ const HeroSearch = () => {
       () => {
         setIsLocating(false);
         toast.error("Unable to get your location. Please enable location services.");
-      }
+      },
     );
   };
 
-  // Shared form body — used inside the mobile sheet AND inline on desktop
-  const FormBody = (
-    <div className="flex flex-col md:flex-row md:items-stretch gap-1 md:gap-0">
-      {/* Location */}
-      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset rounded-lg">
-        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-        <div className="flex-1 min-w-0">
-          {/* Same fix the Sport label already carries: without `htmlFor` the
-              visible word labels nothing, and the field falls back to being
-              named by its placeholder. */}
-          <label
-            htmlFor="hero-location"
-            className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block"
-          >
-            Location
-          </label>
-          <input
-            id="hero-location"
-            type="text"
-            placeholder="City or neighborhood"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/60 text-sm font-medium focus:outline-none"
-          />
-        </div>
-      </div>
+  // Both the mobile sheet and desktop bar stay mounted at the same time.
+  // A prefix keeps their labels and controls uniquely associated in the DOM.
+  const renderFormBody = (idPrefix: string) => {
+    const locationId = `${idPrefix}-location`;
+    const sportId = `${idPrefix}-sport`;
+    const whenId = `${idPrefix}-when`;
 
-      {/* Sport */}
-      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset rounded-lg">
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-        <div className="flex-1 min-w-0">
-          {/* The visible label had no htmlFor, so it labelled nothing and
-              the control announced only its current value. Associating it is
-              better than an aria-label: the name a screen reader reads then
-              matches the word on screen. */}
-          <label
-            htmlFor="hero-sport"
-            className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block"
-          >
+    return (
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-stretch">
+        <label
+          htmlFor={locationId}
+          className="flex min-h-[4.5rem] items-center gap-3 rounded-lg border border-border bg-surface-1 px-3.5 transition-colors duration-150 motion-reduce:transition-none hover:border-border-strong focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+        >
+          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold leading-4 text-foreground-soft">Location</span>
+            <input
+              id={locationId}
+              type="text"
+              placeholder="City or neighborhood"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              className="block min-h-8 w-full bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+            />
+          </span>
+        </label>
+
+        <div className="rounded-lg border border-border bg-surface-1 px-3.5 py-1.5 transition-colors duration-150 motion-reduce:transition-none hover:border-border-strong focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+          <label htmlFor={sportId} className="block text-xs font-semibold leading-4 text-foreground-soft">
             Sport
           </label>
           <Select value={sport} onValueChange={setSport}>
-            <SelectTrigger id="hero-sport" className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
+            <SelectTrigger
+              id={sportId}
+              className="h-11 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0"
+            >
               <SelectValue placeholder="Any sport" />
             </SelectTrigger>
             <SelectContent>
@@ -116,35 +110,25 @@ const HeroSearch = () => {
               {/* Not `s.toLowerCase()`. Venues are tagged with these strings
                   verbatim and Discover filters with a case-sensitive
                   `sports.includes(...)`, so the lower-cased value travelled
-                  into the URL and matched nothing: this Search button reported
-                  "0 venues" where the category tiles further down the same
-                  page — which send `s` untouched — found three. */}
-              {sportTypes.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
+                  into the URL and matched nothing. */}
+              {sportTypes.map((sportType) => (
+                <SelectItem key={sportType} value={sportType}>
+                  {sportType}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* When */}
-      <div className="flex-1 flex items-center gap-3 px-4 py-3 md:py-2 md:border-r border-border focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset rounded-lg">
-        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-        <div className="flex-1 min-w-0">
-          {/* The visible label had no htmlFor, so it labelled nothing and
-              the control announced only its current value. Associating it is
-              better than an aria-label: the name a screen reader reads then
-              matches the word on screen. */}
-          <label
-            htmlFor="hero-when"
-            className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground block"
-          >
+        <div className="rounded-lg border border-border bg-surface-1 px-3.5 py-1.5 transition-colors duration-150 motion-reduce:transition-none hover:border-border-strong focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+          <label htmlFor={whenId} className="block text-xs font-semibold leading-4 text-foreground-soft">
             When
           </label>
           <Select value={when} onValueChange={setWhen}>
-            <SelectTrigger id="hero-when" className="w-full border-0 p-0 h-auto shadow-none bg-transparent text-sm font-medium focus:ring-0">
+            <SelectTrigger
+              id={whenId}
+              className="h-11 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0"
+            >
               <SelectValue placeholder="Any time" />
             </SelectTrigger>
             <SelectContent>
@@ -156,65 +140,71 @@ const HeroSearch = () => {
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* Buttons */}
-      <div className="flex gap-2 p-1.5 md:p-1">
-        <Button
-          onClick={handleNearMe}
-          variant="outline"
-          disabled={isLocating}
-          className="h-12 px-4 rounded-xl"
-        >
-          <Navigation className={`h-4 w-4 ${isLocating ? "animate-pulse" : ""}`} />
-          <span className="hidden sm:inline">{isLocating ? "Locating…" : "Near me"}</span>
-        </Button>
-        <Button
-          onClick={handleSearch}
-          className="flex-1 md:flex-none h-12 px-7 rounded-xl font-semibold shadow-md hover:shadow-lg"
-        >
-          <Search className="h-4 w-4" />
-          Search
-        </Button>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 md:col-span-2 lg:col-span-1">
+          <Button
+            type="button"
+            onClick={handleNearMe}
+            variant="outline"
+            disabled={isLocating}
+            className="h-full min-h-12 px-3.5"
+          >
+            {isLocating ? (
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            ) : (
+              <Navigation className="h-4 w-4" aria-hidden="true" />
+            )}
+            <span className="hidden sm:inline">{isLocating ? "Locating…" : "Near me"}</span>
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSearch}
+            className="h-full min-h-12 px-6 font-semibold"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+            Search
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
-      {/* MOBILE — single tap target that opens a sheet (Airbnb-style) */}
       <div className="md:hidden">
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
             <button
               type="button"
-              className="w-full flex items-center gap-3 rounded-2xl bg-card shadow-2xl border border-border ring-1 ring-foreground/5 px-5 py-4 text-left hover:border-border-strong transition-colors"
+              className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-border bg-card px-4 text-left shadow-sm outline-none transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-surface-1"
             >
-              <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-md">
-                <Search className="h-5 w-5" strokeWidth={2.5} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground leading-tight">
-                  Where do you want to play?
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Any sport · Any time · Near you
-                </p>
-              </div>
+              <Search className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold leading-5 text-foreground">
+                  Find a court
+                </span>
+                <span className="block truncate text-xs leading-4 text-muted-foreground">
+                  Location, sport, and time
+                </span>
+              </span>
+              <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl p-0 max-h-[90vh] overflow-y-auto">
-            <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
-              <SheetTitle className="text-left">Find a court</SheetTitle>
+          <SheetContent
+            side="bottom"
+            className="max-h-[90dvh] gap-0 overflow-y-auto rounded-t-2xl border-border bg-card p-0 pb-[max(1rem,env(safe-area-inset-bottom))] data-[state=closed]:!duration-150 data-[state=open]:!duration-200 motion-reduce:data-[state=closed]:!animate-none motion-reduce:data-[state=open]:!animate-none [&>button]:right-3 [&>button]:top-3 [&>button]:h-11 [&>button]:w-11 [&>button]:rounded-lg"
+          >
+            <SheetHeader className="border-b border-border px-5 py-4 pr-16 text-left">
+              <SheetTitle>Find a court</SheetTitle>
+              <SheetDescription>Choose a location, sport, and preferred time.</SheetDescription>
             </SheetHeader>
-            <div className="p-3">{FormBody}</div>
+            <div className="p-4">{renderFormBody("hero-mobile")}</div>
           </SheetContent>
         </Sheet>
       </div>
 
-      {/* DESKTOP — full inline bar */}
-      <div className="hidden md:block rounded-2xl bg-card shadow-2xl border border-border p-1.5 md:p-2 ring-1 ring-foreground/5">
-        {FormBody}
+      <div className="hidden rounded-xl border border-border bg-card p-2 shadow-sm md:block">
+        {renderFormBody("hero-desktop")}
       </div>
     </>
   );

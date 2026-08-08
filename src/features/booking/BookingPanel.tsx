@@ -64,6 +64,7 @@ export function BookingPanel({
         const d = addDays(new Date(), i);
         return {
           value: format(d, "yyyy-MM-dd"),
+          label: format(d, "EEEE, MMMM d, yyyy"),
           weekday: format(d, "EEE"),
           day: format(d, "d"),
           month: format(d, "MMM"),
@@ -189,53 +190,77 @@ export function BookingPanel({
     // minor units in two places and hardcoded the symbol in two more. Same
     // pixels today; a currency or locale change would have landed on half of
     // the breakdown and left the header quoting the old one.
-    <div className="glass rounded-2xl p-6">
-      <div className="flex items-baseline justify-between mb-4">
-        <div>
+    <section
+      aria-labelledby="booking-panel-title"
+      className="rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
+    >
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2
+            id="booking-panel-title"
+            className="font-display text-lg font-semibold leading-tight tracking-extra-tight"
+          >
+            Reserve this venue
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">Choose a date and an available hour.</p>
+        </div>
+        <div className="shrink-0 text-right">
           <Price
             amount={pricePerHour}
             suffix="/ hour"
-            className="text-2xl font-bold"
+            className="text-xl font-semibold sm:text-2xl"
             suffixClassName="text-muted-foreground"
           />
         </div>
       </div>
 
-      <div className="mb-4">
-        <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
-          <CalendarDays className="h-4 w-4" /> Date
+      <div className="mb-5">
+        <p id="booking-date-label" className="mb-2 flex items-center gap-2 text-sm font-semibold">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          Date
         </p>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div
+          role="group"
+          aria-labelledby="booking-date-label"
+          className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2 overscroll-x-contain"
+        >
           {dates.map((d) => (
             <button
               key={d.value}
               type="button"
+              aria-pressed={selectedDate === d.value}
+              aria-label={d.label}
               onClick={() => {
                 setSelectedDate(d.value);
                 setSelectedSlot(null);
               }}
               className={cn(
-                "flex flex-col items-center rounded-xl border px-3 py-2 min-w-[3.5rem] text-sm transition-colors",
+                "focus-ring flex min-h-16 min-w-14 snap-start touch-manipulation flex-col items-center justify-center rounded-lg border px-2 py-2 text-sm transition-[background-color,border-color,color,opacity] duration-150 ease-out active:opacity-80 motion-reduce:transition-none",
                 selectedDate === d.value
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "hover:border-primary/50",
+                  : "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent",
               )}
             >
-              <span className="text-xs opacity-80">{d.weekday}</span>
-              <span className="font-semibold">{d.day}</span>
-              <span className="text-xs opacity-80">{d.month}</span>
+              <span className="text-[11px] font-medium opacity-80">{d.weekday}</span>
+              <span className="stat-numeral text-base font-semibold leading-tight">{d.day}</span>
+              <span className="text-[11px] opacity-80">{d.month}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mb-4">
-        <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
-          <Clock className="h-4 w-4" /> Time
+      <div className="mb-5">
+        <p id="booking-time-label" className="mb-2 flex items-center gap-2 text-sm font-semibold">
+          <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          Time
         </p>
         {slotsLoading ? (
-          <div className="flex items-center justify-center py-6 text-muted-foreground" role="status" aria-label="Loading availability">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div
+            className="surface-inset flex min-h-24 items-center justify-center gap-2 rounded-lg px-4 py-6 text-sm text-muted-foreground"
+            role="status"
+          >
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            Loading available times…
           </div>
         ) : slotsError ? (
           /* Three different things used to print "Closed on this day.": the
@@ -244,19 +269,25 @@ export function BookingPanel({
              the third told a paying customer the place was closed because a
              request errored — the page even contradicted itself, listing
              08:00-23:00 under Operating Hours directly beside it. */
-          <div className="py-2 space-y-2">
-            <p className="text-sm text-muted-foreground">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+            <p className="text-sm font-medium text-foreground">
               Couldn&apos;t load available times.
             </p>
+            <p className="mt-1 text-sm text-muted-foreground">Your date selection is still saved.</p>
             <Button
               variant="outline"
               size="sm"
+              className="mt-3"
               onClick={() => refetchSlots()}
               disabled={slotsFetching}
             >
               {slotsFetching ? (
                 <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Retrying
+                  <Loader2
+                    className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                  Retrying…
                 </>
               ) : (
                 "Try again"
@@ -264,7 +295,7 @@ export function BookingPanel({
             </Button>
           </div>
         ) : !slots || slots.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">
+          <p className="surface-inset rounded-lg px-4 py-5 text-center text-sm text-muted-foreground">
             {blockedToday
               ? "The owner has closed this date."
               : closedToday === false
@@ -272,7 +303,7 @@ export function BookingPanel({
                 : "Closed on this day."}
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div role="group" aria-labelledby="booking-time-label" className="grid grid-cols-3 gap-2">
             {slots.map((slot) => {
               // `atVenue`, not the raw instant: date-fns formats in the browser's zone,
               // so this printed 14:00 for an 18:00 Yerevan slot to anyone outside
@@ -283,13 +314,17 @@ export function BookingPanel({
                   key={slot.slot_start}
                   type="button"
                   disabled={!slot.available}
+                  aria-pressed={slot.available ? selectedSlot === slot.slot_start : undefined}
+                  aria-label={`${label}${slot.available ? "" : ", unavailable"}`}
                   onClick={() => setSelectedSlot(slot.slot_start)}
                   className={cn(
-                    "rounded-lg border px-2 py-2 text-sm transition-colors",
-                    !slot.available && "opacity-40 cursor-not-allowed line-through",
+                    "focus-ring stat-numeral min-h-11 touch-manipulation rounded-lg border px-2 py-2 text-sm font-medium transition-[background-color,border-color,color,opacity] duration-150 ease-out active:opacity-80 motion-reduce:transition-none",
+                    !slot.available &&
+                      "cursor-not-allowed border-border bg-surface-1 text-muted-foreground line-through opacity-55",
                     slot.available && selectedSlot === slot.slot_start
                       ? "border-primary bg-primary text-primary-foreground"
-                      : slot.available && "hover:border-primary/50",
+                      : slot.available &&
+                          "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent",
                   )}
                 >
                   {label}
@@ -300,43 +335,64 @@ export function BookingPanel({
         )}
       </div>
 
-      {selected && (
-        <div className="mb-4 rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-          {/* No service-fee row: Sportsbnb charges no commission, so the venue
+      <div aria-live="polite" className="mb-5 min-h-14">
+        {selected ? (
+          <div className="surface-inset rounded-lg p-4 text-sm">
+            {/* No service-fee row: Sportsbnb charges no commission, so the venue
               price and the total are the same figure. This used to add a
               hardcoded 5% here (`* 0.05`) and again in the total (`* 1.05`) —
               a fee the platform no longer takes, quoted to the player before
               the server had priced anything. The venue line and the total are
               now both the listed rate, which is what create_booking_hold()
               returns and what actually gets charged. */}
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">1 hour</span>
-            <span>{formatAmd(pricePerHour * 100)}</span>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-muted-foreground">1 hour</span>
+              <span className="stat-numeral font-medium">{formatAmd(pricePerHour * 100)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-2 font-semibold">
+              <span>Total</span>
+              <span className="stat-numeral">{formatAmd(pricePerHour * 100)}</span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              No booking fee — you pay the venue's listed price.
+            </p>
           </div>
-          <div className="flex justify-between font-semibold border-t pt-1 mt-1">
-            <span>Total</span>
-            <span>{formatAmd(pricePerHour * 100)}</span>
-          </div>
-          <p className="pt-1 text-xs text-muted-foreground">
-            No booking fee — you pay the venue's listed price.
+        ) : (
+          <p className="flex min-h-14 items-center rounded-lg border border-dashed border-border px-4 text-sm text-muted-foreground">
+            Select an available time to see your total.
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
-      <Button className="w-full" size="lg" onClick={handleReserve} disabled={createHold.isPending || !selectedSlot}>
-        {createHold.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-        Reserve
+      <Button
+        className="w-full"
+        size="lg"
+        onClick={handleReserve}
+        disabled={createHold.isPending || !selectedSlot}
+        aria-busy={createHold.isPending}
+      >
+        {createHold.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        ) : null}
+        {createHold.isPending ? "Reserving…" : "Reserve"}
       </Button>
       <div className="mt-3 space-y-1.5 text-center">
-        <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5" />
+        <p className="flex items-center justify-center gap-1.5 text-xs leading-relaxed text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Pay securely by card — Visa or Mastercard
         </p>
-        <p className={policyError ? "text-xs font-medium text-warning" : "text-xs text-muted-foreground"}>
+        <p
+          role={policyError ? "alert" : undefined}
+          className={
+            policyError
+              ? "text-xs font-medium leading-relaxed text-warning"
+              : "text-xs leading-relaxed text-muted-foreground"
+          }
+        >
           {policyText}
         </p>
       </div>
-    </div>
+    </section>
   );
 }
 

@@ -66,39 +66,64 @@ export default function GameJoinStatusPage() {
   }, [user?.id, gameId, paymentIdParam]);
 
   return (
-    <Layout>
-      <div className="container py-16 flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center py-10">
+    <Layout showFooter={false} showMobileNav={false} showAssistant={false}>
+      <div className="section-tinted flex min-h-[calc(100dvh-4rem)] items-center justify-center px-5 py-10">
+        <Card className="w-full max-w-lg shadow-sm">
+          <CardContent className="p-0 text-center">
             {status === "loading" && (
-              <>
-                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-                <h1 className="text-xl font-semibold">Confirming your payment…</h1>
-              </>
+              <div className="px-5 py-12 sm:px-8" role="status" aria-live="polite">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                  <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                </div>
+                <h1 className="font-display text-xl font-semibold tracking-extra-tight sm:text-2xl">
+                  Confirming your payment…
+                </h1>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  We’re securing your place in the game.
+                </p>
+              </div>
             )}
             {status === "success" && (
-              <>
-                <CheckCircle2 className="h-14 w-14 text-green-600 mx-auto mb-4" />
+              <div className="px-5 py-10 sm:px-8 sm:py-12">
+                <span className="sr-only" role="status" aria-live="polite">
+                  Your place in the game is confirmed.
+                </span>
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-success/25 bg-success/10 text-success">
+                  <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
+                </div>
                 {/* A CheckCircle2 already sits directly above this line; the 🎉
                     was a second celebratory glyph in a different font. */}
-                <h1 className="text-2xl font-bold mb-2">You're in!</h1>
-                <p className="text-muted-foreground mb-6">Payment received — see you on the field.</p>
-                <Button asChild>
+                <p className="eyebrow mb-2 text-success">Place confirmed</p>
+                <h1 className="font-display text-2xl font-semibold tracking-extra-tight sm:text-3xl">
+                  You're in
+                </h1>
+                <p className="mx-auto mb-6 mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
+                  Payment received — see you on the field.
+                </p>
+                <Button asChild className="w-full sm:w-auto">
                   <Link to={`/game/${gameId}`}>Back to the game</Link>
                 </Button>
-              </>
+              </div>
             )}
             {status === "error" && (
-              <>
-                <XCircle className="h-14 w-14 text-destructive mx-auto mb-4" />
-                <h1 className="text-2xl font-bold mb-2">Payment not completed</h1>
-                <p className="text-muted-foreground mb-6">
+              <div className="px-5 py-10 sm:px-8 sm:py-12">
+                <span className="sr-only" role="status" aria-live="polite">
+                  Payment was not completed.
+                </span>
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/5 text-destructive">
+                  <XCircle className="h-7 w-7" aria-hidden="true" />
+                </div>
+                <p className="eyebrow mb-2 text-destructive">Payment status</p>
+                <h1 className="font-display text-2xl font-semibold tracking-extra-tight sm:text-3xl">
+                  Payment not completed
+                </h1>
+                <p className="mx-auto mb-6 mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
                   If you were charged, your spot will be confirmed automatically — otherwise try again.
                 </p>
-                <Button asChild>
+                <Button asChild className="w-full sm:w-auto">
                   <Link to={`/game/${gameId}`}>Back to the game</Link>
                 </Button>
-              </>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -11,11 +11,10 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  } from "lucide-react";
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -23,7 +22,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { useState } from "react";
 import { bookingStatusDescriptor, type BookingStatusTone } from "@/features/booking/status";
 
 interface Booking {
@@ -34,8 +32,8 @@ interface Booking {
   venue_name: string;
   total_price: number;
   status: string;
-  customer_name?: string;
-  customer_email?: string;
+  customer_name?: string | null;
+  customer_email?: string | null;
 }
 
 interface BookingDetailDrawerProps {
@@ -57,8 +55,6 @@ export function BookingDetailDrawer({
   onReschedule,
   onContact,
 }: BookingDetailDrawerProps) {
-  const [note, setNote] = useState("");
-
   if (!booking) return null;
 
   const bookingDate = parseISO(booking.booking_date);
@@ -69,157 +65,119 @@ export function BookingDetailDrawer({
   const toneClasses: Record<BookingStatusTone, string> = {
     positive: TONE_CHIP.positive,
     warning: TONE_CHIP.warning,
-    danger: "bg-destructive/10 text-destructive",
-    neutral: "bg-muted text-muted-foreground",
+    danger: TONE_CHIP.danger,
+    neutral: TONE_CHIP.neutral,
   };
   const status = bookingStatusDescriptor(booking.status);
+  const hasActions =
+    !!onContact ||
+    !!onReschedule ||
+    !!onCancel ||
+    (booking.status === "pending" && !!onConfirm);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            <span>Booking Details</span>
-            <Badge className={toneClasses[status.tone]}>{status.label}</Badge>
-          </SheetTitle>
-          <SheetDescription>
-            Booking ID: {booking.id.slice(0, 8)}...
+          <Badge className={`w-fit ${toneClasses[status.tone]}`}>{status.label}</Badge>
+          <SheetTitle>Booking details</SheetTitle>
+          <SheetDescription className="font-mono text-xs">
+            Booking {booking.id.slice(0, 8)}…
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Customer Info */}
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">
-                {booking.customer_name || "Customer"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {booking.customer_email || "No email provided"}
-              </p>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Booking Details */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
+        <div className="mt-3 space-y-5">
+          <section aria-labelledby="booking-customer-heading" className="rounded-lg border border-border bg-surface-1 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary shadow-xs">
+                <User className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Venue</p>
-                <p className="font-medium text-foreground">{booking.venue_name}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Date</p>
-                <p className="font-medium text-foreground">
-                  {format(bookingDate, "EEEE, MMMM d, yyyy")}
+              <div className="min-w-0">
+                <h3 id="booking-customer-heading" className="font-semibold text-foreground">
+                  {booking.customer_name || "Customer name not provided"}
+                </h3>
+                <p className="mt-0.5 break-all text-sm text-muted-foreground">
+                  {booking.customer_email || "No email provided"}
                 </p>
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Time & Duration</p>
-                <p className="font-medium text-foreground">
-                  {formatTimeOfDay(booking.booking_time)} • {booking.duration_hours} hour
-                  {booking.duration_hours > 1 ? "s" : ""}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <Banknote className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Amount</p>
-                <p className="font-medium text-foreground">
-                  ֏{booking.total_price.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
+          </section>
 
           <Separator />
 
-          {/* Add Note */}
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Add a note
-            </label>
-            <Textarea
-              placeholder="Add internal notes about this booking..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="resize-none"
-              rows={3}
-            />
-          </div>
+          <section aria-labelledby="booking-summary-heading">
+            <h3 id="booking-summary-heading" className="mb-3 text-sm font-semibold text-foreground">Reservation summary</h3>
+            <dl className="divide-y divide-border rounded-lg border border-border bg-card">
+              <div className="flex gap-3 p-3.5">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">Venue</dt>
+                  <dd className="mt-0.5 break-words text-sm font-medium text-foreground">{booking.venue_name}</dd>
+                </div>
+              </div>
+              <div className="flex gap-3 p-3.5">
+                <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <div>
+                  <dt className="text-xs text-muted-foreground">Date</dt>
+                  <dd className="mt-0.5 text-sm font-medium text-foreground">{format(bookingDate, "EEEE, MMMM d, yyyy")}</dd>
+                </div>
+              </div>
+              <div className="flex gap-3 p-3.5">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <div>
+                  <dt className="text-xs text-muted-foreground">Time &amp; duration</dt>
+                  <dd className="mt-0.5 text-sm font-medium text-foreground">
+                    {formatTimeOfDay(booking.booking_time)} · {booking.duration_hours} hour{booking.duration_hours !== 1 ? "s" : ""}
+                  </dd>
+                </div>
+              </div>
+              <div className="flex gap-3 p-3.5">
+                <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <div>
+                  <dt className="text-xs text-muted-foreground">Total amount</dt>
+                  <dd className="stat-numeral mt-0.5 text-sm font-semibold text-foreground">֏{booking.total_price.toLocaleString()}</dd>
+                </div>
+              </div>
+            </dl>
+          </section>
 
-          <Separator />
+          {hasActions && (
+            <>
+              <Separator />
+              <section aria-labelledby="booking-actions-heading" className="space-y-2">
+                <h3 id="booking-actions-heading" className="mb-3 text-sm font-semibold text-foreground">Booking actions</h3>
+                {onContact && (
+                  <Button variant="outline" className="w-full justify-start" onClick={() => onContact(booking.id)}>
+                    <MessageCircle aria-hidden="true" />
+                    Contact customer
+                  </Button>
+                )}
 
-          {/* Actions */}
-          <div className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => onContact?.(booking.id)}
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Contact Customer
-            </Button>
+                {/* Deliberately not widened to `pending_payment`. That status
+                    is confirmed only by the payment callback. */}
+                {booking.status === "pending" && onConfirm && (
+                  <Button className="w-full justify-start" onClick={() => onConfirm(booking.id)}>
+                    <CheckCircle aria-hidden="true" />
+                    Confirm booking
+                  </Button>
+                )}
 
-            {/* Deliberately not widened to `pending_payment`. That status
-                means the customer has a hold and has not paid; confirming it
-                by hand would hand out a court for free, and Phase 2 revoked
-                the client's UPDATE on booking status anyway — the payment
-                callback is what confirms. Legacy `pending` predates payment
-                and is still an owner decision. */}
-            {booking.status === "pending" && (
-              <Button
-                className="w-full justify-start"
-                onClick={() => onConfirm?.(booking.id)}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Confirm Booking
-              </Button>
-            )}
+                {onReschedule && (
+                  <Button variant="outline" className="w-full justify-start" onClick={() => onReschedule(booking.id)}>
+                    <RefreshCw aria-hidden="true" />
+                    Reschedule
+                  </Button>
+                )}
 
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => onReschedule?.(booking.id)}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reschedule
-            </Button>
-
-            {booking.status !== "cancelled" && (
-              <Button
-                variant="destructive"
-                className="w-full justify-start"
-                onClick={() => onCancel?.(booking.id)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Cancel Booking
-              </Button>
-            )}
-          </div>
+                {booking.status !== "cancelled" && onCancel && (
+                  <Button variant="destructive" className="w-full justify-start" onClick={() => onCancel(booking.id)}>
+                    <XCircle aria-hidden="true" />
+                    Cancel booking
+                  </Button>
+                )}
+              </section>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

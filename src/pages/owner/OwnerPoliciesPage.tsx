@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, FileText, Save, Clock, Ban, Info, Timer } from "lucide-react";
+import { Ban, ChevronRight, Clock3, FileText, Info, Loader2, Save, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 import { useVenuePolicy, useSaveVenuePolicy } from "@/hooks/useVenuePolicies";
@@ -28,7 +30,13 @@ import { toast } from "sonner";
 const OwnerPoliciesPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,8 +64,20 @@ const OwnerPoliciesPage = () => {
     }
   }, [myVenues, selectedVenueId]);
 
-  const { data: existingPolicy, isLoading: policyLoading } = useVenuePolicy(selectedVenueId || undefined);
-  const { data: platformCancellation } = usePlatformCancellationPolicy();
+  const {
+    data: existingPolicy,
+    isLoading: policyLoading,
+    isError: policyError,
+    isFetching: policyFetching,
+    refetch: refetchPolicy,
+  } = useVenuePolicy(selectedVenueId || undefined);
+  const {
+    data: platformCancellation,
+    isLoading: platformCancellationLoading,
+    isError: platformCancellationError,
+    isFetching: platformCancellationFetching,
+    refetch: refetchPlatformCancellation,
+  } = usePlatformCancellationPolicy();
   const savePolicy = useSaveVenuePolicy();
 
   // Load existing policy
@@ -113,8 +133,23 @@ const OwnerPoliciesPage = () => {
     return (
       <OwnerLayout title="Policies">
         <div className="flex items-center justify-center h-64" role="status" aria-label="Loading policies">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" />
         </div>
+      </OwnerLayout>
+    );
+  }
+
+  if (venuesError) {
+    return (
+      <OwnerLayout title="Policies" subtitle="Manage cancellation terms and venue operating preferences.">
+        <Card className="max-w-3xl">
+          <ErrorPanel
+            what="your venues"
+            description="No policy settings were changed. Try loading your venues again."
+            onRetry={() => refetchVenues()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
       </OwnerLayout>
     );
   }
@@ -161,91 +196,199 @@ const OwnerPoliciesPage = () => {
     }
   };
 
+  const selectedVenue = myVenues.find((venue) => venue.id === selectedVenueId);
+
   return (
-    <OwnerLayout title="Policies" subtitle="Set cancellation rules, booking policies, and venue instructions">
+    <OwnerLayout
+      title="Policies"
+      subtitle="Manage cancellation terms and venue operating preferences."
+    >
       {myVenues.length === 0 ? (
-        <Card>
+        <Card className="max-w-3xl">
           <EmptyState
             icon={FileText}
             title="No venues to configure"
             description="Add a venue first to set up policies and rules."
-            actionLabel="Add Your First Venue"
+            actionLabel="Add first venue"
             actionHref="/add-venue"
           />
         </Card>
       ) : (
-        <div className="max-w-3xl space-y-6">
-          {/* Venue Selector */}
-          <div>
-            <Label className="mb-2 block">Select Venue</Label>
-            <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
-              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
-                <SelectValue placeholder="Select a venue" />
-              </SelectTrigger>
-              <SelectContent>
-                {myVenues.map((venue) => (
-                  <SelectItem key={venue.id} value={venue.id}>
-                    {venue.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="max-w-5xl space-y-5">
+          <section
+            aria-labelledby="policies-venue-context"
+            className="rounded-lg border border-border bg-surface-1 p-4 sm:flex sm:items-end sm:justify-between sm:gap-6"
+          >
+            <div className="min-w-0">
+              <p className="eyebrow">Venue context</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <h2
+                  id="policies-venue-context"
+                  className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground"
+                >
+                  {selectedVenue?.name || "Choose a venue"}
+                </h2>
+                {selectedVenue && (
+                  <Badge variant={selectedVenue.is_active ? "default" : "secondary"}>
+                    {selectedVenue.is_active ? "Active" : "Draft"}
+                  </Badge>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Every setting below is scoped to this venue.
+              </p>
+            </div>
+            <div className="mt-4 w-full sm:mt-0 sm:max-w-xs">
+              <Label htmlFor="policies-venue">Venue</Label>
+              <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
+                <SelectTrigger id="policies-venue" className="mt-1.5">
+                  <SelectValue placeholder="Select a venue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {myVenues.map((venue) => (
+                    <SelectItem key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
 
           {policyLoading ? (
             <div className="flex justify-center py-12" role="status" aria-label="Loading policies">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-primary motion-reduce:animate-none" />
             </div>
+          ) : policyError ? (
+            <Card>
+              <ErrorPanel
+                what="this venue's policies"
+                description="No policy settings were changed."
+                onRetry={() => refetchPolicy()}
+                isRetrying={policyFetching}
+              />
+            </Card>
           ) : (
             <>
-              {/* Platform Cancellation Policy Info */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <p className="text-xs font-semibold text-foreground">Jump to a section</p>
+                  <p
+                    id="policy-sections-scroll-hint"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground sm:hidden"
+                  >
+                    More sections to the right
+                    <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                  </p>
+                </div>
+                <nav
+                  aria-label="Policy sections"
+                  aria-describedby="policy-sections-scroll-hint"
+                  className="flex gap-1 overflow-x-auto overscroll-x-contain border-b border-border pb-2"
+                >
+                  {[
+                    ["#policy-timing", "Timing"],
+                    ["#policy-cancellation", "Cancellation"],
+                    ["#policy-booking", "Booking"],
+                    ["#policy-instructions", "Instructions"],
+                    ["#policy-save", "Review & save"],
+                  ].map(([href, label]) => (
+                    <a
+                      key={href}
+                      href={href}
+                      className="focus-ring inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
+                    >
+                      {label}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+
               <Alert>
-                <Info className="h-4 w-4" />
+                <Info aria-hidden="true" className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Platform Cancellation Policy:</strong> To ensure fairness, cancellation fees are controlled by the platform.
-                  {platformCancellation && (
-                    <ul className="mt-2 space-y-1 text-sm">
-                      {platformCancellation.tiers.map((tier, idx) => (
-                        <li key={idx}>• {tier.description} (more than {tier.hours_before}h before)</li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="mt-2 text-sm">Maximum fee is capped at {platformCancellation?.max_fee_percentage || 20}%.</p>
+                  <p className="font-semibold text-foreground">Platform cancellation guardrails</p>
+                  {platformCancellationLoading ? (
+                    <span className="mt-1.5 inline-flex items-center gap-2" role="status">
+                      <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+                      Loading platform guidance…
+                    </span>
+                  ) : platformCancellationError ? (
+                    <span className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <span>Platform guidance is temporarily unavailable. Your venue policy can still be edited.</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchPlatformCancellation()}
+                        disabled={platformCancellationFetching}
+                      >
+                        {platformCancellationFetching ? "Retrying…" : "Try again"}
+                      </Button>
+                    </span>
+                  ) : platformCancellation ? (
+                    <>
+                      <p>
+                        The platform publishes these reference tiers separately from the venue policy saved below.
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {platformCancellation.tiers.map((tier, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                            <span>{tier.description} (more than {tier.hours_before} hours before)</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2">
+                        Maximum platform fee: {platformCancellation.max_fee_percentage}%.
+                      </p>
+                    </>
+                  ) : null}
                 </AlertDescription>
               </Alert>
 
               {/* Overtime & Early Arrival */}
-              <Card>
-                <CardHeader>
-                  <CardTitle as="h2" className="flex items-center gap-2">
-                    <Timer className="h-5 w-5 text-primary" />
-                    Overtime & Early Arrival
+              <Card id="policy-timing" className="scroll-mt-24">
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <Timer aria-hidden="true" className="h-5 w-5 text-primary" />
+                    Overtime and early arrival
                   </CardTitle>
                   <CardDescription>
-                    Configure charges for customers who stay longer or arrive early
+                    Record the terms your team should follow around a booking.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 p-5 pt-0 sm:p-6 sm:pt-0">
+                  <Alert className="bg-surface-1">
+                    <Info aria-hidden="true" className="h-4 w-4" />
+                    <AlertDescription>
+                      SportsBnB stores these terms but does not automatically add overtime or early-arrival charges to a booking.
+                    </AlertDescription>
+                  </Alert>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="policy-overtime-rate">Overtime Rate (per minute)</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">֏</span>
-                        <Input id="policy-overtime-rate"
+                      <Label htmlFor="policy-overtime-rate">Overtime rate per minute</Label>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="relative w-full sm:w-44">
+                          <span aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">֏</span>
+                          <Input
+                          id="policy-overtime-rate"
                           type="number"
                           min="0"
                           step="10"
                           value={overtimeRatePerMinute}
                           onChange={(e) => setOvertimeRatePerMinute(parseFloat(e.target.value) || 0)}
-                          className="w-32"
-                        />
-                        <span className="text-sm text-muted-foreground">per minute</span>
+                          className="pl-8"
+                          aria-describedby="policy-overtime-help"
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground">Armenian dram per minute</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Charged when customers stay beyond their booked time. 
+                      <p id="policy-overtime-help" className="text-xs leading-relaxed text-muted-foreground">
+                        Use 0 when no overtime rate is recorded.
                         {overtimeRatePerMinute > 0 && (
-                          <span className="text-foreground font-medium">
-                            {" "}Example: 30 min overtime = {formatPrice(overtimeRatePerMinute * 30)}
+                          <span className="font-medium text-foreground">
+                            {" "}At this rate, 30 minutes is {formatPrice(overtimeRatePerMinute * 30)}.
                           </span>
                         )}
                       </p>
@@ -254,30 +397,31 @@ const OwnerPoliciesPage = () => {
                     <Separator />
 
                     <div className="space-y-3">
-                      <Label>Early Arrival Policy</Label>
-                      <RadioGroup 
-                        value={earlyArrivalPolicy} 
+                      <Label id="early-arrival-label">Early arrival policy</Label>
+                      <RadioGroup
+                        aria-labelledby="early-arrival-label"
+                        value={earlyArrivalPolicy}
                         onValueChange={(v) => setEarlyArrivalPolicy(v as typeof earlyArrivalPolicy)}
                       >
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                          <RadioGroupItem value="not_allowed" id="early-not-allowed" className="mt-0.5" />
-                          <div>
-                            <Label htmlFor="early-not-allowed" className="cursor-pointer">Not Allowed</Label>
-                            <p className="text-sm text-muted-foreground">Customers must wait for their booked time</p>
+                        <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                          <RadioGroupItem value="not_allowed" id="early-not-allowed" aria-describedby="early-not-allowed-help" className="mt-0.5" />
+                          <div className="min-w-0">
+                            <Label htmlFor="early-not-allowed" className="cursor-pointer">Not allowed</Label>
+                            <p id="early-not-allowed-help" className="mt-0.5 text-sm text-muted-foreground">Customers wait until their booked start time.</p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                          <RadioGroupItem value="free_if_available" id="early-free" className="mt-0.5" />
-                          <div>
-                            <Label htmlFor="early-free" className="cursor-pointer">Free if Available</Label>
-                            <p className="text-sm text-muted-foreground">Allow early start at no extra charge if slot is open</p>
+                        <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                          <RadioGroupItem value="free_if_available" id="early-free" aria-describedby="early-free-help" className="mt-0.5" />
+                          <div className="min-w-0">
+                            <Label htmlFor="early-free" className="cursor-pointer">Free if available</Label>
+                            <p id="early-free-help" className="mt-0.5 text-sm text-muted-foreground">Allow an early start at no extra charge when the slot is open.</p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                          <RadioGroupItem value="charged_normal_rate" id="early-charged" className="mt-0.5" />
-                          <div>
-                            <Label htmlFor="early-charged" className="cursor-pointer">Charged at Normal Rate</Label>
-                            <p className="text-sm text-muted-foreground">Early time is billed at your regular hourly rate</p>
+                        <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                          <RadioGroupItem value="charged_normal_rate" id="early-charged" aria-describedby="early-charged-help" className="mt-0.5" />
+                          <div className="min-w-0">
+                            <Label htmlFor="early-charged" className="cursor-pointer">Charge the normal rate</Label>
+                            <p id="early-charged-help" className="mt-0.5 text-sm text-muted-foreground">Record early time at the venue's regular hourly rate.</p>
                           </div>
                         </div>
                       </RadioGroup>
@@ -285,12 +429,12 @@ const OwnerPoliciesPage = () => {
 
                     {earlyArrivalPolicy !== 'not_allowed' && (
                       <div className="space-y-2">
-                        <Label>Maximum Early Arrival Window</Label>
-                        <Select 
-                          value={earlyArrivalMinutes.toString()} 
+                        <Label htmlFor="early-arrival-window">Maximum early-arrival window</Label>
+                        <Select
+                          value={earlyArrivalMinutes.toString()}
                           onValueChange={(v) => setEarlyArrivalMinutes(parseInt(v))}
                         >
-                          <SelectTrigger aria-label="Maximum early arrival window" className="w-48">
+                          <SelectTrigger id="early-arrival-window" className="w-full sm:w-56">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -310,76 +454,99 @@ const OwnerPoliciesPage = () => {
               </Card>
 
               {/* Cancellation Policy */}
-              <Card>
-                <CardHeader>
-                  <CardTitle as="h2" className="flex items-center gap-2">
-                    <Ban className="h-5 w-5 text-primary" />
-                    Cancellation Window
+              <Card id="policy-cancellation" className="scroll-mt-24">
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <Ban aria-hidden="true" className="h-5 w-5 text-primary" />
+                    Cancellation terms
                   </CardTitle>
                   <CardDescription>
-                    Set how far in advance customers should cancel (fees are platform-controlled)
+                    Choose the notice window and refund outcome stored with new bookings.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <RadioGroup value={cancellationPolicy} onValueChange={setCancellationPolicy}>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer">
-                      <RadioGroupItem value="flexible" id="flexible" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="flexible" className="font-medium cursor-pointer">Flexible</Label>
-                        <p className="text-sm text-muted-foreground">Cancel up to 24 hours before for a full refund</p>
+                <CardContent className="space-y-6 p-5 pt-0 sm:p-6 sm:pt-0">
+                  <div className="space-y-3">
+                    <Label id="cancellation-window-label">Notice window</Label>
+                    <RadioGroup
+                      aria-labelledby="cancellation-window-label"
+                      value={cancellationPolicy}
+                      onValueChange={setCancellationPolicy}
+                    >
+                    <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                      <RadioGroupItem value="flexible" id="flexible" aria-describedby="flexible-help" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="flexible" className="cursor-pointer">Flexible</Label>
+                        <p id="flexible-help" className="mt-0.5 text-sm text-muted-foreground">Use a 24-hour notice window.</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer">
-                      <RadioGroupItem value="moderate" id="moderate" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="moderate" className="font-medium cursor-pointer">Moderate</Label>
-                        <p className="text-sm text-muted-foreground">Cancel up to 48 hours before for a full refund</p>
+                    <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                      <RadioGroupItem value="moderate" id="moderate" aria-describedby="moderate-help" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="moderate" className="cursor-pointer">Moderate</Label>
+                        <p id="moderate-help" className="mt-0.5 text-sm text-muted-foreground">Use a 48-hour notice window.</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer">
-                      <RadioGroupItem value="strict" id="strict" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="strict" className="font-medium cursor-pointer">Strict</Label>
-                        <p className="text-sm text-muted-foreground">Cancel up to 72 hours before for a full refund</p>
+                    <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                      <RadioGroupItem value="strict" id="strict" aria-describedby="strict-help" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="strict" className="cursor-pointer">Strict</Label>
+                        <p id="strict-help" className="mt-0.5 text-sm text-muted-foreground">Use a 72-hour notice window.</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer">
-                      <RadioGroupItem value="custom" id="custom" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="custom" className="font-medium cursor-pointer">Custom</Label>
-                        <p className="text-sm text-muted-foreground mb-2">Set your own cancellation window</p>
+                    <div className="flex min-h-16 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                      <RadioGroupItem value="custom" id="custom" aria-describedby="custom-help" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="custom" className="cursor-pointer">Custom</Label>
+                        <p id="custom-help" className="mt-0.5 text-sm text-muted-foreground">Set a specific notice window.</p>
                         {cancellationPolicy === "custom" && (
-                          <div className="flex items-center gap-2">
+                          <div className="mt-3 max-w-xs space-y-1.5">
+                            <Label htmlFor="custom-cancellation-hours" className="text-xs text-muted-foreground">
+                              Hours before booking
+                            </Label>
                             <Input
+                              id="custom-cancellation-hours"
                               type="number"
                               value={customCancellationHours}
                               onChange={(e) => setCustomCancellationHours(parseInt(e.target.value) || 24)}
-                              className="w-24"
                               min={1}
                             />
-                            <span className="text-sm text-muted-foreground">hours before booking</span>
                           </div>
                         )}
                       </div>
                     </div>
-                  </RadioGroup>
+                    </RadioGroup>
+                  </div>
 
                   <Separator />
 
                   <div className="space-y-3">
-                    <Label>Refund Type (within cancellation window)</Label>
-                    <RadioGroup value={refundType} onValueChange={setRefundType} className="flex gap-4">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="full" id="full-refund" />
-                        <Label htmlFor="full-refund" className="cursor-pointer">Full refund</Label>
+                    <Label id="refund-outcome-label">Player refund outcome</Label>
+                    <RadioGroup
+                      aria-labelledby="refund-outcome-label"
+                      value={refundType}
+                      onValueChange={setRefundType}
+                      className="grid gap-2 md:grid-cols-3"
+                    >
+                      <div className="flex min-h-20 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                        <RadioGroupItem value="full" id="full-refund" aria-describedby="full-refund-help" className="mt-0.5" />
+                        <div>
+                          <Label htmlFor="full-refund" className="cursor-pointer">Full before cutoff</Label>
+                          <p id="full-refund-help" className="mt-0.5 text-xs leading-relaxed text-muted-foreground">No refund inside the notice window.</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="partial" id="partial-refund" />
-                        <Label htmlFor="partial-refund" className="cursor-pointer">50% refund</Label>
+                      <div className="flex min-h-20 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                        <RadioGroupItem value="partial" id="partial-refund" aria-describedby="partial-refund-help" className="mt-0.5" />
+                        <div>
+                          <Label htmlFor="partial-refund" className="cursor-pointer">50% inside cutoff</Label>
+                          <p id="partial-refund-help" className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Full refund before the notice window.</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="none" id="no-refund" />
-                        <Label htmlFor="no-refund" className="cursor-pointer">No refund</Label>
+                      <div className="flex min-h-20 items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+                        <RadioGroupItem value="none" id="no-refund" aria-describedby="no-refund-help" className="mt-0.5" />
+                        <div>
+                          <Label htmlFor="no-refund" className="cursor-pointer">No refund</Label>
+                          <p id="no-refund-help" className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Player cancellations receive no refund.</p>
+                        </div>
                       </div>
                     </RadioGroup>
                   </div>
@@ -387,22 +554,28 @@ const OwnerPoliciesPage = () => {
               </Card>
 
               {/* Booking Rules */}
-              <Card>
-                <CardHeader>
-                  <CardTitle as="h2" className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-primary" />
-                    Booking Rules
+              <Card id="policy-booking" className="scroll-mt-24">
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <Clock3 aria-hidden="true" className="h-5 w-5 text-primary" />
+                    Booking preferences
                   </CardTitle>
                   <CardDescription>
-                    Control how customers can book your venue
+                    Store duration, interval, and scheduling preferences for this venue.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
+                <CardContent className="space-y-6 p-5 pt-0 sm:p-6 sm:pt-0">
+                  <Alert className="bg-surface-1">
+                    <Info aria-hidden="true" className="h-4 w-4" />
+                    <AlertDescription>
+                      These values are saved with the venue. Embedded booking tools read the duration and slot settings; other booking surfaces may not enforce every preference yet.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Minimum Duration</Label>
+                      <Label htmlFor="policy-min-duration">Minimum duration</Label>
                       <Select value={minDuration.toString()} onValueChange={(v) => setMinDuration(parseFloat(v))}>
-                        <SelectTrigger aria-label="Minimum duration">
+                        <SelectTrigger id="policy-min-duration">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -416,9 +589,9 @@ const OwnerPoliciesPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Maximum Duration</Label>
+                      <Label htmlFor="policy-max-duration">Maximum duration</Label>
                       <Select value={maxDuration.toString()} onValueChange={(v) => setMaxDuration(parseFloat(v))}>
-                        <SelectTrigger aria-label="Maximum duration">
+                        <SelectTrigger id="policy-max-duration">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -432,9 +605,9 @@ const OwnerPoliciesPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Time Slot Increments</Label>
+                      <Label htmlFor="policy-slot-increment">Time-slot increment</Label>
                       <Select value={timeSlotIncrement.toString()} onValueChange={(v) => setTimeSlotIncrement(parseInt(v))}>
-                        <SelectTrigger aria-label="Time slot increments">
+                        <SelectTrigger id="policy-slot-increment">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -446,9 +619,9 @@ const OwnerPoliciesPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Booking Window</Label>
+                      <Label htmlFor="policy-booking-window">Booking window</Label>
                       <Select value={bookingWindowDays.toString()} onValueChange={(v) => setBookingWindowDays(parseInt(v))}>
-                        <SelectTrigger aria-label="Booking window">
+                        <SelectTrigger id="policy-booking-window">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -462,9 +635,9 @@ const OwnerPoliciesPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Buffer Between Bookings</Label>
+                      <Label htmlFor="policy-booking-buffer">Buffer between bookings</Label>
                       <Select value={bufferMinutes.toString()} onValueChange={(v) => setBufferMinutes(parseInt(v))}>
-                        <SelectTrigger aria-label="Buffer between bookings">
+                        <SelectTrigger id="policy-booking-buffer">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -477,9 +650,9 @@ const OwnerPoliciesPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Late Arrival Grace Period</Label>
+                      <Label htmlFor="policy-grace-period">Late-arrival grace period</Label>
                       <Select value={gracePeriodMinutes.toString()} onValueChange={(v) => setGracePeriodMinutes(parseInt(v))}>
-                        <SelectTrigger aria-label="Late arrival grace period">
+                        <SelectTrigger id="policy-grace-period">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -495,59 +668,85 @@ const OwnerPoliciesPage = () => {
               </Card>
 
               {/* Venue Rules & Instructions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle as="h2" className="flex items-center gap-2">
-                    <Info className="h-5 w-5 text-primary" />
-                    Rules & Instructions
+              <Card id="policy-instructions" className="scroll-mt-24">
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <Info aria-hidden="true" className="h-5 w-5 text-primary" />
+                    Rules and instructions
                   </CardTitle>
                   <CardDescription>
-                    Information displayed to customers before and after booking
+                    Keep operational notes with this venue's policy record.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 p-5 pt-0 sm:p-6 sm:pt-0">
+                  <Alert className="bg-surface-1">
+                    <Info aria-hidden="true" className="h-4 w-4" />
+                    <AlertDescription>
+                      These notes are saved for the venue. Automatic display on the listing and delivery after booking are not currently available.
+                    </AlertDescription>
+                  </Alert>
                   <div className="space-y-2">
-                    <Label htmlFor="policy-venue-rules">Venue Rules</Label>
-                    <Textarea id="policy-venue-rules"
+                    <Label htmlFor="policy-venue-rules">Venue rules</Label>
+                    <Textarea
+                      id="policy-venue-rules"
                       placeholder="e.g., No outside food or drinks, proper sports attire required, no smoking on premises..."
                       value={venueRules}
                       onChange={(e) => setVenueRules(e.target.value)}
                       rows={4}
+                      aria-describedby="policy-venue-rules-help"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Displayed on the venue page before booking
+                    <p id="policy-venue-rules-help" className="text-xs leading-relaxed text-muted-foreground">
+                      Use this field as the source of truth for venue conduct notes.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Check-in Instructions</Label>
+                    <Label htmlFor="policy-checkin-instructions">Check-in instructions</Label>
                     <Textarea
+                      id="policy-checkin-instructions"
                       placeholder="e.g., Enter through the main gate, check in at the front desk, locker rooms are on the left..."
                       value={checkinInstructions}
                       onChange={(e) => setCheckinInstructions(e.target.value)}
                       rows={4}
+                      aria-describedby="policy-checkin-help"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Sent to customers after booking confirmation
+                    <p id="policy-checkin-help" className="text-xs leading-relaxed text-muted-foreground">
+                      Keep arrival details ready for your team to share with customers.
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Save Button */}
-              <Button onClick={handleSave} disabled={isSaving} size="lg" className="w-full">
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Policies
-                  </>
-                )}
-              </Button>
+              <Card id="policy-save" className="scroll-mt-24">
+                <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                  <div>
+                    <h2 className="font-display text-lg font-semibold tracking-extra-tight text-foreground">
+                      Review and save
+                    </h2>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      Save all policy sections for {selectedVenue?.name || "this venue"} together.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="w-full sm:w-auto"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+                        Saving…
+                      </>
+                    ) : (
+                      <>
+                        <Save aria-hidden="true" />
+                        Save policies
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             </>
           )}
         </div>

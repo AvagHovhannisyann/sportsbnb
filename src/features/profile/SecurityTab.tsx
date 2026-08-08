@@ -92,9 +92,9 @@ const SecurityTab = () => {
 
   return (
     <>
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Password</CardTitle>
+          <CardTitle as="h2">Password</CardTitle>
           <CardDescription>
             Change your password to keep your account secure.
           </CardDescription>
@@ -109,20 +109,22 @@ const SecurityTab = () => {
                 placeholder="••••••••"
                 value={passwordData.currentPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                aria-invalid={!!passwordErrors.currentPassword}
+                aria-describedby={passwordErrors.currentPassword ? "current-password-error" : undefined}
                 className={passwordErrors.currentPassword ? "border-destructive pr-10" : "pr-10"}
               />
               <button
-                      aria-label={showCurrentPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showCurrentPassword}
+                aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
+                aria-pressed={showCurrentPassword}
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="focus-ring absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:text-foreground motion-reduce:transition-none"
               >
                 {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {passwordErrors.currentPassword && (
-              <p className="text-sm text-destructive">{passwordErrors.currentPassword}</p>
+              <p id="current-password-error" className="text-sm text-destructive" role="alert">{passwordErrors.currentPassword}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -134,23 +136,25 @@ const SecurityTab = () => {
                 placeholder="••••••••"
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                aria-invalid={!!passwordErrors.newPassword}
+                aria-describedby={passwordErrors.newPassword ? "new-password-error" : passwordData.newPassword ? "password-strength" : undefined}
                 className={passwordErrors.newPassword ? "border-destructive pr-10" : "pr-10"}
               />
               <button
-                      aria-label={showNewPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showNewPassword}
+                aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                aria-pressed={showNewPassword}
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="focus-ring absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:text-foreground motion-reduce:transition-none"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {passwordData.newPassword && (
-              <div className="space-y-2">
+              <div id="password-strength" className="space-y-2" aria-live="polite">
                 <div className="flex items-center gap-2">
                   <Progress value={passwordStrength.score} className="h-2 flex-1" />
-                  <span className={`text-xs font-medium ${passwordStrength.score >= 80 ? "text-primary" : passwordStrength.score >= 60 ? "text-yellow-600" : "text-destructive"}`}>
+                  <span className={`text-xs font-medium ${passwordStrength.score >= 80 ? "text-primary" : passwordStrength.score >= 60 ? "text-warning" : "text-destructive"}`}>
                     {passwordStrength.score <= 20 ? "Very Weak" : passwordStrength.score <= 40 ? "Weak" : passwordStrength.score <= 60 ? "Fair" : passwordStrength.score <= 80 ? "Good" : "Strong"}
                   </span>
                 </div>
@@ -164,7 +168,7 @@ const SecurityTab = () => {
                   ].map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-1">
                       {passwordStrength.checks[key as keyof typeof passwordStrength.checks] ? (
-                        <Check className="h-3 w-3 text-primary" />
+                        <Check className="h-3 w-3 text-primary" aria-hidden="true" />
                       ) : (
                         <span className="h-3 w-3 rounded-full border border-muted-foreground/30" />
                       )}
@@ -177,7 +181,7 @@ const SecurityTab = () => {
               </div>
             )}
             {passwordErrors.newPassword && (
-              <p className="text-sm text-destructive">{passwordErrors.newPassword}</p>
+              <p id="new-password-error" className="text-sm text-destructive" role="alert">{passwordErrors.newPassword}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -189,31 +193,33 @@ const SecurityTab = () => {
                 placeholder="••••••••"
                 value={passwordData.confirmPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                aria-invalid={!!passwordErrors.confirmPassword}
+                aria-describedby={passwordErrors.confirmPassword ? "confirm-password-error" : undefined}
                 className={passwordErrors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
               />
               <button
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showConfirmPassword}
+                aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
+                aria-pressed={showConfirmPassword}
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="focus-ring absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:text-foreground motion-reduce:transition-none"
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {passwordErrors.confirmPassword && (
-              <p className="text-sm text-destructive">{passwordErrors.confirmPassword}</p>
+              <p id="confirm-password-error" className="text-sm text-destructive" role="alert">{passwordErrors.confirmPassword}</p>
             )}
             {passwordData.confirmPassword && passwordData.newPassword === passwordData.confirmPassword && !passwordErrors.confirmPassword && (
               <p className="text-sm text-primary flex items-center gap-1">
-                <Check className="h-4 w-4" /> Passwords match
+                <Check className="h-4 w-4" aria-hidden="true" /> Passwords match
               </p>
             )}
           </div>
           <Button onClick={handleUpdatePassword} disabled={isSavingPassword}>
             {isSavingPassword ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 Updating...
               </>
             ) : (
@@ -229,16 +235,16 @@ const SecurityTab = () => {
       {/* Two-Factor Authentication */}
       <TwoFactorAuth />
 
-      <Card className="border-destructive/20">
+      <Card className="overflow-hidden border-destructive/25">
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardTitle as="h2" className="text-destructive">Danger zone</CardTitle>
           <CardDescription>
             Irreversible and destructive actions.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <div className="font-medium text-foreground">Sign out of all devices</div>
               <div className="text-sm text-muted-foreground">
                 This will sign you out from all devices including this one.
@@ -265,8 +271,8 @@ const SecurityTab = () => {
             </AlertDialog>
           </div>
           <Separator />
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <div className="font-medium text-foreground">Delete account</div>
               <div className="text-sm text-muted-foreground">
                 Permanently delete your account and all data.
@@ -279,7 +285,7 @@ const SecurityTab = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
                     Delete your account?
                   </AlertDialogTitle>
                   <AlertDialogDescription>
@@ -290,7 +296,7 @@ const SecurityTab = () => {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={deleteAccount}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
                   >
                     Yes, delete my account
                   </AlertDialogAction>

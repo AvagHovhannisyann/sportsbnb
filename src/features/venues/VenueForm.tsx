@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload, X, Loader2, AlertTriangle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { VenueLocationPicker } from "@/components/venues/VenueLocationPicker";
 import { toast } from "sonner";
 import { formatPhoneDisplay } from "@/lib/phone";
+import { cn } from "@/lib/utils";
 import {
   SPORTS_OPTIONS,
   AMENITY_OPTIONS,
@@ -229,56 +231,58 @@ export const VenueForm = ({
     options: string[],
     selected: string[],
     onToggle: (option: string) => void,
+    groupName: "sports" | "amenities",
   ) => (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {options.map((option) => (
-        <div
-          key={option}
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onToggle(option);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onToggle(option);
-            }
-          }}
-          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all text-left ${
-            selected.includes(option)
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50"
-          }`}
-        >
-          <div className={`h-4 w-4 shrink-0 rounded-sm border border-primary flex items-center justify-center ${
-            selected.includes(option) ? 'bg-primary text-primary-foreground' : ''
-          }`}>
-            {selected.includes(option) && (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
+    <div
+      className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 md:grid-cols-3"
+      role="group"
+      aria-labelledby={`venue-${groupName}-heading`}
+      aria-describedby={groupName === "sports" && validationErrors.sports ? "venue-sports-error" : undefined}
+      aria-invalid={groupName === "sports" && !!validationErrors.sports}
+    >
+      {options.map((option) => {
+        const optionId = `venue-${groupName}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+        const isSelected = selected.includes(option);
+
+        return (
+          <div
+            key={option}
+            className={cn(
+              "flex min-h-11 items-center gap-3 rounded-lg border px-3 transition-[background-color,border-color] duration-150 motion-reduce:transition-none",
+              isSelected
+                ? "border-primary/50 bg-primary-soft"
+                : "border-border bg-background hover:border-foreground/30 hover:bg-surface-1",
             )}
+          >
+            <Checkbox
+              id={optionId}
+              name={groupName}
+              value={option}
+              checked={isSelected}
+              onCheckedChange={() => onToggle(option)}
+            />
+            <Label htmlFor={optionId} className="flex min-h-11 flex-1 cursor-pointer items-center py-2">
+              {option}
+            </Label>
           </div>
-          <span className="text-sm font-medium">{option}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const basicInfoCard = mode === "create" ? (
     <Card>
-      <CardHeader>
-        <CardTitle as="h2">Basic Information</CardTitle>
-        <CardDescription>Provide accurate details to attract more bookings</CardDescription>
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2">Basic information</CardTitle>
+        <CardDescription>Give players a clear, accurate picture of the venue.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="space-y-2">
-          <Label htmlFor="name">Venue Name *</Label>
+          <Label htmlFor="name">Venue name <span aria-hidden="true">*</span></Label>
           <Input
             id="name"
+            name="name"
+            autoComplete="organization"
             placeholder="e.g., Downtown Sports Complex"
             value={formData.name}
             onChange={(e) => {
@@ -286,30 +290,42 @@ export const VenueForm = ({
               setValidationErrors(prev => ({ ...prev, name: '' }));
             }}
             maxLength={100}
-            className={validationErrors.name ? 'border-destructive' : ''}
+            aria-required="true"
+            aria-invalid={!!validationErrors.name}
+            aria-describedby={validationErrors.name ? "venue-name-error" : undefined}
           />
           {validationErrors.name && (
-            <p className="text-sm text-destructive">{validationErrors.name}</p>
+            <p id="venue-name-error" role="alert" className="text-sm text-destructive">{validationErrors.name}</p>
           )}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="description">
-            Description * <span className="text-muted-foreground text-xs">({formData.description.length}/{MIN_DESCRIPTION_LENGTH} min characters)</span>
+            Description <span aria-hidden="true">*</span>
           </Label>
           <Textarea
             id="description"
+            name="description"
             placeholder="Describe your venue in detail - include facilities, equipment available, special features, parking information, nearby amenities, and what makes your venue special for players..."
             value={formData.description}
             onChange={(e) => {
               setFormData({ ...formData, description: e.target.value });
               setValidationErrors(prev => ({ ...prev, description: '' }));
             }}
-            className={`min-h-32 ${validationErrors.description ? 'border-destructive' : ''}`}
+            className="min-h-36"
             maxLength={1000}
+            aria-required="true"
+            aria-invalid={!!validationErrors.description}
+            aria-describedby={cn(
+              "venue-description-hint",
+              validationErrors.description && "venue-description-error",
+            )}
           />
+          <p id="venue-description-hint" className="text-xs text-muted-foreground">
+            {formData.description.length} of {MIN_DESCRIPTION_LENGTH} minimum characters
+          </p>
           {validationErrors.description && (
-            <p className="text-sm text-destructive">{validationErrors.description}</p>
+            <p id="venue-description-error" role="alert" className="text-sm text-destructive">{validationErrors.description}</p>
           )}
         </div>
 
@@ -317,18 +333,22 @@ export const VenueForm = ({
     </Card>
   ) : (
     <Card>
-      <CardHeader>
-        <CardTitle as="h2">Basic Information</CardTitle>
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2">Basic information</CardTitle>
+        <CardDescription>Keep the public listing specific and up to date.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="space-y-2">
-          <Label htmlFor="name">Venue Name *</Label>
+          <Label htmlFor="name">Venue name <span aria-hidden="true">*</span></Label>
           <Input
             id="name"
+            name="name"
+            autoComplete="organization"
             placeholder="e.g., Downtown Sports Complex"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             maxLength={100}
+            aria-required="true"
           />
         </div>
 
@@ -336,29 +356,35 @@ export const VenueForm = ({
           <Label htmlFor="description">Description</Label>
           <Textarea
             id="description"
+            name="description"
             placeholder="Tell players about your venue..."
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="min-h-24"
+            className="min-h-32"
             maxLength={1000}
           />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="city">City *</Label>
+            <Label htmlFor="city">City <span aria-hidden="true">*</span></Label>
             <Input
               id="city"
+              name="city"
+              autoComplete="address-level2"
               placeholder="e.g., Yerevan"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               maxLength={100}
+              aria-required="true"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>
             <Input
               id="address"
+              name="address"
+              autoComplete="street-address"
               placeholder="Street address"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -371,34 +397,37 @@ export const VenueForm = ({
   );
 
   const imagesCard = mode === "create" ? (
-    <Card className={validationErrors.images ? 'border-destructive' : ''}>
-      <CardHeader>
-        <CardTitle as="h2">
-          Venue Photos * <span className="text-muted-foreground text-sm font-normal">({imageFiles.length}/{MIN_PHOTOS} minimum)</span>
+    <Card className={validationErrors.images ? "border-destructive/60" : undefined}>
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2" id="venue-photos-heading">
+          Venue photos <span aria-hidden="true">*</span>
         </CardTitle>
-        <CardDescription>Upload at least 3 high-quality photos showing different areas of your venue</CardDescription>
+        <CardDescription>
+          Add at least {MIN_PHOTOS} clear photos showing the playing area, access, and facilities.
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
         {imagePreviews.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4" aria-label="Selected venue photos">
             {imagePreviews.map((preview, index) => (
-              <div key={index} className="relative aspect-video">
+              <div key={index} className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-surface-1">
                 <img
                   src={preview}
                   alt={`Venue preview ${index + 1}`}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="h-full w-full object-cover"
                 />
                 <Button
                   type="button"
                   variant="destructive"
                   size="icon"
-                  className="absolute top-2 right-2 h-7 w-7"
+                  className="absolute right-2 top-2 shadow-sm"
                   onClick={() => removeImageAt(index)}
+                  aria-label={`Remove venue photo ${index + 1}`}
                 >
-                  <X className="h-4 w-4" />
+                  <X aria-hidden="true" />
                 </Button>
                 {index === 0 && (
-                  <span className="absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                  <span className="absolute bottom-2 left-2 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
                     Primary
                   </span>
                 )}
@@ -408,77 +437,100 @@ export const VenueForm = ({
         )}
 
         {imageFiles.length < 10 && (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-            <span className="text-sm text-muted-foreground">Click to upload venue photos</span>
-            <span className="text-xs text-muted-foreground mt-1">Max 5MB per image, up to 10 photos</span>
+          <>
             <input
+              id="venue-photos"
+              name="venuePhotos"
               type="file"
-              className="hidden"
+              className="peer sr-only"
               accept="image/*"
               multiple
               onChange={handleImagesChange}
+              aria-invalid={!!validationErrors.images}
+              aria-describedby={cn("venue-photos-hint", validationErrors.images && "venue-photos-error")}
             />
-          </label>
+            <Label
+              htmlFor="venue-photos"
+              className="flex min-h-36 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border-interactive bg-surface-1 px-5 text-center transition-colors duration-150 hover:border-primary hover:bg-primary-soft/50 peer-focus-visible:border-ring peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none"
+            >
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-primary shadow-xs">
+                <Upload className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="text-sm font-semibold text-foreground">Choose venue photos</span>
+              <span id="venue-photos-hint" className="mt-1 text-xs font-normal text-muted-foreground">
+                {imageFiles.length} selected · 5MB each · up to 10 photos
+              </span>
+            </Label>
+          </>
         )}
 
         {validationErrors.images && (
-          <p className="text-sm text-destructive mt-2">{validationErrors.images}</p>
+          <p id="venue-photos-error" role="alert" className="mt-2 text-sm text-destructive">{validationErrors.images}</p>
         )}
       </CardContent>
     </Card>
   ) : (
     <Card>
-      <CardHeader>
-        <CardTitle as="h2">Venue Image</CardTitle>
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2">Venue image</CardTitle>
+        <CardDescription>Use a clear, recent image of the main playing area.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
         {imagePreview ? (
-          <div className="relative">
+          <div className="relative overflow-hidden rounded-lg border border-border bg-surface-1">
             <img
               src={imagePreview}
               alt="Venue preview"
-              className="w-full h-64 object-cover rounded-lg"
+              className="aspect-[16/9] w-full object-cover"
             />
             <Button
               type="button"
               variant="destructive"
               size="icon"
-              className="absolute top-2 right-2"
+              className="absolute right-2 top-2 shadow-sm"
               onClick={removeSingleImage}
+              aria-label="Remove venue image"
             >
-              <X className="h-4 w-4" />
+              <X aria-hidden="true" />
             </Button>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-            <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-            <span className="text-sm text-muted-foreground">Click to upload venue image</span>
-            <span className="text-xs text-muted-foreground mt-1">Max 5MB</span>
+          <>
             <input
+              id="venue-image"
+              name="venueImage"
               type="file"
-              className="hidden"
+              className="peer sr-only"
               accept="image/*"
               onChange={handleSingleImageChange}
+              aria-describedby="venue-image-hint"
             />
-          </label>
+            <Label
+              htmlFor="venue-image"
+              className="flex min-h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border-interactive bg-surface-1 px-5 text-center transition-colors duration-150 hover:border-primary hover:bg-primary-soft/50 peer-focus-visible:border-ring peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none"
+            >
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-primary shadow-xs">
+                <Upload className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="text-sm font-semibold text-foreground">Choose venue image</span>
+              <span id="venue-image-hint" className="mt-1 text-xs font-normal text-muted-foreground">Maximum file size: 5MB</span>
+            </Label>
+          </>
         )}
       </CardContent>
     </Card>
   );
 
   const sportsCard = (
-    <Card className={mode === "create" && validationErrors.sports ? 'border-destructive' : ''}>
-      <CardHeader>
-        <CardTitle as="h2">Sports Offered *</CardTitle>
-        {mode === "create" && (
-          <CardDescription>Select all sports available at your venue</CardDescription>
-        )}
+    <Card className={mode === "create" && validationErrors.sports ? "border-destructive/60" : undefined}>
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2" id="venue-sports-heading">Sports offered <span aria-hidden="true">*</span></CardTitle>
+        <CardDescription>Select every sport players can book at this venue.</CardDescription>
       </CardHeader>
-      <CardContent>
-        {renderOptionGrid(SPORTS_OPTIONS, formData.sports, handleSportToggle)}
+      <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
+        {renderOptionGrid(SPORTS_OPTIONS, formData.sports, handleSportToggle, "sports")}
         {mode === "create" && validationErrors.sports && (
-          <p className="text-sm text-destructive mt-2">{validationErrors.sports}</p>
+          <p id="venue-sports-error" role="alert" className="mt-2 text-sm text-destructive">{validationErrors.sports}</p>
         )}
       </CardContent>
     </Card>
@@ -486,34 +538,33 @@ export const VenueForm = ({
 
   const amenitiesCard = (
     <Card>
-      <CardHeader>
-        <CardTitle as="h2">Amenities</CardTitle>
-        {mode === "create" && (
-          <CardDescription>Highlight what makes your venue special</CardDescription>
-        )}
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2" id="venue-amenities-heading">Amenities</CardTitle>
+        <CardDescription>Choose the facilities players can expect on arrival.</CardDescription>
       </CardHeader>
-      <CardContent>
-        {renderOptionGrid(AMENITY_OPTIONS, formData.amenities, handleAmenityToggle)}
+      <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
+        {renderOptionGrid(AMENITY_OPTIONS, formData.amenities, handleAmenityToggle, "amenities")}
       </CardContent>
     </Card>
   );
 
   const contactCard = mode === "create" ? (
-    <Card className={validationErrors.phone ? 'border-destructive' : ''}>
-      <CardHeader>
+    <Card className={validationErrors.phone ? "border-destructive/60" : undefined}>
+      <CardHeader className="p-5 sm:p-6">
         <CardTitle as="h2" className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-[#25D366]" />
-          Booking Contact
+          <MessageCircle className="h-5 w-5 text-primary" aria-hidden="true" />
+          Booking contact
         </CardTitle>
         <CardDescription>
-          Players will contact you directly via WhatsApp or SMS to confirm bookings. This is required.
+          Give players a reliable way to confirm booking details with your team.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="space-y-2">
-          <Label htmlFor="phone">WhatsApp / Phone Number *</Label>
+          <Label htmlFor="phone">WhatsApp / phone number <span aria-hidden="true">*</span></Label>
           <Input
             id="phone"
+            name="phone"
             type="tel"
             autoComplete="tel"
             placeholder="+374 99 11 22 33"
@@ -522,14 +573,20 @@ export const VenueForm = ({
               setFormData({ ...formData, phone: e.target.value });
               setValidationErrors(prev => ({ ...prev, phone: '' }));
             }}
+            aria-required="true"
+            aria-invalid={!!validationErrors.phone}
+            aria-describedby={cn(
+              formData.phone && !validationErrors.phone && "venue-phone-preview",
+              validationErrors.phone && "venue-phone-error",
+            )}
           />
           {formData.phone && !validationErrors.phone && (
-            <p className="text-xs text-muted-foreground">
+            <p id="venue-phone-preview" className="text-xs text-muted-foreground">
               Will be saved as: {formatPhoneDisplay(formData.phone)}
             </p>
           )}
           {validationErrors.phone && (
-            <p className="text-sm text-destructive">{validationErrors.phone}</p>
+            <p id="venue-phone-error" role="alert" className="text-sm text-destructive">{validationErrors.phone}</p>
           )}
         </div>
 
@@ -537,6 +594,8 @@ export const VenueForm = ({
           <Label htmlFor="contactName">Contact Person (optional)</Label>
           <Input
             id="contactName"
+            name="contactName"
+            autoComplete="name"
             placeholder="e.g. Aram"
             value={formData.contactName}
             onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
@@ -544,9 +603,9 @@ export const VenueForm = ({
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <Label htmlFor="venue-whatsapp-messages">Accept WhatsApp messages</Label>
+        <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-4 py-3">
+          <div className="min-w-0">
+            <Label htmlFor="venue-whatsapp-messages" className="cursor-pointer">Accept WhatsApp messages</Label>
             <p className="text-xs text-muted-foreground">Recommended — most players prefer this</p>
           </div>
           <Switch
@@ -556,9 +615,9 @@ export const VenueForm = ({
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <Label htmlFor="venue-sms-fallback">Accept SMS as fallback</Label>
+        <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-4 py-3">
+          <div className="min-w-0">
+            <Label htmlFor="venue-sms-fallback" className="cursor-pointer">Accept SMS as fallback</Label>
             <p className="text-xs text-muted-foreground">Used when WhatsApp isn't available</p>
           </div>
           <Switch
@@ -571,21 +630,22 @@ export const VenueForm = ({
     </Card>
   ) : (
     <Card>
-      <CardHeader>
+      <CardHeader className="p-5 sm:p-6">
         <CardTitle as="h2" className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-[#25D366]" />
-          Booking Contact
+          <MessageCircle className="h-5 w-5 text-primary" aria-hidden="true" />
+          Booking contact
         </CardTitle>
         <CardDescription>
           How customers reach you to book. WhatsApp is the primary channel.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6 sm:pb-6">
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number *</Label>
             <Input
               id="phone"
+              name="phone"
               type="tel"
               autoComplete="tel"
               placeholder="+374 99 123 456"
@@ -602,6 +662,8 @@ export const VenueForm = ({
             <Label htmlFor="contactName">Contact Name</Label>
             <Input
               id="contactName"
+              name="contactName"
+              autoComplete="name"
               placeholder="e.g., Armen"
               value={formData.contactName}
               onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
@@ -609,9 +671,9 @@ export const VenueForm = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <Label htmlFor="venue-whatsapp-bookings">Accept WhatsApp bookings</Label>
+        <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-4 py-3">
+          <div className="min-w-0">
+            <Label htmlFor="venue-whatsapp-bookings" className="cursor-pointer">Accept WhatsApp bookings</Label>
             <p className="text-sm text-muted-foreground">Primary booking channel</p>
           </div>
           <Switch
@@ -621,9 +683,9 @@ export const VenueForm = ({
           />
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <Label htmlFor="venue-sms-bookings">Accept SMS bookings</Label>
+        <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-4 py-3">
+          <div className="min-w-0">
+            <Label htmlFor="venue-sms-bookings" className="cursor-pointer">Accept SMS bookings</Label>
             <p className="text-sm text-muted-foreground">Fallback if WhatsApp is off</p>
           </div>
           <Switch
@@ -638,34 +700,36 @@ export const VenueForm = ({
 
   const pricingCard = (
     <Card>
-      <CardHeader>
-        <CardTitle as="h2">Pricing & Settings</CardTitle>
-        {mode === "create" && (
-          <CardDescription>You keep 100% of every booking — we take no commission</CardDescription>
-        )}
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2">Pricing &amp; settings</CardTitle>
+        <CardDescription>
+          Set the base hourly rate shown for this venue. Players see the final booking total before payment.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="space-y-2">
-          <Label htmlFor="price">Price per Hour (֏) *</Label>
+          <Label htmlFor="price">Base price per hour (֏) <span aria-hidden="true">*</span></Label>
           <Input
             id="price"
+            name="pricePerHour"
             type="number"
+            inputMode="decimal"
             min="1"
             max="300000"
             placeholder="30"
             value={formData.pricePerHour}
             onChange={(e) => setFormData({ ...formData, pricePerHour: e.target.value })}
+            aria-required="true"
+            aria-describedby="venue-price-hint"
           />
-          {mode === "create" && (
-            <p className="text-xs text-muted-foreground">
-              Players pay ֏{(parseFloat(formData.pricePerHour) || 30).toLocaleString()}/hour and you receive all of it. No commission, no listing fee, nothing added on top.
-            </p>
-          )}
+          <p id="venue-price-hint" className="text-xs text-muted-foreground">
+            Enter the venue's hourly listing price in Armenian dram.
+          </p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <Label htmlFor="venue-indoor">Indoor Venue</Label>
+        <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-4 py-3">
+          <div className="min-w-0">
+            <Label htmlFor="venue-indoor" className="cursor-pointer">Indoor venue</Label>
             <p className="text-sm text-muted-foreground">Is this an indoor facility?</p>
           </div>
           <Switch
@@ -676,9 +740,9 @@ export const VenueForm = ({
         </div>
 
         {mode === "edit" && (
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="venue-active">Active Listing</Label>
+          <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-4 py-3">
+            <div className="min-w-0">
+              <Label htmlFor="venue-active" className="cursor-pointer">Active listing</Label>
               <p className="text-sm text-muted-foreground">Make this venue visible to players</p>
             </div>
             <Switch
@@ -690,10 +754,10 @@ export const VenueForm = ({
         )}
 
         {mode === "create" && (
-          <Alert className="border-muted bg-muted/30">
-            <AlertTriangle className="h-4 w-4" />
+          <Alert>
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             <AlertDescription className="text-sm">
-              <strong>Note:</strong> Your venue will be reviewed by our team and will become visible to players once approved. This ensures quality for our community.
+              Your venue will be reviewed before it becomes visible to players.
             </AlertDescription>
           </Alert>
         )}
@@ -702,20 +766,18 @@ export const VenueForm = ({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
       {mode === "create" ? (
         <>
-          {/* Requirements Notice */}
           <Alert>
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             <AlertDescription>
-              <strong>Quality Requirements:</strong> All venues must have a detailed description (100+ characters), at least 3 photos of your facility, and confirm the location on map. Your venue will be reviewed by our team before going live.
+              <strong className="text-foreground">Before you begin:</strong> prepare a detailed description, at least {MIN_PHOTOS} venue photos, and an exact map location. Required fields are marked with an asterisk.
             </AlertDescription>
           </Alert>
 
           {basicInfoCard}
 
-          {/* Location Picker with Map */}
           <VenueLocationPicker
             address={formData.address}
             city={formData.city}
@@ -759,24 +821,23 @@ export const VenueForm = ({
         </>
       )}
 
-      {/* Submit */}
-      <div className="flex gap-4">
+      <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="outline"
           onClick={() => navigate(-1)}
-          className="flex-1"
+          className="w-full sm:w-auto sm:min-w-32"
         >
           Cancel
         </Button>
         <Button
           type="submit"
           disabled={isSubmitting || isUploadingImages}
-          className="flex-1"
+          className="w-full sm:w-auto sm:min-w-40"
         >
           {isSubmitting || isUploadingImages ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
               {isUploadingImages
                 ? mode === "create" ? "Uploading photos..." : "Uploading..."
                 : "Saving..."}

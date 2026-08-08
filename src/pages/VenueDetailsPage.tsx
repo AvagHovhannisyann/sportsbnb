@@ -2,10 +2,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import { formatTimeOfDay } from "@/lib/time";
 import SEOHead, { createLocalBusinessJsonLd, createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import type { MotionProps, Variants } from "framer-motion";
-import { easeOutExpo } from "@/lib/motion";
-import { MapPin, Star, Wifi, Car, Droplets, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { MapPin, Star, Wifi, Car, Droplets, CheckCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,100 +23,6 @@ import { useVenueReviews, useUserReviewForVenue, useDeleteReview } from "@/hooks
 import { useVenueHours, useBlockedDates, DAYS_OF_WEEK } from "@/hooks/useAvailability";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-/* ------------------------------------------------------------------
-   Motion.
-
-   Three things move on this page and nothing else: the gallery arrives,
-   the amenities deal in as they come into view, and the mobile booking
-   bar rises into place. The heading, the opening hours and the reviews
-   stay still — they are what someone opened this page to read, and
-   staging them only puts a delay between the click and the answer.
-
-   Durations and easing come from lib/motion, which mirrors the --dur-*
-   and --ease-out-expo custom properties in index.css, so this page's
-   framer-motion side and VenueGallery's CSS side agree on what "fast"
-   means.
-
-   Under `prefers-reduced-motion: reduce` the animation props are not
-   passed at all rather than being given a zero duration: the final
-   state renders outright, so nothing here depends on a frame that never
-   runs. That is the convention HomePage and DiscoverPage established.
-   ------------------------------------------------------------------ */
-
-/**
- * The gallery's entrance — the only thing above the fold that moves.
- *
- * It is deliberately the whole gallery rather than each tile: the tiles
- * are one photograph cropped four ways, and dealing them out separately
- * turns a single object into four, which is the opposite of what the
- * hero is for.
- */
-const galleryVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOutExpo } },
-};
-
-/** Gap between one amenity's entrance and the next. */
-const AMENITY_STAGGER_STEP = 0.05;
-/**
- * The index past which every remaining amenity shares the last delay.
- *
- * `venues.amenities` is an owner-supplied array and nothing in the venue
- * form caps its length, so the run has to be bounded here instead.
- * Capped at six it costs 300ms whether a venue lists four amenities or
- * forty, and the tail arrives together — which is what someone who has
- * already scrolled past them wants anyway.
- */
-const AMENITY_STAGGER_CAP = 6;
-
-/** The grid only carries the variant label down to its children. */
-const amenityListVariants: Variants = { hidden: {}, visible: {} };
-
-const amenityVariants: Variants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: (index: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.3,
-      ease: easeOutExpo,
-      delay: Math.min(index, AMENITY_STAGGER_CAP) * AMENITY_STAGGER_STEP,
-    },
-  }),
-};
-
-/**
- * Amenities sit below the description and the hours, so on every screen
- * narrower than a desktop they are off-screen at load. Playing the
- * stagger on mount would spend it where nobody is looking; this waits
- * until the section is actually approaching. `as const` keeps `margin`
- * a literal, which is what framer's MarginType wants.
- */
-const amenityViewport = { once: true, margin: "-64px" } as const;
-
-/**
- * The mobile booking bar's reveal.
- *
- * `y: "100%"` is the bar's own height rather than a fixed distance, so
- * it starts exactly clear of its resting position however the price
- * line wraps. It is a transform on a fixed element, so nothing behind it
- * reflows, and at its start position the bar is behind the mobile nav
- * (z-50 against this bar's z-40) and the viewport edge.
- *
- * The short delay lets the page settle first. A persistent piece of
- * chrome that appears in the same frame as everything else reads as
- * part of the layout arriving late; arriving just after, moving, it
- * reads as an offer being made.
- */
-const bookingBarVariants: Variants = {
-  hidden: { opacity: 0, y: "100%" },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: easeOutExpo, delay: 0.12 },
-  },
-};
 
 const VenueDetailsPage = () => {
   const { id } = useParams();
@@ -144,10 +47,6 @@ const VenueDetailsPage = () => {
 
   const [showReviewForm, setShowReviewForm] = useState(false);
 
-  // Above the early returns, with the other hooks — the loading, error and
-  // not-found branches all return before the render below.
-  const prefersReduced = useReducedMotion();
-
   // Declares the sticky mobile booking bar to the rest of the app, so the
   // floating AI launcher lifts clear of the Reserve button. See index.css.
   useEffect(() => {
@@ -161,23 +60,29 @@ const VenueDetailsPage = () => {
         {/* Skeleton in the page's own shape rather than a centred spinner, so
             the gallery, heading and booking panel land where they were
             already reserved. */}
-        <div className="container py-6" role="status" aria-label="Loading venue">
+        <div className="container py-4 sm:py-6" role="status" aria-label="Loading venue">
+          <Skeleton className="mb-5 h-5 w-32 bg-surface-2" />
+          <div className="mb-5 space-y-3">
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20 rounded-full bg-surface-2" />
+              <Skeleton className="h-6 w-24 rounded-full bg-surface-2" />
+            </div>
+            <Skeleton className="h-10 w-3/5 bg-surface-3" />
+            <Skeleton className="h-5 w-2/5 bg-surface-2" />
+          </div>
           {/* Matches VenueGallery exactly: 4/3 stacked below md, a flat 384px
               hero at md and up. It can only match because the gallery is now
               one height for every venue — while that depended on the photo
               count (384px solo, 504px with thumbnails) no placeholder could be
               right, and this one was 69px out. */}
           <Skeleton className="aspect-[4/3] w-full rounded-xl bg-surface-3 md:aspect-auto md:h-96" />
-          <div className="mt-8 grid gap-8 lg:grid-cols-3">
-            <div className="space-y-4 lg:col-span-2">
-              <Skeleton className="h-6 w-40 bg-surface-2" />
-              <Skeleton className="h-10 w-3/5 bg-surface-3" />
-              <Skeleton className="h-5 w-2/5 bg-surface-2" />
+          <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
+            <div className="space-y-4">
               <Skeleton className="mt-8 h-4 w-full bg-surface-2" />
               <Skeleton className="h-4 w-11/12 bg-surface-2" />
               <Skeleton className="h-4 w-4/5 bg-surface-2" />
             </div>
-            <Skeleton className="h-[22rem] w-full rounded-2xl bg-surface-2" />
+            <Skeleton className="h-[22rem] w-full rounded-xl bg-surface-2" />
           </div>
         </div>
       </Layout>
@@ -226,32 +131,11 @@ const VenueDetailsPage = () => {
     );
   }
 
-  // ── Motion props (see the block above the component) ──
-  const galleryMotion: MotionProps = prefersReduced
-    ? {}
-    : { variants: galleryVariants, initial: "hidden", animate: "visible" };
-
-  const amenityListMotion: MotionProps = prefersReduced
-    ? {}
-    : {
-        variants: amenityListVariants,
-        initial: "hidden",
-        whileInView: "visible",
-        viewport: amenityViewport,
-      };
-
-  const amenityMotion = (index: number): MotionProps =>
-    prefersReduced ? {} : { variants: amenityVariants, custom: index };
-
-  const bookingBarMotion: MotionProps = prefersReduced
-    ? {}
-    : { variants: bookingBarVariants, initial: "hidden", animate: "visible" };
-
   const amenityIcons: Record<string, React.ReactNode> = {
-    Parking: <Car className="h-5 w-5" />,
-    Showers: <Droplets className="h-5 w-5" />,
-    Lockers: <CheckCircle className="h-5 w-5" />,
-    Wifi: <Wifi className="h-5 w-5" />,
+    Parking: <Car className="h-5 w-5" aria-hidden="true" />,
+    Showers: <Droplets className="h-5 w-5" aria-hidden="true" />,
+    Lockers: <CheckCircle className="h-5 w-5" aria-hidden="true" />,
+    Wifi: <Wifi className="h-5 w-5" aria-hidden="true" />,
   };
 
   const handleDeleteReview = async (reviewId: string) => {
@@ -297,26 +181,50 @@ const VenueDetailsPage = () => {
           ]),
         ]}
       />
-      <div className="bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         {/* Back Navigation */}
-        <div className="container py-4">
+        <div className="container py-2 sm:py-3">
           <Link
             to="/venues"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex min-h-11 items-center rounded-lg pr-3 text-sm font-medium text-muted-foreground outline-none transition-colors duration-150 motion-reduce:transition-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
             Back to venues
           </Link>
         </div>
 
-        {/* Image Gallery */}
-        <motion.div className="container pb-8" {...galleryMotion}>
+        <div className="container pb-5 sm:pb-6">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {venue.sports.map((sport) => (
+              <Badge key={sport} variant="secondary">{sport}</Badge>
+            ))}
+            {venue.is_indoor && <Badge variant="outline">Indoor</Badge>}
+          </div>
+          <h1 className="page-title max-w-4xl">{venue.name}</h1>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0">{location}</span>
+            </span>
+            {reviews.length > 0 && (
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-4 w-4 fill-warning text-warning" aria-hidden="true" />
+                <span className="font-semibold text-foreground">
+                  {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)}
+                </span>
+                <span>({reviews.length} {reviews.length === 1 ? "review" : "reviews"})</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="container pb-8">
           <VenueGallery
             images={venueImages}
             venueName={venue.name}
             mainImage={venueImage}
           />
-        </motion.div>
+        </div>
 
         <div className="container pb-28 lg:pb-16">
           {/* min-w-0 on both columns, not decoration. A grid item defaults to
@@ -326,61 +234,20 @@ const VenueDetailsPage = () => {
               Neither column has anything that must not shrink; the date strip
               inside the panel already carries `overflow-x-auto` and simply
               never got the chance to use it. */}
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
             {/* Main Content */}
-            <div className="min-w-0 lg:col-span-2 space-y-8">
-              {/* Header */}
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  {venue.sports.map((sport) => (
-                    <Badge key={sport} variant="secondary">
-                      {sport}
-                    </Badge>
-                  ))}
-                  {venue.is_indoor && (
-                    <Badge variant="outline">Indoor</Badge>
-                  )}
-                </div>
-                <h1 className="text-3xl font-bold text-foreground mb-3">{venue.name}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{location}</span>
-                  </div>
-                  {/* Derived from the reviews actually rendered on this page
-                      rather than from venues.rating / venues.review_count.
-                      Correcting an earlier comment: those columns *are*
-                      maintained, by the update_venue_rating trigger. Deriving
-                      here is still preferable — it cannot drift from the list
-                      directly beneath it, and it needs no second source of
-                      truth — but it is a consistency choice, not a fix for a
-                      broken column. With no reviews there is no rating to
-                      state. */}
-                  {reviews.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-primary text-primary" />
-                      <span className="font-medium text-foreground">
-                        {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)}
-                      </span>
-                      <span>
-                        ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
+            <div className="min-w-0">
               {/* Description */}
               {venue.description && (
-                <section className="panel">
+                <section className="border-b border-border pb-8">
                   <h2 className="section-title">About this venue</h2>
-                  <p className="text-muted-foreground leading-relaxed">{venue.description}</p>
+                  <p className="max-w-[70ch] leading-7 text-foreground-soft">{venue.description}</p>
                 </section>
               )}
 
               {/* Operating Hours */}
               {venueHours.length > 0 && (
-                <section className="panel">
+                <section className="border-b border-border py-8 first:pt-0">
                   <h2 className="section-title">Operating Hours</h2>
                     {/* Each day sits on its own tinted row. As a bare
                         `justify-between` inside a three-column grid, every
@@ -399,10 +266,10 @@ const VenueDetailsPage = () => {
                           <div
                             key={day}
                             className={cn(
-                              "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm",
+                              "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm",
                               isToday
-                                ? "bg-primary/10 ring-1 ring-primary/25"
-                                : "bg-surface-1",
+                                ? "border-primary/25 bg-primary-soft"
+                                : "border-border bg-surface-1",
                             )}
                           >
                             <span
@@ -445,35 +312,34 @@ const VenueDetailsPage = () => {
 
               {/* Amenities */}
               {venue.amenities.length > 0 && (
-                <section className="panel">
+                <section className="border-b border-border py-8 first:pt-0">
                   <h2 className="section-title">Amenities</h2>
-                  <motion.div
-                    className="grid grid-cols-2 md:grid-cols-3 gap-4"
-                    {...amenityListMotion}
-                  >
-                    {venue.amenities.map((amenity, index) => (
-                      <motion.div
+                  <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 md:grid-cols-3">
+                    {venue.amenities.map((amenity) => (
+                      <div
                         key={amenity}
-                        className="flex items-center gap-3 text-muted-foreground"
-                        {...amenityMotion(index)}
+                        className="flex min-h-11 items-center gap-3 text-foreground-soft"
                       >
-                        {amenityIcons[amenity] || <CheckCircle className="h-5 w-5" />}
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                          {amenityIcons[amenity] || <CheckCircle className="h-5 w-5" aria-hidden="true" />}
+                        </span>
                         <span>{amenity}</span>
-                      </motion.div>
+                      </div>
                     ))}
-                  </motion.div>
+                  </div>
                 </section>
               )}
 
               {/* Reviews Section */}
-              <section className="panel">
-                <div className="flex items-center justify-between mb-6">
+              <section className="py-8 first:pt-0">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-xl font-semibold text-foreground">
                     Reviews ({reviews.length})
                   </h2>
                   {user && !userReview && (
                     <Button
                       variant="outline"
+                      className="h-11"
                       onClick={() => setShowReviewForm(!showReviewForm)}
                     >
                       Write a Review
@@ -512,8 +378,14 @@ const VenueDetailsPage = () => {
                 )}
 
                 {reviewsLoading ? (
-                  <div className="text-center py-8" role="status" aria-label="Loading the venue">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+                  <div className="space-y-4 py-2" role="status" aria-label="Loading reviews">
+                    {Array.from({ length: 2 }).map((_, index) => (
+                      <div key={index} className="space-y-2 border-b border-border pb-4">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <ReviewList
@@ -572,11 +444,8 @@ const VenueDetailsPage = () => {
             bottom-14 clears the fixed mobile nav (h-14, md:hidden); at md the
             nav is gone so the bar sits on the edge, and at lg the sticky
             sidebar takes over and this disappears entirely. */}
-        <motion.div
-          className="fixed inset-x-0 bottom-14 z-40 border-t border-border bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/85 md:bottom-0 lg:hidden"
-          {...bookingBarMotion}
-        >
-          <div className="container flex items-center justify-between gap-4 py-3">
+        <div className="fixed inset-x-0 bottom-14 z-40 border-t border-border bg-card/95 shadow-lg backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:bottom-0 lg:hidden">
+          <div className="container flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">
               <p className="truncate">
                 <Price
@@ -595,11 +464,11 @@ const VenueDetailsPage = () => {
                 Secure in-app payment
               </p>
             </div>
-            <Button asChild size="lg" className="shrink-0">
+            <Button asChild size="lg" className="h-12 shrink-0 px-6">
               <a href="#booking">Reserve</a>
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </Layout>
   );

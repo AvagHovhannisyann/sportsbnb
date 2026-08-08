@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {
   Activity,
   ArrowRight,
@@ -26,7 +25,6 @@ import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
 import VenueCard from "@/components/venues/VenueCard";
 import { getVenueImage, useVenues } from "@/hooks/useVenues";
 import { useGames } from "@/hooks/useGames";
-import { easeOutExpo } from "@/lib/motion";
 
 /* ------------------------------------------------------------------
    A guided tour of the product, for someone who has never seen it.
@@ -36,45 +34,9 @@ import { easeOutExpo } from "@/lib/motion";
    A demo that shows invented inventory is a demo of nothing, and the
    first question anyone asks a founder is whether the thing is real.
 
-   Design is entirely borrowed: `Layout`, `VenueCard`, `StatusPanel`,
-   `Button`, the `.eyebrow` / `.card-lift` / surface tokens from
-   index.css. Nothing here invents a treatment the app does not
-   already use.
+   Design is entirely borrowed from Layout, VenueCard, StatusPanel,
+   Button, and the shared Open Court surface tokens.
 ------------------------------------------------------------------ */
-
-/* ------------------------------------------------------------------
-   Motion — the conventions HomePage and DiscoverPage settled on.
-
-   One reveal, reused, with the stagger capped so a longer list does
-   not turn sequence into a queue. `easeOutExpo` comes from lib/motion
-   (which mirrors --ease-out-expo in index.css) rather than being
-   restated, so JS- and CSS-driven motion on this page agree.
-
-   Under `prefers-reduced-motion: reduce` the motion props are not
-   passed at all rather than being given a zero duration: the final
-   state renders outright, so no content on the page depends on a
-   frame that never runs.
------------------------------------------------------------------- */
-const ENTER = 0.42; // an element arriving
-const STAGGER = 0.05; // 50ms between siblings
-const STAGGER_CAP = 6; // ⇒ 300ms, whatever the list length
-const step = (i: number) => Math.min(i, STAGGER_CAP) * STAGGER;
-
-const reveal: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: ENTER, ease: easeOutExpo, delay: step(i) },
-  }),
-};
-
-/* Parents orchestrate only — they carry the variant label their
-   children read and animate nothing themselves, so no child ever
-   fades in through a second fade. */
-const sequence: Variants = { hidden: {}, visible: {} };
-
-const viewportOnce = { once: true, margin: "-80px" };
 
 /* ------------------------------------------------------------------
    Section shell — same rhythm and tonal step as the landing page, so
@@ -139,7 +101,7 @@ const BOOKING_STEPS = [
 const OWNER_STATS = [
   { k: "Commission", v: "0%", note: "No listing fee, no monthly cost" },
   { k: "Payouts", v: "Weekly", note: "Itemised, straight to your account" },
-  { k: "Setup", v: "10 min", note: "Photos, hours, price — that's it" },
+  { k: "Setup", v: "Guided", note: "Photos, hours, and price in one flow" },
   { k: "Calendar", v: "2-way", note: "Syncs with the calendar you already use" },
 ];
 
@@ -182,8 +144,6 @@ const BEFORE_LIVE = [
 ];
 
 const DemoPage = () => {
-  const prefersReduced = useReducedMotion();
-
   const {
     data: venues = [],
     isLoading: venuesLoading,
@@ -259,24 +219,6 @@ const DemoPage = () => {
 
   const statCols = stats.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2";
 
-  // Reduced motion: withhold the props entirely, rather than animating to
-  // the same place in zero seconds.
-  const revealProps = prefersReduced
-    ? {}
-    : { initial: "hidden", whileInView: "visible", viewport: viewportOnce, variants: sequence };
-
-  const heroProps = prefersReduced
-    ? {}
-    : { initial: "hidden", animate: "visible", variants: sequence };
-
-  const item = (i: number) => (prefersReduced ? {} : { variants: reveal, custom: i });
-
-  // Decided here rather than with `motion-reduce:` utilities, which have to
-  // out-specify the class they undo. Withholding the class is unambiguous.
-  const ctaArrow = `ml-1.5 h-4 w-4${
-    prefersReduced ? "" : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
-  }`;
-
   return (
     <Layout>
       <SEOHead
@@ -293,47 +235,33 @@ const DemoPage = () => {
           HERO — what this is, in one sentence, plus the live counts
           that prove the rest of the page is not a mock-up.
       ============================================================ */}
-      <section className="relative overflow-hidden bg-background">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[860px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"
-        />
-
-        <motion.div
-          {...heroProps}
-          className="container relative px-5 pb-16 pt-14 md:px-6 md:pb-20 md:pt-20"
-        >
-          <motion.div {...item(0)}>
-            <span className="eyebrow inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-1.5 text-foreground-soft">
-              <span className="live-dot" aria-hidden="true" />
+      <section className="border-b border-border bg-background">
+        <div className="container px-5 pb-16 pt-14 md:px-6 md:pb-20 md:pt-20">
+          <div>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground-soft">
+              <span className="h-2 w-2 rounded-full bg-brand-tuff" aria-hidden="true" />
               Guided tour · live data
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h1
-            {...item(1)}
-            className="mt-6 max-w-[20ch] text-balance font-display text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1] tracking-[-0.04em] text-foreground"
-          >
+          <h1 className="mt-6 max-w-[20ch] text-balance font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1] tracking-[-0.04em] text-foreground">
             SportsBnB is a marketplace for{" "}
             <span className="text-primary">booking sports venues in Armenia.</span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            {...item(2)}
-            className="mt-6 max-w-[58ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
-          >
+          <p className="mt-6 max-w-[58ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
             Think Airbnb, for pitches, courts and pools. Players find a venue near
             them, see what is actually free, and pay for the hour in the app.
             Owners list once and fill the hours that would otherwise sit empty.
             Everything below is read from the running product — the venues are
             real, and every link goes into the app itself.
-          </motion.p>
+          </p>
 
-          <motion.div {...item(3)} className="mt-9 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="group h-12 rounded-xl px-6 text-[15px] font-semibold">
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <Button asChild size="lg" className="h-12 rounded-xl px-6 text-[15px] font-semibold">
               <Link to="/venues">
                 Browse the real venues
-                <ArrowRight className={ctaArrow} aria-hidden="true" />
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
             <Button
@@ -347,16 +275,16 @@ const DemoPage = () => {
                 See the owner side
               </Link>
             </Button>
-          </motion.div>
+          </div>
 
           {/* Live counts. Three facts, each one a link to the page it
               describes — a number a visitor cannot click is a claim. */}
-          <motion.dl {...item(4)} className={`mt-12 grid gap-3 sm:gap-4 ${statCols}`}>
+          <dl className={`mt-12 grid border-y border-border ${statCols}`}>
             {stats.map(({ icon: Icon, label, value, to }) => (
               <Link
                 key={label}
                 to={to}
-                className="focus-ring card-lift rounded-2xl border border-border bg-card p-5 hover:border-border-strong"
+                className="focus-ring border-b border-border px-1 py-5 transition-colors duration-150 hover:bg-surface-1 sm:border-b-0 sm:border-r sm:px-5 sm:last:border-r-0"
               >
                 <dt className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -374,17 +302,17 @@ const DemoPage = () => {
                 </dd>
               </Link>
             ))}
-          </motion.dl>
+          </dl>
 
           {/* The tour's own table of contents: four stops, so nobody has
               to guess how long this page is. */}
-          <motion.nav {...item(5)} aria-label="Tour contents" className="mt-10">
+          <nav aria-label="Tour contents" className="mt-10">
             <ol className="flex flex-wrap gap-2">
               {TOUR.map((stop, i) => (
                 <li key={stop.id}>
                   <a
                     href={`#${stop.id}`}
-                    className="focus-ring inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-2 text-sm text-foreground-soft transition-colors hover:border-border-strong hover:text-foreground"
+                    className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-2 text-sm text-foreground-soft transition-colors hover:border-border-strong hover:text-foreground"
                   >
                     <span className="font-mono text-[11px] tabular-nums text-primary">
                       {String(i + 1).padStart(2, "0")}
@@ -394,31 +322,27 @@ const DemoPage = () => {
                 </li>
               ))}
             </ol>
-          </motion.nav>
-        </motion.div>
+          </nav>
+        </div>
       </section>
 
       {/* ============================================================
           1 — WHAT'S LISTED. The real catalogue, through the real card.
       ============================================================ */}
       <Section id="venues" tone="raised" aria-labelledby="venues-heading">
-        <motion.div {...revealProps}>
-          <motion.div {...item(0)}>
+        <div>
+          <div>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <p className="eyebrow mb-0">01 — What's listed</p>
               <Link
                 to="/venues"
-                className="group inline-flex shrink-0 items-center gap-1.5 rounded-md text-[15px] font-semibold text-primary outline-none transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="group inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md text-[15px] font-semibold text-primary outline-none transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {venuesLoading || venuesError
                   ? "See all venues"
                   : `See all ${venues.length} venues`}
                 <ArrowRight
-                  className={`h-4 w-4${
-                    prefersReduced
-                      ? ""
-                      : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
-                  }`}
+                  className="h-4 w-4"
                   aria-hidden="true"
                 />
               </Link>
@@ -432,7 +356,7 @@ const DemoPage = () => {
               Dilijan, Abovyan and Ejmiatsin. Tap one to open the venue page a
               player would book from.
             </p>
-          </motion.div>
+          </div>
 
           <div className="mt-10">
             {venuesLoading ? (
@@ -474,12 +398,10 @@ const DemoPage = () => {
               />
             ) : featured.length > 0 ? (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {featured.map((venue, i) => (
-                  /* The wrapper takes the entrance so VenueCard keeps its
-                     own transform: `.card-lift` translates the article on
-                     hover, and one element cannot hold both. */
-                  <motion.div key={venue.id} {...item(i + 1)}>
+                {featured.map((venue) => (
+                  <div key={venue.id}>
                     <VenueCard
+                      headingLevel="h3"
                       id={venue.id}
                       name={venue.name}
                       image={getVenueImage(venue)}
@@ -490,7 +412,7 @@ const DemoPage = () => {
                       reviewCount={venue.review_count}
                       available={venue.is_active}
                     />
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -510,15 +432,15 @@ const DemoPage = () => {
               </StatusPanel>
             )}
           </div>
-        </motion.div>
+        </div>
       </Section>
 
       {/* ============================================================
           2 — HOW BOOKING WORKS.
       ============================================================ */}
       <Section id="booking" aria-labelledby="booking-heading">
-        <motion.div {...revealProps}>
-          <motion.div {...item(0)} className="max-w-2xl">
+        <div>
+          <div className="max-w-2xl">
             <p className="eyebrow mb-4">02 — How booking works</p>
             <h2 id="booking-heading" className={`${heading} text-foreground`}>
               Search, pick a slot, hold it, pay.
@@ -527,11 +449,11 @@ const DemoPage = () => {
               Four steps, and no phone call in any of them. The whole point of
               the product is that the hour you tapped is the hour you get.
             </p>
-          </motion.div>
+          </div>
 
           <ol className="mt-12 grid gap-10 md:grid-cols-2 md:gap-x-10 md:gap-y-12 lg:grid-cols-4 lg:gap-8">
             {BOOKING_STEPS.map((s, i) => (
-              <motion.li key={s.title} {...item(i + 1)}>
+              <li key={s.title}>
                 <div className="mb-5 flex items-center gap-3">
                   <span className="font-mono text-sm tabular-nums text-primary">
                     {String(i + 1).padStart(2, "0")}
@@ -543,23 +465,23 @@ const DemoPage = () => {
                   {s.title}
                 </h3>
                 <p className="mt-2.5 text-[15px] leading-relaxed text-foreground-soft">{s.body}</p>
-              </motion.li>
+              </li>
             ))}
           </ol>
 
-          <motion.div {...item(5)} className="mt-12 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="group h-12 rounded-xl px-6 text-[15px] font-semibold">
+          <div className="mt-12 flex flex-wrap items-center gap-3">
+            <Button asChild size="lg" className="h-12 rounded-xl px-6 text-[15px] font-semibold">
               <Link to="/venues">
                 Try it on a real venue
-                <ArrowRight className={ctaArrow} aria-hidden="true" />
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
             <p className="text-sm text-muted-foreground">
               No account needed to browse. You are only asked to sign in at the
               point of reserving.
             </p>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </Section>
 
       {/* ============================================================
@@ -567,8 +489,8 @@ const DemoPage = () => {
           what makes it register as a different audience.
       ============================================================ */}
       <Section id="owners" tone="invert" aria-labelledby="owners-heading">
-        <motion.div {...revealProps}>
-          <motion.div {...item(0)} className="max-w-2xl">
+        <div>
+          <div className="max-w-2xl">
             <p className="eyebrow mb-4 text-current opacity-60">03 — For venue owners</p>
             <h2 id="owners-heading" className={`${heading} text-secondary-foreground`}>
               Fill the empty hours. Keep the paperwork out of it.
@@ -578,47 +500,43 @@ const DemoPage = () => {
               hours and a price, and takes bookings around the clock — we collect
               the money and pay it out.
             </p>
-          </motion.div>
+          </div>
 
           <dl className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {OWNER_STATS.map(({ k, v, note }, i) => (
-              <motion.div
-                key={k}
-                {...item(i + 1)}
-                className="rounded-2xl bg-secondary-foreground/5 p-5"
-              >
+            {OWNER_STATS.map(({ k, v, note }) => (
+              <div key={k} className="border-t border-secondary-foreground/20 py-5">
                 <dt className="eyebrow text-current opacity-60">{k}</dt>
                 <dd className="mt-2 font-display text-2xl font-bold tabular-nums">{v}</dd>
                 <p className="mt-1.5 text-[13px] leading-snug opacity-65">{note}</p>
-              </motion.div>
+              </div>
             ))}
           </dl>
 
           <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {OWNER_POINTS.map(({ icon: Icon, title, body }, i) => (
-              <motion.div key={title} {...item(i + 1)}>
+            {OWNER_POINTS.map(({ icon: Icon, title, body }) => (
+              <div key={title}>
                 <Icon className="mb-4 h-6 w-6 text-primary" strokeWidth={1.75} aria-hidden="true" />
                 <h3 className="font-display text-lg font-semibold tracking-tight text-secondary-foreground">
                   {title}
                 </h3>
                 <p className="mt-2.5 text-[15px] leading-relaxed opacity-75">{body}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          <motion.div {...item(4)} className="mt-12">
+          <div className="mt-12">
             <Button
               asChild
               size="lg"
-              className="group h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
+                className="h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
             >
               <Link to="/for-owners">
                 See what listing involves
-                <ArrowRight className={ctaArrow} aria-hidden="true" />
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </Section>
 
       {/* ============================================================
@@ -627,8 +545,8 @@ const DemoPage = () => {
           taking real money.
       ============================================================ */}
       <Section id="status" tone="raised" aria-labelledby="status-heading">
-        <motion.div {...revealProps}>
-          <motion.div {...item(0)} className="max-w-2xl">
+        <div>
+          <div className="max-w-2xl">
             <p className="eyebrow mb-4">04 — Build status, honestly</p>
             <h2 id="status-heading" className={`${heading} text-foreground`}>
               What works today, and what is left.
@@ -638,10 +556,10 @@ const DemoPage = () => {
               trust. So: everything on the left is running right now, on the same
               deployment you are looking at.
             </p>
-          </motion.div>
+          </div>
 
           <div className="mt-12 grid gap-6 lg:grid-cols-2 lg:gap-8">
-            <motion.div {...item(1)} className="rounded-2xl border border-border bg-card p-6 md:p-7">
+            <div className="rounded-2xl border border-border bg-card p-6 md:p-7">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" />
                 <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
@@ -663,9 +581,9 @@ const DemoPage = () => {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
 
-            <motion.div {...item(2)} className="rounded-2xl border border-border bg-card p-6 md:p-7">
+            <div className="rounded-2xl border border-border bg-card p-6 md:p-7">
               <div className="flex items-center gap-2.5">
                 <Clock3 className="h-5 w-5 text-warning" aria-hidden="true" />
                 <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
@@ -682,7 +600,7 @@ const DemoPage = () => {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
           </div>
 
           {/* Somewhere else to go, for a visitor who has read this far.
@@ -691,7 +609,7 @@ const DemoPage = () => {
               error panel is the one thing this page cannot afford, and games
               are the only section here whose data can fail independently of
               the venues. */}
-          <motion.div {...item(3)} className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap gap-3">
             {!gamesError && (
               <Button asChild variant="outline" className="h-11 rounded-xl">
                 <Link to="/games">
@@ -712,37 +630,27 @@ const DemoPage = () => {
                 Questions we get asked
               </Link>
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </Section>
 
       {/* ============================================================
           CLOSE — one action, nothing competing with it.
       ============================================================ */}
-      <section className="relative overflow-hidden bg-background py-24 md:py-28">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-[-30%] left-1/2 h-[460px] w-[760px] -translate-x-1/2 rounded-full bg-primary/12 blur-[130px]"
-        />
-        <motion.div {...revealProps} className="container relative px-5 text-center md:px-6">
-          <motion.h2
-            {...item(0)}
-            className="mx-auto max-w-3xl text-balance font-display text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-foreground"
-          >
+      <section className="border-t border-border bg-brand-tuff-soft py-20 md:py-24">
+        <div className="container px-5 text-center md:px-6">
+          <h2 className="mx-auto max-w-3xl text-balance font-display text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground">
             That's the tour. The rest of it is a click away.
-          </motion.h2>
-          <motion.p
-            {...item(1)}
-            className="mx-auto mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft"
-          >
+          </h2>
+          <p className="mx-auto mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
             Nothing on this page was staged for it. Open the app and you are
             looking at the same data.
-          </motion.p>
-          <motion.div {...item(2)} className="mt-9 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg" className="group h-12 rounded-xl px-7 text-[15px] font-semibold">
+          </p>
+          <div className="mt-9 flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg" className="h-12 rounded-xl px-7 text-[15px] font-semibold">
               <Link to="/venues">
                 Browse venues
-                <ArrowRight className={ctaArrow} aria-hidden="true" />
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
             <Button
@@ -753,8 +661,8 @@ const DemoPage = () => {
             >
               <Link to="/">Back to the home page</Link>
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
     </Layout>
   );

@@ -33,7 +33,7 @@ export const MapPinMarker: React.FC<MapPinMarkerProps> = ({
   className,
 }) => (
   <span className={cn("relative block h-8 w-6", className)} aria-hidden="true">
-    <svg viewBox="0 0 24 32" className="h-8 w-6 drop-shadow-md">
+    <svg viewBox="0 0 24 32" className="h-8 w-6 drop-shadow-sm">
       <path
         d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.6-5.4-12-12-12z"
         fill={color ?? "hsl(var(--primary))"}
@@ -109,7 +109,7 @@ export const MapMarkerButton: React.FC<MapMarkerButtonProps> = ({
     aria-label={label}
     onClick={onClick}
     className={cn(
-      "block cursor-pointer rounded-full leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+      "relative block cursor-pointer rounded-full leading-none outline-none transition-transform duration-100 ease-out before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:content-[''] active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:before:ring-2 focus-visible:before:ring-ring focus-visible:before:ring-offset-2 focus-visible:before:ring-offset-background",
       className,
     )}
   >

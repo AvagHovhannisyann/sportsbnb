@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { TONE_CHIP } from "@/lib/chips";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, MapPin } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
 import { supabase } from "@/integrations/supabase/client";
 
 type Cell = {
@@ -31,7 +34,7 @@ const BUCKET_HOURS: Array<[number, number]> = [
  * by time). Highlights deserts where demand far outstrips supply.
  */
 export function SupplyDemandHeatmap() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["supply-demand-heatmap"],
     queryFn: async () => {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -46,6 +49,10 @@ export function SupplyDemandHeatmap() {
           .select("id, city, sports, is_active")
           .eq("is_active", true),
       ]);
+
+      if (intents.error) throw intents.error;
+      if (venues.error) throw venues.error;
+
       return {
         intents: intents.data ?? [],
         venues: (venues.data ?? []) as Array<{ id: string; city: string; sports: string[] }>,
@@ -99,59 +106,134 @@ export function SupplyDemandHeatmap() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle as="h2" className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-primary" />
-          Supply ↔ Demand Heatmap
+      <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+        <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+          <Activity aria-hidden="true" className="h-5 w-5 text-primary" />
+          Supply and demand gaps
         </CardTitle>
         <CardDescription>
-          Top under-served city × sport × time-of-day combinations from the last 30 days.
+          Highest-pressure city, sport, and time combinations from booking inquiries in the last 30 days.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
         {isLoading ? (
-          <div className="py-8 flex justify-center" role="status" aria-label="Loading the heatmap"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-        ) : cells.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">
-            Not enough lead data yet — heatmap unlocks once inquiries flow in.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1 border-b border-border">
-              <div className="col-span-3">City</div>
-              <div className="col-span-3">Sport</div>
-              <div className="col-span-2">When</div>
-              <div className="col-span-1 text-right">Dem.</div>
-              <div className="col-span-1 text-right">Sup.</div>
-              <div className="col-span-2 text-right">Gap</div>
-            </div>
-            {cells.map((c, i) => {
-              const intensity = Math.min(1, c.gap / Math.max(8, cells[0]?.gap ?? 1));
-              return (
-                <div
-                  key={`${c.city}-${c.sport}-${c.bucketIndex}-${i}`}
-                  className="grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-md text-sm"
-                  style={{ backgroundColor: `hsl(var(--primary) / ${0.05 + intensity * 0.18})` }}
-                >
-                  <div className="col-span-3 font-medium text-foreground truncate">{c.city}</div>
-                  <div className="col-span-3 truncate"><Badge variant="secondary" className="text-xs">{c.sport}</Badge></div>
-                  <div className="col-span-2 text-muted-foreground text-xs">{c.bucket}</div>
-                  <div className="col-span-1 text-right tabular-nums text-foreground">{c.demand}</div>
-                  <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.supply}</div>
-                  <div className="col-span-2 text-right">
-                    {c.gap > 0 ? (
-                      <Badge className={cn(TONE_CHIP.danger, "text-xs")}>+{c.gap} desert</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">balanced</Badge>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="space-y-2" role="status" aria-label="Loading supply and demand gaps">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-12 w-full" />
+            ))}
           </div>
+        ) : isError ? (
+          <ErrorPanel
+            what="supply and demand signals"
+            description="No marketplace conclusion has been drawn from the failed request. Try loading the signals again."
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
+            className="py-8"
+          />
+        ) : cells.length === 0 ? (
+          <StatusPanel
+            icon={Activity}
+            title="No demand gaps to rank yet"
+            description="No eligible booking inquiries were recorded for active venues during this 30-day window."
+            className="py-8"
+          />
+        ) : (
+          <>
+            <ul className="space-y-2 md:hidden" aria-label="Supply and demand gap rankings">
+              {cells.map((cell, index) => (
+                <li
+                  key={`${cell.city}-${cell.sport}-${cell.bucketIndex}-${index}`}
+                  className="rounded-lg border border-border bg-surface-1 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                        <MapPin aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{cell.city}</span>
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {cell.sport} · {cell.bucket}
+                      </p>
+                    </div>
+                    <GapBadge gap={cell.gap} maximumGap={cells[0]?.gap ?? 0} />
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Demand</dt>
+                      <dd className="stat-numeral mt-0.5 font-semibold text-foreground">{cell.demand}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Active venues</dt>
+                      <dd className="stat-numeral mt-0.5 font-semibold text-foreground">{cell.supply}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden md:block">
+              <Table className="min-w-[44rem]">
+                <caption className="sr-only">
+                  Ranked city, sport, and time combinations comparing booking inquiry demand with active venue supply.
+                </caption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>City</TableHead>
+                    <TableHead>Sport</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead className="text-right">Demand</TableHead>
+                    <TableHead className="text-right">Active venues</TableHead>
+                    <TableHead className="text-right">Assessment</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cells.map((cell, index) => (
+                    <TableRow key={`${cell.city}-${cell.sport}-${cell.bucketIndex}-${index}`}>
+                      <TableCell className="font-semibold text-foreground">{cell.city}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{cell.sport}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{cell.bucket}</TableCell>
+                      <TableCell className="stat-numeral text-right font-semibold text-foreground">
+                        {cell.demand}
+                      </TableCell>
+                      <TableCell className="stat-numeral text-right text-muted-foreground">
+                        {cell.supply}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <GapBadge gap={cell.gap} maximumGap={cells[0]?.gap ?? 0} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function GapBadge({ gap, maximumGap }: { gap: number; maximumGap: number }) {
+  if (gap <= 0) {
+    return (
+      <Badge variant="outline" className={TONE_CHIP.neutral}>
+        Balanced
+      </Badge>
+    );
+  }
+
+  const isHighPressure = gap >= Math.max(4, Math.ceil(maximumGap * 0.66));
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(isHighPressure ? TONE_CHIP.danger : TONE_CHIP.warning, "whitespace-nowrap")}
+      aria-label={`Demand exceeds weighted supply by ${gap}`}
+    >
+      {isHighPressure ? "High" : "Watch"} · +{gap}
+    </Badge>
   );
 }
 

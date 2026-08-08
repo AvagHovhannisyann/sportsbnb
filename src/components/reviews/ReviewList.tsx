@@ -83,9 +83,9 @@ const ReviewList = ({ reviews, currentUserId, onDelete }: ReviewListProps) => {
                       variant="ghost"
                       size="icon"
                       aria-label="Delete your review"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -100,7 +100,7 @@ const ReviewList = ({ reviews, currentUserId, onDelete }: ReviewListProps) => {
                       <AlertDialogCancel>Keep review</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => onDelete(review.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
                       >
                         Delete review
                       </AlertDialogAction>

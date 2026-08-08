@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
@@ -100,25 +99,21 @@ const SubmitFieldPage: React.FC = () => {
         description="Help the community by adding a public sports field or court to our map."
       />
       <div className="min-h-screen bg-background">
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/nearby")} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Fields
+        <div className="container max-w-3xl py-6 sm:py-8 lg:py-10">
+          <Button variant="ghost" onClick={() => navigate("/nearby")} className="-ml-3 mb-5">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to fields
           </Button>
 
+          <header className="mb-7 border-b border-border pb-7">
+            <p className="mb-2 text-sm font-semibold text-primary">Community map</p>
+            <h1 className="page-title text-balance">Add a public field</h1>
+            <p className="mt-3 max-w-2xl text-foreground-soft">
+              Know a free place to play? Share the essentials and we’ll review it before it appears on the map.
+            </p>
+          </header>
+
           <Card>
-            <CardHeader>
-              {/* The page had no h1 at all — its only heading was this card title, so
-                  that is what the page is called. */}
-              <CardTitle as="h1" className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Submit a Public Field
-              </CardTitle>
-              <CardDescription>
-                Know a free sports field? Add it to help others find great places to play. 
-                Fields are reviewed before being added to the map.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 sm:p-7">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
@@ -126,7 +121,7 @@ const SubmitFieldPage: React.FC = () => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Field Name *</FormLabel>
+                        <FormLabel>Field name *</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Victory Park Basketball Court" {...field} />
                         </FormControl>
@@ -150,19 +145,19 @@ const SubmitFieldPage: React.FC = () => {
                   />
 
                   {/* Location */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Location *</label>
-                    <div className="flex items-center gap-3">
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-semibold text-foreground">Location *</legend>
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                       <Button type="button" variant="outline" onClick={handleLocate} disabled={isLocating}>
                         {isLocating ? (
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                         ) : (
-                          <MapPin className="h-4 w-4 mr-1" />
+                          <MapPin className="h-4 w-4" aria-hidden="true" />
                         )}
-                        {location ? "Re-capture" : "Use My Location"}
+                        {location ? "Capture again" : "Use my location"}
                       </Button>
                       {location && (
-                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground" role="status">
                           <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                           <span className="tabular-nums">
                             {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
@@ -170,32 +165,37 @@ const SubmitFieldPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">Stand at the field and capture your GPS location</p>
-                  </div>
+                    <p className="text-xs text-muted-foreground">Stand at the field and capture its GPS location.</p>
+                  </fieldset>
 
                   {/* Sports */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Sports Available *</label>
-                    <div className="flex flex-wrap gap-2">
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-semibold text-foreground">Sports available *</legend>
+                    <div className="flex flex-wrap gap-2" role="group">
                       {SPORTS.map(sport => (
-                        <Badge
+                        <button
                           key={sport}
-                          variant={selectedSports.includes(sport) ? "default" : "outline"}
-                          className="cursor-pointer"
+                          type="button"
+                          aria-pressed={selectedSports.includes(sport)}
                           onClick={() => toggleSport(sport)}
+                          className={`focus-ring min-h-11 rounded-full border px-4 text-sm font-medium transition-colors duration-150 motion-reduce:transition-none ${
+                            selectedSports.includes(sport)
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent"
+                          }`}
                         >
                           {sport}
-                        </Badge>
+                        </button>
                       ))}
                     </div>
-                  </div>
+                  </fieldset>
 
                   <FormField
                     control={form.control}
                     name="surface_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Surface Type</FormLabel>
+                        <FormLabel>Surface type</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -217,11 +217,11 @@ const SubmitFieldPage: React.FC = () => {
                     control={form.control}
                     name="has_lighting"
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border border-border p-4">
+                      <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 p-4">
                         <div className="flex items-center gap-2">
-                          <Sun className="h-4 w-4 text-muted-foreground" />
+                          <Sun className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                           <div>
-                            <FormLabel className="mb-0">Has Lighting</FormLabel>
+                            <FormLabel className="mb-0">Has lighting</FormLabel>
                             <p className="text-xs text-muted-foreground">Can you play here at night?</p>
                           </div>
                         </div>
@@ -253,9 +253,9 @@ const SubmitFieldPage: React.FC = () => {
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? (
-                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</>
+                      <><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Submitting…</>
                     ) : (
-                      "Submit Field for Review"
+                      "Submit field for review"
                     )}
                   </Button>
                 </form>

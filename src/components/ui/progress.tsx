@@ -16,11 +16,11 @@ const Progress = React.forwardRef<
        the unfilled part of every progress bar rendered as a bright white
        stripe on a near-black page — in ten places, including level progress,
        listing health, password strength and owner occupancy. */
-    className={cn("relative h-4 w-full overflow-hidden rounded-full bg-surface-3", className)}
+    className={cn("relative h-2 w-full overflow-hidden rounded-full bg-surface-3", className)}
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
+      className="h-full w-full flex-1 bg-primary transition-transform duration-200 ease-out motion-reduce:transition-none"
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>

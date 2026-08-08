@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Building2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Building2, CalendarDays, Ban, Gauge, ClipboardCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -11,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { WeekCalendar } from "@/components/owner/schedule/WeekCalendar";
 import { BookingDetailDrawer } from "@/components/owner/schedule/BookingDetailDrawer";
 import { BlockTimeDialog } from "@/components/owner/schedule/BlockTimeDialog";
@@ -23,14 +26,31 @@ import { useOwnerAnalytics } from "@/hooks/useOwnerAnalytics";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+interface ScheduleBooking {
+  id: string;
+  booking_date: string;
+  booking_time: string;
+  duration_hours: number;
+  venue_name: string;
+  total_price: number;
+  status: string;
+  customer_name?: string;
+}
+
 const OwnerSchedulePage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
-  const { data: analytics } = useOwnerAnalytics();
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
+  const { data: analytics, isLoading: analyticsLoading, isError: analyticsError } = useOwnerAnalytics();
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<ScheduleBooking | null>(null);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [newBookingDialogOpen, setNewBookingDialogOpen] = useState(false);
 
@@ -41,9 +61,27 @@ const OwnerSchedulePage = () => {
     }
   }, [myVenues, selectedVenueId]);
 
-  const { data: venueHours = [] } = useVenueHours(selectedVenueId || undefined);
-  const { data: blockedDates = [] } = useBlockedDates(selectedVenueId || undefined);
-  const { data: venueBookings = [], refetch: refetchBookings } = useVenueBookings(selectedVenueId || undefined);
+  const {
+    data: venueHours = [],
+    isLoading: hoursLoading,
+    isError: hoursError,
+    isFetching: hoursFetching,
+    refetch: refetchHours,
+  } = useVenueHours(selectedVenueId || undefined);
+  const {
+    data: blockedDates = [],
+    isLoading: blocksLoading,
+    isError: blocksError,
+    isFetching: blocksFetching,
+    refetch: refetchBlocks,
+  } = useBlockedDates(selectedVenueId || undefined);
+  const {
+    data: venueBookings = [],
+    isLoading: bookingsLoading,
+    isError: bookingsError,
+    isFetching: bookingsFetching,
+    refetch: refetchBookings,
+  } = useVenueBookings(selectedVenueId || undefined);
   const addBlockedDate = useAddBlockedDate();
 
   useEffect(() => {
@@ -59,11 +97,25 @@ const OwnerSchedulePage = () => {
     }
   }, [user, profile, authLoading, isProfileLoading, navigate]);
 
-  if (authLoading || venuesLoading) {
+  if (authLoading || (venuesLoading && !venuesError)) {
     return (
       <OwnerLayout title="Schedule">
-        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading the schedule">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-4" role="status" aria-label="Loading the schedule">
+          <Card>
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-11 w-64 max-w-full" />
+              </div>
+              <Skeleton className="h-11 w-48" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 sm:p-5">
+              <Skeleton className="h-6 w-44" />
+              <Skeleton className="mt-4 h-[28rem] w-full" />
+            </CardContent>
+          </Card>
         </div>
       </OwnerLayout>
     );
@@ -82,6 +134,9 @@ const OwnerSchedulePage = () => {
     status: b.status || "confirmed",
     customer_name: b.customer_name || "Customer",
   }));
+  const scheduleLoading = hoursLoading || blocksLoading || bookingsLoading;
+  const scheduleError = hoursError || blocksError || bookingsError;
+  const scheduleFetching = hoursFetching || blocksFetching || bookingsFetching;
 
   const handleBlockTime = async (data: {
     date: Date;
@@ -119,91 +174,147 @@ const OwnerSchedulePage = () => {
   };
 
   return (
-    <OwnerLayout title="Schedule" subtitle="Manage your venue calendar and bookings">
-      {myVenues.length === 0 ? (
+    <OwnerLayout title="Schedule" subtitle="Run each venue's bookings, hours, and closures from one calendar.">
+      {venuesError ? (
+        <Card>
+          <ErrorPanel
+            what="your venues"
+            description="The schedule cannot identify which venue to show. Existing bookings are unaffected."
+            onRetry={() => refetchVenues()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
+      ) : myVenues.length === 0 ? (
         <Card>
           <EmptyState
             icon={Building2}
             title="No venues to schedule"
             description="Add a venue first to manage its schedule and bookings."
-            actionLabel="Add Your First Venue"
+            actionLabel="Add your first venue"
             actionHref="/add-venue"
             tip="Once you add a venue, you can set opening hours and start accepting bookings."
           />
         </Card>
       ) : (
         <>
-          {/* Venue Selector */}
-          <div className="mb-6">
-            <Select
-              value={selectedVenueId || ""}
-              onValueChange={setSelectedVenueId}
-            >
-              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
-                <SelectValue placeholder="Select a venue" />
-              </SelectTrigger>
-              <SelectContent>
-                {myVenues.map((venue) => (
-                  <SelectItem key={venue.id} value={venue.id}>
-                    {venue.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Card className="mb-5 sm:mb-6">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+              <div className="w-full max-w-sm space-y-2">
+                <Label id="schedule-venue-label">Schedule for</Label>
+                <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
+                  <SelectTrigger aria-labelledby="schedule-venue-label">
+                    <SelectValue placeholder="Select a venue" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {myVenues.map((venue) => (
+                      <SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedVenue && (
+                <div className="min-w-0 sm:text-right">
+                  <p className="truncate text-sm font-semibold text-foreground">{selectedVenue.name}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {selectedVenue.is_active ? "Active player-facing listing" : "Draft or inactive listing"}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Calendar */}
-          {selectedVenue && (
-            <WeekCalendar
-              bookings={bookings}
-              blockedDates={blockedDates}
-              openingHours={venueHours}
-              resourceName={selectedVenue.name}
-              onBookingClick={(booking) => setSelectedBooking(booking)}
-              onBlockTime={() => setBlockDialogOpen(true)}
-              onNewBooking={() => setNewBookingDialogOpen(true)}
-            />
-          )}
+          {scheduleError ? (
+            <Card>
+              <ErrorPanel
+                what="this venue's schedule"
+                description="Hours, closures, or bookings did not load completely. Don't assume an empty slot is available."
+                onRetry={() => {
+                  void refetchHours();
+                  void refetchBlocks();
+                  void refetchBookings();
+                }}
+                isRetrying={scheduleFetching}
+              />
+            </Card>
+          ) : scheduleLoading ? (
+            <Card>
+              <CardContent className="p-4 sm:p-5" role="status" aria-label="Loading the selected venue schedule">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <Skeleton className="h-6 w-44" />
+                    <Skeleton className="mt-2 h-4 w-56 max-w-full" />
+                  </div>
+                  <Skeleton className="h-11 w-52" />
+                </div>
+                <Skeleton className="mt-5 h-[30rem] w-full" />
+              </CardContent>
+            </Card>
+          ) : selectedVenue ? (
+            <>
+              <WeekCalendar
+                bookings={bookings}
+                blockedDates={blockedDates}
+                openingHours={venueHours}
+                resourceName={selectedVenue.name}
+                onBookingClick={(booking) => setSelectedBooking(booking)}
+                onBlockTime={() => setBlockDialogOpen(true)}
+                onNewBooking={() => setNewBookingDialogOpen(true)}
+              />
 
-          {/* Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Today's Bookings</p>
-              <p className="text-2xl font-bold text-foreground">
-                {bookings.filter((b: any) => b.booking_date === format(new Date(), "yyyy-MM-dd")).length}
-              </p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">This Week</p>
-              <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Blocked Days</p>
-              <p className="text-2xl font-bold text-foreground">{blockedDates.length}</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Occupancy</p>
-              <p className="text-2xl font-bold text-foreground">
-                {analytics?.occupancyRate || 0}%
-              </p>
-            </Card>
-          </div>
+              <section className="mt-5 sm:mt-6" aria-labelledby="schedule-summary-heading">
+                <h2 id="schedule-summary-heading" className="mb-3 font-display text-lg font-semibold tracking-extra-tight text-foreground">
+                  Schedule summary
+                </h2>
+                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <ClipboardCheck className="h-5 w-5 text-primary" aria-hidden="true" />
+                      <p className="stat-numeral mt-4 text-2xl font-semibold text-foreground">
+                        {bookings.filter((booking) => booking.booking_date === format(new Date(), "yyyy-MM-dd")).length}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Today's bookings</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <CalendarDays className="h-5 w-5 text-information" aria-hidden="true" />
+                      <p className="stat-numeral mt-4 text-2xl font-semibold text-foreground">{bookings.length}</p>
+                      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Calendar bookings</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <Ban className="h-5 w-5 text-destructive" aria-hidden="true" />
+                      <p className="stat-numeral mt-4 text-2xl font-semibold text-foreground">{blockedDates.length}</p>
+                      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Upcoming blocked days</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <Gauge className="h-5 w-5 text-warning" aria-hidden="true" />
+                      <p className="stat-numeral mt-4 text-2xl font-semibold text-foreground">
+                        {analyticsLoading || analyticsError ? "—" : `${analytics?.occupancyRate || 0}%`}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Portfolio occupancy</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </section>
+            </>
+          ) : null}
 
-          {/* Booking Detail Drawer */}
           <BookingDetailDrawer
             booking={selectedBooking}
             open={!!selectedBooking}
             onOpenChange={(open) => !open && setSelectedBooking(null)}
           />
 
-          {/* Block Time Dialog */}
           <BlockTimeDialog
             open={blockDialogOpen}
             onOpenChange={setBlockDialogOpen}
             onBlock={handleBlockTime}
           />
 
-          {/* Manual Booking Dialog */}
           <ManualBookingDialog
             open={newBookingDialogOpen}
             onOpenChange={setNewBookingDialogOpen}

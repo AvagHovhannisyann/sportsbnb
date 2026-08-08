@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import Layout from "@/components/layout/Layout";
 import { StatusPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,8 +65,8 @@ const TeamDetailsPage = () => {
   const canManage = isCaptain || isCoCaptain;
 
   const roleIcon = (role: string) => {
-    if (role === "captain") return <Crown className="h-3.5 w-3.5 text-yellow-500" />;
-    if (role === "co-captain") return <Star className="h-3.5 w-3.5 text-blue-500" />;
+    if (role === "captain") return <Crown className="h-3.5 w-3.5 text-brand-tuff" aria-hidden="true" />;
+    if (role === "co-captain") return <Star className="h-3.5 w-3.5 text-information" aria-hidden="true" />;
     return null;
   };
 
@@ -139,8 +141,19 @@ const TeamDetailsPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center" role="status" aria-label="Loading the team">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+        <div className="container max-w-4xl py-8 md:py-10" role="status" aria-label="Loading the team">
+          <Skeleton className="mb-6 h-11 w-24" />
+          <div className="mb-6 rounded-xl border border-border bg-card p-5 md:p-6">
+            <div className="flex items-start gap-4">
+              <Skeleton className="h-20 w-20 shrink-0 rounded-xl" />
+              <div className="flex-1 space-y-3">
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          </div>
+          <Skeleton className="h-72 w-full" />
         </div>
       </Layout>
     );
@@ -167,67 +180,82 @@ const TeamDetailsPage = () => {
 
   return (
     <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8 max-w-4xl">
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-4xl py-8 md:py-10">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" aria-label="Back" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+          <div className="mb-4">
+            <Button variant="ghost" aria-label="Back" onClick={() => navigate(-1)} className="px-2">
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+              Back
             </Button>
           </div>
 
           {/* Team Profile */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-start gap-6">
-                <Avatar className="h-20 w-20 rounded-xl">
-                  <AvatarImage src={team.logo_url || undefined} className="object-cover" />
+          <Card className="mb-6 shadow-xs">
+            <CardContent className="p-5 md:p-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                <Avatar className="h-20 w-20 shrink-0 rounded-xl">
+                  <AvatarImage src={team.logo_url || undefined} className="object-cover" alt={`${team.name} logo`} />
                   <AvatarFallback className="rounded-xl bg-primary/10 text-primary text-2xl font-bold">
                     {team.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl font-bold text-foreground">{team.name}</h1>
-                    {team.visibility === "private" && <Shield className="h-5 w-5 text-muted-foreground" />}
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">{team.name}</h1>
+                    {team.visibility === "private" && (
+                      <Badge variant="outline">
+                        <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                        Private
+                      </Badge>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="mb-3 flex flex-wrap items-center gap-3">
                     <Badge variant="secondary">{team.sport}</Badge>
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Users className="h-4 w-4" />
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" aria-hidden="true" />
                       {members.length}/{team.team_size} players
                     </span>
                   </div>
                   {team.description && (
-                    <p className="text-muted-foreground">{team.description}</p>
+                    <p className="max-w-2xl leading-relaxed text-muted-foreground">{team.description}</p>
                   )}
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                   {!isMember && user && (
-                    <Button onClick={handleJoin} disabled={joinByCode.isPending}>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Join Team
+                    <Button className="flex-1 sm:flex-none" onClick={handleJoin} disabled={joinByCode.isPending}>
+                      {joinByCode.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                      ) : (
+                        <UserPlus className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      Join team
                     </Button>
                   )}
                   {canManage && (
                     <>
-                      <Button variant="outline" size="icon" onClick={handleCopyInviteLink} title="Copy invite link">
-                        <Copy className="h-4 w-4" />
+                      <Button variant="outline" className="flex-1 sm:flex-none" onClick={handleCopyInviteLink}>
+                        <Copy className="h-4 w-4" aria-hidden="true" />
+                        Copy link
                       </Button>
-                      <Button variant="outline" size="icon" onClick={() => setInviteDialogOpen(true)} title="Invite players">
-                        <UserPlus className="h-4 w-4" />
+                      <Button className="flex-1 sm:flex-none" onClick={() => setInviteDialogOpen(true)}>
+                        <UserPlus className="h-4 w-4" aria-hidden="true" />
+                        Invite players
                       </Button>
                     </>
                   )}
                   {isMember && !isCaptain && (
-                    <Button variant="ghost" size="icon" onClick={handleLeave} title="Leave team">
-                      <LogOut className="h-4 w-4" />
+                    <Button variant="outline" className="flex-1 sm:flex-none" onClick={handleLeave} disabled={leaveTeam.isPending}>
+                      <LogOut className="h-4 w-4" aria-hidden="true" />
+                      {leaveTeam.isPending ? "Leaving…" : "Leave team"}
                     </Button>
                   )}
                   {isCaptain && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label="Team settings"><Settings className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" aria-label="Team settings">
+                          <Settings className="h-4 w-4" aria-hidden="true" />
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => navigate(`/team/${team.id}/edit`)}>
@@ -262,7 +290,7 @@ const TeamDetailsPage = () => {
                               <AlertDialogAction
                                 onClick={handleDelete}
                                 disabled={deleteTeam.isPending}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
                               >
                                 {deleteTeam.isPending ? "Deleting…" : "Delete team"}
                               </AlertDialogAction>
@@ -279,34 +307,37 @@ const TeamDetailsPage = () => {
 
           {/* Tabs */}
           <Tabs defaultValue="members">
-            <TabsList className="mb-6">
+            <TabsList className="mb-6 grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
               <TabsTrigger value="members">Members</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="members">
-              <Card>
-                <CardHeader>
+              <Card className="shadow-xs">
+                <CardHeader className="p-5 pb-3 md:p-6 md:pb-4">
                   {/* Section under the team name (h1): h2. */}
-                  <CardTitle as="h2" className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Team Members ({members.length})
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <Users className="h-5 w-5 text-primary" aria-hidden="true" />
+                    Team members ({members.length})
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border">
                     {members.map(member => (
-                      <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={member.profile?.avatar_url || undefined} />
+                      <div key={member.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar className="h-10 w-10 shrink-0">
+                            <AvatarImage
+                              src={member.profile?.avatar_url || undefined}
+                              alt={member.profile?.full_name || "Team member"}
+                            />
                             <AvatarFallback className="bg-primary/10 text-primary text-sm">
                               {(member.profile?.full_name || "?").charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-foreground">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="truncate font-medium text-foreground">
                                 {member.profile?.full_name || "Unknown"}
                               </span>
                               {roleIcon(member.role)}
@@ -320,7 +351,7 @@ const TeamDetailsPage = () => {
                         {canManage && member.user_id !== user?.id && member.role !== "captain" && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">Manage</Button>
+                              <Button variant="outline" className="w-full sm:w-auto">Manage</Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               {isCaptain && (
@@ -350,13 +381,13 @@ const TeamDetailsPage = () => {
             </TabsContent>
 
             <TabsContent value="activity">
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No activity yet</h3>
-                  <p className="text-muted-foreground">Games and bookings made with this team will appear here.</p>
-                </CardContent>
-              </Card>
+              <div className="rounded-xl border border-border bg-card">
+                <StatusPanel
+                  icon={Calendar}
+                  title="No activity yet"
+                  description="Games and bookings made with this team will appear here."
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
@@ -366,12 +397,13 @@ const TeamDetailsPage = () => {
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Invite Players</DialogTitle>
+            <DialogTitle>Invite players</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">By Username</label>
+              <Label htmlFor="invite-username">By username</Label>
               <Input
+                id="invite-username"
                 placeholder="Enter username"
                 value={inviteUsername}
                 onChange={(e) => { setInviteUsername(e.target.value); setInviteEmail(""); }}
@@ -379,8 +411,9 @@ const TeamDetailsPage = () => {
             </div>
             <div className="text-center text-sm text-muted-foreground">or</div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">By Email</label>
+              <Label htmlFor="invite-email">By email</Label>
               <Input
+                id="invite-email"
                 type="email"
                 placeholder="Enter email"
                 value={inviteEmail}
@@ -389,15 +422,16 @@ const TeamDetailsPage = () => {
             </div>
             <Separator />
             <div className="space-y-2">
-              <label className="text-sm font-medium">Share Invite Link</label>
+              <Label htmlFor="invite-link">Share invite link</Label>
               <div className="flex gap-2">
                 <Input
+                  id="invite-link"
                   readOnly
                   value={`${window.location.origin}/join-team/${team?.invite_code}`}
                   className="text-xs"
                 />
                 <Button variant="outline" size="icon" aria-label="Copy invite link" onClick={handleCopyInviteLink}>
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -405,8 +439,10 @@ const TeamDetailsPage = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleInvite} disabled={inviteToTeam.isPending || (!inviteUsername.trim() && !inviteEmail.trim())}>
-              {inviteToTeam.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Send Invite
+              {inviteToTeam.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : null}
+              Send invite
             </Button>
           </DialogFooter>
         </DialogContent>

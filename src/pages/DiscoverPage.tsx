@@ -1,9 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { Link, useSearchParams } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import type { MotionProps, Variants } from "framer-motion";
-import { easeOutExpo, transitionBase, transitionFast } from "@/lib/motion";
 import { Check, Filter, Loader2, MapPin, Navigation, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +20,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import VenueCard from "@/components/venues/VenueCard";
 import {
   compareVenues,
@@ -58,98 +63,6 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 /** Starting ceiling for the price filter, before the catalogue is known. */
 const PRICE_FLOOR_CEILING = 200000;
-
-/* ------------------------------------------------------------------
-   Motion.
-
-   Durations and easings come from lib/motion, which mirrors the
-   --dur-* / --ease-out-expo custom properties in index.css, so the two
-   halves of the page that move — the framer-motion results region and
-   the CSS-driven filter chips below — agree on what "fast" means.
-
-   Under `prefers-reduced-motion: reduce` the animation props are not
-   passed at all rather than being given a zero duration: the final
-   state renders outright, so nothing here depends on a frame that
-   never runs. That is the convention HomePage already established.
-   ------------------------------------------------------------------ */
-
-/** Gap between one card's entrance and the next. */
-const CARD_STAGGER_STEP = 0.05;
-/**
- * The index past which every remaining card shares the last delay.
- *
- * This grid is unpaginated — "Any sport, any city" renders the whole
- * catalogue — so an uncapped stagger would still be dealing out cards
- * two seconds after the data landed, and the further down the page you
- * look the more it reads as slowness rather than sequence. Capped, the
- * stagger costs 500ms whether there are eleven venues or a hundred,
- * and the cards past the fold arrive together (which is what someone
- * scrolling down to them wants anyway).
- */
-const CARD_STAGGER_CAP = 10;
-
-/**
- * The grid itself only fades on the way *out*; the entrance belongs to
- * the cards. Giving both an opacity animation would double it up.
- */
-const resultsVariants: Variants = {
-  hidden: {},
-  visible: {},
-  exit: { opacity: 0, transition: transitionFast },
-};
-
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: (index: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: easeOutExpo,
-      delay: Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP,
-    },
-  }),
-};
-
-/**
- * Entrance and press feedback for the filter chips.
- *
- * Scoped here, and in CSS, for two reasons. `FilterChips` is shared with
- * /games, which another page owns — reaching into it would change a
- * component this page does not own. And a chip's entrance is triggered
- * by the node being created, which is exactly when a CSS animation
- * fires, so keying off React's own reconciliation gets it for free: an
- * added filter animates, the chips already on screen do not re-run.
- *
- * `backwards` rather than `forwards`/`both` on purpose — a filled-forwards
- * animation keeps winning the cascade after it ends, which would beat the
- * `:active` transform below and leave the press feedback dead.
- */
-const CHIP_MOTION_CSS = `
-[data-venues-chips] button {
-  animation: venues-chip-in var(--dur-base, 250ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
-  /* Longhand, not the shorthand: the chips carry Tailwind's
-     transition-colors, and a "transition" shorthand here would reset
-     transition-property to "transform" alone and kill the hover fade. */
-  transition-property: color, background-color, border-color, transform;
-  transition-duration: var(--dur-fast, 150ms);
-  transition-timing-function: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
-}
-[data-venues-chips] button:active {
-  transform: scale(0.96);
-}
-@keyframes venues-chip-in {
-  from { opacity: 0; transform: scale(0.94); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-venues-chips] button {
-    animation: none;
-    transition-property: color, background-color, border-color;
-  }
-  [data-venues-chips] button:active { transform: none; }
-}
-`;
 
 const DiscoverPage = () => {
   const { profile } = useAuth();
@@ -448,36 +361,6 @@ const DiscoverPage = () => {
     return formatPrice(getCustomerPrice(ownerPrice));
   };
 
-  // ── Motion props for the results region (see the block above) ──
-  const prefersReduced = useReducedMotion();
-
-  // `initial: false` so the skeletons are simply *there* on first paint.
-  // Fading a placeholder in delays the one thing it exists to do, which is
-  // to say "something is coming" as early as possible. It still fades out.
-  const skeletonMotion: MotionProps = prefersReduced
-    ? {}
-    : { initial: false, exit: { opacity: 0 }, transition: transitionFast };
-
-  // Deliberately not `initial={false}` on <AnimatePresence>: react-query
-  // serves this page from cache for a minute, so a return visit renders the
-  // grid as the first branch, and suppressing that would drop the stagger on
-  // exactly the loads where the page is quick enough to enjoy it.
-  const gridMotion: MotionProps = prefersReduced
-    ? {}
-    : { variants: resultsVariants, initial: "hidden", animate: "visible", exit: "exit" };
-
-  const cardMotion = (index: number): MotionProps =>
-    prefersReduced ? {} : { variants: cardVariants, custom: index };
-
-  const panelMotion: MotionProps = prefersReduced
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0 },
-        transition: transitionBase,
-      };
-
   return (
     <Layout>
       <SEOHead
@@ -489,82 +372,82 @@ const DiscoverPage = () => {
           { name: "Venues", url: "/venues" },
         ])}
       />
-      <style dangerouslySetInnerHTML={{ __html: CHIP_MOTION_CSS }} />
       <div className="bg-background min-h-screen">
         {/* Search Header */}
-        <div className="bg-card border-b border-border sticky top-16 z-40">
-          <div className="container py-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Smart Search */}
-              <div className="flex-1">
-                <SmartSearch 
-                  placeholder="Search venues, games, or locations..."
+        <div className="sticky top-16 z-40 border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90">
+          <div className="container py-3">
+            <div className="flex min-w-0 items-center gap-2 lg:gap-3">
+              <div className="min-w-0 flex-1">
+                <SmartSearch
+                  placeholder="Search venues, games, or locations…"
                   onLocationSelect={handleLocationSearch}
                 />
               </div>
-              
-              <div className="hidden md:flex items-center gap-3">
-                {/* Near Me Button */}
+
+              <div className="hidden shrink-0 items-center gap-2 lg:flex">
                 <Button
                   variant="outline"
                   onClick={handleNearMe}
                   disabled={isLocating}
-                  className="gap-2"
+                  className="h-12 gap-2"
                 >
                   {isLocating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   ) : (
-                    <Navigation className="h-4 w-4" />
+                    <Navigation className="h-4 w-4" aria-hidden="true" />
                   )}
-                  Near me
+                  {isLocating ? "Locating…" : "Near me"}
                 </Button>
 
-                <Select value={selectedCity} onValueChange={setSelectedCity}>
-                  <SelectTrigger aria-label="City" className="w-[160px] h-12">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                <Select
+                  value={selectedCity || "all"}
+                  onValueChange={(value) => setSelectedCity(value === "all" ? "" : value)}
+                >
+                  <SelectTrigger aria-label="City" className="h-12 w-36">
+                    <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     <SelectValue placeholder="City" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Any city</SelectItem>
                     {cities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city}
-                      </SelectItem>
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger aria-label="Sport type" className="w-[160px] h-12">
+                <Select
+                  value={selectedSport || "all"}
+                  onValueChange={(value) => setSelectedSport(value === "all" ? "" : value)}
+                >
+                  <SelectTrigger aria-label="Sport type" className="h-12 w-40">
                     <SelectValue placeholder="Sport type" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Any sport</SelectItem>
                     {availableSports.map((sport) => (
-                      <SelectItem key={sport} value={sport}>
-                        {sport}
-                      </SelectItem>
+                      <SelectItem key={sport} value={sport}>{sport}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                
-                {/* Advanced Price Filter */}
+
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="h-12 gap-2">
                       Price
                       {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
-                        <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                        <Badge variant="secondary" className="h-5 px-1.5">
                           <Check className="h-3 w-3" aria-hidden="true" />
                           <span className="sr-only">Price filter active</span>
                         </Badge>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80" align="end">
+                  <PopoverContent className="w-80 rounded-xl" align="end">
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-sm font-medium">Price Range (per hour)</Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {formatCustomerPrice(priceRange[0])} - {formatCustomerPrice(priceRange[1])}
+                        <Label className="text-sm font-semibold">Hourly price</Label>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {formatCustomerPrice(priceRange[0])} – {formatCustomerPrice(priceRange[1])}
                         </p>
                       </div>
                       <Slider
@@ -585,102 +468,131 @@ const DiscoverPage = () => {
                     </div>
                   </PopoverContent>
                 </Popover>
-                
+
                 {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    <X className="h-4 w-4 mr-1" />
+                  <Button variant="ghost" className="h-12 px-3" onClick={clearFilters}>
+                    <X className="h-4 w-4" aria-hidden="true" />
                     Clear
                   </Button>
                 )}
               </div>
-              
-              <Button
-                variant="outline"
-                className="md:hidden"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-                {hasActiveFilters && (
-                  <Badge className="ml-2 h-5 w-5 p-0 justify-center">!</Badge>
-                )}
-              </Button>
-            </div>
-            
-            {/* Mobile Filters */}
-            {showFilters && (
-              <div className="md:hidden pt-4 flex flex-col gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleNearMe}
-                  disabled={isLocating}
-                  className="gap-2 justify-center"
-                >
-                  {isLocating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  Near me
-                </Button>
 
-                <Select value={selectedSport} onValueChange={setSelectedSport}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Sport type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSports.map((sport) => (
-                      <SelectItem key={sport} value={sport}>
-                        {sport}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <div className="space-y-2 p-3 border border-border rounded-lg">
-                  <Label className="text-sm font-medium">Price Range</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
-                  </p>
-                  <Slider
-                    value={priceRange}
-                    onValueChange={(value) => {
+              <Sheet open={showFilters} onOpenChange={setShowFilters}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="h-12 shrink-0 px-3 lg:hidden">
+                    <Filter className="h-4 w-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">Filters</span>
+                    {activeFilters.length > 0 && (
+                      <Badge className="h-6 min-w-6 justify-center px-1.5">{activeFilters.length}</Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="bottom"
+                  className="max-h-[88dvh] gap-0 overflow-y-auto rounded-t-2xl border-border bg-card p-0 pb-[max(1rem,env(safe-area-inset-bottom))] data-[state=closed]:!duration-150 data-[state=open]:!duration-200 motion-reduce:data-[state=closed]:!animate-none motion-reduce:data-[state=open]:!animate-none [&>button]:right-3 [&>button]:top-3 [&>button]:h-11 [&>button]:w-11 [&>button]:rounded-lg"
+                >
+                  <SheetHeader className="border-b border-border px-5 py-4 pr-16 text-left">
+                    <SheetTitle>Filter venues</SheetTitle>
+                    <SheetDescription>Narrow the list without losing your current search.</SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-5 p-5">
+                    <Button
+                      variant="outline"
+                      onClick={handleNearMe}
+                      disabled={isLocating}
+                      className="h-11 w-full justify-center"
+                    >
+                      {isLocating ? (
+                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                      ) : (
+                        <Navigation className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      {isLocating ? "Finding your location…" : "Use my location"}
+                    </Button>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="mobile-city-filter">City</Label>
+                        <Select
+                          value={selectedCity || "all"}
+                          onValueChange={(value) => setSelectedCity(value === "all" ? "" : value)}
+                        >
+                          <SelectTrigger id="mobile-city-filter">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any city</SelectItem>
+                            {cities.map((city) => (
+                              <SelectItem key={city} value={city}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="mobile-sport-filter">Sport</Label>
+                        <Select
+                          value={selectedSport || "all"}
+                          onValueChange={(value) => setSelectedSport(value === "all" ? "" : value)}
+                        >
+                          <SelectTrigger id="mobile-sport-filter">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any sport</SelectItem>
+                            {availableSports.map((sport) => (
+                              <SelectItem key={sport} value={sport}>{sport}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 rounded-xl border border-border bg-surface-1 p-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <Label>Hourly price</Label>
+                        <span className="text-sm font-medium text-foreground">
+                          {formatCustomerPrice(priceRange[0])} – {formatCustomerPrice(priceRange[1])}
+                        </span>
+                      </div>
+                      <Slider
+                        value={priceRange}
+                        onValueChange={(value) => {
                           setPriceTouched(true);
                           setPriceRange(value as [number, number]);
                         }}
-                    max={maxPrice}
-                    min={0}
-                    step={1000}
-                    className="w-full"
-                  />
-                </div>
-                
-                {hasActiveFilters && (
-                  <Button variant="ghost" onClick={clearFilters}>
-                    <X className="h-4 w-4 mr-1" />
-                    Clear all filters
-                  </Button>
-                )}
-              </div>
-            )}
+                        max={maxPrice}
+                        min={0}
+                        step={1000}
+                        className="w-full"
+                      />
+                    </div>
 
-            {/* Active location indicator */}
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                      {hasActiveFilters && (
+                        <Button variant="ghost" onClick={clearFilters}>Clear all</Button>
+                      )}
+                      <Button onClick={() => setShowFilters(false)}>
+                        Show {filteredVenues.length} {filteredVenues.length === 1 ? "venue" : "venues"}
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
             {(userLocation || searchLocation) && (
-              <div className="mt-3 flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1">
-                  <Navigation className="h-3 w-3" />
-                  {searchLocation?.address || "Your location"}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Sorting by distance
-                </span>
+              <div className="mt-2 flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                <Navigation className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                <span className="min-w-0 truncate">{searchLocation?.address || "Your location"}</span>
+                <span className="hidden shrink-0 sm:inline">· Nearest first</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Results */}
-        <div className="container py-8">
+        <div className="container py-6 sm:py-8">
           {/* This row was `justify-between` with a single child, so the space
               the sort control now occupies was already reserved and empty.
               `flex-wrap` with the control pushed by `ms-auto` keeps it beside
@@ -688,7 +600,7 @@ const DiscoverPage = () => {
               squeezing the title. */}
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="eyebrow mb-2">Book by the hour</p>
+              <p className="mb-1 text-sm font-semibold text-primary">Book by the hour</p>
               <h1 className="page-title">Venues</h1>
               {/* Nothing is "available" until the query resolves. Rendering
                   filteredVenues.length during load stated "0 venues available"
@@ -706,12 +618,12 @@ const DiscoverPage = () => {
                 disabled: a sort control over an empty or still-loading grid is
                 a promise the page cannot keep yet. */}
             {!isLoading && !isError && filteredVenues.length > 1 && (
-              <div className="ms-auto flex items-center gap-2">
+              <div className="flex w-full items-center gap-2 sm:ms-auto sm:w-auto">
                 <Label htmlFor="venue-sort" className="text-sm text-muted-foreground">
                   Sort by
                 </Label>
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as VenueSort)}>
-                  <SelectTrigger id="venue-sort" className="w-[11.5rem]">
+                  <SelectTrigger id="venue-sort" className="min-w-0 flex-1 sm:w-[11.5rem] sm:flex-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -731,43 +643,26 @@ const DiscoverPage = () => {
               them: desktop had a single Clear that dropped all five, mobile
               had a badge on the Filters button reading "!". A grid narrowed to
               two results was indistinguishable from an empty catalogue. */}
-          {/* The wrapper is the animation's hook, nothing more: FilterChips is
-              shared with /games, so the chip entrance and press feedback are
-              attached from out here rather than by editing it. It renders null
-              with no filters set, so this contributes no height of its own. */}
-          <div data-venues-chips="">
-            <FilterChips
-              className="mb-6"
-              chips={activeFilters}
-              onRemove={(key) => clearFilter(key as FilterKey)}
-              onClearAll={clearFilters}
-            />
-          </div>
+          <FilterChips
+            className="mb-6"
+            chips={activeFilters}
+            onRemove={(key) => clearFilter(key as FilterKey)}
+            onClearAll={clearFilters}
+          />
 
-          {/* Skeletons, results, the error and the two empty states are one
-              swappable region rather than five independent branches, so the
-              outgoing one can fade before the incoming one arrives — `mode
-              ="wait"` sequences them, which is what turns a cold load from a
-              hard cut into a crossfade. Sequential rather than overlapped
-              deliberately: overlapping two grids means taking one of them out
-              of flow, and a placeholder that reserves the wrong space is worse
-              than a 150ms handover. */}
-          <AnimatePresence mode="wait">
           {isLoading ? (
             // Skeletons rather than a centred spinner: same grid, same card
             // geometry, so the results land in place instead of shifting the
             // page down when they arrive.
-            <motion.div
-              key="loading"
-              {...skeletonMotion}
-              className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            <div
+              className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
               role="status"
               aria-label="Loading venues"
             >
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="overflow-hidden rounded-2xl border border-border bg-card"
+                  className="overflow-hidden rounded-xl border border-border bg-card"
                 >
                   {/* aspect-[3/2] mirrors VenueCard's own image box — a
                       skeleton whose geometry differs from the real card just
@@ -790,60 +685,46 @@ const DiscoverPage = () => {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           ) : isError ? (
             /* Without this branch a failed query left the skeletons pulsing
                forever — the most misleading state available, since it promises
                content that is never coming and offers no way to retry. */
-            <motion.div key="error" {...panelMotion}>
+            <div className="max-w-3xl">
               <ErrorPanel
                 what="venues"
                 description="The connection dropped on the way to our servers. Your filters are still set — retrying will keep them."
                 onRetry={() => refetch()}
                 isRetrying={isRefetching}
-                className="rounded-2xl border border-destructive/25 bg-destructive/5"
+                className="rounded-xl border border-destructive/25 bg-destructive/5"
               />
-            </motion.div>
+            </div>
           ) : filteredVenues.length > 0 ? (
-            /* The key stays "results" across filter changes on purpose. Only a
-               change of key runs an exit, so narrowing the grid re-flows it
-               rather than fading the whole thing out and back — and the cards
-               that survive the change never re-animate. What does animate is a
-               card that has just become a result: it mounts under a parent
-               already at "visible" and plays its own entrance. */
-            <motion.div
-              key="results"
-              {...gridMotion}
-              className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            >
-              {filteredVenues.map((venue: any, index: number) => (
-                /* The wrapper takes the transform so VenueCard keeps its own:
-                   `.card-lift` translates the article on hover, and one element
-                   cannot hold an entrance and a hover response at once. */
-                <motion.div key={venue.id} {...cardMotion(index)}>
-                  <VenueCard
-                    id={venue.id}
-                    name={venue.name}
-                    image={getVenueImage(venue)}
-                    location={venue.address || venue.city}
-                    sports={venue.sports}
-                    price={venue.price_per_hour}
-                    rating={venue.rating}
-                    reviewCount={venue.review_count}
-                    available={venue.is_active}
-                    distance={venue.distance}
-                    isPromoted={promotedVenueIds.has(venue.id)}
-                  />
-                </motion.div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              {filteredVenues.map((venue: any) => (
+                <VenueCard
+                  key={venue.id}
+                  id={venue.id}
+                  name={venue.name}
+                  image={getVenueImage(venue)}
+                  location={venue.address || venue.city}
+                  sports={venue.sports}
+                  price={venue.price_per_hour}
+                  rating={venue.rating}
+                  reviewCount={venue.review_count}
+                  available={venue.is_active}
+                  distance={venue.distance}
+                  isPromoted={promotedVenueIds.has(venue.id)}
+                />
               ))}
-            </motion.div>
+            </div>
           ) : hasActiveFilters && venues.length > 0 ? (
-            <motion.div key="no-match" {...panelMotion}>
+            <div className="max-w-3xl">
             <StatusPanel
               icon={SearchX}
               title="Nothing matches those filters"
               description={`${venues.length} ${venues.length === 1 ? "venue is" : "venues are"} listed overall — widening the search should bring some back.`}
-              className="rounded-2xl border border-border bg-surface-1"
+              className="rounded-xl border border-border bg-surface-1"
             >
               <Button onClick={clearFilters}>Clear all filters</Button>
               {selectedSport && (
@@ -857,7 +738,7 @@ const DiscoverPage = () => {
                 </Button>
               )}
             </StatusPanel>
-            </motion.div>
+            </div>
           ) : (
             /* The catalogue itself is empty — which is the dominant fact even
                if filters happen to be set, so this branch is guarded ahead of
@@ -866,13 +747,13 @@ const DiscoverPage = () => {
                with an empty catalogue "widening the search" is simply false.
                Until venues are listed this is the most-seen screen in the app,
                so it gets a real next step instead. */
-            <motion.div key="empty" {...panelMotion}>
+            <div className="max-w-3xl">
             <StatusPanel
               icon={MapPin}
               tone="positive"
               title="No venues listed yet"
               description="We're onboarding venues across Yerevan now. If you run a pitch, court or pool, listing takes about ten minutes and costs nothing until you take a booking."
-              className="rounded-2xl border border-border bg-surface-1"
+              className="rounded-xl border border-border bg-surface-1"
             >
               <Button asChild>
                 <Link to="/for-owners">List your venue</Link>
@@ -881,9 +762,8 @@ const DiscoverPage = () => {
                 <Link to="/games">Find a game instead</Link>
               </Button>
             </StatusPanel>
-            </motion.div>
+            </div>
           )}
-          </AnimatePresence>
         </div>
       </div>
     </Layout>

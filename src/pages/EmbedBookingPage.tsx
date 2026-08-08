@@ -4,7 +4,12 @@ import { format, addDays } from "date-fns";
 import { Calendar, Clock, MapPin, Banknote, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCustomerPrice, formatPrice } from "@/lib/pricing";
-import { parseHexColor, hslTriplet, readableForeground } from "@/lib/color";
+import {
+  DEFAULT_WIDGET_PRIMARY_COLOR,
+  parseHexColor,
+  hslTriplet,
+  readableForeground,
+} from "@/lib/color";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +51,9 @@ const EmbedBookingPage = () => {
    * with a hardcoded `text-white`, which measures 2.54:1 on the default
    * emerald — a colour the owner chooses, so the text on it has to be derived.
    */
-  const brand = parseHexColor(searchParams.get("color")) ?? parseHexColor("#10b981")!;
+  const brand =
+    parseHexColor(searchParams.get("color")) ??
+    parseHexColor(DEFAULT_WIDGET_PRIMARY_COLOR)!;
   const brandVars = {
     "--primary": hslTriplet(brand),
     "--primary-foreground": hslTriplet(readableForeground(brand)),
@@ -181,18 +188,32 @@ const EmbedBookingPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" role="status" aria-label="Loading availability">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div
+        className="flex min-h-dvh items-center justify-center bg-background px-4 text-center"
+        role="status"
+      >
+        <div>
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Loading venue availability…</p>
+        </div>
       </div>
     );
   }
 
   if (!venue) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">Venue not found or unavailable.</p>
+      <div className="flex min-h-dvh items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-sm">
+          <CardContent className="px-5 py-10 text-center sm:px-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-surface-1 text-muted-foreground">
+              <MapPin className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <h1 className="font-display text-xl font-semibold tracking-extra-tight">Venue unavailable</h1>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              This venue could not be found or is not currently accepting bookings.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -200,32 +221,39 @@ const EmbedBookingPage = () => {
   }
 
   return (
-    <div 
-      className={`min-h-screen p-4 ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}
+    <div
+      className={`min-h-dvh p-3 text-foreground sm:p-4 ${theme === "dark" ? "dark bg-background" : "bg-background"}`}
       style={brandVars}
     >
-      <Card className="max-w-md mx-auto overflow-hidden">
+      <Card className="mx-auto max-w-lg overflow-hidden shadow-sm">
         {/* Header */}
         {venue.imageUrl && (
-          <div 
-            className="h-32 bg-cover bg-center" 
-            style={{ backgroundImage: `url(${venue.imageUrl})` }}
-          />
+          <div className="aspect-[16/6] overflow-hidden border-b border-border bg-surface-1">
+            <img
+              src={venue.imageUrl}
+              alt={`${venue.name} venue`}
+              className="h-full w-full object-cover"
+              decoding="async"
+            />
+          </div>
         )}
-        
-        <CardContent className="p-4 space-y-4">
+
+        <CardContent className="space-y-5 p-4 sm:p-5">
           {/* Venue Info */}
           <div>
             {/* An embed is rendered in its own document inside the iframe, so the
                 venue name is that document's h1, not an h2 under nothing. */}
-            <h1 className="text-xl font-semibold text-foreground">{venue.name}</h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-              <MapPin className="h-4 w-4" />
+            <p className="eyebrow mb-1.5">Book a venue</p>
+            <h1 className="font-display text-2xl font-semibold leading-tight tracking-extra-tight text-foreground">
+              {venue.name}
+            </h1>
+            <p className="mt-1.5 flex items-start gap-1.5 text-sm leading-relaxed text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {venue.address}, {venue.city}
             </p>
-            <div className="flex gap-1 mt-2">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {venue.sports.slice(0, 3).map((sport) => (
-                <Badge key={sport} variant="secondary" className="text-xs">
+                <Badge key={sport} variant="secondary">
                   {sport}
                 </Badge>
               ))}
@@ -233,75 +261,83 @@ const EmbedBookingPage = () => {
           </div>
 
           {/* Price */}
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Banknote className="h-4 w-4" />
+          <div className="surface-inset flex items-center justify-between gap-4 rounded-lg p-3.5">
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Banknote className="h-4 w-4 shrink-0" aria-hidden="true" />
               Starting from
             </span>
-            <span className="text-lg font-semibold text-primary">
+            <span className="stat-numeral whitespace-nowrap text-lg font-semibold text-foreground">
               {formatPrice(getCustomerPrice(venue.pricePerHour))}/hr
             </span>
           </div>
 
           {/* Date Selection */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              Select Date
-            </label>
-            {/* A seven-column grid, not a horizontal scroll strip. Seven
-                buttons at `min-w-[60px]` plus gaps need 468px; the strip is
-                414px wide inside the embed's `max-w-md` card, so the last day
-                was cut off with 6 of its 60 pixels showing and `scrollLeft`
-                stayed at 0 when it was focused — measured, and reported by
-                focus-visible.mjs as a control entirely covered by the page
-                behind it. A fixed count of items in a fixed-width card is a
-                grid; scrolling was never going to fit them. */}
-            <div className="grid grid-cols-7 gap-1 pb-2">
+          <fieldset className="space-y-2.5">
+            <legend className="flex items-center gap-2 text-sm font-semibold">
+              <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              Select date
+            </legend>
+            {/* A wrapping grid, not a horizontal strip. Seven buttons at the
+                required touch size do not fit a narrow iframe, so the widget
+                uses four columns there and returns to one row when it has room.
+                Every date remains fully visible and reachable by keyboard. */}
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
               {dateOptions.map((date) => (
                 <button
                   key={date.toISOString()}
+                  type="button"
+                  aria-pressed={format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")}
+                  aria-label={format(date, "EEEE, MMMM d")}
                   onClick={() => setSelectedDate(date)}
-                  className={`min-w-0 rounded-lg p-1.5 text-center transition-colors ${
+                  className={`focus-ring min-h-14 min-w-0 touch-manipulation rounded-lg border px-1.5 py-2 text-center transition-[background-color,border-color,color,opacity] duration-150 active:opacity-80 motion-reduce:transition-none ${
                     format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted hover:bg-muted/80"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent"
                   }`}
                 >
-                  <div className="text-xs">{format(date, "EEE")}</div>
-                  <div className="text-lg font-semibold">{format(date, "d")}</div>
+                  <span className="block text-[11px] font-medium opacity-80">{format(date, "EEE")}</span>
+                  <span className="stat-numeral block text-base font-semibold leading-tight">
+                    {format(date, "d")}
+                  </span>
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Time Slots */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              Available Times
-            </label>
+          <fieldset className="space-y-2.5" aria-busy={loadingSlots}>
+            <legend className="flex items-center gap-2 text-sm font-semibold">
+              <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              Available times
+            </legend>
             {loadingSlots ? (
-              <div className="flex justify-center py-4" role="status" aria-label="Loading availability">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <div
+                className="surface-inset flex min-h-20 items-center justify-center gap-2 rounded-lg px-4 py-4 text-sm text-muted-foreground"
+                role="status"
+              >
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                Loading available times…
               </div>
             ) : availability.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p className="surface-inset rounded-lg px-4 py-5 text-center text-sm text-muted-foreground">
                 No availability on this date
               </p>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {availability.map((slot) => (
                   <button
                     key={slot.time}
+                    type="button"
+                    aria-pressed={slot.available ? selectedTime === slot.time : undefined}
+                    aria-label={`${slot.time}${slot.available ? "" : ", unavailable"}`}
                     onClick={() => slot.available && setSelectedTime(slot.time)}
                     disabled={!slot.available}
-                    className={`p-2 text-sm rounded-lg transition-colors ${
+                    className={`focus-ring stat-numeral min-h-11 touch-manipulation rounded-lg border px-2 py-2 text-sm font-medium transition-[background-color,border-color,color,opacity] duration-150 active:opacity-80 motion-reduce:transition-none ${
                       !slot.available
-                        ? "bg-muted text-muted-foreground cursor-not-allowed line-through"
+                        ? "cursor-not-allowed border-border bg-surface-1 text-muted-foreground line-through opacity-55"
                         : selectedTime === slot.time
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent"
                     }`}
                   >
                     {slot.time}
@@ -309,28 +345,28 @@ const EmbedBookingPage = () => {
                 ))}
               </div>
             )}
-          </div>
+          </fieldset>
 
           {/* Book Button */}
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
+            size="lg"
             disabled={!selectedTime}
             onClick={handleBookNow}
           >
-            {selectedTime 
+            {selectedTime
               ? `Book for ${format(selectedDate, "MMM d")} at ${selectedTime}`
-              : "Select a time to book"
-            }
+              : "Select a time to book"}
           </Button>
 
           {/* Footer */}
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="flex items-center justify-center text-center text-xs text-muted-foreground">
             Powered by{" "}
-            <a 
-              href={window.location.origin} 
-              target="_blank" 
+            <a
+              href={window.location.origin}
+              target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-foreground"
+              className="focus-ring -my-3 ml-1 inline-flex min-h-11 items-center rounded-sm underline underline-offset-4 transition-colors hover:text-foreground motion-reduce:transition-none"
             >
               SportsBnB
             </a>

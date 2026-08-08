@@ -79,12 +79,7 @@ const FAQPage = () => {
         },
         {
           q: "How do I contact support?",
-          // .org. This was the one `sportsbnb.com` string in the repository, against
-    // twelve `.org` ones — and it is the answer to "How do I contact
-    // support?", so anyone who followed it emailed a domain the company does
-    // not own and heard nothing back. The contact function both sends from
-    // and delivers to support@sportsbnb.org.
-    a: "You can reach our support team via the Contact page or by emailing support@sportsbnb.org. We typically respond within 24 hours.",
+          a: "You can reach our support team via the Contact page or by emailing support@sportsbnb.org.",
         },
       ],
     },
@@ -100,54 +95,81 @@ const FAQPage = () => {
           faqs.flatMap(cat => cat.questions.map(q => ({ question: q.q, answer: q.a })))
         )}
       />
-      <div className="bg-background">
-        <div className="container py-16 md:py-24">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-foreground mb-4">
-                Frequently Asked Questions
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                Find answers to common questions about using Sportsbnb.
-              </p>
-            </div>
+      <header className="border-b border-border bg-surface-1">
+        <div className="container py-14 md:py-20">
+          <div className="mb-5 flex items-center gap-3 text-sm font-semibold text-foreground-soft">
+            <span className="h-2 w-2 rounded-full bg-brand-tuff" aria-hidden="true" />
+            Help center
+          </div>
+          <h1 className="max-w-3xl text-balance font-display text-4xl font-semibold leading-[1.03] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            Questions, answered without the runaround.
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-foreground-soft">
+            Booking, payments, games, owner tools, and account support in one place.
+          </p>
+        </div>
+      </header>
 
-            <div className="space-y-8">
-              {faqs.map((section) => (
-                <div key={section.category}>
-                  <h2 className="text-xl font-semibold text-foreground mb-4">
+      <section className="bg-background py-12 md:py-20">
+        <div className="container grid gap-10 lg:grid-cols-[13rem_1fr] lg:gap-16">
+          <nav aria-label="FAQ categories" className="lg:sticky lg:top-24 lg:self-start">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">On this page</p>
+            <ol className="mt-4 border-t border-border">
+              {faqs.map((section, index) => {
+                const id = section.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                return (
+                  <li key={section.category} className="border-b border-border">
+                    <a
+                      href={`#${id}`}
+                      className="flex min-h-11 items-center gap-3 rounded-sm text-sm font-medium text-foreground-soft transition-colors duration-150 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="font-mono text-xs tabular-nums text-brand-tuff">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {section.category}
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+
+          <div className="min-w-0 space-y-12">
+            {faqs.map((section) => {
+              const id = section.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+              return (
+                <section key={section.category} id={id} aria-labelledby={`${id}-heading`}>
+                  <h2 id={`${id}-heading`} className="text-2xl font-semibold text-foreground">
                     {section.category}
                   </h2>
-                  <Accordion type="single" collapsible className="w-full">
-                    {section.questions.map((faq, index) => (
-                      <AccordionItem key={index} value={`${section.category}-${index}`}>
-                        <AccordionTrigger className="text-left">
+                  <Accordion type="single" collapsible className="mt-4 w-full border-t border-border">
+                    {section.questions.map((faq) => (
+                      <AccordionItem key={faq.q} value={`${section.category}-${faq.q}`}>
+                        <AccordionTrigger className="py-5 text-left text-base font-medium">
                           {faq.q}
                         </AccordionTrigger>
-                        <AccordionContent className="text-muted-foreground">
+                        <AccordionContent className="max-w-3xl pb-5 text-[15px] leading-relaxed text-foreground-soft">
                           {faq.a}
                         </AccordionContent>
                       </AccordionItem>
                     ))}
                   </Accordion>
-                </div>
-              ))}
-            </div>
+                </section>
+              );
+            })}
 
-            <div className="mt-12 p-8 bg-card rounded-xl border border-border text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                Still have questions?
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Can't find the answer you're looking for? Our team is here to help.
+            <aside className="border-l-2 border-brand-tuff bg-brand-tuff-soft px-6 py-7 md:px-8">
+              <h2 className="text-xl font-semibold text-foreground">Still have a question?</h2>
+              <p className="mt-2 text-foreground-soft">
+                Send the team the details and we’ll help you find the right next step.
               </p>
-              <Button asChild size="lg">
-                <Link to="/contact">Contact Support</Link>
+              <Button asChild size="lg" className="mt-6">
+                <Link to="/contact">Contact support</Link>
               </Button>
-            </div>
+            </aside>
           </div>
         </div>
-      </div>
+      </section>
     </Layout>
   );
 };

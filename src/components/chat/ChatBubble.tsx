@@ -59,7 +59,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
   return (
     <div
       className={cn(
-        "flex gap-2 group",
+        "group flex gap-2",
         isOwn ? "flex-row-reverse" : "flex-row"
       )}
     >
@@ -70,7 +70,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
         </Avatar>
       )}
 
-      <div className={cn("flex flex-col max-w-[70%]", isOwn ? "items-end" : "items-start")}>
+      <div className={cn("flex max-w-[82%] flex-col sm:max-w-[72%]", isOwn ? "items-end" : "items-start")}>
         {!isOwn && (
           <div className="flex items-center gap-1.5 mb-1 px-1">
             <span className="text-xs font-medium text-foreground">
@@ -91,37 +91,13 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
           </div>
         )}
 
-        <div className="flex items-end gap-1">
-          {isOwn && onReport && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Message actions"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreVertical className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  onClick={() => onReport(message.id)}
-                  className="text-destructive"
-                >
-                  <Flag className="h-4 w-4 mr-2" />
-                  Report Message
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
+        <div className="flex items-end gap-0.5">
           <div
             className={cn(
-              "px-3 py-2 rounded-2xl",
+              "rounded-xl px-3.5 py-2.5 shadow-xs",
               isOwn
-                ? "bg-primary text-primary-foreground rounded-br-md"
-                : "bg-muted rounded-bl-md"
+                ? "rounded-br-sm bg-primary text-primary-foreground"
+                : "rounded-bl-sm border border-border bg-card"
             )}
           >
             <p className="text-sm whitespace-pre-wrap break-words">
@@ -136,9 +112,9 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
                   variant="ghost"
                   size="icon"
                   aria-label="Message actions"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="opacity-60 transition-opacity duration-150 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none"
                 >
-                  <MoreVertical className="h-3 w-3" />
+                  <MoreVertical className="h-3 w-3" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -146,7 +122,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
                   onClick={() => onReport(message.id)}
                   className="text-destructive"
                 >
-                  <Flag className="h-4 w-4 mr-2" />
+                  <Flag className="h-4 w-4 mr-2" aria-hidden="true" />
                   Report Message
                 </DropdownMenuItem>
               </DropdownMenuContent>

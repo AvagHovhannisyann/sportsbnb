@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CalendarCheck, Clock, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarCheck, Clock, MapPin, Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import SEOHead from "@/components/seo/SEOHead";
 import { Badge } from "@/components/ui/badge";
@@ -52,35 +52,44 @@ function bookingAmount(booking: MyBooking): string {
 const BookingRow = ({ booking }: { booking: MyBooking }) => {
   const { label, tone } = bookingStatusDescriptor(booking.status, "player");
   return (
-    <Card>
-      <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+    <Card className="overflow-hidden">
+      <CardContent className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <h3 className="truncate font-semibold text-foreground">{booking.venue_name}</h3>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h3 className="min-w-0 truncate font-display text-base font-semibold tracking-tight text-foreground">
+              {booking.venue_name}
+            </h3>
             <Badge className={toneClasses[tone]}>{label}</Badge>
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              {bookingDay(booking)}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-              {bookingTime(booking)} · {booking.duration_hours}h
-            </span>
-            <span className="tabular-nums font-medium text-foreground">{bookingAmount(booking)}</span>
-          </div>
+          <dl className="mt-3 grid gap-x-5 gap-y-2 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <div className="flex min-w-0 items-center gap-2">
+              <CalendarCheck className="h-4 w-4 shrink-0 text-foreground-soft" aria-hidden="true" />
+              <dt className="sr-only">Date</dt>
+              <dd className="truncate">{bookingDay(booking)}</dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 shrink-0 text-foreground-soft" aria-hidden="true" />
+              <dt className="sr-only">Time and duration</dt>
+              <dd className="whitespace-nowrap tabular-nums">
+                {bookingTime(booking)} · {booking.duration_hours}h
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-2 sm:border-0 sm:pt-0">
+              <dt className="font-medium text-muted-foreground sm:sr-only">Paid</dt>
+              <dd className="whitespace-nowrap font-semibold tabular-nums text-foreground">{bookingAmount(booking)}</dd>
+            </div>
+          </dl>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-2 border-t border-border pt-3 sm:border-0 sm:pt-0">
           {booking.venue_uuid && (
-            <Button asChild variant="ghost" size="sm">
-              <Link to={`/venue/${booking.venue_uuid}`}>
+            <Button asChild variant="ghost" size="sm" className="h-11 flex-1 sm:flex-none">
+              <Link to={`/venue/${booking.venue_uuid}`} aria-label={`View ${booking.venue_name}`}>
                 <MapPin className="h-4 w-4" aria-hidden="true" />
                 Venue
               </Link>
             </Button>
           )}
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="h-11 flex-1 sm:flex-none">
             {/* The accessible name has to say *which* booking, or a screen
                 reader hears "Details, Details, Details" down the whole list. */}
             <Link
@@ -124,11 +133,15 @@ const MyBookingsPage = () => {
   if (authLoading || isLoading) {
     return (
       <Layout>
-        <div className="container max-w-3xl py-8">
-          <h1 className="page-title mb-6">My bookings</h1>
+        <div className="container max-w-4xl px-4 py-7 sm:px-6 sm:py-10">
+          <div className="mb-7">
+            <p className="text-eyebrow mb-2">Player account</p>
+            <h1 className="page-title">My bookings</h1>
+            <p className="text-muted-foreground">Track every court you have reserved and what happens next.</p>
+          </div>
           <div className="space-y-3" role="status" aria-label="Loading your bookings">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
+              <Skeleton key={i} className="h-40 w-full rounded-lg sm:h-28" />
             ))}
           </div>
         </div>
@@ -139,20 +152,34 @@ const MyBookingsPage = () => {
   return (
     <Layout>
       <SEOHead title="My bookings — Sportsbnb" description="The courts you have booked." noIndex />
-      <div className="container max-w-3xl py-8">
-        <h1 className="page-title mb-6">My bookings</h1>
+      <div className="container max-w-4xl px-4 py-7 sm:px-6 sm:py-10">
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-eyebrow mb-2">Player account</p>
+            <h1 className="page-title">My bookings</h1>
+            <p className="max-w-xl leading-relaxed text-muted-foreground">
+              Track every court you have reserved and what happens next.
+            </p>
+          </div>
+          <Button variant="ghost" className="h-11 self-start sm:self-auto" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Dashboard
+          </Button>
+        </div>
 
         {/* A failed request is not an empty history. "You haven't booked
             anything yet" is a claim about someone's own money, and making it
             because a query fell over is the case error-affordance.mjs exists
             for. */}
         {isError ? (
-          <ErrorPanel
-            what="your bookings"
-            description="We couldn't load them. Nothing has changed — try again in a moment."
-            onRetry={() => refetch()}
-            isRetrying={isFetching}
-          />
+          <Card>
+            <ErrorPanel
+              what="your bookings"
+              description="We couldn't load them. Nothing has changed — try again in a moment."
+              onRetry={() => refetch()}
+              isRetrying={isFetching}
+            />
+          </Card>
         ) : bookings.length === 0 ? (
           <EmptyState
             icon={CalendarCheck}
@@ -160,14 +187,20 @@ const MyBookingsPage = () => {
             description="Once you book a court it will show up here, with its status and what you paid."
             actionLabel="Find a venue"
             actionHref="/venues"
+            bordered
           />
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {upcoming.length > 0 && (
               <section aria-labelledby="upcoming-heading">
-                <h2 id="upcoming-heading" className="mb-3 text-lg font-semibold text-foreground">
-                  Upcoming
-                </h2>
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <h2 id="upcoming-heading" className="font-display text-xl font-semibold tracking-tight text-foreground">
+                    Upcoming
+                  </h2>
+                  <span className="text-sm tabular-nums text-muted-foreground">
+                    {upcoming.length} {upcoming.length === 1 ? "booking" : "bookings"}
+                  </span>
+                </div>
                 <div className="space-y-3">
                   {upcoming.map((b) => (
                     <BookingRow key={b.id} booking={b} />
@@ -177,9 +210,14 @@ const MyBookingsPage = () => {
             )}
             {past.length > 0 && (
               <section aria-labelledby="past-heading">
-                <h2 id="past-heading" className="mb-3 text-lg font-semibold text-foreground">
-                  Past
-                </h2>
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <h2 id="past-heading" className="font-display text-xl font-semibold tracking-tight text-foreground">
+                    Past
+                  </h2>
+                  <span className="text-sm tabular-nums text-muted-foreground">
+                    {past.length} {past.length === 1 ? "booking" : "bookings"}
+                  </span>
+                </div>
                 <div className="space-y-3">
                   {past.map((b) => (
                     <BookingRow key={b.id} booking={b} />
@@ -191,15 +229,11 @@ const MyBookingsPage = () => {
         )}
 
         {isFetching && !isError && (
-          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground" role="status">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-            Refreshing
+          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite">
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            Refreshing…
           </p>
         )}
-
-        <Button variant="ghost" className="mt-8" onClick={() => navigate("/dashboard")}>
-          Back to dashboard
-        </Button>
       </div>
     </Layout>
   );

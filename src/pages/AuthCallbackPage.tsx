@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+
+import { AuthHeading, AuthPanel, AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
@@ -103,33 +106,50 @@ const AuthCallbackPage = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        {status === "loading" && (
-          <>
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-lg font-medium text-foreground">{message}</p>
-          </>
-        )}
-        {status === "success" && (
-          <>
-            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-emerald-600" />
-            </div>
-            <p className="text-lg font-medium text-foreground">{message}</p>
-          </>
-        )}
-        {status === "error" && (
-          <>
-            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-              <XCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <p className="text-lg font-medium text-foreground">{message}</p>
-            <p className="text-sm text-muted-foreground mt-2">Redirecting to login...</p>
-          </>
-        )}
-      </div>
-    </div>
+    <AuthShell
+      asideTitle="One secure handoff, then you are back in the game."
+      asideDescription="Sportsbnb is confirming your session and checking where your account should continue."
+    >
+      <section aria-labelledby="callback-heading">
+        <AuthHeading
+          id="callback-heading"
+          title={status === "error" ? "Sign-in needs attention" : status === "success" ? "You are signed in" : "Completing sign in"}
+          description={status === "error" ? "We could not finish this authentication request." : "Keep this page open for a moment."}
+        />
+        <AuthPanel className="text-center">
+          <div aria-live="polite" aria-atomic="true" role={status === "error" ? "alert" : "status"}>
+            {status === "loading" && (
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <Loader2 aria-hidden="true" className="h-7 w-7 animate-spin motion-reduce:animate-none" />
+              </div>
+            )}
+            {status === "success" && (
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <CheckCircle2 aria-hidden="true" className="h-7 w-7" />
+              </div>
+            )}
+            {status === "error" && (
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <XCircle aria-hidden="true" className="h-7 w-7" />
+              </div>
+            )}
+            <p className="mt-5 font-medium text-foreground">{message}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {status === "loading"
+                ? "We are verifying the secure response."
+                : status === "success"
+                  ? "Taking you to the right Sportsbnb workspace…"
+                  : "Returning you to sign in…"}
+            </p>
+          </div>
+          {status === "error" && (
+            <Button asChild variant="outline" className="mt-6 w-full">
+              <Link to="/login">Return to sign in now</Link>
+            </Button>
+          )}
+        </AuthPanel>
+      </section>
+    </AuthShell>
   );
 };
 

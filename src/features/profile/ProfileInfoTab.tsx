@@ -61,7 +61,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
 
   return (
     <>
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           {/* First heading under the page h1, so h2 — the CardTitle default
               of h3 skipped a level here. */}
@@ -71,7 +71,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
@@ -106,7 +106,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
             )}
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -132,7 +132,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="city">City</Label>
               <Input
@@ -180,15 +180,15 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
           )}
 
           {!isOwner && (
-            <div className="space-y-2">
-              <Label>Gender</Label>
+            <fieldset className="space-y-2.5">
+              <legend className="text-sm font-medium text-foreground">Gender</legend>
               <RadioGroup
                 value={formData.gender}
                 onValueChange={(value) => setFormData({ ...formData, gender: value })}
-                className="flex flex-wrap gap-4"
+                className="flex flex-wrap gap-2"
               >
                 {["male", "female", "other", "prefer not to say"].map((gender) => (
-                  <div key={gender} className="flex items-center space-x-2">
+                  <div key={gender} className="flex min-h-11 items-center space-x-2 rounded-lg border border-border px-3">
                     <RadioGroupItem value={gender} id={`gender-${gender}`} />
                     <Label htmlFor={`gender-${gender}`} className="font-normal cursor-pointer capitalize">
                       {gender}
@@ -196,15 +196,15 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                   </div>
                 ))}
               </RadioGroup>
-            </div>
+            </fieldset>
           )}
         </CardContent>
       </Card>
 
       {/* Sports Preferences */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>{isOwner ? "Sports Offered" : "Sports Preferences"}</CardTitle>
+          <CardTitle as="h2">{isOwner ? "Sports Offered" : "Sports Preferences"}</CardTitle>
           <CardDescription>
             {isOwner
               ? "Select the sports available at your venue."
@@ -212,7 +212,9 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <fieldset>
+            <legend className="sr-only">{isOwner ? "Sports offered" : "Preferred sports"}</legend>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {SPORTS_OPTIONS.map((sport) => {
               const isSelected = isOwner
                 ? formData.sportsOffered.includes(sport)
@@ -229,10 +231,10 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                 <Label
                   key={sport}
                   htmlFor={id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all font-normal ${
+                  className={`min-h-12 cursor-pointer rounded-lg border p-3 font-normal transition-[background-color,border-color,color] duration-150 motion-reduce:transition-none flex items-center gap-3 ${
                     isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
+                      ? "border-primary bg-primary-soft text-primary"
+                      : "border-border bg-background hover:border-border-strong hover:bg-surface-1"
                   }`}
                 >
                   <Checkbox
@@ -244,15 +246,16 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                 </Label>
               );
             })}
-          </div>
+            </div>
+          </fieldset>
 
           {!isOwner && (
-            <div className="space-y-3">
-              <Label>Skill Level</Label>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-foreground">Skill level</legend>
               <RadioGroup
                 value={formData.skillLevel}
                 onValueChange={(value) => setFormData({ ...formData, skillLevel: value })}
-                className="grid grid-cols-3 gap-3"
+                className="grid grid-cols-1 gap-2.5 sm:grid-cols-3"
               >
                 {[
                   { value: "beginner", label: "Beginner" },
@@ -263,26 +266,26 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
                     <RadioGroupItem value={level.value} id={`skill-${level.value}`} className="peer sr-only" />
                     <Label
                       htmlFor={`skill-${level.value}`}
-                      className="flex items-center justify-center rounded-lg border-2 border-border-interactive bg-card p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                      className="flex min-h-12 cursor-pointer items-center justify-center rounded-lg border border-border-interactive bg-background p-3 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary-soft peer-data-[state=checked]:text-primary motion-reduce:transition-none"
                     >
                       <span className="font-medium">{level.label}</span>
                     </Label>
                   </div>
                 ))}
               </RadioGroup>
-            </div>
+            </fieldset>
           )}
 
           <Button onClick={handleSaveProfile} disabled={isSaving}>
             {isSaving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 Saving...
               </>
             ) : (
               <>
-                <Check className="h-4 w-4 mr-2" />
-                Save Changes
+                <Check className="h-4 w-4" aria-hidden="true" />
+                Save changes
               </>
             )}
           </Button>
@@ -290,11 +293,11 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
       </Card>
 
       {/* Currency Preferences Card */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Currency Preferences
+          <CardTitle as="h2" className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" aria-hidden="true" />
+            Currency preferences
           </CardTitle>
           <CardDescription>
             Choose your preferred currency for displaying prices.
@@ -307,7 +310,7 @@ const ProfileInfoTab = ({ isOwner, formData, setFormData, avatarFile, onProfileS
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="currency">Display Currency</Label>
+            <Label htmlFor="currency">Display currency</Label>
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger id="currency" className="w-full">
                 <SelectValue placeholder="Select currency" />
