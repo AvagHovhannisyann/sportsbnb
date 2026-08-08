@@ -65,6 +65,22 @@ import { newStubbedPage, waitForAppReady } from '../scripts/lib/stub-page.mjs';
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:4173';
 
 /**
+ * The hero's control ids.
+ *
+ * `HeroSearch` renders its form twice — once inside the mobile sheet, once as
+ * the desktop bar — and both stay mounted, so the ids are prefixed per copy
+ * rather than shared. They used to be bare `#hero-sport` and `#hero-location`,
+ * which meant two elements answered to each id whenever both copies existed;
+ * this file drove whichever the browser returned first.
+ *
+ * These run at 1440px, where the desktop bar is the visible one. Written as
+ * constants because the same two ids appear in five places below, and the
+ * previous rename broke all five at once with a 30s timeout apiece.
+ */
+const HERO_SPORT = '#hero-desktop-sport';
+const HERO_LOCATION = '#hero-desktop-location';
+
+/**
  * What the fixture venue is. The narrowing cases are chosen against it: a
  * sport it does not offer and a place it is not in must both empty the page.
  */
@@ -93,7 +109,7 @@ async function open(path) {
  * the same name a screen reader would, which is the one on screen.
  */
 async function pickSport(page, label) {
-  await page.click('#hero-sport');
+  await page.click(HERO_SPORT);
   await page.waitForSelector('[role="option"]', { timeout: 10000 });
   await page.getByRole('option', { name: label, exact: true }).click();
   await page.waitForTimeout(150);
@@ -112,7 +128,7 @@ async function venueCount(page) {
 
 {
   const page = await open('/');
-  await page.click('#hero-sport');
+  await page.click(HERO_SPORT);
   await page.waitForSelector('[role="option"]', { timeout: 10000 });
   const labels = (
     await page.$$eval('[role="option"]', (els) => els.map((el) => el.textContent?.trim() ?? ''))
@@ -133,7 +149,7 @@ async function venueCount(page) {
     if (emitted !== label) wrong.push({ label, emitted });
     // Client-side navigation, so back is instant and the bar remounts clean.
     await page.goBack();
-    await page.waitForSelector('#hero-sport', { timeout: 15000 });
+    await page.waitForSelector(HERO_SPORT, { timeout: 15000 });
   }
   await page.context().close();
 
@@ -170,7 +186,7 @@ async function venueCount(page) {
 
     for (const c of cases) {
       const page = await open('/');
-      if (c.location) await page.fill('#hero-location', c.location);
+      if (c.location) await page.fill(HERO_LOCATION, c.location);
       if (c.sport) await pickSport(page, c.sport);
       await page.click('button:has-text("Search")');
       await waitForAppReady(page);
@@ -196,7 +212,7 @@ async function venueCount(page) {
 
 {
   const page = await open('/');
-  await page.fill('#hero-location', FIXTURE.city);
+  await page.fill(HERO_LOCATION, FIXTURE.city);
   await pickSport(page, FIXTURE.sport);
   await page.click('button:has-text("Search")');
   await waitForAppReady(page);
