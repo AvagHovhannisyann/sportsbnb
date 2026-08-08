@@ -12,8 +12,16 @@ const log = makeLogger("payments-refund");
  * Callable by: the booking's player, the venue owner, or an admin.
  * Body: { bookingId, reason? }
  *
- * Ameria: API refund. Idram: no API — payment goes to refund_pending and an
- * admin completes it manually in the merchant cabinet, then confirms.
+ * Lemon Squeezy refunds through its API (POST /v1/orders/<id>/refund), so the
+ * normal path completes here and the ledger is written in the same request.
+ *
+ * The `manual` branch below is still reachable and still correct: the adapter
+ * returns manual:true when the payment carries no provider order id, which
+ * happens when the order_created webhook never landed. There is nothing to
+ * refund through the API in that state, so it is queued for a human rather than
+ * reported as a success. Legacy ameria/idram rows cannot reach this function at
+ * all — getProvider() throws for them — and must be refunded in their own
+ * merchant cabinet and reconciled by hand.
  */
 Deno.serve(async (req) => {
   const preflight = handlePreflight(req);

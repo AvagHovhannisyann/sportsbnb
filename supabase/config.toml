@@ -77,6 +77,11 @@ verify_jwt = true
 [functions.payments-refund]
 verify_jwt = true
 
+# Reports whether a real card payment would work right now. Admin-only: the
+# output names store, variant and commission configuration.
+[functions.payments-preflight]
+verify_jwt = true
+
 # Provider callbacks verify server-side. Lemon Squeezy is the only live
 # provider: its webhook authenticates with an X-Signature HMAC-SHA256 over the
 # raw body. The Ameria and Idram callbacks stay deployed for history but are
