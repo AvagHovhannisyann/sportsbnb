@@ -7,7 +7,12 @@ import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { useAvailableSlots, useCreateBookingHold, formatAmd } from "./hooks/useBookingFlow";
+import {
+  useAvailableSlots,
+  useBookingQuote,
+  useCreateBookingHold,
+  formatAmd,
+} from "./hooks/useBookingFlow";
 import { useVenueHours } from "@/hooks/useAvailability";
 import { useVenuePolicy } from "@/hooks/useVenuePolicies";
 import { VENUE_TIME_ZONE, atVenue } from "@/lib/venueTime";
@@ -182,6 +187,7 @@ export function BookingPanel({
   }, [slots, initialTime]);
 
   const selected = slots?.find((s) => s.slot_start === selectedSlot);
+  const quote = useBookingQuote(venueId, selected?.slot_start, selected?.slot_end);
 
   return (
     // Every figure in this panel goes through formatAmd. Two of them used to
@@ -338,24 +344,53 @@ export function BookingPanel({
       <div aria-live="polite" className="mb-5 min-h-14">
         {selected ? (
           <div className="surface-inset rounded-lg p-4 text-sm">
-            {/* No service-fee row: Sportsbnb charges no commission, so the venue
-              price and the total are the same figure. This used to add a
-              hardcoded 5% here (`* 0.05`) and again in the total (`* 1.05`) —
-              a fee the platform no longer takes, quoted to the player before
-              the server had priced anything. The venue line and the total are
-              now both the listed rate, which is what create_booking_hold()
-              returns and what actually gets charged. */}
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">1 hour</span>
-              <span className="stat-numeral font-medium">{formatAmd(pricePerHour * 100)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-2 font-semibold">
-              <span>Total</span>
-              <span className="stat-numeral">{formatAmd(pricePerHour * 100)}</span>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              No booking fee — you pay the venue's listed price.
-            </p>
+            {/* Every figure here comes from quote_booking_price() — the same
+              function create_booking_hold() prices from — so the panel cannot
+              quote one total and checkout charge another.
+
+              It used to assert "No booking fee" and print the listed rate as
+              the total. That held only while the service fee was zero, and
+              before that the panel carried its own hardcoded 5%, applied once
+              here and again in the total, for a fee the server never charged.
+              Both failures come from the client deciding the price. It no
+              longer does. */}
+            {quote.isLoading ? (
+              <p className="text-muted-foreground">Pricing this slot…</p>
+            ) : quote.data ? (
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    {quote.data.hours === 1 ? "1 hour" : `${quote.data.hours} hours`}
+                  </span>
+                  <span className="stat-numeral font-medium">
+                    {formatAmd(quote.data.owner_amount_minor)}
+                  </span>
+                </div>
+                {quote.data.platform_fee_minor > 0 && (
+                  <div className="mt-2 flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Service fee</span>
+                    <span className="stat-numeral font-medium">
+                      {formatAmd(quote.data.platform_fee_minor)}
+                    </span>
+                  </div>
+                )}
+                <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-2 font-semibold">
+                  <span>Total</span>
+                  <span className="stat-numeral">{formatAmd(quote.data.amount_minor)}</span>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {quote.data.platform_fee_minor > 0
+                    ? "The venue is paid its listed price in full; the service fee covers payment processing."
+                    : "No booking fee — you pay the venue's listed price."}
+                </p>
+              </>
+            ) : (
+              // Never fall back to a price computed here. A failed quote is the
+              // one case where showing a number is worse than showing none.
+              <p className="text-muted-foreground">
+                Couldn&apos;t price this slot just now — the total is confirmed at checkout.
+              </p>
+            )}
           </div>
         ) : (
           <p className="flex min-h-14 items-center rounded-lg border border-dashed border-border px-4 text-sm text-muted-foreground">

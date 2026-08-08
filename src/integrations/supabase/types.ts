@@ -2612,6 +2612,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      quote_booking_price: {
+        Args: {
+          p_court_id?: string
+          p_ends_at: string
+          p_starts_at: string
+          p_venue_id: string
+        }
+        Returns: Json
+      }
       send_system_message: {
         Args: { p_message: string; p_room_id: string }
         Returns: string

@@ -5,7 +5,7 @@ import { adminClient } from "../_shared/supabase.ts";
 
 const log = makeLogger("payouts-run");
 
-const MIN_PAYOUT_MINOR = 10_000 * 100; // ₸10,000
+const MIN_PAYOUT_MINOR = 10_000 * 100; // ֏10,000 — Armenian dram, not ₸ (tenge)
 
 /**
  * Payout operations. Callable by admins or cron.
