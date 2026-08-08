@@ -180,7 +180,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
       >
         <Sparkles className={cn("h-5 w-5", hasMobileNav && "md:h-5 md:w-5")} aria-hidden="true" />
         {hasMobileNav && (
-          <span className="text-[11px] font-medium leading-none md:sr-only">Ask</span>
+          <span className="text-xs font-medium leading-none md:sr-only">Ask</span>
         )}
       </button>
     );
@@ -209,7 +209,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
           </Avatar>
           <div>
             <p id="sportsbnb-assistant-title" className="text-sm font-semibold leading-none text-foreground">SportsBnB assistant</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">Venues, bookings, and games</p>
+            <p className="mt-1 text-xs text-muted-foreground">Venues, bookings, and games</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -239,7 +239,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
 
             {/* Suggestion chips */}
             <div className="space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Quick questions</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Quick questions</p>
               <div className="grid gap-2">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -263,7 +263,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
               <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
                 {msg.role === "assistant" && (
                   <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                    <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
                       <Sparkles className="h-3.5 w-3.5" />
                     </AvatarFallback>
                   </Avatar>
@@ -289,7 +289,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-2 justify-start">
                 <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                  <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     <Sparkles className="h-3.5 w-3.5" />
                   </AvatarFallback>
                 </Avatar>
@@ -319,7 +319,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">Powered by AI · Responses may not always be accurate</p>
+        <p className="text-xs text-muted-foreground text-center mt-2">Powered by AI · Responses may not always be accurate</p>
       </div>
     </Card>
   );

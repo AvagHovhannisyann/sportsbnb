@@ -130,7 +130,7 @@ type AuthHeadingProps = {
 export function AuthHeading({ title, description, className, id }: AuthHeadingProps) {
   return (
     <header className={cn("mb-6", className)}>
-      <h1 id={id} className="font-display text-3xl font-semibold leading-tight tracking-extra-tight text-foreground sm:text-[2rem]">
+      <h1 id={id} className="font-display text-3xl font-semibold leading-tight tracking-extra-tight text-foreground sm:text-3xl">
         {title}
       </h1>
       <p className="mt-2 text-base leading-relaxed text-muted-foreground">{description}</p>

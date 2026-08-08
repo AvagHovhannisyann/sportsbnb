@@ -280,7 +280,7 @@ const VenueDetailsPage = () => {
                             >
                               {day}
                               {isToday && (
-                                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
                                   Today
                                 </span>
                               )}

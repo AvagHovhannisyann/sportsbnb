@@ -105,7 +105,7 @@ const MobileNav = () => {
                 aria-hidden="true"
               />
               <span
-                className={`max-w-full truncate text-[11px] tracking-tight leading-none ${
+                className={`max-w-full truncate text-xs tracking-tight leading-none ${
                   active ? "text-primary font-semibold" : "text-muted-foreground font-medium"
                 }`}
               >

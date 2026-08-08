@@ -97,7 +97,7 @@ const WeatherWidget = ({ latitude, longitude, isIndoor }: WeatherWidgetProps) =>
                     {Math.round(daily.temperature_2m_max[i])}°
                   </p>
                   {daily.precipitation_probability_max[i] > 20 && (
-                    <div className="flex items-center justify-center gap-0.5 text-[11px] text-information">
+                    <div className="flex items-center justify-center gap-0.5 text-xs text-information">
                       <Droplets className="h-3 w-3" aria-hidden="true" />
                       {daily.precipitation_probability_max[i]}%
                     </div>

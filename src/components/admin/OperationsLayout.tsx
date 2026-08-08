@@ -71,10 +71,10 @@ function OperationsSidebar({
         >
           <img src="/favicon.png" alt="" className="h-7 w-7 rounded-md" />
           <span className="min-w-0">
-            <span className="block truncate font-display text-[0.9375rem] font-semibold leading-5 tracking-extra-tight">
+            <span className="block truncate font-display text-ui font-semibold leading-5 tracking-extra-tight">
               Sportsbnb
             </span>
-            <span className="block truncate text-[0.6875rem] font-medium leading-4 text-muted-foreground">
+            <span className="block truncate text-xs font-medium leading-4 text-muted-foreground">
               Operations
             </span>
           </span>
@@ -83,7 +83,7 @@ function OperationsSidebar({
 
       <ScrollArea className="min-h-0 flex-1">
         <nav aria-label="Operations workspace" className="px-3 py-4">
-          <p className="mb-1.5 px-3 text-[0.6875rem] font-semibold leading-4 tracking-wide text-muted-foreground">
+          <p className="mb-1.5 px-3 text-xs font-semibold leading-4 tracking-wide text-muted-foreground">
             Workspaces
           </p>
           <div className="space-y-0.5">

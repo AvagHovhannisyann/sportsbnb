@@ -241,9 +241,9 @@ export function BookingPanel({
                   : "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent",
               )}
             >
-              <span className="text-[11px] font-medium opacity-80">{d.weekday}</span>
+              <span className="text-xs font-medium opacity-80">{d.weekday}</span>
               <span className="stat-numeral text-base font-semibold leading-tight">{d.day}</span>
-              <span className="text-[11px] opacity-80">{d.month}</span>
+              <span className="text-xs opacity-80">{d.month}</span>
             </button>
           ))}
         </div>

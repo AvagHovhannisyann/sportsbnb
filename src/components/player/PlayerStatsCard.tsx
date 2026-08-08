@@ -63,7 +63,7 @@ const PlayerStatsCard = () => {
             <div key={label} className="min-w-0 px-2 py-4 text-center sm:px-3">
               <Icon className={`mx-auto mb-2 h-5 w-5 ${color}`} aria-hidden="true" />
               <div className="stat-numeral text-2xl font-bold tabular-nums text-foreground">{value}</div>
-              <div className="mt-1 text-[11px] leading-4 text-muted-foreground sm:text-xs">{label}</div>
+              <div className="mt-1 text-xs leading-4 text-muted-foreground sm:text-xs">{label}</div>
             </div>
           ))}
         </div>

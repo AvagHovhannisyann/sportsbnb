@@ -47,7 +47,7 @@ export const Logo = ({
     ) : (
       <span className="inline-flex items-baseline gap-[0.4em]">
         <span className="inline-flex shrink-0 items-center self-center">{mark}</span>
-        <span className="font-display text-[1.05rem] md:text-[1.3rem] font-bold leading-none tracking-[-0.03em]">
+        <span className="font-display text-base md:text-xl font-bold leading-none tracking-[-0.03em]">
           <span className="text-foreground">Sports</span>
           <span className="text-primary">bnb</span>
         </span>

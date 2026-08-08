@@ -171,7 +171,7 @@ function Metric({
       >
         {value}
       </dd>
-      <dd className="mt-0.5 text-[0.6875rem] leading-4 text-muted-foreground">{hint}</dd>
+      <dd className="mt-0.5 text-xs leading-4 text-muted-foreground">{hint}</dd>
     </div>
   );
 }

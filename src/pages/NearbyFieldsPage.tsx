@@ -349,7 +349,7 @@ const NearbyFieldsPage: React.FC = () => {
                       </p>
                     )}
                     {selectedMarker.peak_hours && (
-                      <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                         <TrendingUp className="h-3 w-3" aria-hidden="true" />
                         Peak: {selectedMarker.peak_hours}
                       </p>
@@ -361,7 +361,7 @@ const NearbyFieldsPage: React.FC = () => {
                       </p>
                     )}
                     {selectedMarker.address && (
-                      <p className="mt-1 text-[11px] text-muted-foreground">{selectedMarker.address}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{selectedMarker.address}</p>
                     )}
                   </YandexPopup>
                 )}
@@ -387,7 +387,7 @@ const NearbyFieldsPage: React.FC = () => {
                         {selectedMarker.rating} ({selectedMarker.review_count || 0} reviews)
                       </p>
                     )}
-                    <p className="mt-1 text-[11px] text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {selectedMarker.address || selectedMarker.city}
                     </p>
                     <a

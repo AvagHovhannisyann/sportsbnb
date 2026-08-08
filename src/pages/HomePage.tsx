@@ -186,12 +186,12 @@ const HomePage = () => {
                       <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-display text-sm font-semibold leading-5 text-foreground sm:text-[15px]">
+                      <p className="font-display text-sm font-semibold leading-5 text-foreground sm:text-ui">
                         Confirmed — Thursday, 19:00
                       </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground sm:text-[13px]">
+                      <p className="mt-0.5 text-xs text-muted-foreground sm:text-meta">
                         Ararat Arena · 90 min ·{" "}
-                        <Price amount={12000} className="text-xs sm:text-[13px]" />
+                        <Price amount={12000} className="text-xs sm:text-meta" />
                       </p>
                     </div>
                   </div>
@@ -222,7 +222,7 @@ const HomePage = () => {
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">0{index + 1}</span>
               </div>
               <h3 className="mt-5 font-display text-lg font-semibold text-foreground">{step.title}</h3>
-              <p className="mt-2 text-[15px] leading-7 text-foreground-soft">{step.body}</p>
+              <p className="mt-2 text-ui leading-7 text-foreground-soft">{step.body}</p>
             </li>
           ))}
         </ol>
@@ -281,7 +281,7 @@ const HomePage = () => {
                 "Cancellation terms are shown before you pay",
                 "Card payment and prices are handled in Armenian dram",
               ].map((item) => (
-                <li key={item} className="flex gap-3 text-[15px] leading-6 text-foreground-soft">
+                <li key={item} className="flex gap-3 text-ui leading-6 text-foreground-soft">
                   <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" strokeWidth={2.25} aria-hidden="true" />
                   <span>{item}</span>
                 </li>
@@ -306,7 +306,7 @@ const HomePage = () => {
               ].map(({ time, state }) => (
                 <li
                   key={time}
-                  className={`rounded-lg border px-2 py-2.5 text-center font-mono text-[13px] tabular-nums ${
+                  className={`rounded-lg border px-2 py-2.5 text-center font-mono text-meta tabular-nums ${
                     state === "picked"
                       ? "border-primary bg-primary font-semibold text-primary-foreground"
                       : state === "taken"

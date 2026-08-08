@@ -131,7 +131,7 @@ const ContactPage = () => {
                         {value}
                       </a>
                     ) : (
-                      <p className="mt-1 text-[15px] leading-relaxed text-foreground">{value}</p>
+                      <p className="mt-1 text-ui leading-relaxed text-foreground">{value}</p>
                     )}
                   </div>
                 </li>
