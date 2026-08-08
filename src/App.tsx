@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "
 import { AuthProvider } from "@/hooks/useAuth";
 import { CurrencyProvider } from "@/hooks/useCurrency";
 import { RegionProvider } from "@/hooks/useRegion";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import { YandexMapsProvider } from "@/components/maps/YandexMapsProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
@@ -21,6 +22,7 @@ import HomePage from "./pages/HomePage";
 
 // Lazy load all other pages
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
+const OwnerGuidePage = lazy(() => import("./pages/OwnerGuidePage"));
 const CommunityPage = lazy(() => import("./pages/CommunityPage"));
 const GamesPage = lazy(() => import("./pages/GamesPage"));
 const CreateGamePage = lazy(() => import("./pages/CreateGamePage"));
@@ -127,6 +129,7 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <YandexMapsProvider>
         <AuthProvider>
+          <LanguageProvider>
           <RegionProvider>
           <CurrencyProvider>
             <TooltipProvider>
@@ -245,6 +248,7 @@ const App = () => {
                     <Route path="/booking/:bookingId/status" element={<ProtectedRoute><BookingStatusPage /></ProtectedRoute>} />
                     <Route path="/pay/mock/:paymentId" element={<ProtectedRoute><MockPayPage /></ProtectedRoute>} />
                     {/* Admin */}
+                    <Route path="/owner-guide" element={<OwnerGuidePage />} />
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                     <Route path="/operator" element={<AdminRoute><OperatorDashboard /></AdminRoute>} />
                     <Route path="/operator/outreach" element={<AdminRoute><OutreachConsole /></AdminRoute>} />
@@ -256,6 +260,7 @@ const App = () => {
             </TooltipProvider>
           </CurrencyProvider>
           </RegionProvider>
+          </LanguageProvider>
         </AuthProvider>
         </YandexMapsProvider>
       </QueryClientProvider>

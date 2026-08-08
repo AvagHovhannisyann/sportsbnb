@@ -7,6 +7,7 @@ import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/hooks/useLanguage";
 import {
   useAvailableSlots,
   useBookingQuote,
@@ -52,6 +53,7 @@ export function BookingPanel({
 }: BookingPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const t = useTranslation();
   // Only a date this strip actually offers. A stale link to last month would
   // otherwise select a date with no button to show it as selected, and no way
   // back to today.
@@ -206,9 +208,9 @@ export function BookingPanel({
             id="booking-panel-title"
             className="font-display text-lg font-semibold leading-tight tracking-extra-tight"
           >
-            Reserve this venue
+            {t("booking.reserveThisVenue")}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Choose a date and an available hour.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("booking.chooseDateAndHour")}</p>
         </div>
         <div className="shrink-0 text-right">
           <Price
@@ -355,7 +357,7 @@ export function BookingPanel({
               Both failures come from the client deciding the price. It no
               longer does. */}
             {quote.isLoading ? (
-              <p className="text-muted-foreground">Pricing this slot…</p>
+              <p className="text-muted-foreground">{t("booking.pricingSlot")}</p>
             ) : quote.data ? (
               <>
                 <div className="flex items-center justify-between gap-4">
@@ -368,33 +370,33 @@ export function BookingPanel({
                 </div>
                 {quote.data.platform_fee_minor > 0 && (
                   <div className="mt-2 flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Service fee</span>
+                    <span className="text-muted-foreground">{t("booking.serviceFee")}</span>
                     <span className="stat-numeral font-medium">
                       {formatAmd(quote.data.platform_fee_minor)}
                     </span>
                   </div>
                 )}
                 <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-2 font-semibold">
-                  <span>Total</span>
+                  <span>{t("booking.total")}</span>
                   <span className="stat-numeral">{formatAmd(quote.data.amount_minor)}</span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   {quote.data.platform_fee_minor > 0
-                    ? "The venue is paid its listed price in full; the service fee covers payment processing."
-                    : "No booking fee — you pay the venue's listed price."}
+                    ? t("booking.feeExplainer")
+                    : t("booking.noBookingFee")}
                 </p>
               </>
             ) : (
               // Never fall back to a price computed here. A failed quote is the
               // one case where showing a number is worse than showing none.
               <p className="text-muted-foreground">
-                Couldn&apos;t price this slot just now — the total is confirmed at checkout.
+                {t("booking.quoteUnavailable")}
               </p>
             )}
           </div>
         ) : (
           <p className="flex min-h-14 items-center rounded-lg border border-dashed border-border px-4 text-sm text-muted-foreground">
-            Select an available time to see your total.
+            {t("booking.selectTimeToSeeTotal")}
           </p>
         )}
       </div>

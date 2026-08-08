@@ -45,7 +45,7 @@ ADMIN="/admin /operator /operator/outreach /create-game /create-team
 # different header signed out, so they are worth the pass too.
 ANON="/ /login /signup /forgot-password /reset-password /venues /games
   /community /teams /about /for-owners /faq /contact /nearby
-  /venue/:venue /blog /demo"
+  /venue/:venue /blog /demo /owner-guide"
 
 # The other branch of every list page: a signed-in account with no
 # data. The fixtures here are populated on purpose — an audit
