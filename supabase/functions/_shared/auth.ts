@@ -56,6 +56,52 @@ export function requireCronSecret(req: Request): void {
   throw new HttpError(401, "unauthorized");
 }
 
+/**
+ * True when the caller presented a genuine service-role key.
+ *
+ * requireCronSecret() authenticates a machine caller by string-comparing the
+ * Authorization header against SUPABASE_SERVICE_ROLE_KEY. That silently stops
+ * working on a project running both the legacy JWT keys and the newer
+ * sb_secret_/sb_publishable_ scheme: the injected env var and the key an
+ * operator copies out of the dashboard become two different strings for the
+ * same authority, the comparison fails, and every cron-invoked function
+ * answers 401 to a perfectly valid key. It is the reason payouts-run and
+ * payments-preflight both refused a working service-role token.
+ *
+ * Asking Postgres what role it resolved settles it without a shared secret.
+ * PostgREST verifies the JWT signature against the project secret before any
+ * SQL runs — a token with an altered payload is rejected as "Invalid API key"
+ * rather than reaching current_jwt_role() — so the only way to get
+ * "service_role" back is to hold a real one.
+ *
+ * Fails closed: any non-200, any unexpected body, any network error is false.
+ */
+export async function isServiceRoleToken(req: Request): Promise<boolean> {
+  const auth = req.headers.get("Authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) return false;
+  const token = auth.slice("Bearer ".length).trim();
+  if (!token) return false;
+
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!url) return false;
+
+  try {
+    const res = await fetch(`${url}/rest/v1/rpc/current_jwt_role`, {
+      method: "POST",
+      headers: {
+        apikey: token,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) return false;
+    return (await res.json()) === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
   const ab = enc.encode(a);

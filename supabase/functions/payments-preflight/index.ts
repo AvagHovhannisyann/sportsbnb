@@ -1,6 +1,6 @@
 import { handlePreflight } from "../_shared/cors.ts";
 import { json, makeLogger } from "../_shared/http.ts";
-import { requireAdmin, requireCronSecret, HttpError } from "../_shared/auth.ts";
+import { requireAdmin, requireCronSecret, isServiceRoleToken, HttpError } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/supabase.ts";
 
 /**
@@ -96,10 +96,15 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
 
   try {
-    try {
-      requireCronSecret(req);
-    } catch {
-      await requireAdmin(req);
+    // Service-role key, then the cron secret, then an admin JWT. The first is
+    // checked by asking Postgres what role it resolved rather than by string
+    // comparison — see isServiceRoleToken().
+    if (!(await isServiceRoleToken(req))) {
+      try {
+        requireCronSecret(req);
+      } catch {
+        await requireAdmin(req);
+      }
     }
 
     const checks: Check[] = [];
