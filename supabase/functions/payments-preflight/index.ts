@@ -2,7 +2,27 @@ import { handlePreflight } from "../_shared/cors.ts";
 import { json, makeLogger } from "../_shared/http.ts";
 import { requireAdmin, requireCronSecret, HttpError } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/supabase.ts";
-import { storeCurrency, storeId } from "../_shared/providers/lemonsqueezy.ts";
+
+/**
+ * Read the same two env vars the Lemon Squeezy adapter reads, with the same
+ * defaults, rather than importing them from it.
+ *
+ * The adapter is the money path. A diagnostic has no business dragging the
+ * checkout, verify and refund code into its own bundle just to learn a store
+ * id — and keeping this dependency-free is what lets the function be deployed
+ * on its own without shipping a copy of the payment code alongside it.
+ *
+ * The cost is that these defaults are stated twice. They are covered by
+ * check 3 below: if the two ever disagree with the live store, the store
+ * currency check fails loudly rather than drifting unnoticed.
+ */
+function storeId(): string {
+  return Deno.env.get("LEMONSQUEEZY_STORE_ID") ?? "440378";
+}
+
+function storeCurrency(): string {
+  return Deno.env.get("LEMONSQUEEZY_STORE_CURRENCY") ?? "AMD";
+}
 
 const log = makeLogger("payments-preflight");
 

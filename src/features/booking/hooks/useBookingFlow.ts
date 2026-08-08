@@ -92,6 +92,55 @@ export function useAvailableSlots(venueId: string | undefined, date: string | un
   });
 }
 
+export interface BookingQuote {
+  owner_amount_minor: number;
+  platform_fee_minor: number;
+  amount_minor: number;
+  currency: string;
+  hours: number;
+  price_per_hour: number;
+  commission_bps: number;
+}
+
+/**
+ * What a slot will actually cost, priced by the server.
+ *
+ * The panel used to state the total itself — venue rate in, same number out,
+ * over the words "No booking fee". That is only true while the service fee is
+ * zero, and it is the kind of wrong that shows up as a customer being quoted
+ * one price and charged another one screen later.
+ *
+ * The fix is not to send the client the fee rate and let it multiply: the panel
+ * did carry its own rate once, a hardcoded 5% applied twice, and quoted a fee
+ * the server never charged. `quote_booking_price` is the same function
+ * `create_booking_hold` prices from, so what is shown here and what is charged
+ * cannot drift apart — they are one implementation.
+ */
+export function useBookingQuote(
+  venueId: string | undefined,
+  startsAt: string | undefined,
+  endsAt: string | undefined,
+  courtId?: string,
+) {
+  return useQuery({
+    queryKey: ["booking-quote", venueId, startsAt, endsAt, courtId ?? null],
+    enabled: !!venueId && !!startsAt && !!endsAt,
+    queryFn: async (): Promise<BookingQuote> => {
+      const { data, error } = await supabase.rpc("quote_booking_price", {
+        p_venue_id: venueId!,
+        p_starts_at: startsAt!,
+        p_ends_at: endsAt!,
+        p_court_id: courtId ?? null,
+      });
+      if (error) throw error;
+      return data as unknown as BookingQuote;
+    },
+    // Same reasoning as the slot lookup: one retry, then surface it. A quote
+    // that silently resolves to nothing must not be rendered as a free booking.
+    retry: 1,
+  });
+}
+
 export function useCreateBookingHold() {
   return useMutation({
     mutationFn: async (params: {
