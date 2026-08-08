@@ -3,8 +3,9 @@ import { StatusPanel } from "@/components/common/StatusPanel";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { type NeighborhoodRow, formatMoney } from "@/hooks/useOperatorMetrics";
+import { type NeighborhoodRow } from "@/hooks/useOperatorMetrics";
 import { TONE_CHIP } from "@/lib/chips";
+import { Money } from "@/components/operator/Money";
 
 export function NeighborhoodTable({ rows }: { rows: NeighborhoodRow[] }) {
   return (
@@ -63,8 +64,8 @@ export function NeighborhoodTable({ rows }: { rows: NeighborhoodRow[] }) {
                     </div>
                     <div className="min-w-0 text-right">
                       <dt className="text-xs leading-4 text-muted-foreground">GMV</dt>
-                      <dd className="stat-numeral mt-1 break-words font-semibold text-foreground">
-                        {formatMoney(row.gmv30d, row.currency)}
+                      <dd className="mt-1 break-words font-semibold text-foreground">
+                        <Money amount={row.gmv30d} currency={row.currency} />
                       </dd>
                     </div>
                   </dl>
@@ -103,8 +104,8 @@ export function NeighborhoodTable({ rows }: { rows: NeighborhoodRow[] }) {
                       <TableCell className="stat-numeral px-3 text-right">
                         {row.bookings30d.toLocaleString()}
                       </TableCell>
-                      <TableCell className="stat-numeral break-words px-3 text-right font-semibold text-foreground">
-                        {formatMoney(row.gmv30d, row.currency)}
+                      <TableCell className="break-words px-3 text-right font-semibold text-foreground">
+                        <Money amount={row.gmv30d} currency={row.currency} />
                       </TableCell>
                     </TableRow>
                   ))}

@@ -4,6 +4,7 @@ import { TONE_CHIP } from "@/lib/chips";
 import { Calendar, Search, Download, CheckCircle2, Clock3, Banknote, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Price } from "@/components/ui/price";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -171,10 +172,14 @@ const OwnerBookingsPage = () => {
           <Card><CardContent className="p-4">
             <Banknote className="h-5 w-5 text-brand-tuff" aria-hidden="true" />
             <p
-              className="stat-numeral mt-4 truncate text-xl font-semibold text-foreground sm:text-2xl"
+              className="mt-4 truncate text-xl font-semibold text-foreground sm:text-2xl"
               title={analyticsLoading || analyticsError ? "Unavailable" : `֏${(analytics?.totalRevenue || 0).toLocaleString()}`}
             >
-              {analyticsLoading || analyticsError ? "—" : `֏${(analytics?.totalRevenue || 0).toLocaleString()}`}
+              {analyticsLoading || analyticsError ? (
+                <span className="stat-numeral">—</span>
+              ) : (
+                <Price amount={analytics?.totalRevenue || 0} />
+              )}
             </p>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Confirmed revenue</p>
           </CardContent></Card>
@@ -319,7 +324,7 @@ const OwnerBookingsPage = () => {
                     </span>
                     <span className="text-right">
                       <span className="block text-xs text-muted-foreground">Amount</span>
-                      <span className="stat-numeral mt-0.5 block font-semibold text-foreground">֏{booking.total_price.toLocaleString()}</span>
+                      <span className="mt-0.5 block font-semibold text-foreground"><Price amount={booking.total_price} /></span>
                       <span className="block text-xs text-muted-foreground">
                         {booking.duration_hours} hour{booking.duration_hours !== 1 ? "s" : ""}
                       </span>
@@ -357,7 +362,7 @@ const OwnerBookingsPage = () => {
                       <p className="font-medium text-foreground">{format(parseISO(booking.booking_date), "MMM d, yyyy")}</p>
                       <p className="text-xs text-muted-foreground">{formatTimeOfDay(booking.booking_time)}</p>
                     </TableCell>
-                    <TableCell><p className="stat-numeral font-semibold text-foreground">֏{booking.total_price.toLocaleString()}</p></TableCell>
+                    <TableCell><p className="font-semibold text-foreground"><Price amount={booking.total_price} /></p></TableCell>
                     <TableCell>
                       {(() => {
                         const status = bookingStatusDescriptor(booking.status);

@@ -120,7 +120,7 @@ const Header = () => {
                 className={`relative rounded-md px-3.5 py-2 text-[13.5px] transition-colors duration-150 ${
                   isActive(link.href)
                     ? "text-foreground font-semibold"
-                    : "text-muted-foreground/90 font-medium hover:text-foreground"
+                    : "text-muted-foreground font-medium hover:text-foreground"
                 }`}
               >
                 {link.label}

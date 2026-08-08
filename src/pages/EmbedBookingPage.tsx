@@ -3,7 +3,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { Calendar, Clock, MapPin, Banknote, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getCustomerPrice, formatPrice } from "@/lib/pricing";
+import { getCustomerPrice } from "@/lib/pricing";
+import { Price } from "@/components/ui/price";
 import {
   DEFAULT_WIDGET_PRIMARY_COLOR,
   parseHexColor,
@@ -266,8 +267,8 @@ const EmbedBookingPage = () => {
               <Banknote className="h-4 w-4 shrink-0" aria-hidden="true" />
               Starting from
             </span>
-            <span className="stat-numeral whitespace-nowrap text-lg font-semibold text-foreground">
-              {formatPrice(getCustomerPrice(venue.pricePerHour))}/hr
+            <span className="whitespace-nowrap text-lg font-semibold text-foreground">
+              <Price amount={getCustomerPrice(venue.pricePerHour)} suffix="/hr" />
             </span>
           </div>
 

@@ -67,6 +67,11 @@ const BlogPage = () => {
               <Link
                 key={post.id}
                 to={`/blog/${post.slug}`}
+                // Named explicitly because the whole card is an <article>, and
+                // `article` is one of the roles Chrome's name-from-content
+                // algorithm will not descend into. The title is on screen and
+                // the link still read as an unnamed "link" to a screen reader.
+                aria-label={post.title}
                 className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
               >
                 <article className="h-full border-t border-border pt-4">

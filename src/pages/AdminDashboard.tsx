@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
 import { OperationsLayout } from "@/components/admin/OperationsLayout";
+import { Price } from "@/components/ui/price";
 import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
 import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
 import {
@@ -83,7 +84,6 @@ const PayoutsTab = lazy(() => import("@/components/admin/PayoutsTab"));
 
 type VenueDecision = { id: string; name: string } | null;
 
-const money = (amount: number) => `֏${amount.toLocaleString()}`;
 
 const initials = (name: string | null, email: string | null) => {
   if (name) {
@@ -338,7 +338,7 @@ const AdminDashboard = () => {
                               </p>
                             </div>
                             <div className="shrink-0 text-right">
-                              <p className="stat-numeral font-semibold text-foreground">{money(booking.total_price)}</p>
+                              <p className="font-semibold text-foreground"><Price amount={booking.total_price} /></p>
                               <Badge variant="secondary" className="mt-1">{status.label}</Badge>
                             </div>
                           </li>
@@ -522,7 +522,7 @@ const AdminDashboard = () => {
                             </div>
                             <div>
                               <dt className="text-xs text-muted-foreground">Rate</dt>
-                              <dd className="stat-numeral mt-0.5 text-foreground">{money(venue.price_per_hour)}/hr</dd>
+                              <dd className="mt-0.5 text-foreground"><Price amount={venue.price_per_hour} suffix="/hr" /></dd>
                             </div>
                           </dl>
                           <div className="mt-4 flex gap-2">
@@ -565,7 +565,7 @@ const AdminDashboard = () => {
                               </TableCell>
                               <TableCell>{venue.owner?.full_name || venue.owner?.email || "—"}</TableCell>
                               <TableCell>{venue.city || "—"}</TableCell>
-                              <TableCell className="stat-numeral text-right">{money(venue.price_per_hour)}/hr</TableCell>
+                              <TableCell className="text-right"><Price amount={venue.price_per_hour} suffix="/hr" /></TableCell>
                               <TableCell>
                                 <Badge className={venue.is_active ? TONE_CHIP.positive : TONE_CHIP.warning}>
                                   {venue.is_active ? "Active" : "Pending"}
@@ -644,7 +644,7 @@ const AdminDashboard = () => {
                               </div>
                               <div className="text-right">
                                 <dt className="text-xs text-muted-foreground">Amount</dt>
-                                <dd className="stat-numeral mt-0.5 font-semibold text-foreground">{money(booking.total_price)}</dd>
+                                <dd className="mt-0.5 font-semibold text-foreground"><Price amount={booking.total_price} /></dd>
                                 <dd className="text-xs text-muted-foreground">{booking.duration_hours} {booking.duration_hours === 1 ? "hour" : "hours"}</dd>
                               </div>
                             </dl>
@@ -675,7 +675,7 @@ const AdminDashboard = () => {
                                 <TableCell>{format(new Date(booking.booking_date), "MMM d, yyyy")}</TableCell>
                                 <TableCell>{formatTimeOfDay(booking.booking_time)}</TableCell>
                                 <TableCell className="stat-numeral text-right">{booking.duration_hours}h</TableCell>
-                                <TableCell className="stat-numeral text-right font-semibold">{money(booking.total_price)}</TableCell>
+                                <TableCell className="text-right font-semibold"><Price amount={booking.total_price} /></TableCell>
                                 <TableCell><Badge variant="secondary">{status.label}</Badge></TableCell>
                               </TableRow>
                             );

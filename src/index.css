@@ -1,5 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&display=swap");
+/* `&text=%D6%8F` subsets this to the dram sign alone — a ~1KB request rather
+   than the whole family at four weights. Every price in the app is written
+   with ֏, and none of the three primary faces contain it, so this one glyph is
+   the entire reason the family is loaded. Removing the subset costs a
+   full-family download on every page load for a single character. */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&text=%D6%8F&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -34,7 +39,7 @@
     --primary: 158 58% 23%;
     --primary-foreground: 42 30% 98%;
     --primary-soft: 154 30% 92%;
-    --brand-tuff: 14 46% 46%;
+    --brand-tuff: 14 46% 44%;
     --brand-tuff-soft: 15 43% 94%;
 
     /* ── Secondary — Basalt inverse surface ── */
@@ -307,7 +312,7 @@
     --primary: 158 58% 23%;
     --primary-foreground: 42 30% 98%;
     --primary-soft: 154 30% 92%;
-    --brand-tuff: 14 46% 46%;
+    --brand-tuff: 14 46% 44%;
     --brand-tuff-soft: 15 43% 94%;
     --muted: 40 16% 92%;
     --muted-foreground: 163 8% 40%;

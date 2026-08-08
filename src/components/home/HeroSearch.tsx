@@ -89,7 +89,14 @@ const HeroSearch = () => {
               placeholder="City or neighborhood"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              className="block min-h-8 w-full bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+              // The wrapping label carries the field's focus-within highlight,
+              // but that paints outside this input's own box — so the input
+              // itself repainted not one pixel when focused, which is what
+              // WCAG 2.4.7 is about and what focus-visible.mjs measures. An
+              // inset ring keeps the whole-field treatment and gives the
+              // focused control its own visible edge instead of relying on an
+              // ancestor to show it.
+              className="block min-h-8 w-full rounded-sm bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             />
           </span>
         </label>
