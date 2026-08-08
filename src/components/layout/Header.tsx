@@ -117,7 +117,7 @@ const Header = () => {
                 key={link.href}
                 to={link.href}
                 aria-current={isActive(link.href) ? "page" : undefined}
-                className={`relative rounded-md px-3.5 py-2 text-[13.5px] transition-colors duration-150 ${
+                className={`relative rounded-md px-3.5 py-2 text-meta transition-colors duration-150 ${
                   isActive(link.href)
                     ? "text-foreground font-semibold"
                     : "text-muted-foreground font-medium hover:text-foreground"

@@ -34,7 +34,7 @@ const PrivacyPolicyPage = () => (
         </p>
       </aside>
 
-      <div className="min-w-0 space-y-9 text-[15px] leading-7 text-foreground-soft">
+      <div className="min-w-0 space-y-9 text-ui leading-7 text-foreground-soft">
         <section aria-labelledby="privacy-introduction" className="border-t border-border pt-7 first:border-t-0 first:pt-0">
           <h2 id="privacy-introduction" className="text-xl font-semibold text-foreground">1. Introduction</h2>
           <p className="mt-3">

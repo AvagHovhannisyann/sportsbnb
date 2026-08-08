@@ -118,6 +118,30 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      fontSize: {
+        /**
+         * The two half-steps this design actually uses.
+         *
+         * Tailwind's scale jumps 12 → 14 → 16, and the product sits between
+         * those twice: metadata rows ("Yerevan · Football · 4.6") want 13, and
+         * dense body copy wants 15. Both were being written as `text-[13px]`
+         * and `text-[15px]` — 34 times across 21 files, which is a magic number
+         * repeated until it looks like a decision.
+         *
+         * Naming them makes them tokens, so the size can be changed in one
+         * place, and so a reviewer can tell "this is the metadata size" from
+         * "someone typed a number".
+         *
+         * Nothing smaller than `xs` (12px) exists on purpose. The codebase had
+         * `text-[10px]`, `text-[0.625rem]`, `text-[11px]` and `text-[0.6875rem]`
+         * in 21 places — below the floor for readable text, and small enough
+         * that letterspaced uppercase at that size is genuinely hard to read.
+         * They are all folded into `xs`; there is no token below it to reach
+         * for.
+         */
+        meta: ["0.8125rem", { lineHeight: "1.25rem" }], // 13px
+        ui: ["0.9375rem", { lineHeight: "1.5rem" }], // 15px
+      },
       fontFamily: {
         // These point at the CSS variables rather than restating the stacks,
         // because restating them is exactly how they went wrong. `--font-*` in

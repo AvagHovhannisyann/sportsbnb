@@ -42,16 +42,23 @@ export function LiveInventory() {
   if (isLoading) {
     return (
       <div
-        className="rounded-2xl border border-border bg-card p-2"
+        className="overflow-hidden rounded-2xl border border-border bg-card"
         role="status"
         aria-label="Loading venues"
       >
-        <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Skeleton className="h-3.5 w-28" />
           <Skeleton className="h-3.5 w-16" />
         </div>
+        {/* Same box as a loaded row — min-h-[4.5rem], px-4, py-3.5 — so the
+            swap from skeleton to content moves nothing. Matching only the
+            approximate height still shifts the page by a few pixels, which is
+            the thing reserving space was meant to prevent. */}
         {Array.from({ length: ROWS }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 border-t border-border px-3 py-4">
+          <div
+            key={i}
+            className="flex min-h-[4.5rem] items-center gap-4 border-t border-border px-4 py-3.5"
+          >
             <div className="min-w-0 flex-1 space-y-2">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-3 w-24" />
@@ -97,10 +104,10 @@ export function LiveInventory() {
               className="group flex min-h-[4.5rem] items-center gap-4 px-4 py-3.5 transition-colors duration-150 hover:bg-surface-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-display text-[15px] font-semibold leading-6 text-foreground">
+                <span className="block truncate font-display text-ui font-semibold leading-6 text-foreground">
                   {venue.name}
                 </span>
-                <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] leading-5 text-muted-foreground">
+                <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta leading-5 text-muted-foreground">
                   <span className="truncate">{venue.city}</span>
                   {venue.sports?.[0] && (
                     <>
@@ -126,9 +133,12 @@ export function LiveInventory() {
               <span className="shrink-0 text-right">
                 <Price
                   amount={venue.price_per_hour}
-                  className="text-[15px] font-semibold leading-6 text-foreground"
+                  className="text-ui font-semibold leading-6 text-foreground"
                 />
-                <span className="mt-0.5 block text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                {/* 12px, not 11. Uppercase with letterspacing reads smaller
+                    than its nominal size, and 11px was already under the floor
+                    this codebase holds for any visible text. */}
+                <span className="mt-0.5 block text-xs uppercase tracking-[0.08em] text-muted-foreground">
                   per hour
                 </span>
               </span>

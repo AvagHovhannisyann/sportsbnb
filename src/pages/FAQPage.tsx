@@ -148,7 +148,7 @@ const FAQPage = () => {
                         <AccordionTrigger className="py-5 text-left text-base font-medium">
                           {faq.q}
                         </AccordionTrigger>
-                        <AccordionContent className="max-w-3xl pb-5 text-[15px] leading-relaxed text-foreground-soft">
+                        <AccordionContent className="max-w-3xl pb-5 text-ui leading-relaxed text-foreground-soft">
                           {faq.a}
                         </AccordionContent>
                       </AccordionItem>

@@ -296,7 +296,7 @@ const EmbedBookingPage = () => {
                       : "border-border-interactive bg-background text-foreground hover:border-primary/50 hover:bg-accent"
                   }`}
                 >
-                  <span className="block text-[11px] font-medium opacity-80">{format(date, "EEE")}</span>
+                  <span className="block text-xs font-medium opacity-80">{format(date, "EEE")}</span>
                   <span className="stat-numeral block text-base font-semibold leading-tight">
                     {format(date, "d")}
                   </span>

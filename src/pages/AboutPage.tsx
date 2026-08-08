@@ -94,7 +94,7 @@ const AboutPage = () => (
             <li key={title} className="border-b border-border py-7 sm:min-h-48 sm:pr-10 md:py-9">
               <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} aria-hidden="true" />
               <h3 className="mt-5 text-xl font-semibold text-foreground">{title}</h3>
-              <p className="mt-2 max-w-md text-[15px] leading-relaxed text-foreground-soft">{description}</p>
+              <p className="mt-2 max-w-md text-ui leading-relaxed text-foreground-soft">{description}</p>
             </li>
           ))}
         </ul>

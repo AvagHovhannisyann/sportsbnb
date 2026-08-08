@@ -259,7 +259,7 @@ export function WeekCalendar({
                                 {formatTimeOfDay(booking.booking_time)} · {booking.duration_hours} hour{booking.duration_hours !== 1 ? "s" : ""}
                               </span>
                             </span>
-                            <span className={cn("shrink-0 rounded-full border px-2 py-1 text-[0.6875rem] font-semibold", statusClasses[bookingStatus.tone])}>
+                            <span className={cn("shrink-0 rounded-full border px-2 py-1 text-xs font-semibold", statusClasses[bookingStatus.tone])}>
                               {bookingStatus.label}
                             </span>
                           </span>
@@ -302,7 +302,7 @@ export function WeekCalendar({
                   </div>
                   {blockedDay && (
                     <span
-                      className="mt-1 inline-flex rounded-full bg-destructive/10 px-2 py-0.5 text-[0.625rem] font-semibold text-destructive"
+                      className="mt-1 inline-flex rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive"
                       title={blockedDay.reason || "Blocked all day"}
                     >
                       Blocked

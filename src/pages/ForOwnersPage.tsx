@@ -207,7 +207,7 @@ const ForOwnersPage = () => (
             <li key={title} className="border-b border-border py-6 md:pr-8 lg:min-h-52 lg:py-8">
               <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} aria-hidden="true" />
               <h3 className="mt-5 text-lg font-semibold text-foreground">{title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-foreground-soft">{description}</p>
+              <p className="mt-2 text-ui leading-relaxed text-foreground-soft">{description}</p>
             </li>
           ))}
         </ul>
@@ -262,7 +262,7 @@ const ForOwnersPage = () => (
             <li key={item.step} className="border-t border-border pt-5">
               <span className="font-mono text-sm tabular-nums text-brand-tuff">{item.step}</span>
               <h3 className="mt-4 text-lg font-semibold text-foreground">{item.title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-foreground-soft">{item.description}</p>
+              <p className="mt-2 text-ui leading-relaxed text-foreground-soft">{item.description}</p>
             </li>
           ))}
         </ol>

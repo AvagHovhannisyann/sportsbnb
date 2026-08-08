@@ -249,7 +249,7 @@ const DemoPage = () => {
             <span className="text-primary">booking sports venues in Armenia.</span>
           </h1>
 
-          <p className="mt-6 max-w-[58ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
+          <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-foreground-soft">
             Think Airbnb, for pitches, courts and pools. Players find a venue near
             them, see what is actually free, and pay for the hour in the app.
             Owners list once and fill the hours that would otherwise sit empty.
@@ -258,7 +258,7 @@ const DemoPage = () => {
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-xl px-6 text-[15px] font-semibold">
+            <Button asChild size="lg" className="h-12 rounded-xl px-6 text-ui font-semibold">
               <Link to="/venues">
                 Browse the real venues
                 <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
@@ -268,7 +268,7 @@ const DemoPage = () => {
               asChild
               size="lg"
               variant="outline"
-              className="h-12 rounded-xl px-6 text-[15px] font-semibold"
+              className="h-12 rounded-xl px-6 text-ui font-semibold"
             >
               <Link to="/for-owners">
                 <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -314,7 +314,7 @@ const DemoPage = () => {
                     href={`#${stop.id}`}
                     className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface-1 px-3.5 py-2 text-sm text-foreground-soft transition-colors hover:border-border-strong hover:text-foreground"
                   >
-                    <span className="font-mono text-[11px] tabular-nums text-primary">
+                    <span className="font-mono text-xs tabular-nums text-primary">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     {stop.label}
@@ -336,7 +336,7 @@ const DemoPage = () => {
               <p className="eyebrow mb-0">01 — What's listed</p>
               <Link
                 to="/venues"
-                className="group inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md text-[15px] font-semibold text-primary outline-none transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="group inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md text-ui font-semibold text-primary outline-none transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {venuesLoading || venuesError
                   ? "See all venues"
@@ -350,7 +350,7 @@ const DemoPage = () => {
             <h2 id="venues-heading" className={`mt-4 max-w-2xl ${heading} text-foreground`}>
               Real venues, real prices, straight from the database.
             </h2>
-            <p className="mt-4 max-w-[60ch] text-[15px] leading-relaxed text-foreground-soft">
+            <p className="mt-4 max-w-[60ch] text-ui leading-relaxed text-foreground-soft">
               These are the same cards the venues page renders, fed by the same
               query — pitches, courts and pools across Yerevan, Gyumri, Vanadzor,
               Dilijan, Abovyan and Ejmiatsin. Tap one to open the venue page a
@@ -445,7 +445,7 @@ const DemoPage = () => {
             <h2 id="booking-heading" className={`${heading} text-foreground`}>
               Search, pick a slot, hold it, pay.
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-foreground-soft">
+            <p className="mt-4 text-ui leading-relaxed text-foreground-soft">
               Four steps, and no phone call in any of them. The whole point of
               the product is that the hour you tapped is the hour you get.
             </p>
@@ -464,13 +464,13 @@ const DemoPage = () => {
                 <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
                   {s.title}
                 </h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-foreground-soft">{s.body}</p>
+                <p className="mt-2.5 text-ui leading-relaxed text-foreground-soft">{s.body}</p>
               </li>
             ))}
           </ol>
 
           <div className="mt-12 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-xl px-6 text-[15px] font-semibold">
+            <Button asChild size="lg" className="h-12 rounded-xl px-6 text-ui font-semibold">
               <Link to="/venues">
                 Try it on a real venue
                 <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
@@ -495,7 +495,7 @@ const DemoPage = () => {
             <h2 id="owners-heading" className={`${heading} text-secondary-foreground`}>
               Fill the empty hours. Keep the paperwork out of it.
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed opacity-75">
+            <p className="mt-4 text-ui leading-relaxed opacity-75">
               The other half of the marketplace. An owner lists a venue, sets
               hours and a price, and takes bookings around the clock — we collect
               the money and pay it out.
@@ -507,7 +507,7 @@ const DemoPage = () => {
               <div key={k} className="border-t border-secondary-foreground/20 py-5">
                 <dt className="eyebrow text-current opacity-60">{k}</dt>
                 <dd className="mt-2 font-display text-2xl font-bold tabular-nums">{v}</dd>
-                <p className="mt-1.5 text-[13px] leading-snug opacity-65">{note}</p>
+                <p className="mt-1.5 text-meta leading-snug opacity-65">{note}</p>
               </div>
             ))}
           </dl>
@@ -519,7 +519,7 @@ const DemoPage = () => {
                 <h3 className="font-display text-lg font-semibold tracking-tight text-secondary-foreground">
                   {title}
                 </h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed opacity-75">{body}</p>
+                <p className="mt-2.5 text-ui leading-relaxed opacity-75">{body}</p>
               </div>
             ))}
           </div>
@@ -528,7 +528,7 @@ const DemoPage = () => {
             <Button
               asChild
               size="lg"
-                className="h-12 rounded-xl bg-secondary-foreground px-6 text-[15px] font-semibold text-secondary hover:bg-secondary-foreground/90"
+                className="h-12 rounded-xl bg-secondary-foreground px-6 text-ui font-semibold text-secondary hover:bg-secondary-foreground/90"
             >
               <Link to="/for-owners">
                 See what listing involves
@@ -551,7 +551,7 @@ const DemoPage = () => {
             <h2 id="status-heading" className={`${heading} text-foreground`}>
               What works today, and what is left.
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-foreground-soft">
+            <p className="mt-4 text-ui leading-relaxed text-foreground-soft">
               A demo that shows only the finished parts is a demo you cannot
               trust. So: everything on the left is running right now, on the same
               deployment you are looking at.
@@ -570,7 +570,7 @@ const DemoPage = () => {
                 {WORKING_TODAY.map((line) => (
                   <li
                     key={line}
-                    className="flex gap-3 text-[15px] leading-relaxed text-foreground-soft"
+                    className="flex gap-3 text-ui leading-relaxed text-foreground-soft"
                   >
                     <Check
                       className="mt-0.5 h-5 w-5 shrink-0 text-primary"
@@ -593,10 +593,10 @@ const DemoPage = () => {
               <ul className="mt-5 space-y-5">
                 {BEFORE_LIVE.map(({ title, body }) => (
                   <li key={title}>
-                    <h4 className="font-display text-[15px] font-semibold text-foreground">
+                    <h4 className="font-display text-ui font-semibold text-foreground">
                       {title}
                     </h4>
-                    <p className="mt-1.5 text-[15px] leading-relaxed text-foreground-soft">{body}</p>
+                    <p className="mt-1.5 text-ui leading-relaxed text-foreground-soft">{body}</p>
                   </li>
                 ))}
               </ul>
@@ -642,12 +642,12 @@ const DemoPage = () => {
           <h2 className="mx-auto max-w-3xl text-balance font-display text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground">
             That's the tour. The rest of it is a click away.
           </h2>
-          <p className="mx-auto mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-foreground-soft">
+          <p className="mx-auto mt-5 max-w-[46ch] text-lg leading-relaxed text-foreground-soft">
             Nothing on this page was staged for it. Open the app and you are
             looking at the same data.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-xl px-7 text-[15px] font-semibold">
+            <Button asChild size="lg" className="h-12 rounded-xl px-7 text-ui font-semibold">
               <Link to="/venues">
                 Browse venues
                 <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
@@ -657,7 +657,7 @@ const DemoPage = () => {
               asChild
               size="lg"
               variant="outline"
-              className="h-12 rounded-xl px-6 text-[15px] font-semibold"
+              className="h-12 rounded-xl px-6 text-ui font-semibold"
             >
               <Link to="/">Back to the home page</Link>
             </Button>

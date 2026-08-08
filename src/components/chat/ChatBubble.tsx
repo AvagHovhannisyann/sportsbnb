@@ -80,7 +80,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
               <Badge 
                 variant={isHost ? "default" : "secondary"} 
                 className={cn(
-                  "text-[10px] px-1.5 py-0 h-4",
+                  "text-xs px-1.5 py-0 h-4",
                   isHost && "bg-primary/90"
                 )}
               >
@@ -130,7 +130,7 @@ export const ChatBubble = ({ message, isOwn, onReport }: ChatBubbleProps) => {
           )}
         </div>
 
-        <span className="text-[10px] text-muted-foreground mt-1 px-1">
+        <span className="text-xs text-muted-foreground mt-1 px-1">
           {format(new Date(message.created_at), "HH:mm")}
         </span>
       </div>
