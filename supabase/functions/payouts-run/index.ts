@@ -1,6 +1,6 @@
 import { handlePreflight } from "../_shared/cors.ts";
 import { json, errorResponse, makeLogger } from "../_shared/http.ts";
-import { requireAdmin, requireCronSecret, HttpError } from "../_shared/auth.ts";
+import { requireAdmin, requireCronSecret, isServiceRoleToken, HttpError } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/supabase.ts";
 
 const log = makeLogger("payouts-run");
@@ -22,11 +22,19 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
 
   try {
-    // Admin JWT or cron secret both work
-    try {
-      requireCronSecret(req);
-    } catch {
-      await requireAdmin(req);
+    // Service-role key, cron secret, or admin JWT.
+    //
+    // The service-role branch used to be a string comparison against
+    // SUPABASE_SERVICE_ROLE_KEY, which fails on a project running both the
+    // legacy JWT keys and the newer sb_secret_ scheme — a real key was answered
+    // with 401, so nothing scheduled could run a payout. isServiceRoleToken()
+    // asks Postgres what role the token resolved to instead.
+    if (!(await isServiceRoleToken(req))) {
+      try {
+        requireCronSecret(req);
+      } catch {
+        await requireAdmin(req);
+      }
     }
 
     const { action = "run", payoutId, reference } = await req.json().catch(() => ({}));
