@@ -14,8 +14,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import HeroSearch from "@/components/home/HeroSearch";
+import { LiveInventory } from "@/components/home/LiveInventory";
+import { Price } from "@/components/ui/price";
 import SEOHead, { createWebsiteJsonLd } from "@/components/seo/SEOHead";
 import { useAuth } from "@/hooks/useAuth";
+import { useVenues } from "@/hooks/useVenues";
 import heroImage from "@/assets/hero-landing.jpg";
 import venueBasketball from "@/assets/venue-basketball.jpg";
 import venueFootball from "@/assets/venue-football.jpg";
@@ -56,6 +59,10 @@ const Eyebrow = ({ children, inverse = false }: { children: ReactNode; inverse?:
 
 const HomePage = () => {
   const { user } = useAuth();
+  // Shared with LiveInventory through react-query's cache, so the hero does
+  // not fetch the catalogue twice to answer "is there anything to show".
+  const { data: venues, isLoading: venuesLoading } = useVenues();
+  const hasVenues = venuesLoading || (venues?.length ?? 0) > 0;
 
   const sports = [
     { name: "Football", image: venueFootball, detail: "Pitches and futsal" },
@@ -93,20 +100,23 @@ const HomePage = () => {
       <section className="border-b border-border bg-background">
         <div className="container px-5 pb-14 pt-12 md:px-6 md:pb-20 md:pt-16 lg:pt-20">
           <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+            {/* No badge above the headline.
+                There was a "Live availability" pill here, which said the same
+                thing as the panel's live dot two columns over and cost the
+                headline the first line of the page. A pill above an h1 is also
+                the single most templated element on a marketing site; the
+                claim it made is now made by the catalogue underneath it, which
+                is better evidence than a label. */}
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-brand-tuff/25 bg-brand-tuff-soft px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-brand-tuff">
-                <span className="live-dot" aria-hidden="true" />
-                Live availability
-              </div>
-
-              <h1 className="mt-6 max-w-[12ch] text-balance font-display text-4xl font-bold leading-[1.02] tracking-tighter text-foreground sm:text-5xl lg:text-6xl">
+              <h1 className="max-w-[12ch] text-balance font-display text-4xl font-bold leading-[1.02] tracking-tighter text-foreground sm:text-5xl lg:text-6xl">
                 Book the court. <span className="text-primary">Skip the call.</span>
               </h1>
 
               <p className="mt-6 max-w-[46ch] text-base leading-7 text-foreground-soft sm:text-lg sm:leading-8">
-                Verified sports venues across Armenia, with live availability and
-                instant confirmation. Pay securely by card — your slot is locked
-                the moment you do.
+                Booking a court in Armenia still means phoning someone who keeps
+                a paper diary. This is the same booking, without the phone call
+                — real availability, a price in dram, confirmed by card in
+                seconds.
               </p>
 
               <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
@@ -126,41 +136,67 @@ const HomePage = () => {
                 )}
               </div>
 
+              {/* Two facts, not two adjectives.
+                  "Every venue verified" and "Confirmed in seconds" were claims
+                  a reader has no way to check, and every competing marketplace
+                  makes the same pair. These two are specific, true, and
+                  enforced in code: the platform fee is literally zero on every
+                  booking, and `create_booking_hold` puts a real 20-minute hold
+                  on the slot with a database-level exclusion constraint behind
+                  it, so nobody else can take it while you are paying. */}
               <div className="mt-7 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-5">
                 <span className="inline-flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Every venue verified
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    <span className="stat-numeral font-semibold text-foreground">0%</span>{" "}
+                    commission — the price is the venue&rsquo;s own
+                  </span>
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Confirmed in seconds
+                  <Zap className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    Your slot is held for{" "}
+                    <span className="stat-numeral font-semibold text-foreground">20</span> minutes
+                    while you pay
+                  </span>
                 </span>
               </div>
             </div>
 
+            {/* The catalogue, or the photograph of one.
+                `LiveInventory` renders null when there is nothing to show, so
+                an empty or unreachable database falls back to the image rather
+                than to a hero that says the marketplace is empty. */}
             <div className="relative">
-              <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                <img
-                  src={heroImage}
-                  alt="Floodlit five-a-side pitch at dusk with players mid-game"
-                  className="aspect-[4/3] w-full object-cover"
-                  loading="eager"
-                />
-              </div>
+              {hasVenues ? (
+                <LiveInventory />
+              ) : (
+                <>
+                  <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                    <img
+                      src={heroImage}
+                      alt="Floodlit five-a-side pitch at dusk with players mid-game"
+                      className="aspect-[4/3] w-full object-cover"
+                      loading="eager"
+                    />
+                  </div>
 
-              <div className="relative mx-3 -mt-7 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-md sm:mx-8">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
-                  <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-sm font-semibold leading-5 text-foreground sm:text-[15px]">
-                    Confirmed — Thursday, 19:00
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground sm:text-[13px]">
-                    Ararat Arena · 90 min · <span className="font-mono tabular-nums">֏12,000</span>
-                  </p>
-                </div>
-              </div>
+                  <div className="relative mx-3 -mt-7 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-md sm:mx-8">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-semibold leading-5 text-foreground sm:text-[15px]">
+                        Confirmed — Thursday, 19:00
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground sm:text-[13px]">
+                        Ararat Arena · 90 min ·{" "}
+                        <Price amount={12000} className="text-xs sm:text-[13px]" />
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
