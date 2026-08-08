@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo } from "@/components/brand/Logo";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -132,6 +133,11 @@ const Header = () => {
         </nav>
 
         <div className="hidden lg:flex items-center gap-2">
+          {/* Before the account controls, and shown whether or not anyone is
+              signed in: a visitor who cannot read the page needs this before
+              they need anything else on it. */}
+          <LanguageSwitcher />
+
           {!isLoading && user ? (
             <>
               {/* Was a <Link> wrapping a <Button>: a link containing a
