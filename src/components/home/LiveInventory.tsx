@@ -128,7 +128,10 @@ export function LiveInventory() {
                   amount={venue.price_per_hour}
                   className="text-[15px] font-semibold leading-6 text-foreground"
                 />
-                <span className="mt-0.5 block text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                {/* 12px, not 11. Uppercase with letterspacing reads smaller
+                    than its nominal size, and 11px was already under the floor
+                    this codebase holds for any visible text. */}
+                <span className="mt-0.5 block text-xs uppercase tracking-[0.08em] text-muted-foreground">
                   per hour
                 </span>
               </span>
