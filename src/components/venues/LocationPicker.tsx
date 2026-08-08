@@ -158,7 +158,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           disabled={isSearching || (!address.trim() && !city.trim())}
           className="w-full"
         >
-          {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+          {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" /> : <Search className="mr-2 h-4 w-4" />}
           Find on Map
         </Button>
 

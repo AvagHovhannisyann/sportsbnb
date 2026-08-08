@@ -32,7 +32,40 @@ const Header = () => {
     ...(user ? [{ href: "/dashboard", label: "My Activity" }] : []),
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    const pathname = location.pathname;
+
+    switch (path) {
+      case "/venues":
+        return (
+          pathname === "/venues" ||
+          pathname.startsWith("/venues/") ||
+          pathname.startsWith("/venue/") ||
+          pathname.startsWith("/nearby")
+        );
+      case "/games":
+        return pathname === "/games" || pathname === "/create-game" || pathname.startsWith("/game/");
+      case "/teams":
+        return (
+          pathname === "/teams" ||
+          pathname === "/create-team" ||
+          pathname.startsWith("/team/") ||
+          pathname.startsWith("/join-team/")
+        );
+      case "/community":
+        return pathname === "/community";
+      case "/dashboard":
+        return (
+          pathname === "/dashboard" ||
+          pathname === "/my-bookings" ||
+          pathname.startsWith("/booking/") ||
+          pathname.startsWith("/book/") ||
+          pathname.startsWith("/pay/")
+        );
+      default:
+        return pathname === path;
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -48,7 +81,7 @@ const Header = () => {
   };
 
   return (
-    <header className="glass sticky top-0 z-50 w-full rounded-none border-x-0 border-t-0">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
       {/* Three-part bar rather than two. The links used to sit in the same
           flex group as the wordmark, so at 1440 they clustered against the
           left edge and left ~600px of dead space between "Community" and
@@ -63,20 +96,28 @@ const Header = () => {
           to roughly 900px. Below lg the bar now uses the existing menu. */}
       <div className="container relative flex h-14 items-center justify-between gap-4 px-4 md:h-[64px] md:gap-6 md:px-6">
         <div className="flex items-center">
-          <Link to="/" aria-label="Sportsbnb home" className="flex items-center group shrink-0 -my-2">
+          <Link
+            to="/"
+            aria-label="Sportsbnb home"
+            className="flex min-h-11 shrink-0 items-center rounded-md opacity-95 transition-opacity duration-150 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
             <Logo
               variant="full"
-              className="h-9 md:h-12 w-auto transition-transform group-hover:scale-[1.02]"
+              className="h-9 w-auto md:h-11"
             />
           </Link>
         </div>
 
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex">
+        <nav
+          aria-label="Primary navigation"
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex"
+        >
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
-                className={`relative px-3.5 py-2 text-[13.5px] rounded-md transition-colors ${
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`relative rounded-md px-3.5 py-2 text-[13.5px] transition-colors duration-150 ${
                   isActive(link.href)
                     ? "text-foreground font-semibold"
                     : "text-muted-foreground/90 font-medium hover:text-foreground"
@@ -193,22 +234,33 @@ const Header = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="h-11 w-11 lg:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation-menu"
         >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileMenuOpen ? (
+            <X className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          )}
         </Button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-border bg-card">
-          <nav className="container py-4 flex flex-col gap-2">
+        <div
+          id="mobile-navigation-menu"
+          className="max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-border bg-background lg:hidden md:max-h-[calc(100dvh-4rem)]"
+        >
+          <nav aria-label="Mobile navigation" className="container flex flex-col gap-2 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-150 ${
                   isActive(link.href)
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
@@ -222,31 +274,31 @@ const Header = () => {
                 <>
                   {/* Mobile List Venue — owners only */}
                   {isOwner && (
-                    <Link to="/add-venue" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="w-full justify-start">
+                    <Button asChild variant="outline" className="w-full justify-start">
+                      <Link to="/add-venue" onClick={() => setMobileMenuOpen(false)}>
                         <Building className="h-4 w-4 mr-2" />
                         List Venue
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   )}
-                  <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full justify-start relative">
+                  <Button asChild variant="outline" className="relative w-full justify-start">
+                    <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Messages
                       <ChatBadge />
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <div className="border-t border-border my-2" />
-                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">Profile</Button>
-                  </Link>
+                  <Button asChild variant="ghost" className="w-full justify-start">
+                    <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
+                  </Button>
                   {isAdmin && (
-                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start">
+                    <Button asChild variant="ghost" className="w-full justify-start">
+                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
                         <Shield className="h-4 w-4 mr-2" />
                         Admin Dashboard
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   )}
                   <Button
                     variant="ghost" 
@@ -262,12 +314,12 @@ const Header = () => {
                 </>
               ) : !isLoading ? (
                 <>
-                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full" size="lg">Get started — it's free</Button>
-                  </Link>
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full">Already have an account? Sign in</Button>
-                  </Link>
+                  <Button asChild className="w-full" size="lg">
+                    <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>Get started — it's free</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="w-full">
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Already have an account? Sign in</Link>
+                  </Button>
                 </>
               ) : null}
             </div>

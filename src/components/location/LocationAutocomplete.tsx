@@ -231,7 +231,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <Input
           id={id}
           ref={inputRef}
@@ -245,16 +245,16 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           className={cn("pl-10 pr-10", error && "border-destructive")}
         />
         {isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
         )}
         {!isLoading && inputValue && (
           <button
             aria-label="Clear location"
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="focus-ring absolute right-0 top-0 flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:text-foreground motion-reduce:transition-none"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
       </div>

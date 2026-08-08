@@ -1,476 +1,296 @@
 import { Link } from "react-router-dom";
-import SEOHead from "@/components/seo/SEOHead";
-import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Calendar,
   BarChart3,
-  Globe,
-  Shield,
-  CreditCard,
+  Calendar,
+  CalendarSync,
+  Check,
   Clock,
-  Users,
-  CheckCircle,
-  Smartphone,
+  CreditCard,
+  Globe,
   MessageCircle,
   Settings,
+  Shield,
+  Smartphone,
   Star,
-  CalendarSync,
+  Users,
 } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
-import type { MotionProps, Variants } from "framer-motion";
+import SEOHead from "@/components/seo/SEOHead";
 import Layout from "@/components/layout/Layout";
-import { easeOutExpo } from "@/lib/motion";
-import venueBasketball from "@/assets/venue-basketball.jpg";
+import { Button } from "@/components/ui/button";
 import venueFootball from "@/assets/venue-football.jpg";
-import venueTennis from "@/assets/venue-tennis.jpg";
 
-/* ------------------------------------------------------------------
-   Motion.
+const features = [
+  {
+    icon: Calendar,
+    title: "Visual schedule management",
+    description:
+      "See bookings in a weekly calendar and manage the full schedule without a separate spreadsheet.",
+  },
+  {
+    icon: CreditCard,
+    title: "Instant booking and payments",
+    description:
+      "Players book and pay online by card. Each paid reservation appears in the same operational view.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics dashboard",
+    description:
+      "Track revenue, booking trends, occupancy, and the activity that matters to your venue.",
+  },
+  {
+    icon: Clock,
+    title: "Hours and availability",
+    description:
+      "Set opening hours, block dates, and control the booking window for each venue.",
+  },
+  {
+    icon: Globe,
+    title: "Embeddable booking widget",
+    description:
+      "Add booking to your own website with an embed, a JavaScript snippet, or a direct link.",
+  },
+  {
+    icon: CalendarSync,
+    title: "Calendar sync",
+    description:
+      "Connect Google Calendar or Outlook, with iCal export and import for other calendar tools.",
+  },
+  {
+    icon: Settings,
+    title: "Custom policies",
+    description:
+      "Define cancellation rules, buffers, booking durations, grace periods, and overtime rates.",
+  },
+  {
+    icon: MessageCircle,
+    title: "Direct messaging",
+    description:
+      "Keep booking questions with the reservation and use quick replies for common requests.",
+  },
+  {
+    icon: Smartphone,
+    title: "Equipment rentals",
+    description:
+      "List balls, rackets, and other equipment that players can add when they book.",
+  },
+  {
+    icon: Shield,
+    title: "Verified listings",
+    description:
+      "Venue review and verification give players clearer information before they commit.",
+  },
+  {
+    icon: Star,
+    title: "Reviews and ratings",
+    description:
+      "Collect feedback after bookings and build a useful record for future players.",
+  },
+  {
+    icon: Users,
+    title: "Manual bookings",
+    description:
+      "Add walk-in and phone bookings so online and offline activity share one calendar.",
+  },
+];
 
-   This page already moved, on a vocabulary of its own: a private
-   cubic-bezier, 800–900ms entrances and a 48px rise, with the delay
-   passed in raw at the call site so a twelve-item grid dealt its last
-   card 550ms after its first. Nothing switched it off for
-   `prefers-reduced-motion`, so the longest animations in the app were
-   also the only ones that ignored the preference.
+const stats = [
+  { value: "0%", label: "Commission" },
+  { value: "0", label: "Monthly or listing fees" },
+  { value: "Weekly", label: "Itemised payouts" },
+  { value: "AMD", label: "Settlement currency" },
+];
 
-   It now speaks the same vocabulary as the rest of the app: easing
-   from lib/motion (mirroring --ease-out-expo in index.css), one
-   entrance duration, a stagger expressed as an *index* so the cap
-   below can apply, and props omitted wholesale under reduced motion
-   rather than given a zero duration — the convention HomePage and
-   DiscoverPage established.
-   ------------------------------------------------------------------ */
+const onboardingSteps = [
+  {
+    step: "01",
+    title: "Create an owner account",
+    description: "Choose the owner role and open the venue setup flow.",
+  },
+  {
+    step: "02",
+    title: "Add the venue",
+    description: "Upload photos, set prices and hours, and add the policies players need to know.",
+  },
+  {
+    step: "03",
+    title: "Add payout details",
+    description: "Choose the Armenian bank account or Idram wallet that should receive earnings.",
+  },
+  {
+    step: "04",
+    title: "Go live",
+    description: "After approval, the venue appears in search and can accept hourly bookings.",
+  },
+];
 
-/** An element arriving. */
-const ENTER = 0.42;
-/** Gap between one sibling's entrance and the next. */
-const STAGGER_STEP = 0.05;
-/**
- * The index past which every remaining sibling shares the last delay.
- *
- * The features grid is twelve items and the pricing list five, so this
- * is the difference between a 400ms deal and a queue whose tail lands
- * long after the reader has arrived at it.
- */
-const STAGGER_CAP = 7;
+const ForOwnersPage = () => (
+  <Layout>
+    <SEOHead
+      title="List Your Sports Venue in Armenia — Sportsbnb for Owners"
+      description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card payments in dram, and keep 100% of your price. Zero commission, no listing fee, no monthly cost."
+      canonical="/for-owners"
+    />
 
-const reveal: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (index: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: ENTER,
-      ease: easeOutExpo,
-      delay: Math.min(index, STAGGER_CAP) * STAGGER_STEP,
-    },
-  }),
-};
-
-const viewportOnce = { once: true, margin: "-80px" };
-
-const ForOwnersPage = () => {
-  const prefersReduced = useReducedMotion();
-
-  /** Above the fold: nothing to scroll to, so it plays on mount. */
-  const onMount = (index = 0): MotionProps =>
-    prefersReduced
-      ? {}
-      : { variants: reveal, initial: "hidden", animate: "visible", custom: index };
-
-  /** Everything below: plays as it comes into view, once. */
-  const onScroll = (index = 0): MotionProps =>
-    prefersReduced
-      ? {}
-      : {
-          variants: reveal,
-          initial: "hidden",
-          whileInView: "visible",
-          viewport: viewportOnce,
-          custom: index,
-        };
-
-  // The one CTA embellishment on the page: the arrow leans toward where the
-  // click goes. Withheld rather than undone with a `motion-reduce:` utility,
-  // which would have to out-specify the class it is cancelling. Press feedback
-  // comes from the shared Button, which already scales on `:active`.
-  const ctaArrow = `ml-2 h-5 w-5${
-    prefersReduced ? "" : " transition-transform duration-200 ease-out group-hover:translate-x-0.5"
-  }`;
-  // The picture moves inside its frame; the card does not.
-  const showcaseZoom = `w-full h-full object-cover${
-    prefersReduced ? "" : " transition-transform duration-500 ease-out group-hover:scale-105"
-  }`;
-
-  const features = [
-    {
-      icon: Calendar,
-      title: "Visual Schedule Management",
-      description: "A weekly calendar view that shows all bookings at a glance. Drag, resize, and manage your entire schedule visually — no spreadsheets needed.",
-    },
-    {
-      icon: CreditCard,
-      title: "Instant Booking & Payments",
-      description: "Players book and pay online instantly by card. We collect, then pay out to your account — no cash handling, no invoicing, no chasing.",
-    },
-    {
-      icon: BarChart3,
-      title: "Analytics Dashboard",
-      description: "Track revenue, booking trends, occupancy rates, and player demographics. Data-driven decisions to grow your business.",
-    },
-    {
-      icon: Clock,
-      title: "Opening Hours & Availability",
-      description: "Set flexible opening hours per day, block specific dates, and control booking windows. Your venue, your rules.",
-    },
-    {
-      icon: Globe,
-      title: "Embeddable Booking Widget",
-      description: "Add a booking widget to your own website via iFrame, JavaScript snippet, or direct link. Players book without leaving your site.",
-    },
-    {
-      icon: CalendarSync,
-      title: "Calendar Sync",
-      description: "Full two-way sync with Google Calendar & Outlook. Plus iCal export/import for any calendar app. Never double-book again.",
-    },
-    {
-      icon: Settings,
-      title: "Custom Policies",
-      description: "Set cancellation policies, buffer times, minimum/maximum durations, grace periods, and overtime rates. Complete control.",
-    },
-    {
-      icon: MessageCircle,
-      title: "Direct Messaging",
-      description: "Built-in chat with players. Quick reply templates for common questions. Never miss a customer inquiry.",
-    },
-    {
-      icon: Smartphone,
-      title: "Equipment Rentals",
-      description: "List equipment available for rent — balls, rackets, gear. Players can add rentals when booking. Extra revenue, zero effort.",
-    },
-    {
-      icon: Shield,
-      title: "Verified Listings",
-      description: "Every venue goes through our review process. Verified badge builds trust with players and boosts your bookings.",
-    },
-    {
-      icon: Star,
-      title: "Reviews & Ratings",
-      description: "Collect authentic reviews from players after each booking. Great reviews attract more players organically.",
-    },
-    {
-      icon: Users,
-      title: "Manual Bookings",
-      description: "Add walk-in or phone bookings manually. Your calendar stays accurate whether bookings come online or offline.",
-    },
-  ];
-
-  // Every figure here has to be traceable to the build. "40% more bookings on
-  // average" and "24/7 customer support" were placeholder claims with no
-  // customers and no support rota behind them; they are replaced with the
-  // payout cadence (payouts-run cron) and the settlement currency, both of
-  // which are facts about the system rather than promises about outcomes.
-  const stats = [
-    { value: "0%", label: "Commission — you keep every dram" },
-    { value: "0", label: "Monthly fees or hidden costs" },
-    { value: "Weekly", label: "Payouts, every booking itemised" },
-    { value: "AMD", label: "Settled in dram — players pay by card" },
-  ];
-
-  const onboardingSteps = [
-    { step: "1", title: "Create your account", description: "Sign up as a venue owner in under 2 minutes. No credit card required." },
-    { step: "2", title: "Add your venue", description: "Upload photos, set prices, define hours, and configure your policies." },
-    { step: "3", title: "Add your payout details", description: "Your Armenian bank account or Idram wallet — that's where your earnings land." },
-    // "thousands of active players" is the same unmeasured claim, in the
-    // visible copy this time. What is true is that approval is a real
-    // step and that the listing then appears in search and on the map.
-    { step: "4", title: "Go live", description: "Once approved, your venue appears in search, on the map, and is bookable by the hour." },
-  ];
-
-  return (
-    <Layout>
-      <SEOHead
-        /* The rule stated forty lines above — every figure traceable to the
-           build — was applied to the stats block and not to this description,
-           which is the copy Google actually shows. It read "Reach thousands of
-           active players... increase revenue by up to 40%": the same
-           placeholder claim the comment says was removed, with no customers
-           and no measurement behind either half of it. Replaced with the four
-           facts the stats block settled on. */
-        title="List Your Sports Venue in Armenia — Sportsbnb for Owners"
-        description="List your court, pitch or pool on Sportsbnb. Set your own hourly rate and cancellation terms, take card payments in dram, and keep 100% of your price. Zero commission, no listing fee, no monthly cost."
-        canonical="/for-owners"
-      />
-      {/* ── Hero ── */}
-      <section className="relative min-h-[85vh] md:min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={venueFootball}
-            alt="Sports venue"
-            className="w-full h-full object-cover scale-105"
-            loading="eager"
-            fetchPriority="high"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
-        </div>
-
-        <div className="container relative z-10 py-20 md:py-0">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.p
-              {...onMount()}
-              className="text-sm md:text-base font-medium tracking-widest uppercase text-white/60 mb-4 md:mb-6"
-            >
-              For Venue Owners
-            </motion.p>
-
-            <motion.h1
-              {...onMount(1)}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.95] tracking-tighter mb-6 md:mb-8"
-            >
-              {/* Explicit break: left to flow, "Your venue. Our" filled line one
-                  and stranded "platform." on line two, splitting the phrase in
-                  the wrong place. Also brought down from text-8xl (96px) to
-                  match the scale the rebuilt home page settled on. */}
-              Your venue.
-              <br />
-              <span className="text-primary">Our platform.</span>
-            </motion.h1>
-
-            <motion.p
-              {...onMount(2)}
-              className="text-base md:text-xl lg:text-2xl text-white/70 leading-relaxed max-w-2xl mx-auto mb-8 md:mb-12"
-            >
-              Fill your courts, automate your bookings, and grow your business — with zero monthly fees.
-            </motion.p>
-
-            <motion.div
-              {...onMount(3)}
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
-            >
-              <Button asChild size="xl" className="group w-full sm:w-auto rounded-full font-semibold shadow-2xl">
-                <Link to="/list-venue">
-                  List your venue free
-                  <ArrowRight className={ctaArrow} />
-                </Link>
-              </Button>
-              <Button asChild
-                  variant="ghost"
-                  size="xl"
-                  className="w-full sm:w-auto rounded-full font-semibold text-white/90 hover:text-white hover:bg-white/10 border border-white/20"
-                >
-                <Link to="/contact">Talk to our team</Link>
-              </Button>
-            </motion.div>
+    <section className="border-b border-border bg-background">
+      <div className="container grid items-center gap-12 py-14 md:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-24">
+        <div className="max-w-2xl">
+          <div className="mb-5 flex items-center gap-3 text-sm font-semibold text-foreground-soft">
+            <span className="h-2 w-2 rounded-full bg-brand-tuff" aria-hidden="true" />
+            For venue owners
+          </div>
+          <h1 className="text-balance font-display text-4xl font-semibold leading-[1.02] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            Run the venue. Let the booking flow run with you.
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-foreground-soft">
+            Publish availability, take bookings and card payments, and keep your schedule and earnings in one place — without a monthly fee.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg">
+              <Link to="/list-venue">
+                List your venue free
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link to="/contact">Talk to our team</Link>
+            </Button>
           </div>
         </div>
-      </section>
 
-      {/* ── Stats ── */}
-      <section className="py-16 md:py-24 bg-background border-b border-border/50">
-        <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6 max-w-4xl mx-auto">
-            {stats.map((stat, index) => (
-              <motion.div key={stat.label} {...onScroll(index)} className="text-center">
-                {/* Sized down from lg:text-6xl: the band was built for short
-                    numerals, and a word-length value ("Weekly") ran straight
-                    into its neighbour at 60px. The dram sign also left the
-                    value slot — U+058F has no coverage in either bundled font,
-                    so it is not a glyph to hang a headline number on. */}
-                <p className="mb-2 text-3xl font-bold tracking-tighter text-primary md:text-4xl lg:text-5xl">
-                  {stat.value}
-                </p>
-                <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
-              </motion.div>
-            ))}
+        <figure className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="aspect-[4/3] overflow-hidden bg-surface-2">
+            <img
+              src={venueFootball}
+              alt="Players on an indoor football pitch"
+              className="h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+            />
           </div>
-        </div>
-      </section>
+          <figcaption className="flex flex-col gap-1 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-medium text-foreground">One operating view</span>
+            <span className="text-sm text-muted-foreground">Availability · bookings · payouts</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
 
-      {/* ── All Features ── */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div {...onScroll()} className="text-center mb-10 md:mb-14">
-            <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-              Everything You Need
-            </p>
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter mb-4 md:mb-6">
-              Powerful tools,<br className="hidden md:block" /> zero complexity.
-            </h2>
-            <p className="text-base md:text-xl text-muted-foreground max-w-xl mx-auto">
-              One dashboard to manage your entire sports facility business.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={feature.title}
-                  {...onScroll(index)}
-                  className="group bg-muted/20 hover:bg-muted/40 transition-colors rounded-2xl md:rounded-3xl p-5 md:p-6"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-5">
-                    <Icon className="h-6 w-6" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2 tracking-tight">{feature.title}</h3>
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{feature.description}</p>
-                </motion.div>
-              );
-            })}
+    <section aria-label="Owner pricing summary" className="border-b border-border bg-surface-1">
+      <dl className="container grid grid-cols-2 divide-x divide-y divide-border py-0 sm:grid-cols-4 sm:divide-y-0">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex flex-col px-4 py-7 first:pl-0 sm:px-6 lg:py-9">
+            <dt className="mt-1 text-sm text-muted-foreground">{stat.label}</dt>
+            <dd className="order-first font-display text-2xl font-semibold tabular-nums text-foreground sm:text-3xl">
+              {stat.value}
+            </dd>
           </div>
+        ))}
+      </dl>
+    </section>
+
+    <section className="bg-background py-16 md:py-24">
+      <div className="container">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold text-primary">Venue operations</p>
+          <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+            The tools around a booking, kept together.
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-foreground-soft">
+            Use one dashboard for the work that normally gets split across calls, calendars, messages, and spreadsheets.
+          </p>
         </div>
-      </section>
 
-      {/* ── Pricing Model ── */}
-      <section className="surface-invert py-16 md:py-24 bg-secondary">
-        <div className="container">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center max-w-6xl mx-auto">
-            <motion.div {...onScroll()}>
-              <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-                Simple & Transparent
-              </p>
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-secondary-foreground tracking-tighter leading-[1.05] mb-5 md:mb-8">
-                Zero commission.<br />Ever.
-              </h2>
-              <p className="text-base md:text-xl text-secondary-foreground/70 leading-relaxed mb-8">
-                Sportsbnb takes no cut of your bookings. Not a percentage, not a listing fee, not a monthly subscription — you set a price, the player pays it, and all of it is yours.
-              </p>
-              <div className="space-y-4">
-                {[
-                  "You set your own prices — we add nothing on top",
-                  "You receive 100% of every booking, down to the dram",
-                  "Players pay exactly the price they see — no surprises",
-                  "Weekly payouts to your bank account or Idram wallet",
-                  "No minimum commitment — cancel anytime",
-                ].map((item, i) => (
-                  <motion.div key={i} {...onScroll(i)} className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <span className="text-secondary-foreground/80 text-sm md:text-base">{item}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+        <ul className="mt-12 grid border-t border-border md:grid-cols-2 lg:grid-cols-3">
+          {features.map(({ icon: Icon, title, description }) => (
+            <li key={title} className="border-b border-border py-6 md:pr-8 lg:min-h-52 lg:py-8">
+              <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} aria-hidden="true" />
+              <h3 className="mt-5 text-lg font-semibold text-foreground">{title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-foreground-soft">{description}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
 
-            <motion.div {...onScroll(1)} className="bg-secondary-foreground/5 rounded-3xl p-8 md:p-12 text-center">
-              <p className="text-secondary-foreground/60 text-sm font-medium uppercase tracking-widest mb-4">Commission</p>
-              <p className="text-6xl md:text-8xl font-bold text-primary tracking-tighter mb-2">0%</p>
-              <p className="text-secondary-foreground/70 text-base md:text-lg mb-8">on every booking — you keep the lot</p>
-              <div className="border-t border-secondary-foreground/10 pt-6 space-y-3">
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="text-secondary-foreground/60">Monthly fee</span>
-                  <span className="text-secondary-foreground font-semibold">֏0</span>
-                </div>
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="text-secondary-foreground/60">Setup fee</span>
-                  <span className="text-secondary-foreground font-semibold">֏0</span>
-                </div>
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="text-secondary-foreground/60">Hidden costs</span>
-                  <span className="text-secondary-foreground font-semibold">֏0</span>
-                </div>
-              </div>
-              <Button asChild size="lg" className="group mt-8 w-full rounded-full font-semibold">
-                <Link to="/list-venue">
-                  Get started free
-                  <ArrowRight className={ctaArrow} />
-                </Link>
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── How to Get Started ── */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container">
-          <motion.div {...onScroll()} className="text-center mb-10 md:mb-14">
-            <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-              Getting Started
-            </p>
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter mb-4 md:mb-6">
-              Live in 4 simple steps.
-            </h2>
-            <p className="text-base md:text-xl text-muted-foreground max-w-xl mx-auto">
-              From sign-up to your first booking in under 10 minutes.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-4 gap-5 md:gap-6 max-w-5xl mx-auto">
-            {onboardingSteps.map((item, index) => (
-              <motion.div key={item.step} {...onScroll(index)} className="text-center">
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary text-primary-foreground text-xl md:text-2xl font-bold flex items-center justify-center mx-auto mb-5 md:mb-6">
-                  {item.step}
-                </div>
-                <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2 tracking-tight">{item.title}</h3>
-                <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Showcase Image ── */}
-      <section className="py-16 md:py-24 bg-muted/20 overflow-hidden">
-        <div className="container">
-          <motion.div {...onScroll()} className="text-center mb-10 md:mb-14">
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tighter">
-              Built for facilities<br className="hidden md:block" /> <span className="text-primary">of every size.</span>
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto">
+    <section className="surface-invert bg-secondary py-16 text-secondary-foreground md:py-24">
+      <div className="container grid gap-12 lg:grid-cols-[1fr_0.8fr] lg:items-center lg:gap-20">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold text-secondary-foreground/65">Simple pricing</p>
+          <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight md:text-5xl">
+            You set the hourly price. You keep it.
+          </h2>
+          <p className="mt-5 text-lg leading-relaxed text-secondary-foreground/75">
+            Sportsbnb takes no commission, listing fee, or monthly subscription. Players pay the price you publish, and completed bookings are paid out weekly.
+          </p>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2">
             {[
-              { img: venueFootball, label: "Football Fields" },
-              { img: venueTennis, label: "Tennis & Padel Courts" },
-              { img: venueBasketball, label: "Multi-Sport Complexes" },
-            ].map((item, index) => (
-              <motion.div key={item.label} {...onScroll(index)} className="relative aspect-[4/5] rounded-2xl md:rounded-3xl overflow-hidden group">
-                <img src={item.img} alt={item.label} loading="lazy" decoding="async" className={showcaseZoom} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8">
-                  <h3 className="text-white text-lg md:text-2xl font-semibold tracking-tight">{item.label}</h3>
-                </div>
-              </motion.div>
+              "No price added on top",
+              "Weekly itemised payouts",
+              "Bank account or Idram wallet",
+              "No minimum commitment",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-3 text-sm text-secondary-foreground/85">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                {item}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
-      </section>
 
-      <section className="surface-invert py-16 md:py-24 bg-secondary">
-        <div className="container">
-          <motion.div {...onScroll()} className="max-w-3xl mx-auto text-center">
-            <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3 md:mb-4">
-              Partnership
-            </p>
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-bold text-secondary-foreground tracking-tighter mb-5 md:mb-8">
-              Let's grow<br />together.
-            </h2>
-            <p className="text-base md:text-xl text-secondary-foreground/60 mb-8 md:mb-12 max-w-lg mx-auto leading-relaxed">
-              We're not just a booking platform — we're your growth partner. More visibility, more players, more revenue. No risk, no commitment.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Button asChild size="xl" className="group w-full sm:w-auto rounded-full font-semibold">
-                <Link to="/list-venue">
-                  List your venue free
-                  <ArrowRight className={ctaArrow} />
-                </Link>
-              </Button>
-              <Button asChild
-                  variant="secondaryOutline"
-                  size="xl"
-                  className="w-full sm:w-auto rounded-full font-semibold"
-                >
-                <Link to="/contact">Contact partnerships</Link>
-              </Button>
-            </div>
-          </motion.div>
+        <div className="border-l-2 border-brand-tuff pl-6 sm:pl-8">
+          <p className="text-sm text-secondary-foreground/65">Commission per booking</p>
+          <p className="mt-2 font-display text-7xl font-semibold tabular-nums md:text-8xl">0%</p>
+          <Button asChild size="lg" className="mt-8">
+            <Link to="/list-venue">Start your listing</Link>
+          </Button>
         </div>
-      </section>
-    </Layout>
-  );
-};
+      </div>
+    </section>
+
+    <section className="bg-background py-16 md:py-24">
+      <div className="container">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold text-primary">Getting started</p>
+          <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+            Four clear steps from account to listing.
+          </h2>
+        </div>
+        <ol className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {onboardingSteps.map((item) => (
+            <li key={item.step} className="border-t border-border pt-5">
+              <span className="font-mono text-sm tabular-nums text-brand-tuff">{item.step}</span>
+              <h3 className="mt-4 text-lg font-semibold text-foreground">{item.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-foreground-soft">{item.description}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section className="border-t border-border bg-brand-tuff-soft py-14 md:py-20">
+      <div className="container flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold text-foreground-soft">Ready when your venue is</p>
+          <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+            Put the next available hour online.
+          </h2>
+          <p className="mt-4 text-lg text-foreground-soft">
+            Start the listing yourself, or speak with the team before you publish.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
+          <Button asChild size="lg">
+            <Link to="/list-venue">List your venue free</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/contact">Contact partnerships</Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+  </Layout>
+);
 
 export default ForOwnersPage;

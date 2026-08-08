@@ -83,7 +83,7 @@ const ProfilePage = () => {
     return (
       <Layout>
         <div className="container py-16 text-center" role="status" aria-label="Loading your profile">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
         </div>
       </Layout>
     );
@@ -93,10 +93,10 @@ const ProfilePage = () => {
 
   return (
     <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8">
+      <div className="min-h-screen bg-background">
+        <div className="container py-6 sm:py-8 lg:py-10">
           {/* Profile Header */}
-          <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8">
+          <div className="mb-7 flex max-w-5xl flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-center sm:gap-6 sm:pb-8">
             <AvatarUploader
               previewUrl={avatarPreview}
               initials={getUserInitials()}
@@ -105,37 +105,38 @@ const ProfilePage = () => {
                 setAvatarPreview(previewDataUrl);
               }}
             />
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="page-title">
+            <div className="min-w-0 flex-1">
+              <p className="eyebrow mb-2">Account</p>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="page-title min-w-0 break-words">
                   {formData.fullName || formData.username || "Your Profile"}
                 </h1>
                 {isOwner && (
                   <Badge variant="secondary">Venue Owner</Badge>
                 )}
               </div>
-              <p className="text-muted-foreground">{user?.email}</p>
+              <p className="mt-2 break-all text-sm text-muted-foreground sm:text-base">{user?.email}</p>
               {formData.city && (
                 <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                  <MapPin className="h-3 w-3" />
+                  <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{formData.city}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-5xl space-y-6">
+            <TabsList className="flex w-full sm:w-auto">
               <TabsTrigger value="profile" className="gap-2">
-                <User className="h-4 w-4 hidden sm:block" />
+                <User className="hidden h-4 w-4 sm:block" aria-hidden="true" />
                 Profile
               </TabsTrigger>
               <TabsTrigger value="notifications" className="gap-2">
-                <Bell className="h-4 w-4 hidden sm:block" />
+                <Bell className="hidden h-4 w-4 sm:block" aria-hidden="true" />
                 Notifications
               </TabsTrigger>
               <TabsTrigger value="security" className="gap-2">
-                <Shield className="h-4 w-4 hidden sm:block" />
+                <Shield className="hidden h-4 w-4 sm:block" aria-hidden="true" />
                 Security
               </TabsTrigger>
             </TabsList>
@@ -160,9 +161,9 @@ const ProfilePage = () => {
           </Tabs>
 
           {/* Sign Out */}
-          <div className="mt-8 pt-6 border-t border-border">
-            <Button variant="ghost" onClick={handleSignOut} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-              <LogOut className="h-4 w-4 mr-2" />
+          <div className="mt-8 max-w-5xl border-t border-border pt-6">
+            <Button variant="ghost" onClick={handleSignOut} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+              <LogOut className="h-4 w-4" aria-hidden="true" />
               Sign out
             </Button>
           </div>

@@ -8,6 +8,10 @@ import ReactMarkdown from "react-markdown";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 type Message = { role: "user" | "assistant"; content: string };
 
+interface AIChatbotProps {
+  hasMobileNav?: boolean;
+}
+
 // Not `import.meta.env` directly: unset at build time that interpolates to the
 // string "undefined/functions/v1/ai-chat", which is a request that can only fail.
 const CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
@@ -20,21 +24,39 @@ const SUGGESTIONS = [
   { icon: Trophy, label: "Create a team", message: "How do I create and manage a team?" },
 ];
 
-export const AIChatbot = () => {
+export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const hasOpenedRef = useRef(false);
 
   useEffect(() => {
-    if (open && inputRef.current) inputRef.current.focus();
+    if (open) {
+      hasOpenedRef.current = true;
+      inputRef.current?.focus();
+    } else if (hasOpenedRef.current) {
+      launcherRef.current?.focus();
+    }
   }, [open]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [open]);
 
   const sendText = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -132,43 +154,72 @@ export const AIChatbot = () => {
     setInput("");
   };
 
+  const mobileBottom = hasMobileNav
+    ? "bottom-[calc(4.75rem+env(safe-area-inset-bottom)+var(--fab-lift,0px))]"
+    : "bottom-[calc(1rem+env(safe-area-inset-bottom)+var(--fab-lift,0px))]";
+
   // Floating button
   if (!open) {
     return (
       <button
+        ref={launcherRef}
+        type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(5rem+var(--fab-lift,0px))] md:bottom-[calc(1.5rem+var(--fab-lift,0px))] right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center group"
-        aria-label="Open AI assistant"
+        className={cn(
+          "fixed z-[60] flex items-center justify-center transition-[background-color,border-color,box-shadow,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:right-6 md:bottom-[calc(1.5rem+var(--fab-lift,0px))] md:h-12 md:w-12 md:rounded-full md:border md:border-primary/20 md:bg-primary md:text-primary-foreground md:shadow-md md:hover:bg-primary/90 md:hover:shadow-lg",
+          hasMobileNav
+            ? "safe-area-bottom bottom-0 right-0 h-16 w-16 flex-col gap-1 border-l border-t border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+            : cn(
+                "right-4 h-12 w-12 rounded-full border border-primary/20 bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:shadow-lg",
+                mobileBottom,
+              ),
+        )}
+        aria-label="Open Sportsbnb assistant"
+        aria-controls="sportsbnb-assistant-dialog"
+        aria-expanded="false"
       >
-        <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
-        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-chart-1 animate-pulse" />
+        <Sparkles className={cn("h-5 w-5", hasMobileNav && "md:h-5 md:w-5")} aria-hidden="true" />
+        {hasMobileNav && (
+          <span className="text-[11px] font-medium leading-none md:sr-only">Ask</span>
+        )}
       </button>
     );
   }
 
   return (
-    <Card className="fixed bottom-[calc(5rem+var(--fab-lift,0px))] md:bottom-[calc(1.5rem+var(--fab-lift,0px))] right-4 z-50 w-[380px] h-[520px] flex flex-col shadow-2xl border overflow-hidden">
+    <Card
+      id="sportsbnb-assistant-dialog"
+      role="dialog"
+      aria-labelledby="sportsbnb-assistant-title"
+      className={cn(
+        "fixed inset-x-3 z-[60] flex h-[32rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden border border-border bg-card shadow-xl sm:left-auto sm:right-4 sm:w-96 md:bottom-[calc(1.5rem+var(--fab-lift,0px))] md:max-h-[calc(100dvh-3rem-var(--fab-lift,0px))]",
+        hasMobileNav
+          ? "max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom)-var(--fab-lift,0px))]"
+          : "max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom)-var(--fab-lift,0px))]",
+        mobileBottom,
+      )}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
+      <div className="flex min-h-16 items-center justify-between border-b border-border bg-surface-1 px-3 py-2 sm:px-4">
         <div className="flex items-center gap-2.5">
-          <Avatar className="h-8 w-8 border border-primary-foreground/20">
-            <AvatarFallback className="bg-primary-foreground/15 text-primary-foreground text-xs">
+          <Avatar className="h-9 w-9 border border-border">
+            <AvatarFallback className="bg-primary-soft text-primary text-xs">
               <Sparkles className="h-4 w-4" />
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold text-sm leading-none">SportsBnB AI</p>
-            <p className="text-[10px] opacity-75 mt-0.5">Always here to help</p>
+            <p id="sportsbnb-assistant-title" className="text-sm font-semibold leading-none text-foreground">SportsBnB assistant</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Venues, bookings, and games</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={handleReset} title="New conversation" aria-label="New conversation">
-              <RotateCcw className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="h-11 w-11 text-muted-foreground hover:bg-accent hover:text-foreground" onClick={handleReset} title="New conversation" aria-label="New conversation">
+              <RotateCcw className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setOpen(false)} aria-label="Close assistant">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-11 w-11 text-muted-foreground hover:bg-accent hover:text-foreground" onClick={() => setOpen(false)} aria-label="Close assistant">
+            <X className="h-5 w-5" />
           </Button>
         </div>
       </div>
@@ -193,8 +244,9 @@ export const AIChatbot = () => {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s.label}
+                    type="button"
                     onClick={() => sendText(s.message)}
-                    className="flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-xl border bg-card hover:bg-accent hover:border-primary/30 transition-all duration-200 group"
+                    className="group flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-[background-color,border-color,color] duration-150 hover:border-border-strong hover:bg-accent"
                   >
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                       <s.icon className="h-4 w-4 text-primary" />
@@ -241,12 +293,8 @@ export const AIChatbot = () => {
                     <Sparkles className="h-3.5 w-3.5" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="bg-muted rounded-2xl rounded-bl-md px-3.5 py-2.5">
-                  <div className="flex gap-1">
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
-                  </div>
+                <div className="rounded-2xl rounded-bl-md bg-muted px-3.5 py-2.5 text-xs text-muted-foreground" role="status">
+                  Thinking…
                 </div>
               </div>
             )}
@@ -263,10 +311,11 @@ export const AIChatbot = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendMessage())}
             placeholder="Type your question..."
+            aria-label="Ask the Sportsbnb assistant"
             className="flex-1 h-10 rounded-full border border-border-interactive bg-background px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-shadow"
             disabled={isLoading}
           />
-          <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-10 w-10 rounded-full flex-shrink-0 shadow-sm" aria-label="Send message">
+          <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="h-11 w-11 rounded-full flex-shrink-0 shadow-sm" aria-label="Send message">
             <Send className="h-4 w-4" />
           </Button>
         </div>

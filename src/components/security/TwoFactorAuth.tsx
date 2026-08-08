@@ -179,13 +179,13 @@ const TwoFactorAuth = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+          <CardTitle as="h2" className="flex items-center gap-2">
+            <Shield className="h-5 w-5" aria-hidden="true" />
             Two-Factor Authentication
           </CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8" role="status" aria-label="Loading">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
         </CardContent>
       </Card>
     );
@@ -197,7 +197,7 @@ const TwoFactorAuth = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2">
                 {is2FAEnabled ? (
                   <ShieldCheck className="h-5 w-5 text-primary" />
                 ) : (
@@ -260,7 +260,7 @@ const TwoFactorAuth = () => {
                 <Button onClick={handleStartEnrollment} disabled={isEnrolling}>
                   {isEnrolling ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                       Setting up...
                     </>
                   ) : (
@@ -309,11 +309,16 @@ const TwoFactorAuth = () => {
                 <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono break-all">
                   {enrollmentData?.secret}
                 </code>
-                <Button variant="outline" size="icon" onClick={copySecret}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={copySecret}
+                  aria-label={copied ? "Authenticator secret copied" : "Copy authenticator secret"}
+                >
                   {copied ? (
-                    <Check className="h-4 w-4 text-primary" />
+                    <Check className="h-4 w-4 text-primary" aria-hidden="true" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-4 w-4" aria-hidden="true" />
                   )}
                 </Button>
               </div>
@@ -351,7 +356,7 @@ const TwoFactorAuth = () => {
             >
               {isVerifying ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   Verifying...
                 </>
               ) : (
@@ -379,11 +384,11 @@ const TwoFactorAuth = () => {
             <AlertDialogAction 
               onClick={handleDisable2FA}
               disabled={isDisabling}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
             >
               {isDisabling ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   Disabling...
                 </>
               ) : (

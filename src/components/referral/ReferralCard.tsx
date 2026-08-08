@@ -11,7 +11,7 @@ const ReferralCard = () => {
     return (
       <Card>
         <CardContent className="py-8 text-center" role="status" aria-label="Loading your referrals">
-          <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+          <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
         </CardContent>
       </Card>
     );
@@ -22,8 +22,8 @@ const ReferralCard = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
+            <CardTitle as="h3" className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-primary" aria-hidden="true" />
               Invite a friend
             </CardTitle>
             {/* No credit is promised here any more. referral_credits has no
@@ -47,22 +47,22 @@ const ReferralCard = () => {
       <CardContent className="space-y-4">
         {referralCode ? (
           <>
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
-              <code className="flex-1 text-lg font-mono font-bold text-foreground tracking-wider">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-1 p-3">
+              <code className="flex-1 font-mono text-lg font-bold tracking-wider text-foreground">
                 {referralCode.code}
               </code>
-              <Button variant="ghost" size="icon" onClick={copyCode}>
-                <Copy className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={copyCode} aria-label="Copy referral code">
+                <Copy className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1 gap-2" onClick={copyCode}>
-                <Copy className="h-4 w-4" />
-                Copy Code
+                <Copy className="h-4 w-4" aria-hidden="true" />
+                Copy code
               </Button>
               <Button variant="default" className="flex-1 gap-2" onClick={shareLink}>
-                <Share2 className="h-4 w-4" />
-                Share Link
+                <Share2 className="h-4 w-4" aria-hidden="true" />
+                Share link
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
@@ -71,8 +71,8 @@ const ReferralCard = () => {
           </>
         ) : (
           <Button onClick={generateCode} className="w-full gap-2">
-            <Gift className="h-4 w-4" />
-            Generate Your Referral Code
+            <Gift className="h-4 w-4" aria-hidden="true" />
+            Generate referral code
           </Button>
         )}
       </CardContent>

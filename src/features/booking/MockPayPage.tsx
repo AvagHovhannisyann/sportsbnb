@@ -33,24 +33,46 @@ export default function MockPayPage() {
   };
 
   return (
-    <Layout>
-      <div className="container max-w-md py-16">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FlaskConical className="h-5 w-5 text-primary" /> Mock payment
+    <Layout showFooter={false} showMobileNav={false} showAssistant={false}>
+      <div className="section-tinted flex min-h-[calc(100dvh-4rem)] items-center justify-center px-5 py-10">
+        <Card className="w-full max-w-md shadow-sm">
+          <CardHeader className="border-b border-border p-5 sm:p-6">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg border border-warning/25 bg-warning/10 text-warning">
+              <FlaskConical className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <p className="eyebrow mb-1 text-warning">Development utility</p>
+            <CardTitle as="h1" className="text-2xl">
+              Mock payment
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              This simulated bank page exists only in development. Choose an outcome:
-            </p>
-            <Button className="w-full" onClick={() => decide("paid")} disabled={busy !== null}>
-              {busy === "paid" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <CardContent className="space-y-4 p-5 sm:p-6">
+            <div className="rounded-lg border border-warning/25 bg-warning/5 p-3.5 text-sm leading-relaxed">
+              This simulated bank page exists only in development. No real card is charged.
+            </div>
+            <p className="text-sm text-muted-foreground">Choose the provider outcome to continue:</p>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => decide("paid")}
+              disabled={busy !== null}
+              aria-busy={busy === "paid"}
+            >
+              {busy === "paid" ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : null}
               Simulate successful payment
             </Button>
-            <Button variant="destructive" className="w-full" onClick={() => decide("failed")} disabled={busy !== null}>
-              {busy === "failed" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
+              onClick={() => decide("failed")}
+              disabled={busy !== null}
+              aria-busy={busy === "failed"}
+            >
+              {busy === "failed" ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : null}
               Simulate failed payment
             </Button>
           </CardContent>

@@ -11,6 +11,7 @@ import { ChatInput } from "./ChatInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { useReducedMotion } from "framer-motion";
 
 interface ChatRoomProps {
   roomId: string;
@@ -19,6 +20,7 @@ interface ChatRoomProps {
 
 export const ChatRoom = ({ roomId, title }: ChatRoomProps) => {
   const { user } = useAuth();
+  const prefersReducedMotion = useReducedMotion();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -30,9 +32,9 @@ export const ChatRoom = ({ roomId, title }: ChatRoomProps) => {
   // Scroll to bottom on new messages
   useEffect(() => {
     if (messages && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
     }
-  }, [messages]);
+  }, [messages, prefersReducedMotion]);
 
   // Update last read when viewing chat
   useEffect(() => {
@@ -89,12 +91,20 @@ export const ChatRoom = ({ roomId, title }: ChatRoomProps) => {
         </div>
       )}
 
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div
+        ref={containerRef}
+        className="flex-1 space-y-3 overflow-y-auto bg-surface-1/45 p-4 sm:p-5"
+        role="log"
+        aria-label="Conversation messages"
+        aria-live="polite"
+      >
         {messages && messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <MessageSquare className="h-12 w-12 mb-3 opacity-50" />
-            <p className="text-sm">No messages yet</p>
-            <p className="text-xs">Start the conversation!</p>
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-card text-foreground-soft">
+              <MessageSquare className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <p className="font-medium text-foreground">No messages yet</p>
+            <p className="mt-1 text-sm">Send the first message when you are ready.</p>
           </div>
         ) : (
           messages?.map((message) => (

@@ -1,4 +1,4 @@
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, KeyboardEvent, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
@@ -28,27 +28,36 @@ export const ChatInput = ({ onSend, disabled, placeholder = "Type a message..." 
     }
   };
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleSend();
+  };
+
   return (
-    <div className="flex items-end gap-2 p-4 border-t bg-background">
+    <form
+      className="safe-area-bottom flex items-end gap-2 border-t bg-background p-3 sm:p-4"
+      onSubmit={handleSubmit}
+    >
       <Textarea
         ref={textareaRef}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
+        aria-label="Message"
         disabled={disabled}
-        className="min-h-[40px] max-h-[120px] resize-none flex-1"
+        className="max-h-[120px] min-h-11 flex-1 resize-none py-2.5"
         rows={1}
       />
       <Button
-        onClick={handleSend}
+        type="submit"
         disabled={!message.trim() || disabled}
         size="icon"
         aria-label="Send message"
-        className="h-10 w-10 rounded-full flex-shrink-0"
+        className="flex-shrink-0 rounded-full"
       >
         <Send className="h-4 w-4" />
       </Button>
-    </div>
+    </form>
   );
 };

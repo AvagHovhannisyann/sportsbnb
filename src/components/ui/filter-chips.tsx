@@ -52,7 +52,7 @@ export function FilterChips({
           // chip reading "Basketball" announced as "Basketball, button" tells
           // a screen-reader user nothing about which way it goes.
           aria-label={`Remove filter: ${chip.label}`}
-          className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-1 py-1 pl-3 pr-2 text-sm text-foreground transition-colors hover:border-border-strong hover:bg-surface-2"
+          className="inline-flex min-h-11 touch-manipulation items-center gap-1.5 rounded-lg border border-border bg-surface-1 py-2 pl-3 pr-2 text-sm font-medium text-foreground transition-[background-color,border-color,color] duration-150 ease-out motion-reduce:transition-none hover:border-border-strong hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {chip.label}
           <X className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
@@ -62,7 +62,7 @@ export function FilterChips({
           do the same thing, and offering both invites a moment's thought
           about a difference that does not exist. */}
       {onClearAll && chips.length > 1 && (
-        <Button variant="ghost" size="sm" onClick={onClearAll}>
+        <Button variant="ghost" onClick={onClearAll}>
           Clear all
         </Button>
       )}

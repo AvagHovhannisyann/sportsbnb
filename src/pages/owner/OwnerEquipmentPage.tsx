@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Price } from "@/components/ui/price";
 import {
   Dialog,
   DialogContent,
@@ -36,19 +37,18 @@ import {
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorPanel } from "@/components/common/StatusPanel";
-
-const PAGE_TITLE = "Equipment Rentals";
-const PAGE_SUBTITLE = "Manage rental items and packages for your venues";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
-import { 
-  useVenueEquipment, 
-  useAddEquipment, 
-  useUpdateEquipment, 
+import {
+  useVenueEquipment,
+  useAddEquipment,
+  useUpdateEquipment,
   useDeleteEquipment,
-  VenueEquipment 
+  VenueEquipment,
 } from "@/hooks/useVenueEquipment";
-import { formatPrice } from "@/lib/pricing";
+
+const PAGE_TITLE = "Equipment Rentals";
+const PAGE_SUBTITLE = "Track rental items and packages for each venue";
 
 const OwnerEquipmentPage = () => {
   const { user } = useAuth();
@@ -78,7 +78,13 @@ const OwnerEquipmentPage = () => {
     }
   }, [venues, selectedVenueId]);
 
-  const { data: equipment = [], isLoading: equipmentLoading } = useVenueEquipment(selectedVenueId);
+  const {
+    data: equipment = [],
+    isLoading: equipmentLoading,
+    isError: equipmentError,
+    isFetching: equipmentFetching,
+    refetch: refetchEquipment,
+  } = useVenueEquipment(selectedVenueId);
   const addEquipment = useAddEquipment();
   const updateEquipment = useUpdateEquipment();
   const deleteEquipment = useDeleteEquipment();
@@ -123,17 +129,22 @@ const OwnerEquipmentPage = () => {
       is_available: formData.is_available,
     };
 
-    if (editingEquipment) {
-      await updateEquipment.mutateAsync({
-        id: editingEquipment.id,
-        venueId: selectedVenueId,
-        ...equipmentData,
-      });
-    } else {
-      await addEquipment.mutateAsync(equipmentData);
-    }
+    try {
+      if (editingEquipment) {
+        await updateEquipment.mutateAsync({
+          id: editingEquipment.id,
+          venueId: selectedVenueId,
+          ...equipmentData,
+        });
+      } else {
+        await addEquipment.mutateAsync(equipmentData);
+      }
 
-    setIsDialogOpen(false);
+      setIsDialogOpen(false);
+    } catch {
+      // The mutation hooks own the error toast. Keep the dialog open so the
+      // owner's input is not lost and avoid an unhandled promise rejection.
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -144,7 +155,7 @@ const OwnerEquipmentPage = () => {
     return (
       <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
         <div className="flex items-center justify-center py-16" role="status" aria-label="Loading equipment">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" />
         </div>
       </OwnerLayout>
     );
@@ -155,11 +166,14 @@ const OwnerEquipmentPage = () => {
       <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
         {/* Not "No venues yet". That sends an owner whose venue list failed to
             load off to /add-venue to re-create something they already own. */}
-        <ErrorPanel
-          what="your venues"
-          onRetry={() => refetchVenues()}
-          isRetrying={venuesFetching}
-        />
+        <Card className="max-w-3xl">
+          <ErrorPanel
+            what="your venues"
+            description="Your equipment catalog has not changed. Try loading your venues again."
+            onRetry={() => refetchVenues()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
       </OwnerLayout>
     );
   }
@@ -167,132 +181,174 @@ const OwnerEquipmentPage = () => {
   if (venues.length === 0) {
     return (
       <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
-        <EmptyState
-          icon={Package}
-          title="No venues yet"
-          description="Add a venue first to manage equipment rentals"
-          actionLabel="Add Venue"
-          actionHref="/add-venue"
-        />
+        <Card className="max-w-3xl">
+          <EmptyState
+            icon={Package}
+            title="No venues yet"
+            description="Add a venue first to create an equipment catalog."
+            actionLabel="Add first venue"
+            actionHref="/add-venue"
+          />
+        </Card>
       </OwnerLayout>
     );
   }
 
+  const selectedVenue = venues.find((venue) => venue.id === selectedVenueId);
+
   return (
     <OwnerLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
-      <div className="space-y-6">
-        {/* The h1 and the strapline come from OwnerLayout now, as they do on
-            every other owner page. They used to be written out here instead,
-            which meant the two early returns above — "still loading" and "no
-            venues yet" — rendered no h1 at all. Measured with an empty owner
-            account, the page's outline started at h2: a new owner arriving at
-            this screen got a document with no heading for the page they were
-            on. */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Equipment
-          </Button>
-        </div>
+      <div className="max-w-5xl space-y-5">
+        <section
+          aria-labelledby="equipment-venue-context"
+          className="rounded-lg border border-border bg-surface-1 p-4 sm:flex sm:items-end sm:justify-between sm:gap-6"
+        >
+          <div className="min-w-0">
+            <p className="eyebrow">Venue context</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <h2
+                id="equipment-venue-context"
+                className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground"
+              >
+                {selectedVenue?.name || "Choose a venue"}
+              </h2>
+              {selectedVenue && (
+                <Badge variant={selectedVenue.is_active ? "default" : "secondary"}>
+                  {selectedVenue.is_active ? "Active" : "Draft"}
+                </Badge>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Items and packages below belong only to this venue.
+            </p>
+          </div>
 
-        {/* Venue Selector. This one sits alone in a toolbar row with no
-            visible label, so the name is spelled out rather than borrowed
-            from one. The placeholder is not a name: it disappears the moment
-            a venue is chosen, which is when it would matter most. */}
-        {venues.length > 1 && (
-          <Select value={selectedVenueId} onValueChange={setSelectedVenueId}>
-            <SelectTrigger aria-label="Select venue" className="w-full sm:w-64">
-              <SelectValue placeholder="Select a venue" />
-            </SelectTrigger>
-            <SelectContent>
-              {venues.map((venue) => (
-                <SelectItem key={venue.id} value={venue.id}>
-                  {venue.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+          <div className="mt-4 flex w-full flex-col gap-3 sm:mt-0 sm:w-auto sm:min-w-64 sm:flex-row sm:items-end">
+            {venues.length > 1 && (
+              <div className="w-full sm:w-64">
+                <Label htmlFor="equipment-venue">Venue</Label>
+                <Select value={selectedVenueId} onValueChange={setSelectedVenueId}>
+                  <SelectTrigger id="equipment-venue" className="mt-1.5">
+                    <SelectValue placeholder="Select a venue" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {venues.map((venue) => (
+                      <SelectItem key={venue.id} value={venue.id}>
+                        {venue.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <Button type="button" className="w-full sm:w-auto" onClick={() => handleOpenDialog()}>
+              <Plus aria-hidden="true" />
+              Add equipment
+            </Button>
+          </div>
+        </section>
 
         {equipmentLoading ? (
           <div className="flex items-center justify-center py-16" role="status" aria-label="Loading equipment">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" />
           </div>
+        ) : equipmentError ? (
+          <Card>
+            <ErrorPanel
+              what="this venue's equipment"
+              description="The catalog has not changed. Try loading it again."
+              onRetry={() => refetchEquipment()}
+              isRetrying={equipmentFetching}
+            />
+          </Card>
         ) : equipment.length === 0 ? (
-          /* A ninth hand-rolled empty state, on a page that already imports
-             the shared one for its no-venues case. The unification pass caught
-             the eight on the player side and missed this because it sits
-             behind `equipment.length === 0`, which no fixture had ever
-             produced. Found by measuring heading levels, of all things. */
           <EmptyState
             bordered
             icon={Package}
-            title="No equipment added"
-            description="Add rental items like balls, rackets, or packages for customers to add to their booking."
-            actionLabel="Add First Equipment"
+            title="No equipment in this catalog"
+            description="Add individual items or packages to keep this venue's rental inventory organized."
+            actionLabel="Add first item"
             onAction={() => handleOpenDialog()}
           />
         ) : (
-          <div className="space-y-6">
+          <div className="grid items-start gap-5 xl:grid-cols-2">
             {/* Individual Items */}
             {items.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle as="h2" className="text-lg">Individual Items</CardTitle>
-                  <CardDescription>Single items customers can rent</CardDescription>
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle as="h2" className="text-lg">Individual items</CardTitle>
+                      <CardDescription className="mt-1.5">Single-item entries in this venue's catalog.</CardDescription>
+                    </div>
+                    <Badge variant="secondary">{items.length}</Badge>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3">
+                <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                  <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
                     {items.map((item) => (
-                      <div
+                      <li
                         key={item.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="flex flex-col gap-3 bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{item.name}</span>
-                            {!item.is_available && (
-                              <Badge variant="secondary">Unavailable</Badge>
-                            )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-foreground">{item.name}</span>
+                            <Badge variant={item.is_available ? "default" : "secondary"}>
+                              {item.is_available ? "Available" : "Unavailable"}
+                            </Badge>
                           </div>
                           {item.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-semibold text-primary">
-                            {formatPrice(item.price)}
-                          </span>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)}>
-                              <Edit className="h-4 w-4" />
+                        <div className="flex items-center justify-between gap-3 sm:justify-end">
+                          <Price amount={item.price} className="font-semibold text-foreground" />
+                          <div className="flex gap-1" role="group" aria-label={`Actions for ${item.name}`}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenDialog(item)}
+                              aria-label={`Edit ${item.name}`}
+                            >
+                              <Edit aria-hidden="true" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  aria-label={`Delete ${item.name}`}
+                                >
+                                  <Trash2 aria-hidden="true" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Equipment</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete equipment?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     Are you sure you want to delete "{item.name}"? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(item.id)}>
-                                    Delete
+                                  <AlertDialogAction
+                                    className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
+                                    onClick={() => handleDelete(item.id)}
+                                  >
+                                    Delete equipment
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
                         </div>
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </CardContent>
               </Card>
             )}
@@ -300,63 +356,83 @@ const OwnerEquipmentPage = () => {
             {/* Packages */}
             {packages.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle as="h2" className="text-lg">Equipment Packages</CardTitle>
-                  <CardDescription>Bundled equipment sets at a discounted price</CardDescription>
+                <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle as="h2" className="text-lg">Equipment packages</CardTitle>
+                      <CardDescription className="mt-1.5">Grouped rental entries kept as one catalog option.</CardDescription>
+                    </div>
+                    <Badge variant="secondary">{packages.length}</Badge>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3">
+                <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                  <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
                     {packages.map((pkg) => (
-                      <div
+                      <li
                         key={pkg.id}
-                        className="flex items-center justify-between p-4 border rounded-lg bg-primary/5"
+                        className="flex flex-col gap-3 bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-primary" />
-                            <span className="font-medium">{pkg.name}</span>
-                            {!pkg.is_available && (
-                              <Badge variant="secondary">Unavailable</Badge>
-                            )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start gap-2">
+                            <span className="flex min-w-0 flex-1 items-start gap-2">
+                              <Package aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                              <span className="min-w-0 break-words font-semibold text-foreground">{pkg.name}</span>
+                            </span>
+                            <Badge variant={pkg.is_available ? "default" : "secondary"}>
+                              {pkg.is_available ? "Available" : "Unavailable"}
+                            </Badge>
                           </div>
                           {pkg.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{pkg.description}</p>
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{pkg.description}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-semibold text-primary">
-                            {formatPrice(pkg.price)}
-                          </span>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(pkg)}>
-                              <Edit className="h-4 w-4" />
+                        <div className="flex items-center justify-between gap-3 sm:justify-end">
+                          <Price amount={pkg.price} className="font-semibold text-foreground" />
+                          <div className="flex gap-1" role="group" aria-label={`Actions for ${pkg.name}`}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenDialog(pkg)}
+                              aria-label={`Edit ${pkg.name}`}
+                            >
+                              <Edit aria-hidden="true" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  aria-label={`Delete ${pkg.name}`}
+                                >
+                                  <Trash2 aria-hidden="true" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Package</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete package?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     Are you sure you want to delete "{pkg.name}"? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(pkg.id)}>
-                                    Delete
+                                  <AlertDialogAction
+                                    className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
+                                    onClick={() => handleDelete(pkg.id)}
+                                  >
+                                    Delete package
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
                         </div>
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </CardContent>
               </Card>
             )}
@@ -366,91 +442,94 @@ const OwnerEquipmentPage = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingEquipment ? "Edit Equipment" : "Add Equipment"}
+              {editingEquipment ? "Edit equipment" : "Add equipment"}
             </DialogTitle>
             <DialogDescription>
-              {editingEquipment 
-                ? "Update the equipment details below" 
-                : "Add a new rental item or package for customers"}
+              {editingEquipment
+                ? "Update this entry in the selected venue's equipment catalog."
+                : "Create an item or package in the selected venue's equipment catalog."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select 
-                value={formData.equipment_type} 
-                onValueChange={(value: "item" | "package") => 
-                  setFormData(prev => ({ ...prev, equipment_type: value }))
+              <Label htmlFor="equipment-type">Type</Label>
+              <Select
+                value={formData.equipment_type}
+                onValueChange={(value: "item" | "package") =>
+                  setFormData((prev) => ({ ...prev, equipment_type: value }))
                 }
               >
-                {/* `id="type"`, which the label above has always named and
-                    nothing has ever carried. Unlabelled, the trigger is
-                    announced as whatever it currently reads — "Item" — so the
-                    field's name changed every time its value did. */}
-                <SelectTrigger id="type">
+                <SelectTrigger id="equipment-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="item">Individual Item</SelectItem>
-                  <SelectItem value="package">Equipment Package</SelectItem>
+                  <SelectItem value="item">Individual item</SelectItem>
+                  <SelectItem value="package">Equipment package</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="equipment-name">Name</Label>
               <Input
-                id="name"
-                placeholder={formData.equipment_type === 'package' ? "e.g., Full Tennis Kit" : "e.g., Tennis Racket"}
+                id="equipment-name"
+                placeholder={formData.equipment_type === "package" ? "e.g., Full tennis kit" : "e.g., Tennis racket"}
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="equipment-description">Description</Label>
               <Textarea
-                id="description"
-                placeholder={formData.equipment_type === 'package' 
-                  ? "List what's included in this package..." 
-                  : "Brief description of the item..."}
+                id="equipment-description"
+                placeholder={
+                  formData.equipment_type === "package"
+                    ? "List what's included in this package…"
+                    : "Add a brief description…"
+                }
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Rental Price (֏)</Label>
+              <Label htmlFor="equipment-price">Rental price (֏)</Label>
               <div className="relative">
-                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Banknote
+                  aria-hidden="true"
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
-                  id="price"
+                  id="equipment-price"
                   type="number"
                   min="0"
                   step="100"
                   className="pl-9"
                   placeholder="0"
                   value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex min-h-12 items-center justify-between gap-4 rounded-md border border-border bg-surface-2 px-3 py-2.5">
               <div>
-                <Label>Available for Rental</Label>
-                <p className="text-sm text-muted-foreground">
-                  Show this option to customers
+                <Label htmlFor="equipment-available">Available</Label>
+                <p id="equipment-available-help" className="text-sm text-muted-foreground">
+                  Mark whether this catalog entry can currently be offered.
                 </p>
               </div>
               <Switch
+                id="equipment-available"
+                aria-describedby="equipment-available-help"
                 checked={formData.is_available}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, is_available: checked }))
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, is_available: checked }))
                 }
               />
             </div>
@@ -459,14 +538,18 @@ const OwnerEquipmentPage = () => {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={addEquipment.isPending || updateEquipment.isPending}
               >
                 {(addEquipment.isPending || updateEquipment.isPending) && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
                 )}
-                {editingEquipment ? "Save Changes" : "Add Equipment"}
+                {addEquipment.isPending || updateEquipment.isPending
+                  ? "Saving…"
+                  : editingEquipment
+                    ? "Save changes"
+                    : "Add equipment"}
               </Button>
             </DialogFooter>
           </form>

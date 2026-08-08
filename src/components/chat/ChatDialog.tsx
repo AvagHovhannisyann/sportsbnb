@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react";
 interface ChatDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloseAutoFocus?: (event: Event) => void;
   type: "game" | "booking" | "venue";
   referenceId: string;
   title: string;
@@ -29,6 +30,7 @@ interface ChatDialogProps {
 export const ChatDialog = ({
   open,
   onOpenChange,
+  onCloseAutoFocus,
   type,
   referenceId,
   title,
@@ -87,7 +89,7 @@ export const ChatDialog = ({
     <>
       {isInitializing || isLoadingRoom || !roomId ? (
         <div className="flex items-center justify-center h-[400px]" role="status" aria-label="Loading messages">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
         </div>
       ) : (
         <div className="h-[60vh] md:h-[500px]">
@@ -100,8 +102,12 @@ export const ChatDialog = ({
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[85vh] p-0">
-          <SheetHeader className="px-4 py-3 border-b">
+        <SheetContent
+          side="bottom"
+          className="h-[88dvh] gap-0 rounded-t-xl p-0"
+          onCloseAutoFocus={onCloseAutoFocus}
+        >
+          <SheetHeader className="border-b px-4 py-3.5 pr-12 text-left">
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
           {content}
@@ -112,8 +118,8 @@ export const ChatDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0">
-        <DialogHeader className="px-4 py-3 border-b">
+      <DialogContent className="max-w-lg gap-0 p-0" onCloseAutoFocus={onCloseAutoFocus}>
+        <DialogHeader className="border-b px-4 py-3.5 pr-12 text-left">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {content}

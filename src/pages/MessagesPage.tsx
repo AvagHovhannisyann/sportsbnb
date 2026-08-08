@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Link } from "react-router-dom";
 import { MessageCircle, Loader2, ArrowLeft, Gamepad2, MapPin, CalendarDays } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import Layout from "@/components/layout/Layout";
 import { ErrorPanel } from "@/components/common/StatusPanel";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { OwnerChatView } from "@/components/venue/OwnerChatView";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
@@ -33,7 +35,17 @@ interface ChatRoomWithDetails {
 
 const MessagesPage = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomWithDetails | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleCloseAutoFocus = (event: Event) => {
+    event.preventDefault();
+    const returnTarget = returnFocusRef.current;
+    setSelectedRoom(null);
+    requestAnimationFrame(() => returnTarget?.focus());
+  };
 
   // Get user's chat rooms with details
   const {
@@ -186,42 +198,50 @@ const MessagesPage = () => {
   return (
     <Layout>
       <div className="bg-background min-h-screen">
-        <div className="container py-8">
+        <div className="container py-6 sm:py-8 lg:py-10">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-7 max-w-3xl border-b border-border pb-6 sm:mb-8 sm:pb-7">
             <Link
               to="/dashboard"
-              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+              className="focus-ring mb-4 inline-flex min-h-11 items-center rounded-md pr-2 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground motion-reduce:transition-none"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
               Back to dashboard
             </Link>
-            <p className="eyebrow mb-2">Your conversations</p>
-            <h1 className="page-title">Messages</h1>
-            <p className="text-muted-foreground">Your conversations with game hosts and venue owners</p>
+            <p className="eyebrow mb-2">Inbox</p>
+            <h1 className="page-title text-balance">Messages</h1>
+            <p className="mt-2 max-w-2xl text-pretty text-foreground-soft">
+              Keep booking details and game plans in one place with hosts and venue owners.
+            </p>
           </div>
 
           {/* Chat List */}
           {isLoading ? (
             <div className="flex items-center justify-center py-16" role="status" aria-label="Loading messages">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
             </div>
           ) : chatRoomsWithDetails && chatRoomsWithDetails.length > 0 ? (
-            <div className="space-y-2 max-w-2xl">
+            <ul className="max-w-3xl space-y-2" aria-label="Conversations">
               {chatRoomsWithDetails.map((room) => (
-                <Card 
-                  key={room.room_id} 
-                  className="cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => setSelectedRoom(room)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
+                <li key={room.room_id}>
+                  <button
+                    type="button"
+                    className="card-lift focus-ring group w-full rounded-xl border border-border bg-card p-4 text-left shadow-xs sm:p-5"
+                    onClick={(event) => {
+                      returnFocusRef.current = event.currentTarget;
+                      setSelectedRoom(room);
+                      setIsChatOpen(true);
+                    }}
+                    aria-haspopup="dialog"
+                    aria-label={`Open conversation: ${room.title}${room.unread_count > 0 ? `, ${room.unread_count} unread` : ""}`}
+                  >
+                    <div className="flex items-center gap-3.5 sm:gap-4">
                       {/* Was 🎮 / 📍 / 📅. Emoji as an icon sets in whatever
                           face the OS supplies, at a size and weight nothing
                           else on the page shares; every other icon in the app
                           is lucide. */}
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-primary/10 text-primary">
+                      <Avatar className="h-11 w-11 shrink-0 sm:h-12 sm:w-12">
+                        <AvatarFallback className="border border-border bg-primary-soft text-primary">
                           {room.type === "game" ? (
                             <Gamepad2 className="h-5 w-5" aria-hidden="true" />
                           ) : room.type === "venue" ? (
@@ -233,10 +253,15 @@ const MessagesPage = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h2 className="font-semibold text-foreground truncate">{room.title}</h2>
-                          <span className="text-xs text-muted-foreground shrink-0">
+                          <h2 className="truncate font-display text-base font-semibold tracking-tight text-foreground">
+                            {room.title}
+                          </h2>
+                          <time
+                            dateTime={room.updated_at}
+                            className="shrink-0 text-xs text-muted-foreground"
+                          >
                             {formatDistanceToNow(new Date(room.updated_at), { addSuffix: true })}
-                          </span>
+                          </time>
                         </div>
                         {/* The last message, not the venue's street address.
                             `subtitle` still carries the context line and is
@@ -255,17 +280,17 @@ const MessagesPage = () => {
                             )}
                           </p>
                           {room.unread_count > 0 && (
-                            <Badge variant="default" className="shrink-0">
+                            <Badge variant="default" className="min-w-6 shrink-0 justify-center px-1.5" aria-hidden="true">
                               {room.unread_count}
                             </Badge>
                           )}
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : isError ? (
             /* "No messages yet" on a failed fetch reads as "nobody has
                contacted you", which is a claim about other people's behaviour
@@ -311,22 +336,45 @@ const MessagesPage = () => {
 
       {/* Chat Dialog */}
       {selectedRoom && selectedRoom.type === "venue" && selectedRoom.role === "owner" ? (
-        <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
-          <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
-            <DialogHeader className="px-4 py-3 border-b">
-              <DialogTitle>{selectedRoom.title}</DialogTitle>
-            </DialogHeader>
-            <OwnerChatView
-              roomId={selectedRoom.room_id}
-              venueName={selectedRoom.title}
-              customerId={selectedRoom.other_user_id || ""}
-            />
-          </DialogContent>
-        </Dialog>
+        isMobile ? (
+          <Sheet open={isChatOpen} onOpenChange={setIsChatOpen}>
+            <SheetContent
+              side="bottom"
+              className="h-[88dvh] gap-0 overflow-hidden rounded-t-xl p-0"
+              onCloseAutoFocus={handleCloseAutoFocus}
+            >
+              <SheetHeader className="border-b border-border px-4 py-3.5 pr-14">
+                <SheetTitle className="truncate">{selectedRoom.title}</SheetTitle>
+              </SheetHeader>
+              <OwnerChatView
+                roomId={selectedRoom.room_id}
+                venueName={selectedRoom.title}
+                customerId={selectedRoom.other_user_id || ""}
+              />
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+            <DialogContent
+              className="flex h-[min(42rem,calc(100dvh-2rem))] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
+              onCloseAutoFocus={handleCloseAutoFocus}
+            >
+              <DialogHeader className="border-b border-border px-4 py-3.5 pr-14 text-left">
+                <DialogTitle className="truncate">{selectedRoom.title}</DialogTitle>
+              </DialogHeader>
+              <OwnerChatView
+                roomId={selectedRoom.room_id}
+                venueName={selectedRoom.title}
+                customerId={selectedRoom.other_user_id || ""}
+              />
+            </DialogContent>
+          </Dialog>
+        )
       ) : selectedRoom ? (
         <ChatDialog
-          open={!!selectedRoom}
-          onOpenChange={(open) => !open && setSelectedRoom(null)}
+          open={isChatOpen}
+          onOpenChange={setIsChatOpen}
+          onCloseAutoFocus={handleCloseAutoFocus}
           type={selectedRoom.type}
           referenceId={selectedRoom.reference_id}
           title={selectedRoom.title}

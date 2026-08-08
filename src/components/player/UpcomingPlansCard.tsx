@@ -25,8 +25,8 @@ export const UpcomingPlansCard = () => {
     <Card>
       <CardHeader>
         {/* A dashboard section under the page h1: h2, not the h3 default. */}
-        <CardTitle as="h2" className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+        <CardTitle as="h3" className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
           Earlier inquiries
         </CardTitle>
         {/* booking_intents is read-only history now: the WhatsApp handoff was
@@ -39,7 +39,7 @@ export const UpcomingPlansCard = () => {
       <CardContent>
         {isLoading ? (
           <div className="py-8 flex justify-center" role="status" aria-label="Loading your plans">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <Loader2 className="h-5 w-5 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
                   </div>
         ) : active.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
@@ -56,20 +56,20 @@ export const UpcomingPlansCard = () => {
             {active.map((lead) => {
               const tag = labelFor(lead.lead_outcome);
               return (
-                <div key={lead.id} className="flex items-start gap-3 p-3 rounded-lg border border-border">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <MessageCircle className="h-4 w-4 text-primary" />
+                <div key={lead.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft">
+                    <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Link to={`/venue/${lead.venue_id}`} className="font-medium text-foreground hover:underline truncate">
+                      <Link to={`/venue/${lead.venue_id}`} className="focus-ring inline-flex min-h-11 items-center rounded-md font-medium text-foreground hover:text-primary">
                         {lead.venue_name}
                       </Link>
                       <Badge variant="outline" className={tag.cls}>{tag.text}</Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                      {lead.booking_date && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.booking_date} {formatTimeOfDay(lead.booking_time)}</span>}
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</span>
+                      {lead.booking_date && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" aria-hidden="true" />{lead.booking_date} {formatTimeOfDay(lead.booking_time)}</span>}
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" aria-hidden="true" />{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</span>
                     </div>
                   </div>
                 </div>

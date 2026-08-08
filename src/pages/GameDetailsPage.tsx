@@ -9,7 +9,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Price } from "@/components/ui/price";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
@@ -40,6 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatTimeRange } from "@/lib/time";
+import { formatPrice } from "@/lib/pricing";
 import { skillLevelChip, skillLevelLabel } from "@/lib/chips";
 
 const GameDetailsPage = () => {
@@ -64,8 +67,24 @@ const GameDetailsPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center" role="status" aria-label="Loading the game">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+        <div className="container py-8 md:py-10" role="status" aria-label="Loading the game">
+          <Skeleton className="mb-6 h-11 w-32" />
+          <div className="mb-8 max-w-2xl space-y-3">
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-11 w-48" />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {Array.from({ length: 4 }, (_, index) => (
+                <Skeleton key={index} className="h-24 w-full" />
+              ))}
+            </div>
+            <Skeleton className="h-72 w-full" />
+          </div>
         </div>
       </Layout>
     );
@@ -266,27 +285,27 @@ const GameDetailsPage = () => {
           ]),
         ]}
       />
-      <div className="bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         {/* Back Navigation */}
-        <div className="container py-4">
+        <div className="container py-3 md:py-4">
           <Link
             to="/games"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="focus-ring inline-flex min-h-11 items-center rounded-lg pr-3 text-sm font-medium text-muted-foreground transition-colors duration-150 motion-reduce:transition-none hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
             Back to games
           </Link>
         </div>
 
         <div className="container pb-16">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="contents lg:block lg:space-y-6">
               {/* Header */}
-              <div>
+              <header className="order-1">
                 {isCancelled && (
-                  <div className="flex items-center gap-2 text-destructive mb-4">
-                    <AlertTriangle className="h-5 w-5" />
+                  <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive" role="status">
+                    <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden="true" />
                     <span className="font-medium">This game has been cancelled</span>
                   </div>
                 )}
@@ -301,11 +320,16 @@ const GameDetailsPage = () => {
                   )}
                 </div>
                 
-                <h1 className="text-3xl font-bold text-foreground mb-4">{game.title}</h1>
+                <h1 className="mb-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                  {game.title}
+                </h1>
                 
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={game.host?.avatar_url || undefined} />
+                    <AvatarImage
+                      src={game.host?.avatar_url || undefined}
+                      alt={game.host?.full_name || "Game host"}
+                    />
                     <AvatarFallback>{hostInitials}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -316,76 +340,71 @@ const GameDetailsPage = () => {
                     </p>
                   </div>
                 </div>
-              </div>
+              </header>
 
               {/* Game Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Date</p>
-                        <p className="font-medium text-foreground">
-                          {format(new Date(game.game_date), "EEEE, MMMM d, yyyy")}
-                        </p>
-                      </div>
+              <section className="order-3 overflow-hidden rounded-xl border border-border bg-card">
+                <h2 className="sr-only">Game details</h2>
+                <dl className="grid sm:grid-cols-2">
+                  <div className="flex min-w-0 items-start gap-3 border-b border-border p-4 sm:border-r sm:p-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <Calendar className="h-5 w-5" aria-hidden="true" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="min-w-0">
+                      <dt className="text-sm text-muted-foreground">Date</dt>
+                      <dd className="font-medium leading-snug text-foreground">
+                        {format(new Date(game.game_date), "EEEE, MMMM d, yyyy")}
+                      </dd>
+                    </div>
+                  </div>
 
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Time</p>
-                        <p className="font-medium text-foreground">
-                          {formatTimeRange(game.game_time, game.duration_hours)}
-                        </p>
-                      </div>
+                  <div className="flex min-w-0 items-start gap-3 border-b border-border p-4 sm:p-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <Clock className="h-5 w-5" aria-hidden="true" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="min-w-0">
+                      <dt className="text-sm text-muted-foreground">Time</dt>
+                      <dd className="font-medium leading-snug text-foreground">
+                        {formatTimeRange(game.game_time, game.duration_hours)}
+                      </dd>
+                    </div>
+                  </div>
 
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <MapPin className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Location</p>
-                        <p className="font-medium text-foreground">{game.location}</p>
-                      </div>
+                  <div className="flex min-w-0 items-start gap-3 border-b border-border p-4 sm:border-b-0 sm:border-r sm:p-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <MapPin className="h-5 w-5" aria-hidden="true" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="min-w-0">
+                      <dt className="text-sm text-muted-foreground">Location</dt>
+                      <dd className="font-medium leading-snug text-foreground">{game.location}</dd>
+                    </div>
+                  </div>
 
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Banknote className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cost</p>
-                        <p className="font-medium text-foreground">
-                          {game.price_per_player > 0 ? `֏${game.price_per_player.toLocaleString()} per player` : "Free"}
-                        </p>
-                      </div>
+                  <div className="flex min-w-0 items-start gap-3 p-4 sm:p-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <Banknote className="h-5 w-5" aria-hidden="true" />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <div className="min-w-0">
+                      <dt className="text-sm text-muted-foreground">Cost</dt>
+                      <dd className="font-medium leading-snug text-foreground">
+                        {game.price_per_player > 0 ? (
+                          <Price
+                            amount={game.price_per_player}
+                            suffix="/ player"
+                            className="text-base font-semibold text-foreground"
+                          />
+                        ) : (
+                          <span className="text-success">Free</span>
+                        )}
+                      </dd>
+                    </div>
+                  </div>
+                </dl>
+              </section>
 
               {/* Description */}
               {game.description && (
-                <section className="panel">
+                <section className="panel order-4">
                   <h2 className="section-title">About this game</h2>
                   <p className="text-muted-foreground whitespace-pre-wrap">{game.description}</p>
                 </section>
@@ -393,7 +412,7 @@ const GameDetailsPage = () => {
 
               {/* Pending Requests - Only visible to host */}
               {isHost && pendingParticipants.length > 0 && (
-                <section className="panel">
+                <section className="panel order-5">
                   <h2 className="section-title flex items-center gap-2">
                     <UserPlus className="h-5 w-5" />
                     Join Requests ({pendingParticipants.length})
@@ -409,15 +428,18 @@ const GameDetailsPage = () => {
                         return (
                           <div 
                             key={participant.id}
-                            className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border"
+                            className="flex flex-col gap-4 rounded-lg border border-border bg-surface-1 p-4 sm:flex-row sm:items-center sm:justify-between"
                           >
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={participant.profile?.avatar_url || undefined} />
+                            <div className="flex min-w-0 items-center gap-3">
+                              <Avatar className="h-10 w-10 shrink-0">
+                                <AvatarImage
+                                  src={participant.profile?.avatar_url || undefined}
+                                  alt={participant.profile?.full_name || "Player"}
+                                />
                                 <AvatarFallback>{initials}</AvatarFallback>
                               </Avatar>
-                              <div>
-                                <p className="font-medium text-foreground">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-foreground">
                                   {participant.profile?.full_name || "Anonymous"}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
@@ -425,21 +447,22 @@ const GameDetailsPage = () => {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 sm:shrink-0">
                               <Button 
-                                size="sm" 
+                                size="icon"
                                 variant="outline"
                                 onClick={() => handleReject(participant)}
                                 disabled={rejectParticipant.isPending}
+                                aria-label={`Decline ${participant.profile?.full_name || "player"}'s request`}
                               >
-                                <X className="h-4 w-4" />
+                                <X className="h-4 w-4" aria-hidden="true" />
                               </Button>
                               <Button 
-                                size="sm"
+                                className="flex-1 sm:flex-none"
                                 onClick={() => handleApprove(participant)}
                                 disabled={approveParticipant.isPending || isFull}
                               >
-                                <Check className="h-4 w-4 mr-1" />
+                                <Check className="h-4 w-4" aria-hidden="true" />
                                 Approve
                               </Button>
                             </div>
@@ -451,13 +474,13 @@ const GameDetailsPage = () => {
               )}
 
               {/* Participants */}
-              <section className="panel">
+              <section className="panel order-6">
                 <h2 className="section-title">
                   Players ({game.participant_count || 0}/{game.max_players})
                 </h2>
 
                 {game.participants && game.participants.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {game.participants.map((participant) => {
                       const initials = participant.profile?.full_name
                         ?.split(" ")
@@ -468,10 +491,13 @@ const GameDetailsPage = () => {
                       return (
                         <div 
                           key={participant.id}
-                          className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                          className="flex min-w-0 items-center gap-3 rounded-lg bg-surface-1 p-3"
                         >
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={participant.profile?.avatar_url || undefined} />
+                            <AvatarImage
+                              src={participant.profile?.avatar_url || undefined}
+                              alt={participant.profile?.full_name || "Player"}
+                            />
                             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                           </Avatar>
                           <span className="text-sm font-medium text-foreground truncate">
@@ -488,40 +514,56 @@ const GameDetailsPage = () => {
               </section>
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-24">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+            {/* Primary action follows the title on mobile and stays visible on desktop. */}
+            <aside className="order-2 self-start lg:order-none lg:sticky lg:top-24">
+              <Card className="shadow-sm">
+                <CardHeader className="p-5 pb-3">
+                  <CardTitle as="h2" className="flex items-center justify-between gap-3 text-lg">
                     {/* The panel is headed by what it does *now*. It said
                         "Join Game" unconditionally, so a player already in the
                         game read "Join Game" above a "Leave Game" button, and
                         the host read it above their own management actions. */}
-                    <span>{isHost ? "Your game" : isParticipant ? "You're in" : "Join Game"}</span>
-                    <Badge variant={isFull ? "secondary" : "default"}>
-                      {spotsLeft} spots left
+                    <span>
+                      {isHost
+                        ? "Your game"
+                        : isParticipant
+                          ? "You're in"
+                          : isPendingParticipant
+                            ? "Request pending"
+                            : "Join game"}
+                    </span>
+                    <Badge variant={isCancelled || isFull ? "secondary" : "default"}>
+                      {isCancelled
+                        ? "Cancelled"
+                        : isFull
+                          ? "Full"
+                          : `${spotsLeft} ${spotsLeft === 1 ? "spot" : "spots"} left`}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                <CardContent className="space-y-4 p-5 pt-0">
+                  <dl className="space-y-2 rounded-lg bg-surface-1 p-3.5">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Players</span>
-                      <span className="font-medium">{game.participant_count || 0} / {game.max_players}</span>
+                      <dt className="text-muted-foreground">Players</dt>
+                      <dd className="stat-numeral font-medium">{game.participant_count || 0} / {game.max_players}</dd>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Cost</span>
-                      <span className="font-medium">
-                        {game.price_per_player > 0 ? `֏${game.price_per_player.toLocaleString()}` : "Free"}
-                      </span>
+                      <dt className="text-muted-foreground">Cost</dt>
+                      <dd className="font-medium">
+                        {game.price_per_player > 0 ? (
+                          <Price amount={game.price_per_player} className="text-sm font-semibold text-foreground" />
+                        ) : (
+                          <span className="text-success">Free</span>
+                        )}
+                      </dd>
                     </div>
                     {pendingParticipants.length > 0 && isHost && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Pending requests</span>
-                        <Badge variant="secondary">{pendingParticipants.length}</Badge>
+                        <dt className="text-muted-foreground">Pending requests</dt>
+                        <dd><Badge variant="secondary">{pendingParticipants.length}</Badge></dd>
                       </div>
                     )}
-                  </div>
+                  </dl>
 
                   <Separator />
 
@@ -558,7 +600,7 @@ const GameDetailsPage = () => {
                             <AlertDialogCancel>Keep Game</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={handleCancel}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
                             >
                               Cancel Game
                             </AlertDialogAction>
@@ -575,7 +617,7 @@ const GameDetailsPage = () => {
                     >
                       {leaveGame.isPending ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                           Leaving...
                         </>
                       ) : (
@@ -585,7 +627,7 @@ const GameDetailsPage = () => {
                   ) : isPendingParticipant ? (
                     <div className="space-y-2">
                       <Button className="w-full" disabled>
-                        <Clock className="h-4 w-4 mr-2" />
+                        <Clock className="h-4 w-4" aria-hidden="true" />
                         Awaiting Approval
                       </Button>
                       <Button 
@@ -605,15 +647,15 @@ const GameDetailsPage = () => {
                     >
                       {requestToJoin.isPending || isProcessingPayment ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                           {isProcessingPayment ? "Processing..." : "Requesting..."}
                         </>
                       ) : isFull ? (
                         "Game Full"
                       ) : isPaidGame ? (
                         <>
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Pay & Join (֏{game.price_per_player.toLocaleString()})
+                          <CreditCard className="h-4 w-4" aria-hidden="true" />
+                          Pay & Join ({formatPrice(game.price_per_player)})
                         </>
                       ) : (
                         "Request to Join"
@@ -634,12 +676,12 @@ const GameDetailsPage = () => {
                   )}
 
                   <Button variant="ghost" className="w-full" onClick={handleShare}>
-                    <Share2 className="h-4 w-4 mr-2" />
+                    <Share2 className="h-4 w-4" aria-hidden="true" />
                     Share Game
                   </Button>
                 </CardContent>
               </Card>
-            </div>
+            </aside>
           </div>
         </div>
       </div>

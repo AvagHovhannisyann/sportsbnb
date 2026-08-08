@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +17,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePasskeySupport } from "@/hooks/usePasskeySupport";
 import { getPasskeyFailure, passkeyLabel } from "@/lib/passkeys";
-import { fadeUp, staggerChildren } from "@/lib/motion";
 
 interface Passkey {
   id: string;
@@ -45,7 +43,6 @@ const formatDate = (value?: string) => {
 const PasskeyManager = () => {
   const { registerPasskey, listPasskeys, deletePasskey } = useAuth();
   const { available, browserCapable, serverEnabled, platformAuthenticator } = usePasskeySupport();
-  const prefersReduced = useReducedMotion();
 
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,9 +127,6 @@ const PasskeyManager = () => {
   // to anyone here, so the card does not exist.
   if (!serverEnabled) return null;
 
-  const list = prefersReduced ? {} : { variants: staggerChildren, initial: "hidden", animate: "visible" };
-  const item = prefersReduced ? {} : { variants: fadeUp };
-
   return (
     <>
       <Card>
@@ -169,19 +163,18 @@ const PasskeyManager = () => {
             </div>
           ) : isLoading ? (
             <div className="flex items-center justify-center py-8" role="status" aria-label="Loading passkeys">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
             </div>
           ) : passkeys.length > 0 ? (
             <>
-              <motion.ul className="space-y-3" {...list}>
+              <ul className="divide-y divide-border rounded-lg border border-border bg-card">
                 {passkeys.map((passkey) => {
                   const added = formatDate(passkey.created_at);
                   const used = formatDate(passkey.last_used_at);
                   return (
-                    <motion.li
+                    <li
                       key={passkey.id}
-                      className="rounded-lg border border-border bg-card p-4"
-                      {...item}
+                      className="p-4"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex min-w-0 items-center gap-3">
@@ -209,15 +202,15 @@ const PasskeyManager = () => {
                           Remove
                         </Button>
                       </div>
-                    </motion.li>
+                    </li>
                   );
                 })}
-              </motion.ul>
+              </ul>
 
               <Button variant="outline" onClick={handleRegister} disabled={isRegistering}>
                 {isRegistering ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                     Waiting for your device...
                   </>
                 ) : (
@@ -240,7 +233,7 @@ const PasskeyManager = () => {
               <Button onClick={handleRegister} disabled={isRegistering}>
                 {isRegistering ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                     Waiting for your device...
                   </>
                 ) : (
@@ -278,11 +271,11 @@ const PasskeyManager = () => {
                 void handleDelete();
               }}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   Removing...
                 </>
               ) : (

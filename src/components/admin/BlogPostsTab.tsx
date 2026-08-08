@@ -1,34 +1,8 @@
 import { useState } from "react";
-import { TONE_CHIP } from "@/lib/chips";
-import {
-  useAllBlogPosts,
-  useCreateBlogPost,
-  useUpdateBlogPost,
-  useDeleteBlogPost,
-  type BlogPost,
-} from "@/hooks/useBlogPosts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { ExternalLink, FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,12 +12,40 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Loader2, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useAllBlogPosts,
+  useCreateBlogPost,
+  useDeleteBlogPost,
+  useUpdateBlogPost,
+  type BlogPost,
+} from "@/hooks/useBlogPosts";
 import { supabase } from "@/integrations/supabase/client";
+import { TONE_CHIP } from "@/lib/chips";
 
 const generateSlug = (title: string) =>
   title
@@ -73,24 +75,36 @@ const emptyForm: PostFormData = {
   is_published: false,
 };
 
+const PostStatus = ({ published }: { published: boolean }) => (
+  <Badge variant="outline" className={published ? TONE_CHIP.positive : TONE_CHIP.neutral}>
+    {published ? "Published" : "Draft"}
+  </Badge>
+);
+
 const BlogPostsTab = () => {
-  const { data: posts, isLoading } = useAllBlogPosts();
+  const postsQuery = useAllBlogPosts();
   const createPost = useCreateBlogPost();
   const updatePost = useUpdateBlogPost();
   const deletePost = useDeleteBlogPost();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingWasPublished, setEditingWasPublished] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
+  const [unpublishConfirmationOpen, setUnpublishConfirmationOpen] = useState(false);
   const [form, setForm] = useState<PostFormData>(emptyForm);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const openCreate = () => {
     setEditingId(null);
+    setEditingWasPublished(false);
     setForm(emptyForm);
     setDialogOpen(true);
   };
 
   const openEdit = (post: BlogPost) => {
     setEditingId(post.id);
+    setEditingWasPublished(post.is_published);
     setForm({
       title: post.title,
       slug: post.slug,
@@ -105,16 +119,18 @@ const BlogPostsTab = () => {
   };
 
   const handleTitleChange = (title: string) => {
-    setForm((prev) => ({
-      ...prev,
+    setForm((previous) => ({
+      ...previous,
       title,
-      slug: editingId ? prev.slug : generateSlug(title),
+      slug: editingId ? previous.slug : generateSlug(title),
     }));
   };
 
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-
-  const generateCoverImage = async (title: string, content: string, keyword: string): Promise<string | null> => {
+  const generateCoverImage = async (
+    title: string,
+    content: string,
+    keyword: string,
+  ): Promise<string | null> => {
     try {
       setIsGeneratingImage(true);
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
@@ -126,248 +142,425 @@ const BlogPostsTab = () => {
       });
       if (error) throw error;
       return data?.url || null;
-    } catch (err) {
-      console.error("Failed to generate cover image:", err);
+    } catch (error) {
+      console.error("Failed to generate cover image:", error);
       return null;
     } finally {
       setIsGeneratingImage(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!form.title.trim() || !form.content.trim()) return;
+  const savePost = async () => {
+    if (!form.title.trim() || !form.content.trim()) return false;
 
     const formToSave = { ...form };
 
-    // Auto-generate cover image if publishing and no cover image set
+    // Preserve the existing publishing flow: a missing cover triggers the
+    // existing generation function before the post mutation is submitted.
     if (form.is_published && !form.cover_image_url) {
       const imageUrl = await generateCoverImage(form.title, form.content, form.target_keyword);
       if (imageUrl) {
         formToSave.cover_image_url = imageUrl;
-        setForm((p) => ({ ...p, cover_image_url: imageUrl }));
+        setForm((previous) => ({ ...previous, cover_image_url: imageUrl }));
       }
     }
 
-    if (editingId) {
-      await updatePost.mutateAsync({ id: editingId, ...formToSave });
-    } else {
-      await createPost.mutateAsync(formToSave);
+    try {
+      if (editingId) {
+        await updatePost.mutateAsync({ id: editingId, ...formToSave });
+      } else {
+        await createPost.mutateAsync(formToSave);
+      }
+      setDialogOpen(false);
+      return true;
+    } catch {
+      // Mutation hooks provide the user-facing toast and the editor stays open.
+      return false;
     }
-    setDialogOpen(false);
+  };
+
+  const handleSave = async () => {
+    if (editingId && editingWasPublished && !form.is_published) {
+      setUnpublishConfirmationOpen(true);
+      return;
+    }
+    await savePost();
+  };
+
+  const confirmDelete = () => {
+    if (!postToDelete) return;
+    deletePost.mutate(postToDelete.id, {
+      onSuccess: () => setPostToDelete(null),
+    });
   };
 
   const isSaving = createPost.isPending || updatePost.isPending || isGeneratingImage;
+  const posts = postsQuery.data ?? [];
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Blog Posts</CardTitle>
-          <CardDescription>Manage articles and blog content</CardDescription>
+      <CardHeader className="flex flex-col gap-4 space-y-0 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        <div className="min-w-0">
+          <CardTitle as="h2" className="text-lg">Blog posts</CardTitle>
+          <CardDescription className="mt-1">Draft, publish, and maintain marketplace articles.</CardDescription>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Post
+        <Button className="w-full shrink-0 sm:w-auto" onClick={openCreate}>
+          <Plus aria-hidden="true" />
+          New post
         </Button>
       </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-8" role="status" aria-label="Loading posts">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+        {postsQuery.isLoading ? (
+          <div className="space-y-3" role="status" aria-label="Loading blog posts">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
-        ) : posts && posts.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Keyword</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Published</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {posts.map((post) => (
-                <TableRow key={post.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-foreground line-clamp-1">{post.title}</p>
-                      <p className="text-xs text-muted-foreground">/blog/{post.slug}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {post.target_keyword && (
-                      <Badge variant="secondary" className="text-xs">
-                        {post.target_keyword}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {post.is_published ? (
-                      <Badge className={TONE_CHIP.positive}>
-                        Published
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">Draft</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {post.published_at
-                      ? format(new Date(post.published_at), "MMM d, yyyy")
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {post.is_published && (
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link to={`/blog/${post.slug}`} target="_blank">
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(post)} aria-label="Edit post">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label="Delete post">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete post?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete "{post.title}". This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deletePost.mutate(post.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        ) : postsQuery.isError ? (
+          <ErrorPanel
+            what="blog posts"
+            description="No draft or publication status has been inferred from the failed request."
+            onRetry={() => postsQuery.refetch()}
+            isRetrying={postsQuery.isFetching}
+            className="py-8"
+          />
+        ) : posts.length === 0 ? (
+          <StatusPanel
+            icon={FileText}
+            title="No blog posts yet"
+            description="Create a draft when the first marketplace article is ready."
+            className="py-8"
+          >
+            <Button onClick={openCreate}>
+              <Plus aria-hidden="true" />
+              Create first post
+            </Button>
+          </StatusPanel>
         ) : (
-          <p className="text-center text-muted-foreground py-8">
-            No blog posts yet. Create your first article!
-          </p>
+          <>
+            <ul className="space-y-3 lg:hidden" aria-label="Blog posts">
+              {posts.map((post) => (
+                <li key={post.id} className="rounded-lg border border-border bg-surface-1 p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words font-semibold leading-snug text-foreground">{post.title}</p>
+                      <p className="mt-1 break-all text-xs text-muted-foreground">/blog/{post.slug}</p>
+                    </div>
+                    <PostStatus published={post.is_published} />
+                  </div>
+
+                  <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Target keyword</dt>
+                      <dd className="mt-0.5 break-words text-foreground">
+                        {post.target_keyword || "Not set"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Last published</dt>
+                      <dd className="mt-0.5 text-foreground">
+                        {post.published_at
+                          ? format(new Date(post.published_at), "MMM d, yyyy")
+                          : "Not published"}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {post.is_published && (
+                      <Button asChild variant="outline" size="sm">
+                        <Link
+                          to={`/blog/${post.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`View published post: ${post.title}`}
+                        >
+                          <ExternalLink aria-hidden="true" />
+                          View
+                        </Link>
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={post.is_published ? undefined : "col-span-2"}
+                      onClick={() => openEdit(post)}
+                      aria-label={`Edit post: ${post.title}`}
+                    >
+                      <Pencil aria-hidden="true" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="col-span-2 text-destructive hover:text-destructive"
+                      onClick={() => setPostToDelete(post)}
+                      aria-label={`Delete post: ${post.title}`}
+                    >
+                      <Trash2 aria-hidden="true" />
+                      Delete post
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden lg:block">
+              <Table>
+                <caption className="sr-only">
+                  Blog posts with search keywords, publication states, dates, and actions.
+                </caption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Post</TableHead>
+                    <TableHead>Keyword</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last published</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {posts.map((post) => (
+                    <TableRow key={post.id}>
+                      <TableCell className="max-w-md">
+                        <p className="break-words font-semibold leading-snug text-foreground">{post.title}</p>
+                        <p className="mt-0.5 break-all text-xs text-muted-foreground">/blog/{post.slug}</p>
+                      </TableCell>
+                      <TableCell className="max-w-56">
+                        {post.target_keyword ? (
+                          <Badge variant="secondary" className="h-auto whitespace-normal py-1 text-left leading-4">
+                            {post.target_keyword}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not set</span>
+                        )}
+                      </TableCell>
+                      <TableCell><PostStatus published={post.is_published} /></TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                        {post.published_at
+                          ? format(new Date(post.published_at), "MMM d, yyyy")
+                          : "Not published"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {post.is_published && (
+                            <Button variant="ghost" size="icon" asChild>
+                              <Link
+                                to={`/blog/${post.slug}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={`View published post: ${post.title}`}
+                              >
+                                <ExternalLink aria-hidden="true" />
+                              </Link>
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEdit(post)}
+                            aria-label={`Edit post: ${post.title}`}
+                          >
+                            <Pencil aria-hidden="true" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setPostToDelete(post)}
+                            aria-label={`Delete post: ${post.title}`}
+                          >
+                            <Trash2 aria-hidden="true" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Post" : "New Blog Post"}</DialogTitle>
+            <DialogTitle>{editingId ? "Edit post" : "New blog post"}</DialogTitle>
+            <DialogDescription>
+              Required fields are marked. Publishing without a cover URL keeps the existing automated cover workflow.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+          <div className="space-y-5 py-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-post-title">Title <span aria-hidden="true">*</span></Label>
               <Input
-                id="title"
+                id="blog-post-title"
                 value={form.title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder="How to Find Sports Facilities Near You"
+                onChange={(event) => handleTitleChange(event.target.value)}
+                placeholder="How to find sports facilities near you"
+                aria-required="true"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="slug">URL Slug</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-post-slug">URL slug</Label>
               <Input
-                id="slug"
+                id="blog-post-slug"
                 value={form.slug}
-                onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
+                onChange={(event) => setForm((previous) => ({ ...previous, slug: event.target.value }))}
                 placeholder="how-to-find-sports-facilities"
               />
+              <p className="break-all text-xs text-muted-foreground">Published path: /blog/{form.slug || "your-post"}</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="excerpt">Excerpt</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-post-excerpt">Excerpt</Label>
               <Textarea
-                id="excerpt"
+                id="blog-post-excerpt"
                 value={form.excerpt}
-                onChange={(e) => setForm((p) => ({ ...p, excerpt: e.target.value }))}
-                placeholder="A brief summary for the blog listing..."
-                rows={2}
+                onChange={(event) => setForm((previous) => ({ ...previous, excerpt: event.target.value }))}
+                placeholder="A brief summary for the blog listing"
+                rows={3}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="content">Content (Markdown) *</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-post-content">Content in Markdown <span aria-hidden="true">*</span></Label>
               <Textarea
-                id="content"
+                id="blog-post-content"
                 value={form.content}
-                onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
-                placeholder="Write your article content in Markdown..."
+                onChange={(event) => setForm((previous) => ({ ...previous, content: event.target.value }))}
+                placeholder="Write the article content"
                 rows={12}
                 className="font-mono text-sm"
+                aria-required="true"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="target_keyword">Target Keyword (SEO)</Label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="blog-post-keyword">Target keyword</Label>
                 <Input
-                  id="target_keyword"
+                  id="blog-post-keyword"
                   value={form.target_keyword}
-                  onChange={(e) => setForm((p) => ({ ...p, target_keyword: e.target.value }))}
+                  onChange={(event) => setForm((previous) => ({ ...previous, target_keyword: event.target.value }))}
                   placeholder="book sports facilities"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="author">Author</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="blog-post-author">Author</Label>
                 <Input
-                  id="author"
+                  id="blog-post-author"
                   value={form.author_name}
-                  onChange={(e) => setForm((p) => ({ ...p, author_name: e.target.value }))}
+                  onChange={(event) => setForm((previous) => ({ ...previous, author_name: event.target.value }))}
                   placeholder="SportsBnb Team"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cover_image">Cover Image URL</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-post-cover-image">Cover image URL</Label>
               <Input
-                id="cover_image"
+                id="blog-post-cover-image"
+                type="url"
                 value={form.cover_image_url}
-                onChange={(e) => setForm((p) => ({ ...p, cover_image_url: e.target.value }))}
-                placeholder="https://..."
+                onChange={(event) => setForm((previous) => ({ ...previous, cover_image_url: event.target.value }))}
+                placeholder="https://example.com/cover.jpg"
               />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex min-h-11 items-center justify-between gap-4 rounded-lg border border-border bg-surface-1 px-3.5 py-2.5">
+              <div className="min-w-0">
+                <Label htmlFor="blog-post-published">Published</Label>
+                <p className="text-xs leading-4 text-muted-foreground">
+                  {form.is_published ? "Visible on the public blog." : "Kept as an internal draft."}
+                </p>
+              </div>
               <Switch
-                id="published"
+                id="blog-post-published"
                 checked={form.is_published}
-                onCheckedChange={(checked) => setForm((p) => ({ ...p, is_published: checked }))}
+                onCheckedChange={(checked) => setForm((previous) => ({ ...previous, is_published: checked }))}
               />
-              <Label htmlFor="published">Publish immediately</Label>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSaving}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving || !form.title.trim() || !form.content.trim()}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isGeneratingImage ? "Generating cover image..." : editingId ? "Save Changes" : "Create Post"}
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !form.title.trim() || !form.content.trim()}
+            >
+              {isSaving && (
+                <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+              )}
+              {isGeneratingImage
+                ? "Preparing cover…"
+                : editingId
+                  ? "Save changes"
+                  : "Create post"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!postToDelete} onOpenChange={(open) => !open && setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+            <AlertDialogDescription className="break-words">
+              {postToDelete ? `“${postToDelete.title}”` : "This post"} will be permanently deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePost.isPending}>Keep post</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deletePost.isPending}
+              className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
+            >
+              {deletePost.isPending ? "Deleting…" : "Delete post"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={unpublishConfirmationOpen} onOpenChange={setUnpublishConfirmationOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Saving these changes will remove the article from the public blog. Its content will remain available here as a draft.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isSaving}
+              onClick={() =>
+                setForm((previous) => ({ ...previous, is_published: true }))
+              }
+            >
+              Keep published
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (event) => {
+                event.preventDefault();
+                if (await savePost()) setUnpublishConfirmationOpen(false);
+              }}
+              disabled={isSaving}
+              className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
+            >
+              {isSaving ? "Saving…" : "Unpublish and save"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

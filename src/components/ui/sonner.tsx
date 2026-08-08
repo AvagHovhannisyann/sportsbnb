@@ -1,14 +1,11 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="light"
       className="toaster group"
       toastOptions={{
         classNames: {
@@ -32,10 +29,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // a ring on top of the default cannot regress; suppressing the
           // default can.
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg focus-visible:ring-2 focus-visible:ring-ring",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            "group toast rounded-lg group-[.toaster]:border-border group-[.toaster]:bg-card group-[.toaster]:text-foreground group-[.toaster]:shadow-md !transition-[transform,opacity,height] !duration-150 ease-out motion-reduce:!transition-none focus-visible:ring-2 focus-visible:ring-ring",
+          title: "text-sm font-semibold leading-5",
+          description: "text-sm leading-5 group-[.toast]:text-muted-foreground",
+          actionButton:
+            "h-11 rounded-lg px-3.5 text-sm font-medium !transition-[background-color,color,opacity] !duration-150 motion-reduce:!transition-none group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:hover:bg-primary/90",
+          cancelButton:
+            "h-11 rounded-lg px-3.5 text-sm font-medium !transition-[background-color,color,opacity] !duration-150 motion-reduce:!transition-none group-[.toast]:bg-muted group-[.toast]:text-foreground group-[.toast]:hover:bg-accent",
+          closeButton:
+            "h-11 w-11 rounded-lg border-border bg-card text-muted-foreground !transition-[background-color,color,opacity] !duration-150 motion-reduce:!transition-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+          success: "border-success/40",
+          error: "border-destructive/40",
+          warning: "border-warning/40",
+          info: "border-information/40",
         },
       }}
       {...props}

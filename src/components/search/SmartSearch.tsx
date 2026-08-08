@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { MapPin, Loader2, X, Search, Building, Gamepad2, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -47,10 +47,12 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const listboxId = useId();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,13 +64,24 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
   const searchAll = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSuggestions([]);
+      setIsOpen(false);
+      setHasSearched(false);
       return;
     }
 
     setIsLoading(true);
+    setHasSearched(false);
+    setIsOpen(true);
     const allSuggestions: SearchSuggestion[] = [];
 
     try {
@@ -185,7 +198,8 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
       }
 
       setSuggestions(allSuggestions);
-      setIsOpen(allSuggestions.length > 0);
+      setIsOpen(true);
+      setHasSearched(true);
       setSelectedIndex(-1);
     } catch (error) {
       console.error("Search error:", error);
@@ -220,6 +234,7 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
+    setHasSearched(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => searchAll(newValue), 250);
   };
@@ -228,6 +243,7 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
     setInputValue("");
     setSuggestions([]);
     setIsOpen(false);
+    setHasSearched(false);
 
     switch (suggestion.type) {
       case "venue":
@@ -278,10 +294,10 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
 
   const getIcon = (type: SearchSuggestion["type"]) => {
     switch (type) {
-      case "venue": return <Building className="h-4 w-4 text-primary" />;
-      case "game": return <Gamepad2 className="h-4 w-4 text-green-500" />;
-      case "sport": return <Tag className="h-4 w-4 text-orange-500" />;
-      case "location": return <MapPin className="h-4 w-4 text-muted-foreground" />;
+      case "venue": return <Building className="h-4 w-4 text-primary" aria-hidden="true" />;
+      case "game": return <Gamepad2 className="h-4 w-4 text-information" aria-hidden="true" />;
+      case "sport": return <Tag className="h-4 w-4 text-brand-tuff" aria-hidden="true" />;
+      case "location": return <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
     }
   };
 
@@ -303,7 +319,10 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Search
+          className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           ref={inputRef}
           type="text"
@@ -312,65 +331,113 @@ export const SmartSearch: React.FC<SmartSearchProps> = ({
           onKeyDown={handleKeyDown}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           placeholder={placeholder}
-          className="pl-10 pr-10 h-12"
+          role="combobox"
+          aria-label="Search venues, games, sports, or locations"
+          aria-autocomplete="list"
+          aria-expanded={isOpen}
+          aria-controls={listboxId}
+          aria-activedescendant={
+            selectedIndex >= 0 && suggestions[selectedIndex]
+              ? `${listboxId}-option-${selectedIndex}`
+              : undefined
+          }
+          autoComplete="off"
+          className="h-12 pl-11 pr-12"
         />
         {isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
+          <>
+            <Loader2
+              className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-muted-foreground motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            <span className="sr-only" role="status">Searching</span>
+          </>
         )}
         {!isLoading && inputValue && (
           <button
             aria-label="Clear search"
             type="button"
-            onClick={() => { setInputValue(""); setSuggestions([]); setIsOpen(false); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setInputValue("");
+              setSuggestions([]);
+              setIsOpen(false);
+              setHasSearched(false);
+              inputRef.current?.focus();
+            }}
+            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors duration-150 motion-reduce:transition-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden">
-          <div className="max-h-80 overflow-auto">
-            {Object.entries(groupedSuggestions).map(([type, items]) => (
-              <div key={type}>
-                <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50 uppercase tracking-wider">
-                  {getTypeLabel(type as SearchSuggestion["type"])}s
-                </div>
-                <ul>
+      {isOpen && (suggestions.length > 0 || hasSearched || isLoading) && (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label="Search suggestions"
+            className="max-h-[min(22rem,55vh)] overflow-y-auto overscroll-contain p-1.5"
+          >
+            {isLoading && suggestions.length === 0 ? (
+              <div className="flex min-h-16 items-center gap-3 px-3 text-sm text-muted-foreground" role="status">
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                Looking for matches…
+              </div>
+            ) : suggestions.length === 0 ? (
+              <div className="px-3 py-5 text-sm text-muted-foreground" role="status">
+                No matches yet. Try a venue, sport, or neighborhood.
+              </div>
+            ) : (
+              Object.entries(groupedSuggestions).map(([type, items]) => (
+                <div
+                  key={type}
+                  role="group"
+                  aria-label={`${getTypeLabel(type as SearchSuggestion["type"])} suggestions`}
+                >
+                  <div className="px-3 pb-1 pt-2 text-xs font-semibold text-muted-foreground">
+                    {getTypeLabel(type as SearchSuggestion["type"])}s
+                  </div>
                   {items.map((suggestion) => {
                     const globalIndex = suggestions.indexOf(suggestion);
                     return (
-                      <li
+                      <button
                         key={suggestion.id}
+                        id={`${listboxId}-option-${globalIndex}`}
+                        type="button"
+                        role="option"
+                        aria-selected={globalIndex === selectedIndex}
                         className={cn(
-                          "px-3 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
+                          "flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left outline-none transition-colors duration-100 motion-reduce:transition-none",
                           globalIndex === selectedIndex
                             ? "bg-accent text-accent-foreground"
-                            : "hover:bg-muted"
+                            : "hover:bg-surface-1 focus-visible:bg-accent",
                         )}
                         onClick={() => handleSelect(suggestion)}
+                        onMouseDown={(event) => event.preventDefault()}
                         onMouseEnter={() => setSelectedIndex(globalIndex)}
                       >
                         {getIcon(suggestion.type)}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{suggestion.title}</div>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium">{suggestion.title}</span>
                           {suggestion.subtitle && (
-                            <div className="text-xs text-muted-foreground truncate">
+                            <span className="block truncate text-xs text-muted-foreground">
                               {suggestion.subtitle}
-                            </div>
+                            </span>
                           )}
-                        </div>
-                      </li>
+                        </span>
+                      </button>
                     );
                   })}
-                </ul>
-              </div>
-            ))}
+                </div>
+              ))
+            )}
           </div>
-          <div className="px-3 py-1.5 text-xs text-muted-foreground border-t border-border bg-muted/30">
-            Press ↵ to select • Esc to close
-          </div>
+          {suggestions.length > 0 && (
+            <p className="hidden border-t border-border bg-surface-1 px-3 py-2 text-xs text-muted-foreground sm:block">
+              Use ↑ and ↓ to browse · Enter to select · Esc to close
+            </p>
+          )}
         </div>
       )}
     </div>

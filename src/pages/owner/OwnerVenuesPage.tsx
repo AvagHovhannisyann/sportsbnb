@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, MapPin, Star, Settings, Calendar, MoreHorizontal, Edit, Eye } from "lucide-react";
+import { Building2, Calendar, Edit, Eye, MapPin, MoreHorizontal, Plus, Settings, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +16,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues, getVenueImage } from "@/hooks/useVenues";
-import { Building2 } from "lucide-react";
 
 const OwnerVenuesPage = () => {
   const navigate = useNavigate();
@@ -41,11 +41,26 @@ const OwnerVenuesPage = () => {
     }
   }, [user, profile, authLoading, isProfileLoading, navigate]);
 
-  if (authLoading || venuesLoading) {
+  if (authLoading) {
     return (
       <OwnerLayout title="My Venues">
-        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading your venues">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-4" role="status" aria-label="Loading your venues">
+          <div className="flex items-center justify-between gap-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-11 w-32" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Card key={index} className="overflow-hidden">
+                <Skeleton className="aspect-[16/9] w-full rounded-none" />
+                <CardContent className="p-4">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="mt-2 h-4 w-44" />
+                  <Skeleton className="mt-5 h-5 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </OwnerLayout>
     );
@@ -55,15 +70,19 @@ const OwnerVenuesPage = () => {
   const draftVenues = myVenues.filter((v) => !v.is_active);
 
   return (
-    <OwnerLayout title="My Venues" subtitle="Manage your venue listings and settings">
+    <OwnerLayout title="My Venues" subtitle="Manage listing status, pricing, and availability.">
       {/* Header Actions */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-sm text-muted-foreground">
-          {myVenues.length} venue{myVenues.length !== 1 ? "s" : ""} total
-        </div>
-        <Button onClick={() => navigate("/add-venue")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Venue
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {venuesError
+            ? "Venue count unavailable"
+            : venuesLoading
+              ? "Loading venue count…"
+              : `${myVenues.length} venue${myVenues.length !== 1 ? "s" : ""} total`}
+        </p>
+        <Button className="w-full sm:w-auto" onClick={() => navigate("/add-venue")}>
+          <Plus aria-hidden="true" />
+          Add venue
         </Button>
       </div>
 
@@ -76,10 +95,24 @@ const OwnerVenuesPage = () => {
         <Card>
           <ErrorPanel
             what="your venues"
+            description="We couldn't retrieve your listings. Nothing was changed, and you can try again safely."
             onRetry={() => refetchVenues()}
             isRetrying={venuesFetching}
           />
         </Card>
+      ) : venuesLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Loading your venue listings">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index} className="overflow-hidden">
+              <Skeleton className="aspect-[16/9] w-full rounded-none" />
+              <CardContent className="p-4">
+                <Skeleton className="h-5 w-36" />
+                <Skeleton className="mt-2 h-4 w-44" />
+                <Skeleton className="mt-5 h-5 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : myVenues.length === 0 ? (
         <Card>
           <EmptyState
@@ -94,27 +127,26 @@ const OwnerVenuesPage = () => {
         <div className="space-y-8">
           {/* Active Venues */}
           {activeVenues.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                Active Venues ({activeVenues.length})
+            <section aria-labelledby="active-venues-heading">
+              <h2 id="active-venues-heading" className="mb-4 flex items-center gap-2 font-display text-lg font-semibold tracking-extra-tight text-foreground">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />
+                Active venues <span className="font-normal text-muted-foreground">({activeVenues.length})</span>
               </h2>
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {activeVenues.map((venue) => (
-                  <Card key={venue.id} className="card-lift group overflow-hidden">
-                    <div className="aspect-video relative">
+                  <Card key={venue.id} className="overflow-hidden">
+                    <div className="relative aspect-[16/9] bg-surface-1">
                       <img
                         src={getVenueImage(venue)}
                         alt={venue.name} loading="lazy" decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="h-full w-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       {/* Was bg-emerald-500 with white text: 2.54:1, and it
                           sits over a photo where there is no help from the
                           surface. The app already has an audited solid-fill
                           pair that means exactly this, and using it makes the
                           badge match the confirmed tone elsewhere. */}
-                      <Badge className="absolute top-3 left-3 border-0 bg-primary text-primary-foreground">
+                      <Badge className="absolute left-3 top-3 border-0 bg-primary text-primary-foreground shadow-sm">
                         Active
                       </Badge>
                       <DropdownMenu>
@@ -137,7 +169,7 @@ const OwnerVenuesPage = () => {
                           <Button
                             variant="secondary"
                             size="icon"
-                            className="absolute top-2 right-2 h-8 w-8"
+                            className="absolute right-2 top-2 shadow-sm"
                             aria-label={`Actions for ${venue.name}`}
                           >
                             <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -145,96 +177,96 @@ const OwnerVenuesPage = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => navigate(`/venue/${venue.id}`)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Listing
+                            <Eye aria-hidden="true" className="mr-2 h-4 w-4" />
+                            View listing
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/venue/${venue.id}/edit`)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Venue
+                            <Edit aria-hidden="true" className="mr-2 h-4 w-4" />
+                            Edit venue
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/venue/${venue.id}/availability`)}>
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Manage Schedule
+                            <Calendar aria-hidden="true" className="mr-2 h-4 w-4" />
+                            Manage schedule
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/owner/settings?venue=${venue.id}`)}>
-                            <Settings className="h-4 w-4 mr-2" />
+                            <Settings aria-hidden="true" className="mr-2 h-4 w-4" />
                             Settings
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                     <CardContent className="p-4">
-                      <h3 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                        <MapPin className="h-3 w-3" />
+                      <h3 className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground">{venue.name}</h3>
+                      <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <MapPin aria-hidden="true" className="h-4 w-4 shrink-0" />
                         <span className="truncate">{venue.address || venue.city}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                      <div className="mt-4 flex items-end justify-between gap-3 border-t border-border pt-3">
+                        <div className="flex min-w-0 items-center gap-2">
                           <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                            <Star aria-hidden="true" className="h-4 w-4 fill-warning text-warning" />
                             <span className="text-sm font-medium">{venue.rating || "—"}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="truncate text-xs text-muted-foreground">
                             ({venue.review_count || 0} reviews)
                           </span>
                         </div>
-                        <div className="text-sm">
-                          <span className="font-semibold text-foreground">֏{venue.price_per_hour.toLocaleString()}</span>
-                          <span className="text-muted-foreground">/hr</span>
-                        </div>
+                        <span className="inline-flex shrink-0 items-baseline gap-0.5 whitespace-nowrap text-sm">
+                          <span className="text-foreground-soft" aria-hidden="true">֏</span>
+                          <span className="stat-numeral font-semibold" aria-hidden="true">{venue.price_per_hour.toLocaleString()}</span>
+                          <span className="sr-only">֏{venue.price_per_hour.toLocaleString()} per hour</span>
+                          <span className="text-xs text-muted-foreground" aria-hidden="true">/hr</span>
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
           {/* Draft Venues */}
           {draftVenues.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground" />
-                Draft Venues ({draftVenues.length})
-              </h3>
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <section aria-labelledby="draft-venues-heading">
+              <h2 id="draft-venues-heading" className="mb-4 flex items-center gap-2 font-display text-lg font-semibold tracking-extra-tight text-foreground">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-muted-foreground" />
+                Draft venues <span className="font-normal text-muted-foreground">({draftVenues.length})</span>
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {draftVenues.map((venue) => (
-                  <Card key={venue.id} className="overflow-hidden opacity-75 hover:opacity-100 transition-opacity">
-                    <div className="aspect-video relative">
+                  <Card key={venue.id} className="overflow-hidden bg-surface-2">
+                    <div className="relative aspect-[16/9] bg-surface-1">
                       <img
                         src={getVenueImage(venue)}
                         alt={venue.name} loading="lazy" decoding="async"
-                        className="w-full h-full object-cover grayscale"
+                        className="h-full w-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <Badge variant="secondary" className="absolute top-3 left-3">
+                      <Badge variant="secondary" className="absolute left-3 top-3 bg-card shadow-sm">
                         Draft
                       </Badge>
                     </div>
                     <CardContent className="p-4">
-                      <h3 className="font-semibold text-foreground mb-1 truncate">{venue.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                        <MapPin className="h-3 w-3" />
+                      <h3 className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground">{venue.name}</h3>
+                      <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <MapPin aria-hidden="true" className="h-4 w-4 shrink-0" />
                         <span className="truncate">{venue.address || venue.city}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-3">
+                      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                         Complete your setup to publish this venue
                       </p>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="w-full"
+                        className="mt-4 w-full"
                         onClick={() => navigate(`/venue/${venue.id}/edit`)}
                       >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Complete Setup
+                        <Edit aria-hidden="true" />
+                        Complete setup
                       </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
       )}

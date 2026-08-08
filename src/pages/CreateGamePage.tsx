@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -135,8 +135,9 @@ const CreateGamePage = () => {
   if (authLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center" role="status" aria-label="Loading the game form">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+        <div className="container max-w-3xl py-16 text-center" role="status" aria-label="Loading the game form">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+          <p className="mt-3 text-sm text-muted-foreground">Preparing the game form…</p>
         </div>
       </Layout>
     );
@@ -144,30 +145,38 @@ const CreateGamePage = () => {
 
   return (
     <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8 max-w-2xl">
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-3xl py-8 md:py-10">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <div className="mb-8 flex items-start gap-3">
+            <Button aria-label="Back" variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
-            <div>
+            <div className="pt-0.5">
+              <p className="eyebrow mb-2">Host a match</p>
               <h1 className="page-title">Create a Game</h1>
-              <p className="text-muted-foreground">Find players for your next match</p>
+              <p className="max-w-xl text-muted-foreground">
+                Set the essentials now. Players will see the time, place, skill level, and cost before requesting to join.
+              </p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-xl border border-border bg-card shadow-xs"
+          >
             {/* Game Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle as="h2">Game Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <section className="border-b border-border p-5 md:p-6" aria-labelledby="game-details-heading">
+              <div className="mb-5">
+                <h2 id="game-details-heading" className="text-xl font-semibold text-foreground">Game details</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Give players a clear idea of what they are joining.</p>
+              </div>
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Game Title *</Label>
                   <Input
                     id="title"
+                    aria-required="true"
                     placeholder="e.g., Sunday Football Match"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -187,14 +196,14 @@ const CreateGamePage = () => {
                   />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Sport *</Label>
+                    <Label htmlFor="sport">Sport *</Label>
                     <Select
                       value={formData.sport}
                       onValueChange={(value) => setFormData({ ...formData, sport: value })}
                     >
-                      <SelectTrigger aria-label="Sport">
+                      <SelectTrigger id="sport" aria-label="Sport" aria-required="true">
                         <SelectValue placeholder="Select sport" />
                       </SelectTrigger>
                       <SelectContent>
@@ -208,12 +217,12 @@ const CreateGamePage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Skill Level</Label>
+                    <Label htmlFor="skill-level">Skill Level</Label>
                     <Select
                       value={formData.skillLevel}
                       onValueChange={(value) => setFormData({ ...formData, skillLevel: value })}
                     >
-                      <SelectTrigger aria-label="Skill level">
+                      <SelectTrigger id="skill-level" aria-label="Skill level">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -225,53 +234,61 @@ const CreateGamePage = () => {
                     </Select>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
             {/* Play Mode */}
             {allTeams.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Play Mode
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, playMode: "individual", teamId: "" })}
-                      className={`p-4 rounded-lg border text-center transition-colors ${
-                        formData.playMode === "individual"
-                          ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/50"
-                      }`}
-                    >
-                      <p className="font-medium">Individual</p>
-                      <p className="text-xs mt-1">Play as yourself</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, playMode: "team" })}
-                      className={`p-4 rounded-lg border text-center transition-colors ${
-                        formData.playMode === "team"
-                          ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/50"
-                      }`}
-                    >
-                      <p className="font-medium">As Team</p>
-                      <p className="text-xs mt-1">Play with your team</p>
-                    </button>
-                  </div>
+              <section className="border-b border-border p-5 md:p-6" aria-labelledby="play-mode-heading">
+                <div className="mb-5">
+                  <h2 id="play-mode-heading" className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                    <Users className="h-5 w-5 text-primary" aria-hidden="true" />
+                    Play mode
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Choose who this match represents.</p>
+                </div>
+                <div className="space-y-4">
+                  <RadioGroup
+                    aria-label="Play mode"
+                    value={formData.playMode}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        playMode: value,
+                        teamId: value === "individual" ? "" : formData.teamId,
+                      })
+                    }
+                    className="grid gap-3 sm:grid-cols-2"
+                  >
+                    <div className="relative">
+                      <RadioGroupItem value="individual" id="play-mode-individual" className="peer sr-only" />
+                      <Label
+                        htmlFor="play-mode-individual"
+                        className="flex min-h-[5rem] cursor-pointer flex-col justify-center rounded-lg border border-border-interactive bg-background p-4 text-left transition-[background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:bg-surface-1 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary-soft peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+                      >
+                        <span className="font-semibold text-foreground">Individual</span>
+                        <span className="mt-1 text-sm font-normal text-muted-foreground">Play as yourself</span>
+                      </Label>
+                    </div>
+                    <div className="relative">
+                      <RadioGroupItem value="team" id="play-mode-team" className="peer sr-only" />
+                      <Label
+                        htmlFor="play-mode-team"
+                        className="flex min-h-[5rem] cursor-pointer flex-col justify-center rounded-lg border border-border-interactive bg-background p-4 text-left transition-[background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none hover:bg-surface-1 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary-soft peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+                      >
+                        <span className="font-semibold text-foreground">As a team</span>
+                        <span className="mt-1 text-sm font-normal text-muted-foreground">Represent one of your teams</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                   {formData.playMode === "team" && (
                     <div className="space-y-2">
-                      <Label>Select Team *</Label>
+                      <Label htmlFor="team">Select Team *</Label>
                       <Select
                         value={formData.teamId}
                         onValueChange={(value) => setFormData({ ...formData, teamId: value })}
                       >
-                        <SelectTrigger aria-label="Team">
+                        <SelectTrigger id="team" aria-label="Team" aria-required="true">
                           <SelectValue placeholder="Choose your team" />
                         </SelectTrigger>
                         <SelectContent>
@@ -284,24 +301,25 @@ const CreateGamePage = () => {
                       </Select>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             )}
 
             {/* Location */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
+            <section className="border-b border-border p-5 md:p-6" aria-labelledby="game-location-heading">
+              <div className="mb-5">
+                <h2 id="game-location-heading" className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                  <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
                   Location
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">Use a listed venue or choose another place.</p>
+              </div>
+              <div className="space-y-4">
                 {venues.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Select a Venue (optional)</Label>
+                    <Label htmlFor="venue">Select a Venue (optional)</Label>
                     <Select value={formData.venueId} onValueChange={handleVenueSelect}>
-                      <SelectTrigger aria-label="Venue">
+                      <SelectTrigger id="venue" aria-label="Venue">
                         <SelectValue placeholder="Choose from listed venues" />
                       </SelectTrigger>
                       <SelectContent>
@@ -333,30 +351,31 @@ const CreateGamePage = () => {
                     }))}
                     placeholder="Search for a location..."
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p id="location-hint" className="text-xs text-muted-foreground">
                     Start typing and select from the suggestions
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
             {/* Date & Time */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Date & Time
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+            <section className="border-b border-border p-5 md:p-6" aria-labelledby="date-time-heading">
+              <div className="mb-5">
+                <h2 id="date-time-heading" className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                  <Calendar className="h-5 w-5 text-primary" aria-hidden="true" />
+                  Date and time
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">Choose a start time within the next 30 days.</p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Date *</Label>
+                    <Label htmlFor="game-date">Date *</Label>
                     <Select
                       value={formData.gameDate}
                       onValueChange={(value) => setFormData({ ...formData, gameDate: value })}
                     >
-                      <SelectTrigger aria-label="Date">
+                      <SelectTrigger id="game-date" aria-label="Date" aria-required="true">
                         <SelectValue placeholder="Select date" />
                       </SelectTrigger>
                       <SelectContent>
@@ -370,12 +389,12 @@ const CreateGamePage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Time *</Label>
+                    <Label htmlFor="game-time">Time *</Label>
                     <Select
                       value={formData.gameTime}
                       onValueChange={(value) => setFormData({ ...formData, gameTime: value })}
                     >
-                      <SelectTrigger aria-label="Time">
+                      <SelectTrigger id="game-time" aria-label="Time" aria-required="true">
                         <SelectValue placeholder="Select time" />
                       </SelectTrigger>
                       <SelectContent>
@@ -390,12 +409,12 @@ const CreateGamePage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Duration</Label>
+                  <Label htmlFor="game-duration">Duration</Label>
                   <Select
                     value={formData.durationHours}
                     onValueChange={(value) => setFormData({ ...formData, durationHours: value })}
                   >
-                    <SelectTrigger aria-label="Duration">
+                    <SelectTrigger id="game-duration" aria-label="Duration">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -405,26 +424,27 @@ const CreateGamePage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
             {/* Players & Cost */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Players & Cost
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+            <section className="p-5 md:p-6" aria-labelledby="players-cost-heading">
+              <div className="mb-5">
+                <h2 id="players-cost-heading" className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                  <Users className="h-5 w-5 text-primary" aria-hidden="true" />
+                  Players and cost
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">Set the roster size and each player's share.</p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Max Players</Label>
+                    <Label htmlFor="max-players">Max Players</Label>
                     <Select
                       value={formData.maxPlayers}
                       onValueChange={(value) => setFormData({ ...formData, maxPlayers: value })}
                     >
-                      <SelectTrigger aria-label="Max players">
+                      <SelectTrigger id="max-players" aria-label="Max players">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -450,23 +470,23 @@ const CreateGamePage = () => {
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
             {/* Submit */}
-            <div className="flex gap-4">
+            <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex gap-3 border-t border-border bg-card/95 p-4 backdrop-blur-sm md:bottom-0 md:justify-end md:p-5">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => navigate(-1)}
-                className="flex-1"
+                className="flex-1 md:flex-none"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createGame.isPending} className="flex-1">
+              <Button type="submit" disabled={createGame.isPending} className="flex-1 md:min-w-40 md:flex-none">
                 {createGame.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                     Creating...
                   </>
                 ) : (

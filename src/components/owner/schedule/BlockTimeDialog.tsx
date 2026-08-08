@@ -86,24 +86,23 @@ export function BlockTimeDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Ban className="h-5 w-5 text-destructive" />
-            Block Time
+            <Ban className="h-5 w-5 text-warning" aria-hidden="true" />
+            Block a full day
           </DialogTitle>
           <DialogDescription>
-            Block off time for maintenance, private events, or other closures.
+            Close this venue to new bookings for one calendar day.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Block Type */}
+        <div className="space-y-5 py-2">
           <div className="space-y-2">
-            <Label>Block Type</Label>
+            <Label id="block-type-label">Block type</Label>
             <Select value={blockType} onValueChange={(v) => setBlockType(v as "time" | "full_day")}>
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby="block-type-label" aria-describedby="block-type-hint">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="full_day">Full Day</SelectItem>
+                <SelectItem value="full_day">Full day</SelectItem>
                 {/* Disabled rather than removed: an owner who has used this
                     before should see where it went, not wonder. */}
                 <SelectItem value="time" disabled>
@@ -111,26 +110,27 @@ export function BlockTimeDialog({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              A block closes the venue for the whole day. Blocking part of a day
-              is not available yet.
+            <p id="block-type-hint" className="text-xs leading-relaxed text-muted-foreground">
+              Partial-day closures are not supported by the current availability system.
             </p>
           </div>
 
-          {/* Date Picker */}
           <div className="space-y-2">
-            <Label>Date</Label>
+            <p id="block-date-label" className="text-sm font-medium leading-5 text-foreground">
+              Date <span aria-hidden="true">*</span>
+            </p>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  aria-labelledby="block-date-label block-date-value"
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : "Select a date"}
+                  <CalendarIcon aria-hidden="true" />
+                  <span id="block-date-value">{date ? format(date, "PPP") : "Select a date"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -145,14 +145,13 @@ export function BlockTimeDialog({
             </Popover>
           </div>
 
-          {/* Time Range (only for specific time) */}
           {blockType === "time" && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Start Time</Label>
+                <Label id="block-start-time-label">Start time</Label>
                 <Select value={startTime} onValueChange={setStartTime}>
-                  <SelectTrigger>
-                    <Clock className="h-4 w-4 mr-2" />
+                  <SelectTrigger aria-labelledby="block-start-time-label">
+                    <Clock aria-hidden="true" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -165,10 +164,10 @@ export function BlockTimeDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>End Time</Label>
+                <Label id="block-end-time-label">End time</Label>
                 <Select value={endTime} onValueChange={setEndTime}>
-                  <SelectTrigger>
-                    <Clock className="h-4 w-4 mr-2" />
+                  <SelectTrigger aria-labelledby="block-end-time-label">
+                    <Clock aria-hidden="true" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -183,10 +182,11 @@ export function BlockTimeDialog({
             </div>
           )}
 
-          {/* Reason */}
           <div className="space-y-2">
-            <Label>Reason (optional)</Label>
+            <Label htmlFor="block-reason">Reason <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Textarea
+              id="block-reason"
+              name="blockReason"
               placeholder="e.g., Maintenance, Private event, School booking..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -196,11 +196,11 @@ export function BlockTimeDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!date}>
-            Block Time
+          <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={!date}>
+            Block full day
           </Button>
         </DialogFooter>
       </DialogContent>

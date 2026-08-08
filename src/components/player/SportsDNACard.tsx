@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorPanel } from "@/components/common/StatusPanel";
@@ -72,17 +73,17 @@ export function SportsDNACard() {
   }, [data]);
 
   return (
-    <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Your Sports DNA
+        <CardTitle as="h3" className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
+          Your sports pattern
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         {isLoading ? (
           <div className="py-8 flex justify-center" role="status" aria-label="Loading your sports profile">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <Loader2 className="h-5 w-5 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
           </div>
         ) : isError ? (
           <ErrorPanel
@@ -99,7 +100,7 @@ export function SportsDNACard() {
         ) : (
           <>
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Top sports</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Top sports</div>
               <div className="flex flex-wrap gap-1.5">
                 {dna.topSports.length > 0 ? (
                   dna.topSports.map(([sport, count], i) => (
@@ -114,21 +115,23 @@ export function SportsDNACard() {
             </div>
 
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Favorite time · <span className="text-foreground font-medium">{dna.favoriteTime}</span>
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Favorite time · <span className="font-semibold text-foreground">{dna.favoriteTime}</span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="space-y-2.5">
                 {Object.entries(dna.timeBuckets).map(([label, value]) => {
                   const pct = dna.totalTime ? (value / dna.totalTime) * 100 : 0;
                   return (
-                    <div key={label} className="space-y-1">
-                      <div className="h-16 rounded-md bg-muted relative overflow-hidden">
-                        <div
-                          className="absolute bottom-0 left-0 right-0 bg-primary/80 transition-all"
-                          style={{ height: `${pct}%` }}
-                        />
+                    <div key={label} className="grid grid-cols-[5rem_minmax(0,1fr)_2.5rem] items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                      <Progress
+                        value={pct}
+                        className="h-1.5"
+                        aria-label={`${label}: ${value} ${value === 1 ? "activity" : "activities"}`}
+                      />
+                      <div className="text-right text-xs tabular-nums text-muted-foreground">
+                        {Math.round(pct)}%
                       </div>
-                      <div className="text-[10px] text-center text-muted-foreground">{label}</div>
                     </div>
                   );
                 })}
@@ -136,7 +139,7 @@ export function SportsDNACard() {
             </div>
 
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Top venues</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Top venues</div>
               {dna.topVenues.length > 0 ? (
                 <ol className="space-y-1.5">
                   {dna.topVenues.map(([name, count], i) => (

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 
 export type OutreachTarget = {
   id: string;
@@ -86,10 +86,10 @@ export function useImportTargets() {
       return payload.length;
     },
     onSuccess: (n) => {
-      toast({ title: `Imported ${n} venue${n === 1 ? "" : "s"}` });
+      toast.success(`Imported ${n} venue${n === 1 ? "" : "s"}`);
       qc.invalidateQueries({ queryKey: ["outreach_targets"] });
     },
-    onError: (e: Error) => toast({ title: "Import failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("Import failed", { description: e.message }),
   });
 }
 
@@ -105,7 +105,7 @@ export function useEnrichTarget() {
   return useMutation({
     mutationFn: (target_id: string) => invoke("outreach-enrich", { target_id }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outreach_targets"] }),
-    onError: (e: Error) => toast({ title: "Enrich failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("Enrich failed", { description: e.message }),
   });
 }
 
@@ -114,7 +114,7 @@ export function useResearchTarget() {
   return useMutation({
     mutationFn: (target_id: string) => invoke("outreach-research", { target_id }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outreach_targets"] }),
-    onError: (e: Error) => toast({ title: "Research failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("Research failed", { description: e.message }),
   });
 }
 
@@ -123,7 +123,7 @@ export function useDraftTarget() {
   return useMutation({
     mutationFn: (target_id: string) => invoke("outreach-draft", { target_id }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outreach_targets"] }),
-    onError: (e: Error) => toast({ title: "Draft failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("Draft failed", { description: e.message }),
   });
 }
 
@@ -135,20 +135,18 @@ export function usePrepareTarget() {
       const phones = Array.isArray(data?.phones) ? data.phones : [];
       const socials = data?.socials && typeof data.socials === "object" ? Object.keys(data.socials) : [];
       if (data?.unreachable) {
-        toast({
-          title: "No contact channel found",
+        toast.error("No contact channel found", {
           description: "Moved to Unreachable for later review.",
-          variant: "destructive",
         });
       } else if (data?.contact_email) {
-        toast({ title: "Outreach prepared", description: `Email: ${data.contact_email}` });
+        toast.success("Outreach prepared", { description: `Email: ${data.contact_email}` });
       } else {
         const alt = [phones.length && `${phones.length} phone${phones.length > 1 ? "s" : ""}`, socials.length && `${socials.length} social link${socials.length > 1 ? "s" : ""}`, data?.contact_form_url && "contact form"].filter(Boolean).join(", ");
-        toast({ title: "No email — try other channels", description: alt || "Only partial data found." });
+        toast("No email — try other channels", { description: alt || "Only partial data found." });
       }
       qc.invalidateQueries({ queryKey: ["outreach_targets"] });
     },
-    onError: (e: Error) => toast({ title: "AI preparation failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("AI preparation failed", { description: e.message }),
   });
 }
 
@@ -158,11 +156,11 @@ export function useSendTarget() {
     mutationFn: (args: { target_id: string; to: string; subject: string; body: string }) =>
       invoke("outreach-send", args),
     onSuccess: (_d, vars) => {
-      toast({ title: "Email sent", description: vars.to });
+      toast.success("Email sent", { description: vars.to });
       qc.invalidateQueries({ queryKey: ["outreach_targets"] });
       qc.invalidateQueries({ queryKey: ["outreach_messages", vars.target_id] });
     },
-    onError: (e: Error) => toast({ title: "Send failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("Send failed", { description: e.message }),
   });
 }
 
@@ -174,7 +172,7 @@ export function useUpdateTarget() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outreach_targets"] }),
-    onError: (e: Error) => toast({ title: "Update failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast.error("Update failed", { description: e.message }),
   });
 }
 

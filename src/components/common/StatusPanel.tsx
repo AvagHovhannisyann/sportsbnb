@@ -29,9 +29,9 @@ interface StatusPanelProps {
 }
 
 const toneChip = {
-  neutral: "bg-surface-2 text-muted-foreground",
-  danger: "bg-destructive/10 text-destructive",
-  positive: "bg-primary/10 text-primary",
+  neutral: "border-border bg-surface-1 text-muted-foreground",
+  danger: "border-destructive/30 bg-destructive/5 text-destructive",
+  positive: "border-primary/25 bg-primary/10 text-primary",
 };
 
 export const StatusPanel = ({
@@ -42,22 +42,22 @@ export const StatusPanel = ({
   tone = "neutral",
   className,
 }: StatusPanelProps) => (
-  <div className={cn("px-6 py-16 text-center", className)}>
+  <div className={cn("px-5 py-12 text-center", className)}>
     <div
       className={cn(
-        "mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
+        "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border",
         toneChip[tone],
       )}
     >
-      <Icon className="h-7 w-7" aria-hidden="true" />
+      <Icon className="h-6 w-6" aria-hidden="true" />
     </div>
-    <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
+    <h2 className="text-lg font-semibold leading-snug tracking-tight text-foreground">{title}</h2>
     {description && (
-      <p className="mx-auto mt-2 max-w-[48ch] text-[15px] leading-relaxed text-foreground-soft">
+      <p className="mx-auto mt-1.5 max-w-[48ch] text-sm leading-relaxed text-muted-foreground">
         {description}
       </p>
     )}
-    {children && <div className="mt-6 flex flex-wrap justify-center gap-3">{children}</div>}
+    {children && <div className="mt-5 flex flex-wrap justify-center gap-2">{children}</div>}
   </div>
 );
 
@@ -91,7 +91,7 @@ export const ErrorPanel = ({
       <Button onClick={onRetry} disabled={isRetrying}>
         {isRetrying ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             Retrying…
           </>
         ) : (

@@ -45,10 +45,7 @@ const NotificationItem = ({
   onDelete,
   onNavigate,
 }: NotificationItemProps) => {
-  // Widened from React.MouseEvent so the keyboard path can share it.
-  const handleClick = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleOpen = () => {
     if (!notification.is_read) {
       onMarkAsRead(notification.id);
     }
@@ -60,66 +57,77 @@ const NotificationItem = ({
     }
   };
 
+  const content = (
+    <>
+      <div className="mt-0.5 shrink-0" aria-hidden="true">
+        {getNotificationIcon(notification.type)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p
+          className={`text-sm font-medium ${
+            !notification.is_read ? "text-foreground" : "text-muted-foreground"
+          }`}
+        >
+          {notification.title}
+        </p>
+        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+          {notification.message}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+        </p>
+      </div>
+    </>
+  );
+
   return (
-    // Not a <button>: this row already contains its own mark-read and delete
-    // buttons, and a button inside a button is invalid. role + tabIndex +
-    // keydown is the shape VenueForm's option picker already uses here, and it
-    // is what makes a notification openable without a mouse at all.
     <div
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleClick(e);
-        }
-      }}
-      className={`p-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      className={`flex items-start border-b border-border transition-colors duration-150 last:border-b-0 motion-reduce:transition-none ${
         !notification.is_read ? "bg-primary/5" : ""
       }`}
-      onClick={handleClick}
     >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5">{getNotificationIcon(notification.type)}</div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${!notification.is_read ? "text-foreground" : "text-muted-foreground"}`}>
-            {notification.title}
-          </p>
-          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-            {notification.message}
-          </p>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-          </p>
+      {notification.link ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          aria-label={`Open notification: ${notification.title}`}
+          className="flex min-h-16 min-w-0 flex-1 items-start gap-3 rounded-lg p-3 text-left transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
+        >
+          {content}
+        </button>
+      ) : (
+        <div className="flex min-h-16 min-w-0 flex-1 items-start gap-3 p-3">
+          {content}
         </div>
-        <div className="flex items-center gap-1">
-          {!notification.is_read && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              aria-label={`Mark "${notification.title}" as read`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onMarkAsRead(notification.id);
-              }}
-            >
-              <Check className="h-3 w-3" />
-            </Button>
-          )}
+      )}
+
+      <div className="flex shrink-0 items-start gap-0.5 py-2 pr-2">
+        {!notification.is_read && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            aria-label={`Delete "${notification.title}"`}
+            className="rounded-full text-muted-foreground hover:text-foreground"
+            aria-label={`Mark "${notification.title}" as read`}
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(notification.id);
+              onMarkAsRead(notification.id);
             }}
           >
-            <Trash2 className="h-3 w-3" />
+            <Check className="h-3 w-3" />
           </Button>
-        </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          aria-label={`Delete "${notification.title}"`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(notification.id);
+          }}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     </div>
   );
@@ -165,7 +173,7 @@ const NotificationDropdown = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs gap-1"
+              className="min-h-11 gap-1 text-xs"
               onClick={() => markAllAsRead.mutate()}
             >
               <CheckCheck className="h-3 w-3" />

@@ -1,74 +1,85 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, BarChart3, Loader2 } from "lucide-react";
-import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { useOperatorMetrics } from "@/hooks/useOperatorMetrics";
+import { BarChart3, Send } from "lucide-react";
+import { OperationsLayout } from "@/components/admin/OperationsLayout";
+import { CACRetentionPanel } from "@/components/operator/CACRetentionPanel";
+import { GMVTrendChart } from "@/components/operator/GMVTrendChart";
 import { MarketOverviewCards } from "@/components/operator/MarketOverviewCards";
 import { NeighborhoodTable } from "@/components/operator/NeighborhoodTable";
-import { GMVTrendChart } from "@/components/operator/GMVTrendChart";
-import { CACRetentionPanel } from "@/components/operator/CACRetentionPanel";
+import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOperatorMetrics } from "@/hooks/useOperatorMetrics";
+
+const OperatorLoadingState = () => (
+  <div className="space-y-5" role="status" aria-label="Loading marketplace operations metrics">
+    <div className="space-y-3">
+      <Skeleton className="h-10 w-64 max-w-full" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    </div>
+    <Skeleton className="h-[28rem] w-full" />
+    <div className="grid gap-5 xl:grid-cols-3">
+      <Skeleton className="h-80 w-full xl:col-span-2" />
+      <Skeleton className="h-80 w-full" />
+    </div>
+  </div>
+);
 
 const OperatorDashboard = () => {
-  const { data, isLoading, error } = useOperatorMetrics();
+  const { data, isLoading, isError, isFetching, refetch } = useOperatorMetrics();
 
   return (
-    <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8">
-          {/* flex-wrap + gap: the title block and the two nav buttons were one
-              unbreakable row on a 375px screen. */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="page-title">Operator dashboard</h1>
-                <p className="text-muted-foreground">Live liquidity, GMV, and retention across Yerevan & LA</p>
-              </div>
+    <OperationsLayout
+      title="Marketplace operations"
+      subtitle="Liquidity, booking value, and retention across Yerevan and Los Angeles."
+      actions={
+        <Button asChild size="sm" className="min-h-11 w-full sm:w-auto lg:min-h-10">
+          <Link to="/operator/outreach">
+            <Send aria-hidden="true" />
+            Open outreach
+          </Link>
+        </Button>
+      }
+    >
+      {isLoading ? (
+        <OperatorLoadingState />
+      ) : isError ? (
+        <Card className="max-w-3xl">
+          <ErrorPanel
+            what="marketplace operations metrics"
+            description="No liquidity, booking value, or retention conclusions are being shown until the marketplace data can be loaded."
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
+          />
+        </Card>
+      ) : !data ? (
+        <Card className="max-w-3xl">
+          <StatusPanel
+            icon={BarChart3}
+            title="Marketplace metrics are not available"
+            description="The operations workspace did not receive a report for this 30-day window."
+          >
+            <Button onClick={() => refetch()} disabled={isFetching}>
+              Load metrics
+            </Button>
+          </StatusPanel>
+        </Card>
+      ) : (
+        <div className="space-y-5">
+          <MarketOverviewCards markets={data.markets} />
+          <GMVTrendChart data={data.gmvTrend} />
+          <div className="grid items-start gap-5 xl:grid-cols-3">
+            <div className="min-w-0 xl:col-span-2">
+              <NeighborhoodTable rows={data.neighborhoods} />
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" asChild>
-                <Link to="/operator/outreach">AI Outreach</Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/admin">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Admin
-                </Link>
-              </Button>
-            </div>
+            <CACRetentionPanel metrics={data.retention} />
           </div>
-
-          {isLoading && (
-            <div className="flex justify-center py-16" role="status" aria-label="Loading operator data">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-              Failed to load metrics: {(error as Error).message}
-            </div>
-          )}
-
-          {data && (
-            <div className="space-y-6">
-              <MarketOverviewCards markets={data.markets} />
-              <GMVTrendChart data={data.gmvTrend} />
-              <div className="grid gap-6 lg:grid-cols-3">
-                {/* min-w-0 so the table scrolls inside its own wrapper rather
-                    than sizing the grid track to its content. */}
-                <div className="min-w-0 lg:col-span-2">
-                  <NeighborhoodTable rows={data.neighborhoods} />
-                </div>
-                <CACRetentionPanel metrics={data.retention} />
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    </Layout>
+      )}
+    </OperationsLayout>
   );
 };
 

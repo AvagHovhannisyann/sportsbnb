@@ -33,7 +33,7 @@ export function Price({ amount, suffix, className, suffixClassName }: PriceProps
   const { symbol, amount: figure } = formatPriceParts(amount);
 
   return (
-    <span className="inline-flex items-baseline gap-0.5">
+    <span className="inline-flex items-baseline gap-0.5 whitespace-nowrap">
       <span className="sr-only">
         {formatPrice(amount)}
         {suffix ? ` ${suffix}` : ""}
@@ -48,14 +48,14 @@ export function Price({ amount, suffix, className, suffixClassName }: PriceProps
           mark two-thirds the height of the digits looked broken in a different
           way. Setting a currency mark at the figure's own size is ordinary
           typography, and the colour alone gives the hierarchy. */}
-      <span aria-hidden="true" className={cn(className, "text-foreground-soft")}>
+      <span aria-hidden="true" className={cn(className, "leading-none text-foreground-soft")}>
         {symbol}
       </span>
-      <span aria-hidden="true" className={cn("stat-numeral", className)}>
+      <span aria-hidden="true" className={cn("stat-numeral leading-none", className)}>
         {figure}
       </span>
       {suffix && (
-        <span aria-hidden="true" className={cn("text-xs text-muted-foreground", suffixClassName)}>
+        <span aria-hidden="true" className={cn("text-xs leading-none text-muted-foreground", suffixClassName)}>
           {suffix}
         </span>
       )}

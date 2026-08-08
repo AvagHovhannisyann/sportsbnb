@@ -1,33 +1,41 @@
-import { useState, lazy, Suspense } from "react";
-import { TONE_CHIP } from "@/lib/chips";
-import { Link } from "react-router-dom";
+import { lazy, Suspense, useState } from "react";
+import { format } from "date-fns";
 import {
-  Users,
   Building2,
-  Calendar,
-  Gamepad2,
-  TrendingUp,
-  Shield,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  MoreHorizontal,
+  CalendarDays,
+  CheckCircle2,
   Eye,
-  } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  Gamepad2,
+  MoreHorizontal,
+  ShieldCheck,
+  Users,
+  XCircle,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
+import { OperationsLayout } from "@/components/admin/OperationsLayout";
+import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
+import { ErrorPanel, StatusPanel } from "@/components/common/StatusPanel";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,481 +51,679 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Layout from "@/components/layout/Layout";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { bookingStatusDescriptor } from "@/features/booking/status";
+import {
+  type AppRole,
   useAdminStats,
+  useAllBookings,
   useAllUsers,
   useAllVenues,
-  useAllBookings,
-  useUpdateUserRole,
   useApproveVenue,
-  type AppRole,
+  useUpdateUserRole,
 } from "@/hooks/useAdmin";
-import { format } from "date-fns";
-import { AdminPulseCard } from "@/components/dashboard/AdminPulseCard";
-import { SupplyDemandHeatmap } from "@/components/admin/SupplyDemandHeatmap";
+import { TONE_CHIP } from "@/lib/chips";
 import { formatTimeOfDay } from "@/lib/time";
-import { bookingStatusDescriptor } from "@/features/booking/status";
 
-// FieldSubmissionsTab and CandidateFieldsTab used to be lazy-imported here and
-// never rendered — no TabsTrigger, no TabsContent, no route. Both components
-// still exist and still work; they simply have no way in. Whether to wire them
-// up or delete them is a product call, so the dead imports go and the question
-// is written down in docs/handover.md rather than answered here.
+// These are the three administrative modules that are actually reachable from
+// the dashboard. FieldSubmissionsTab and CandidateFieldsTab remain intentionally
+// unwired until the product defines an entry point for them.
 const BlogPostsTab = lazy(() => import("@/components/admin/BlogPostsTab"));
 const BookingLeadsTab = lazy(() => import("@/components/admin/BookingLeadsTab"));
 const PayoutsTab = lazy(() => import("@/components/admin/PayoutsTab"));
 
+type VenueDecision = { id: string; name: string } | null;
+
+const money = (amount: number) => `֏${amount.toLocaleString()}`;
+
+const initials = (name: string | null, email: string | null) => {
+  if (name) {
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email?.charAt(0).toUpperCase() || "U";
+};
+
+const roleBadge = (role: string) => {
+  if (role === "admin") return <Badge className={TONE_CHIP.danger}>Admin</Badge>;
+  if (role === "moderator") return <Badge className={TONE_CHIP.warning}>Moderator</Badge>;
+  return <Badge variant="secondary">User</Badge>;
+};
+
+const LoadingPanel = ({ label = "Loading administration data" }: { label?: string }) => (
+  <div className="space-y-3" role="status" aria-label={label}>
+    <Skeleton className="h-20 w-full" />
+    <Skeleton className="h-20 w-full" />
+    <Skeleton className="h-20 w-full" />
+  </div>
+);
+
+const LazyPanelFallback = () => (
+  <Card>
+    <CardContent className="p-5 sm:p-6">
+      <LoadingPanel />
+    </CardContent>
+  </Card>
+);
+
+interface MetricCardProps {
+  label: string;
+  value: number;
+  icon: typeof Users;
+  detail?: string;
+  tone?: "primary" | "information" | "warning" | "neutral";
+}
+
+const metricTone = {
+  primary: "border-primary/20 bg-primary/10 text-primary",
+  information: "border-information/20 bg-information/10 text-information",
+  warning: "border-warning/20 bg-warning/10 text-warning",
+  neutral: "border-border bg-surface-1 text-muted-foreground",
+};
+
+function MetricCard({ label, value, icon: Icon, detail, tone = "neutral" }: MetricCardProps) {
+  return (
+    <Card className="min-w-0">
+      <CardContent className="flex min-h-32 items-start justify-between gap-4 p-4 sm:p-5">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="stat-numeral mt-2 text-2xl font-semibold leading-none text-foreground sm:text-3xl">
+            {value.toLocaleString()}
+          </p>
+          {detail && <p className="mt-2 text-xs leading-4 text-muted-foreground">{detail}</p>}
+        </div>
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${metricTone[tone]}`}
+        >
+          <Icon aria-hidden="true" className="h-5 w-5" />
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  
-  const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: users, isLoading: usersLoading } = useAllUsers();
-  const { data: venues, isLoading: venuesLoading } = useAllVenues();
-  const { data: bookings, isLoading: bookingsLoading } = useAllBookings();
-  
+  const [venueToDisable, setVenueToDisable] = useState<VenueDecision>(null);
+
+  const statsQuery = useAdminStats();
+  const usersQuery = useAllUsers();
+  const venuesQuery = useAllVenues();
+  const bookingsQuery = useAllBookings();
   const updateRole = useUpdateUserRole();
   const approveVenue = useApproveVenue();
 
-  const formatCurrency = (amount: number) => {
-    return `֏${amount.toLocaleString()}`;
-  };
+  const stats = statsQuery.data;
+  const users = usersQuery.data ?? [];
+  const venues = venuesQuery.data ?? [];
+  const bookings = bookingsQuery.data ?? [];
+  const pendingVenues = venues.filter((venue) => !venue.is_active);
 
-  const statCards = [
-    {
-      label: "Total Users",
-      value: stats?.totalUsers || 0,
-      icon: Users,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      label: "Active Venues",
-      value: stats?.totalVenues || 0,
-      icon: Building2,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-      subValue: stats?.pendingVenues ? `${stats.pendingVenues} pending` : undefined,
-    },
-    {
-      label: "Lead Volume",
-      value: stats?.totalBookings || 0,
-      icon: Calendar,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
-    },
-    {
-      label: "Active Games",
-      value: stats?.totalGames || 0,
-      icon: Gamepad2,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
-    },
-  ];
-
-  const getUserInitials = (name: string | null, email: string | null) => {
-    if (name) {
-      return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-    }
-    return email?.charAt(0).toUpperCase() || "U";
-  };
-
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "admin":
-        return <Badge className={TONE_CHIP.danger}>Admin</Badge>;
-      case "moderator":
-        return <Badge className={TONE_CHIP.warning}>Moderator</Badge>;
-      default:
-        return <Badge variant="secondary">User</Badge>;
-    }
+  const confirmDisableVenue = () => {
+    if (!venueToDisable) return;
+    approveVenue.mutate(
+      { venueId: venueToDisable.id, approved: false },
+      { onSuccess: () => setVenueToDisable(null) },
+    );
   };
 
   return (
-    <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8">
-          {/* Header */}
-          {/* flex-wrap: title block plus the "Operator view" button ran 47px
-              past a 375px screen. */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="page-title">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Manage users, venues, and platform activity</p>
-              </div>
+    <OperationsLayout
+      title="Administration"
+      subtitle="Review access, inventory, bookings, payouts, and publishing from one workspace."
+    >
+      <div className="space-y-6">
+        <section aria-labelledby="admin-summary-heading">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 id="admin-summary-heading" className="font-display text-xl font-semibold tracking-extra-tight text-foreground">
+                Platform summary
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">Current operational totals and review pressure.</p>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/operator">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Operator view
-              </Link>
-            </Button>
           </div>
 
-          {/* Stats Grid */}
-          {statsLoading ? (
-            <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          {statsQuery.isLoading ? (
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" role="status" aria-label="Loading platform summary">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} className="h-32" />
+              ))}
             </div>
+          ) : statsQuery.isError ? (
+            <Card>
+              <ErrorPanel
+                what="the platform summary"
+                description="No totals have been inferred from the failed request. The detailed workspaces remain available below."
+                onRetry={() => statsQuery.refetch()}
+                isRetrying={statsQuery.isFetching}
+                className="py-8"
+              />
+            </Card>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {statCards.map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <Card key={stat.label}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                          <Icon className={`h-5 w-5 ${stat.color}`} />
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-foreground mb-1">{stat.value}</div>
-                      <div className="text-sm text-muted-foreground">{stat.label}</div>
-                      {stat.subValue && (
-                        <div className="text-xs text-amber-500 mt-1">{stat.subValue}</div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <MetricCard label="Users" value={stats?.totalUsers ?? 0} icon={Users} tone="information" />
+              <MetricCard
+                label="Venues"
+                value={stats?.totalVenues ?? 0}
+                icon={Building2}
+                tone={stats?.pendingVenues ? "warning" : "primary"}
+                detail={stats?.pendingVenues ? `${stats.pendingVenues} awaiting review` : "No pending reviews"}
+              />
+              <MetricCard label="Bookings" value={stats?.totalBookings ?? 0} icon={CalendarDays} tone="primary" />
+              <MetricCard label="Active games" value={stats?.totalGames ?? 0} icon={Gamepad2} />
             </div>
           )}
+        </section>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="overflow-x-auto -mx-4 px-4 mb-6">
-              <TabsList className="w-max min-w-full">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="leads">Booking Leads</TabsTrigger>
-                <TabsTrigger value="users">Users</TabsTrigger>
-                <TabsTrigger value="venues">Venues</TabsTrigger>
-                <TabsTrigger value="bookings">Bookings</TabsTrigger>
-                <TabsTrigger value="payouts">Payouts</TabsTrigger>
-                <TabsTrigger value="blog">Blog</TabsTrigger>
-              </TabsList>
-            </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:-mx-1 sm:px-1">
+            <TabsList aria-label="Administration sections" className="h-auto min-w-max justify-start">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="leads">Booking leads</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="venues">Venues</TabsTrigger>
+              <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              <TabsTrigger value="payouts">Payouts</TabsTrigger>
+              <TabsTrigger value="blog">Blog</TabsTrigger>
+            </TabsList>
+          </div>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <AdminPulseCard />
-              <SupplyDemandHeatmap />
-              <div className="grid lg:grid-cols-2 gap-6">
-                {/* Pending Venues */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-amber-500" />
-                      Pending Venue Approvals
-                    </CardTitle>
-                    <CardDescription>Venues waiting for verification</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {venuesLoading ? (
-                      <div className="flex justify-center py-4" role="status" aria-label="Loading admin data">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {venues?.filter(v => !v.is_active).slice(0, 5).map((venue) => (
-                          <div key={venue.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                            <div>
-                              <p className="font-medium text-foreground">{venue.name}</p>
-                              <p className="text-sm text-muted-foreground">{venue.city}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => approveVenue.mutate({ venueId: venue.id, approved: true })}
-                                disabled={approveVenue.isPending}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                            </div>
+          <TabsContent value="overview" className="mt-5 space-y-5">
+            <AdminPulseCard />
+            <SupplyDemandHeatmap />
+
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <Card className="min-w-0">
+                <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <ShieldCheck aria-hidden="true" className="h-5 w-5 text-warning" />
+                    Venue approvals
+                  </CardTitle>
+                  <CardDescription>Listings waiting for an administrator decision.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                  {venuesQuery.isLoading ? (
+                    <LoadingPanel label="Loading pending venues" />
+                  ) : venuesQuery.isError ? (
+                    <ErrorPanel
+                      what="pending venues"
+                      description="No approval state has been assumed."
+                      onRetry={() => venuesQuery.refetch()}
+                      isRetrying={venuesQuery.isFetching}
+                      className="py-7"
+                    />
+                  ) : pendingVenues.length === 0 ? (
+                    <StatusPanel
+                      icon={CheckCircle2}
+                      tone="positive"
+                      title="Approval queue is clear"
+                      description="There are no inactive venue listings waiting for review."
+                      className="py-8"
+                    />
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {pendingVenues.slice(0, 5).map((venue) => (
+                        <li key={venue.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-foreground">{venue.name}</p>
+                            <p className="mt-0.5 truncate text-sm text-muted-foreground">{venue.city || "City not provided"}</p>
                           </div>
-                        ))}
-                        {(!venues || venues.filter(v => !v.is_active).length === 0) && (
-                          <p className="text-center text-muted-foreground py-4">No pending venues</p>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-11 w-full sm:w-auto"
+                            onClick={() => approveVenue.mutate({ venueId: venue.id, approved: true })}
+                            disabled={approveVenue.isPending}
+                            aria-label={`Approve venue ${venue.name}`}
+                          >
+                            <CheckCircle2 aria-hidden="true" />
+                            Approve
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
 
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      Recent Bookings
-                    </CardTitle>
-                    <CardDescription>Latest booking activity</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {bookingsLoading ? (
-                      <div className="flex justify-center py-4" role="status" aria-label="Loading admin data">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {bookings?.slice(0, 5).map((booking) => (
-                          <div key={booking.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                            <div>
-                              <p className="font-medium text-foreground">{booking.venue_name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {format(new Date(booking.booking_date), "MMM d, yyyy")} • {formatTimeOfDay(booking.booking_time)}
+              <Card className="min-w-0">
+                <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
+                  <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                    <CalendarDays aria-hidden="true" className="h-5 w-5 text-primary" />
+                    Recent bookings
+                  </CardTitle>
+                  <CardDescription>Latest reservation activity across the marketplace.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                  {bookingsQuery.isLoading ? (
+                    <LoadingPanel label="Loading recent bookings" />
+                  ) : bookingsQuery.isError ? (
+                    <ErrorPanel
+                      what="recent bookings"
+                      description="No booking state has been inferred from the failed request."
+                      onRetry={() => bookingsQuery.refetch()}
+                      isRetrying={bookingsQuery.isFetching}
+                      className="py-7"
+                    />
+                  ) : bookings.length === 0 ? (
+                    <StatusPanel
+                      icon={CalendarDays}
+                      title="No bookings yet"
+                      description="New reservations will appear here when they are created."
+                      className="py-8"
+                    />
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {bookings.slice(0, 5).map((booking) => {
+                        const status = bookingStatusDescriptor(booking.status, "admin");
+                        return (
+                          <li key={booking.id} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-foreground">{booking.venue_name}</p>
+                              <p className="mt-0.5 text-sm text-muted-foreground">
+                                {format(new Date(booking.booking_date), "MMM d, yyyy")} · {formatTimeOfDay(booking.booking_time)}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <p className="font-medium text-foreground">{formatCurrency(booking.total_price)}</p>
-                              <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {bookingStatusDescriptor(booking.status, "admin").label}
-                              </Badge>
+                            <div className="shrink-0 text-right">
+                              <p className="stat-numeral font-semibold text-foreground">{money(booking.total_price)}</p>
+                              <Badge variant="secondary" className="mt-1">{status.label}</Badge>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="leads" className="mt-5">
+            <Suspense fallback={<LazyPanelFallback />}>
+              <BookingLeadsTab />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-5">
+            <Card>
+              <CardHeader className="p-5 sm:p-6">
+                <CardTitle as="h2" className="text-lg">Users and access</CardTitle>
+                <CardDescription>Review accounts and assign platform roles.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                {usersQuery.isLoading ? (
+                  <LoadingPanel label="Loading users" />
+                ) : usersQuery.isError ? (
+                  <ErrorPanel
+                    what="users"
+                    description="No access roles have been inferred from the failed request."
+                    onRetry={() => usersQuery.refetch()}
+                    isRetrying={usersQuery.isFetching}
+                    className="py-8"
+                  />
+                ) : users.length === 0 ? (
+                  <StatusPanel icon={Users} title="No users found" description="Accounts will appear here after registration." className="py-8" />
+                ) : (
+                  <>
+                    <ul className="space-y-3 lg:hidden" aria-label="User accounts">
+                      {users.map((user) => (
+                        <li key={user.id} className="rounded-lg border border-border bg-surface-1 p-4">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10 shrink-0">
+                              <AvatarImage src={user.avatar_url || undefined} alt="" />
+                              <AvatarFallback>{initials(user.full_name, user.email)}</AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-semibold text-foreground">{user.full_name || "No name provided"}</p>
+                              <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <Badge variant="outline" className="capitalize">{user.user_type}</Badge>
+                                {roleBadge(user.role)}
+                              </div>
                             </div>
                           </div>
-                        ))}
-                        {(!bookings || bookings.length === 0) && (
-                          <p className="text-center text-muted-foreground py-4">No bookings yet</p>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                          <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
+                            <div>
+                              <dt className="text-xs text-muted-foreground">City</dt>
+                              <dd className="mt-0.5 text-foreground">{user.city || "Not provided"}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs text-muted-foreground">Joined</dt>
+                              <dd className="mt-0.5 text-foreground">{format(new Date(user.created_at), "MMM d, yyyy")}</dd>
+                            </div>
+                          </dl>
+                          <Select
+                            value={user.role}
+                            onValueChange={(value: AppRole) => updateRole.mutate({ userId: user.user_id, role: value })}
+                            disabled={updateRole.isPending}
+                          >
+                            <SelectTrigger className="mt-4 w-full" aria-label={`Role for ${user.full_name || user.email || "user"}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="moderator">Moderator</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </li>
+                      ))}
+                    </ul>
 
-            {/* Booking Leads Tab */}
-            <TabsContent value="leads">
-              <Suspense fallback={<div className="flex justify-center py-8" role="status" aria-label="Loading admin data"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                <BookingLeadsTab />
-              </Suspense>
-            </TabsContent>
-
-            {/* Users Tab */}
-            <TabsContent value="users">
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Users</CardTitle>
-                  <CardDescription>Manage user accounts and roles</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {usersLoading ? (
-                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>User</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>City</TableHead>
-                          <TableHead>Joined</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users?.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage src={user.avatar_url || undefined} />
-                                  <AvatarFallback>{getUserInitials(user.full_name, user.email)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-foreground">{user.full_name || "No name"}</p>
-                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <div className="hidden lg:block">
+                      <Table>
+                        <caption className="sr-only">Platform users, account types, roles, locations, and join dates.</caption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>City</TableHead>
+                            <TableHead>Joined</TableHead>
+                            <TableHead className="text-right">Access</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-9 w-9 shrink-0">
+                                    <AvatarImage src={user.avatar_url || undefined} alt="" />
+                                    <AvatarFallback>{initials(user.full_name, user.email)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-foreground">{user.full_name || "No name provided"}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  </div>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="capitalize">{user.user_type}</Badge>
-                            </TableCell>
-                            <TableCell>{getRoleBadge(user.role)}</TableCell>
-                            <TableCell>{user.city || "-"}</TableCell>
-                            <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
-                            <TableCell className="text-right">
-                              <Select
-                                value={user.role}
-                                onValueChange={(value: AppRole) => updateRole.mutate({ userId: user.user_id, role: value })}
-                              >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="user">User</SelectItem>
-                                  <SelectItem value="moderator">Moderator</SelectItem>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Venues Tab */}
-            <TabsContent value="venues">
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Venues</CardTitle>
-                  <CardDescription>Manage venue listings and approvals</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {venuesLoading ? (
-                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              </TableCell>
+                              <TableCell><Badge variant="outline" className="capitalize">{user.user_type}</Badge></TableCell>
+                              <TableCell>{roleBadge(user.role)}</TableCell>
+                              <TableCell>{user.city || "—"}</TableCell>
+                              <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
+                              <TableCell className="text-right">
+                                <Select
+                                  value={user.role}
+                                  onValueChange={(value: AppRole) => updateRole.mutate({ userId: user.user_id, role: value })}
+                                  disabled={updateRole.isPending}
+                                >
+                                  <SelectTrigger className="ml-auto w-36" aria-label={`Role for ${user.full_name || user.email || "user"}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="moderator">Moderator</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Venue</TableHead>
-                          <TableHead>Owner</TableHead>
-                          <TableHead>City</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {venues?.map((venue) => (
-                          <TableRow key={venue.id}>
-                            <TableCell>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="venues" className="mt-5">
+            <Card>
+              <CardHeader className="p-5 sm:p-6">
+                <CardTitle as="h2" className="text-lg">Venue inventory</CardTitle>
+                <CardDescription>Review listing ownership, pricing, and publication state.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                {venuesQuery.isLoading ? (
+                  <LoadingPanel label="Loading venues" />
+                ) : venuesQuery.isError ? (
+                  <ErrorPanel
+                    what="venues"
+                    description="No approval state has been inferred from the failed request."
+                    onRetry={() => venuesQuery.refetch()}
+                    isRetrying={venuesQuery.isFetching}
+                    className="py-8"
+                  />
+                ) : venues.length === 0 ? (
+                  <StatusPanel icon={Building2} title="No venues found" description="Listings will appear here when owners create them." className="py-8" />
+                ) : (
+                  <>
+                    <ul className="space-y-3 lg:hidden" aria-label="Venue inventory">
+                      {venues.map((venue) => (
+                        <li key={venue.id} className="rounded-lg border border-border bg-surface-1 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground">{venue.name}</p>
+                              <p className="mt-0.5 text-sm text-muted-foreground">{venue.city || "City not provided"}</p>
+                            </div>
+                            <Badge className={venue.is_active ? TONE_CHIP.positive : TONE_CHIP.warning}>
+                              {venue.is_active ? "Active" : "Pending"}
+                            </Badge>
+                          </div>
+                          <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
+                            <div>
+                              <dt className="text-xs text-muted-foreground">Owner</dt>
+                              <dd className="mt-0.5 truncate text-foreground">{venue.owner?.full_name || venue.owner?.email || "Not available"}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs text-muted-foreground">Rate</dt>
+                              <dd className="stat-numeral mt-0.5 text-foreground">{money(venue.price_per_hour)}/hr</dd>
+                            </div>
+                          </dl>
+                          <div className="mt-4 flex gap-2">
+                            <Button asChild variant="outline" size="sm" className="flex-1">
+                              <Link to={`/venue/${venue.id}`} aria-label={`View venue ${venue.name}`}><Eye aria-hidden="true" />View</Link>
+                            </Button>
+                            {venue.is_active ? (
+                              <Button variant="outline" size="sm" className="flex-1 text-destructive hover:text-destructive" onClick={() => setVenueToDisable({ id: venue.id, name: venue.name })} aria-label={`Disable venue ${venue.name}`}>
+                                <XCircle aria-hidden="true" />Disable
+                              </Button>
+                            ) : (
+                              <Button size="sm" className="flex-1" onClick={() => approveVenue.mutate({ venueId: venue.id, approved: true })} disabled={approveVenue.isPending} aria-label={`Approve venue ${venue.name}`}>
+                                <CheckCircle2 aria-hidden="true" />Approve
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="hidden lg:block">
+                      <Table>
+                        <caption className="sr-only">Venue inventory with owners, cities, prices, and publication states.</caption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Venue</TableHead>
+                            <TableHead>Owner</TableHead>
+                            <TableHead>City</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {venues.map((venue) => (
+                            <TableRow key={venue.id}>
+                              <TableCell>
+                                <p className="font-semibold text-foreground">{venue.name}</p>
+                                <p className="max-w-64 truncate text-sm text-muted-foreground">{venue.sports?.join(", ") || "No sports listed"}</p>
+                              </TableCell>
+                              <TableCell>{venue.owner?.full_name || venue.owner?.email || "—"}</TableCell>
+                              <TableCell>{venue.city || "—"}</TableCell>
+                              <TableCell className="stat-numeral text-right">{money(venue.price_per_hour)}/hr</TableCell>
+                              <TableCell>
+                                <Badge className={venue.is_active ? TONE_CHIP.positive : TONE_CHIP.warning}>
+                                  {venue.is_active ? "Active" : "Pending"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" aria-label={`Actions for ${venue.name}`}>
+                                      <MoreHorizontal aria-hidden="true" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Venue actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem asChild>
+                                      <Link to={`/venue/${venue.id}`}><Eye aria-hidden="true" />View venue</Link>
+                                    </DropdownMenuItem>
+                                    {venue.is_active ? (
+                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setVenueToDisable({ id: venue.id, name: venue.name })}>
+                                        <XCircle aria-hidden="true" />Disable venue
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem onSelect={() => approveVenue.mutate({ venueId: venue.id, approved: true })}>
+                                        <CheckCircle2 aria-hidden="true" />Approve venue
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bookings" className="mt-5">
+            <Card>
+              <CardHeader className="p-5 sm:p-6">
+                <CardTitle as="h2" className="text-lg">Booking ledger</CardTitle>
+                <CardDescription>Read-only marketplace reservation history.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                {bookingsQuery.isLoading ? (
+                  <LoadingPanel label="Loading bookings" />
+                ) : bookingsQuery.isError ? (
+                  <ErrorPanel
+                    what="bookings"
+                    description="No reservation status has been inferred from the failed request."
+                    onRetry={() => bookingsQuery.refetch()}
+                    isRetrying={bookingsQuery.isFetching}
+                    className="py-8"
+                  />
+                ) : bookings.length === 0 ? (
+                  <StatusPanel icon={CalendarDays} title="No bookings found" description="Reservations will appear here after they are created." className="py-8" />
+                ) : (
+                  <>
+                    <ul className="space-y-3 lg:hidden" aria-label="Booking ledger">
+                      {bookings.map((booking) => {
+                        const status = bookingStatusDescriptor(booking.status, "admin");
+                        return (
+                          <li key={booking.id} className="rounded-lg border border-border bg-surface-1 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="min-w-0 font-semibold text-foreground">{booking.venue_name}</p>
+                              <Badge variant="secondary" className="shrink-0">{status.label}</Badge>
+                            </div>
+                            <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
                               <div>
-                                <p className="font-medium text-foreground">{venue.name}</p>
-                                <p className="text-sm text-muted-foreground">{venue.sports?.join(", ")}</p>
+                                <dt className="text-xs text-muted-foreground">Date and time</dt>
+                                <dd className="mt-0.5 text-foreground">{format(new Date(booking.booking_date), "MMM d, yyyy")}<br />{formatTimeOfDay(booking.booking_time)}</dd>
                               </div>
-                            </TableCell>
-                            <TableCell>{(venue.owner as any)?.full_name || "-"}</TableCell>
-                            <TableCell>{venue.city}</TableCell>
-                            <TableCell>{formatCurrency(venue.price_per_hour)}/hr</TableCell>
-                            <TableCell>
-                              {venue.is_active ? (
-                                <Badge className={TONE_CHIP.positive}>Active</Badge>
-                              ) : (
-                                <Badge className={TONE_CHIP.warning}>Pending</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem asChild>
-                                    <Link to={`/venue/${venue.id}`}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  {venue.is_active ? (
-                                    <DropdownMenuItem
-                                      onClick={() => approveVenue.mutate({ venueId: venue.id, approved: false })}
-                                      className="text-destructive"
-                                    >
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                      Disable
-                                    </DropdownMenuItem>
-                                  ) : (
-                                    <DropdownMenuItem
-                                      onClick={() => approveVenue.mutate({ venueId: venue.id, approved: true })}
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-2" />
-                                      Approve
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                              <div className="text-right">
+                                <dt className="text-xs text-muted-foreground">Amount</dt>
+                                <dd className="stat-numeral mt-0.5 font-semibold text-foreground">{money(booking.total_price)}</dd>
+                                <dd className="text-xs text-muted-foreground">{booking.duration_hours} {booking.duration_hours === 1 ? "hour" : "hours"}</dd>
+                              </div>
+                            </dl>
+                          </li>
+                        );
+                      })}
+                    </ul>
 
-            {/* Bookings Tab */}
-            <TabsContent value="bookings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Bookings</CardTitle>
-                  <CardDescription>View all platform bookings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {bookingsLoading ? (
-                    <div className="flex justify-center py-8" role="status" aria-label="Loading admin data">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div className="hidden lg:block">
+                      <Table>
+                        <caption className="sr-only">Marketplace bookings with dates, times, durations, amounts, and statuses.</caption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Venue</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Time</TableHead>
+                            <TableHead className="text-right">Duration</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {bookings.map((booking) => {
+                            const status = bookingStatusDescriptor(booking.status, "admin");
+                            return (
+                              <TableRow key={booking.id}>
+                                <TableCell className="font-semibold text-foreground">{booking.venue_name}</TableCell>
+                                <TableCell>{format(new Date(booking.booking_date), "MMM d, yyyy")}</TableCell>
+                                <TableCell>{formatTimeOfDay(booking.booking_time)}</TableCell>
+                                <TableCell className="stat-numeral text-right">{booking.duration_hours}h</TableCell>
+                                <TableCell className="stat-numeral text-right font-semibold">{money(booking.total_price)}</TableCell>
+                                <TableCell><Badge variant="secondary">{status.label}</Badge></TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Venue</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Duration</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {bookings?.map((booking) => (
-                          <TableRow key={booking.id}>
-                            <TableCell className="font-medium">{booking.venue_name}</TableCell>
-                            <TableCell>{format(new Date(booking.booking_date), "MMM d, yyyy")}</TableCell>
-                            <TableCell>{formatTimeOfDay(booking.booking_time)}</TableCell>
-                            <TableCell>{booking.duration_hours}h</TableCell>
-                            <TableCell>{formatCurrency(booking.total_price)}</TableCell>
-                            <TableCell>
-                              <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                                {bookingStatusDescriptor(booking.status, "admin").label}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            {/* Games / Fields / Discovery tabs hidden for MVP */}
+          <TabsContent value="payouts" className="mt-5">
+            <Suspense fallback={<LazyPanelFallback />}>
+              <PayoutsTab />
+            </Suspense>
+          </TabsContent>
 
-            {/* Blog Tab */}
-            <TabsContent value="payouts">
-              <Suspense fallback={<div className="flex justify-center py-10" role="status" aria-label="Loading admin data"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
-                <PayoutsTab />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="blog">
-              <Suspense fallback={<div className="flex justify-center py-8" role="status" aria-label="Loading admin data"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                <BlogPostsTab />
-              </Suspense>
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="blog" className="mt-5">
+            <Suspense fallback={<LazyPanelFallback />}>
+              <BlogPostsTab />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
       </div>
-    </Layout>
+
+      <AlertDialog open={!!venueToDisable} onOpenChange={(open) => !open && setVenueToDisable(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disable this venue?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {venueToDisable?.name ? `“${venueToDisable.name}”` : "This venue"} will no longer be active in the marketplace. You can approve it again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep active</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
+              onClick={confirmDisableVenue}
+              disabled={approveVenue.isPending}
+            >
+              {approveVenue.isPending ? "Disabling…" : "Disable venue"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </OperationsLayout>
   );
 };
 

@@ -34,15 +34,18 @@ const CreateTeamPage = () => {
 
   return (
     <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8 max-w-2xl">
-          <div className="flex items-center gap-4 mb-8">
-            <Button aria-label="Back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-3xl py-8 md:py-10">
+          <div className="mb-8 flex items-start gap-3">
+            <Button aria-label="Back" variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
-            <div>
+            <div className="pt-0.5">
+              <p className="eyebrow mb-2">Build your squad</p>
               <h1 className="page-title">Create a Team</h1>
-              <p className="text-muted-foreground">Build your squad</p>
+              <p className="max-w-xl text-muted-foreground">
+                Create a shared identity, set the roster size, and decide how players can join.
+              </p>
             </div>
           </div>
 

@@ -8,10 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePlayerNextMove } from "@/hooks/useAIInsights";
 
 const vibeStyles = {
-  urgent: { icon: Zap, color: "text-amber-500", bg: "from-amber-500/15 via-amber-500/5 to-transparent", chip: TONE_CHIP.warning, label: "Action needed" },
-  positive: { icon: CheckCircle2, color: "text-emerald-500", bg: "from-emerald-500/15 via-emerald-500/5 to-transparent", chip: TONE_CHIP.positive, label: "On track" },
-  discovery: { icon: Compass, color: "text-primary", bg: "from-primary/15 via-primary/5 to-transparent", chip: "bg-primary/15 text-primary border-primary/20", label: "Discover" },
-  neutral: { icon: Sparkles, color: "text-foreground", bg: "from-muted/40 via-muted/20 to-transparent", chip: "bg-muted text-muted-foreground border-border", label: "Suggestion" },
+  urgent: { icon: Zap, color: "text-warning", surface: "bg-warning/5", chip: TONE_CHIP.warning, label: "Action needed" },
+  positive: { icon: CheckCircle2, color: "text-success", surface: "bg-success/5", chip: TONE_CHIP.positive, label: "On track" },
+  discovery: { icon: Compass, color: "text-primary", surface: "bg-primary-soft", chip: "bg-primary/10 text-primary border-primary/20", label: "Discover" },
+  neutral: { icon: Sparkles, color: "text-foreground-soft", surface: "bg-surface-1", chip: "bg-muted text-muted-foreground border-border", label: "Suggestion" },
 } as const;
 
 export const NextMoveCard = () => {
@@ -31,7 +31,7 @@ export const NextMoveCard = () => {
   // rather than displacing the content underneath it.
   if (isLoading) {
     return (
-      <Card className="border-primary/20" aria-hidden="true">
+      <Card aria-hidden="true">
         <CardContent className="p-6 md:p-7">
           <div className="flex items-start gap-3">
             <Skeleton className="h-10 w-10 shrink-0 rounded-xl bg-surface-2" />
@@ -56,26 +56,26 @@ export const NextMoveCard = () => {
   const Icon = style.icon;
 
   return (
-    <Card className={`relative overflow-hidden border-primary/20 bg-gradient-to-br ${style.bg}`}>
-      <CardContent className="p-6 md:p-7">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+    <Card className={style.surface}>
+      <CardContent className="p-5 sm:p-6 md:p-7">
+        <div className="flex flex-col items-stretch gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className={`w-10 h-10 rounded-xl bg-background/60 backdrop-blur flex items-center justify-center ${style.color} shrink-0`}>
-              <Icon className="h-5 w-5" />
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card ${style.color}`}>
+              <Icon className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <Badge variant="outline" className={`mb-2 ${style.chip}`}>
-                <Sparkles className="h-3 w-3 mr-1" /> {style.label}
+                <Sparkles className="mr-1 h-3 w-3" aria-hidden="true" /> {style.label}
               </Badge>
-              <h3 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-foreground md:text-2xl">
                 {data.headline}
-              </h3>
-              <p className="text-sm md:text-base text-muted-foreground mt-1">{data.detail}</p>
+              </h2>
+              <p className="mt-1 text-sm text-foreground-soft md:text-base">{data.detail}</p>
             </div>
           </div>
-          <Button asChild size="lg" className="shrink-0">
+          <Button asChild className="w-full shrink-0 sm:w-auto">
             <Link to={data.cta_link}>
-              {data.cta_label} <ArrowRight className="h-4 w-4 ml-1" />
+              {data.cta_label} <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         </div>

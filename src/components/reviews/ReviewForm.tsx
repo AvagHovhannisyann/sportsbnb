@@ -65,7 +65,7 @@ const ReviewForm = ({ venueId, userId, existingReview, onSuccess }: ReviewFormPr
         <label className="text-sm font-medium text-foreground mb-2 block">
           Your Rating
         </label>
-        <div className="flex gap-1">
+        <div className="flex gap-0.5" role="group" aria-label="Your rating">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -78,10 +78,11 @@ const ReviewForm = ({ venueId, userId, existingReview, onSuccess }: ReviewFormPr
                  so there was no way to leave a rating without sight. */
               aria-label={`${star} star${star === 1 ? "" : "s"}`}
               aria-pressed={rating === star}
-              className="p-1 transition-transform hover:scale-110"
+              className="focus-ring flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg transition-colors duration-150 hover:bg-primary/10 motion-reduce:transition-none"
             >
               <Star
-                className={`h-8 w-8 transition-colors ${
+                aria-hidden="true"
+                className={`h-7 w-7 transition-colors duration-150 motion-reduce:transition-none ${
                   star <= (hoveredRating || rating)
                     ? "fill-primary text-primary"
                     : "text-muted-foreground"
@@ -108,7 +109,7 @@ const ReviewForm = ({ venueId, userId, existingReview, onSuccess }: ReviewFormPr
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? (
           <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             {existingReview ? "Updating..." : "Submitting..."}
           </>
         ) : existingReview ? (

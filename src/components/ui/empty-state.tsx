@@ -63,26 +63,26 @@ export function EmptyState({
   const body = (
     <div
       className={cn(
-        "flex flex-col items-center justify-center px-4 text-center",
-        compact ? "py-12" : "py-16",
+        "flex flex-col items-center justify-center px-5 text-center",
+        compact ? "py-8" : "py-12",
         !bordered && className,
       )}
     >
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-        <Icon className="h-8 w-8 text-primary" aria-hidden="true" />
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-surface-1 text-foreground-soft">
+        <Icon className="h-6 w-6" aria-hidden="true" />
       </div>
       {/* h2, because an empty state stands in for the main content of a page
           or a panel — it sits where a grid of cards would, at the level those
           cards would have had. As an h3 it skipped a level on every page whose
           only other heading is the page h1, which /owner/equipment was. Going
           *up* a level is never a skip, so this is safe wherever it lands. */}
-      <h2 className="mb-2 text-lg font-semibold text-foreground">{title}</h2>
+      <h2 className="mb-1.5 text-lg font-semibold leading-snug tracking-tight text-foreground">{title}</h2>
       {description && (
-        <p className="mb-6 max-w-sm text-muted-foreground">{description}</p>
+        <p className="mb-5 max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>
       )}
 
       {(hasPrimary || hasSecondary) && (
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
+        <div className="flex flex-col items-center gap-2 sm:flex-row">
           {/* `asChild`, not `<Link><Button>`. The latter renders an <a> with a
               <button> inside it — nested interactive elements, which is
               invalid HTML and gives assistive tech two controls where the user
@@ -117,7 +117,7 @@ export function EmptyState({
         // Was a literal 💡. An emoji renders in the system emoji font at a size
         // and baseline nothing else on the page shares, and it is the only
         // pictogram in the app not drawn by Lucide.
-        <p className="mt-6 flex max-w-xs items-start gap-1.5 text-xs text-muted-foreground">
+        <p className="mt-5 flex max-w-xs items-start gap-1.5 rounded-lg bg-surface-1 px-3 py-2 text-left text-xs leading-relaxed text-muted-foreground">
           <Lightbulb className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>
             <span className="font-medium">Tip:</span> {tip}

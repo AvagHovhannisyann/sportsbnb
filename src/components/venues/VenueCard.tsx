@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Star, Zap, Sparkles, ArrowUpRight, ImageOff } from "lucide-react";
+import { ArrowUpRight, ImageOff, MapPin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/ui/price";
 
@@ -16,6 +16,8 @@ interface VenueCardProps {
   available: boolean;
   distance?: number | null;
   isPromoted?: boolean;
+  /** Card heading level depends on whether the grid sits directly under a page title or inside a named section. */
+  headingLevel?: "h2" | "h3";
 }
 
 const VenueCard = ({
@@ -29,7 +31,9 @@ const VenueCard = ({
   reviewCount,
   distance,
   isPromoted,
+  headingLevel = "h2",
 }: VenueCardProps) => {
+  const Heading = headingLevel;
   // Seeded from the prop, not just from onError. venues.image_url is
   // nullable, and an empty string renders <img src=""> — which resolves to the
   // page itself and never fires onError, so a venue listed without a photo got
@@ -52,11 +56,13 @@ const VenueCard = ({
     <Link
       to={`/venue/${id}`}
       aria-label={`${name}, ${location}`}
-      className="group block focus-ring rounded-2xl"
+      className="group block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <article
-        className={`card-lift relative overflow-hidden rounded-2xl bg-card border ${
-          isPromoted ? "border-primary/40 ring-1 ring-primary/15" : "border-border hover:border-border-strong"
+        className={`relative flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none ${
+          isPromoted
+            ? "border-primary/35 shadow-xs"
+            : "border-border group-hover:border-border-strong group-hover:shadow-xs"
         }`}
       >
         {/* Image */}
@@ -66,86 +72,82 @@ const VenueCard = ({
                one 404s or the network drops, the browser paints the alt text as
                raw prose over the card — the venue name twice, in the wrong
                place. A neutral placeholder degrades quietly instead. */
-            <div className="flex h-full w-full items-center justify-center bg-surface-3">
-              <ImageOff className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface-1 text-muted-foreground">
+              <ImageOff className="h-7 w-7" aria-hidden="true" />
+              <span className="text-xs font-medium">Photo unavailable</span>
             </div>
           ) : (
             <img
               src={image}
-              alt={name}
+              alt={`Sports venue at ${name}`}
               loading="lazy"
+              decoding="async"
               onError={() => setImageFailed(true)}
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+              className="h-full w-full object-cover transition-opacity duration-150 motion-reduce:transition-none group-hover:opacity-95"
             />
           )}
-          {/* subtle gradient for label legibility */}
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 to-transparent" />
 
-          {/* Top-left: featured */}
           {isPromoted && (
-            <Badge className="absolute top-3 left-3 bg-foreground text-background border-0 gap-1 font-medium">
-              <Sparkles className="h-3 w-3" />
+            <Badge className="absolute left-3 top-3 border-white/80 bg-white/95 text-primary shadow-xs">
               Featured
             </Badge>
-          )}
-
-          {/* Top-right: instant booking pill */}
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-primary/95 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
-            <Zap className="h-3 w-3" />
-            Instant Book
-          </span>
-
-          {/* Distance pill */}
-          {distance !== undefined && distance !== null && (
-            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-white">
-              <MapPin className="h-3 w-3" />
-              {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`}
-            </span>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-4 md:p-5">
-          <div className="flex items-start justify-between gap-3 mb-1.5">
-            <h2 className="font-display text-base md:text-lg font-semibold text-foreground tracking-extra-tight leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+        <div className="flex flex-1 flex-col p-4">
+          <div className="mb-1.5 flex items-start justify-between gap-3">
+            <Heading className="line-clamp-1 font-display text-lg font-semibold leading-snug tracking-extra-tight text-foreground transition-colors duration-150 motion-reduce:transition-none group-hover:text-primary">
               {name}
-            </h2>
-            <div className="flex items-center gap-1 text-sm shrink-0">
-              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+            </Heading>
+            <div className="flex shrink-0 items-center gap-1 text-sm">
               {/* Formatted rather than printed raw. Every current caller passes
                   a NUMERIC(2,1) from the database, so this changes nothing
                   today — but a computed average, as the venue-details header
                   derives, renders as 4.199999999999999 and squeezes the venue
                   name into an ellipsis. The em-dash keeps unrated venues from
                   showing a zero score. */}
-              <span className="font-semibold text-foreground">
-                {rating ? Number(rating).toFixed(1) : "—"}
-              </span>
-              {reviewCount > 0 && (
-                <span className="text-muted-foreground text-xs">({reviewCount})</span>
+              {rating ? (
+                <>
+                  <Star className="h-3.5 w-3.5 fill-warning text-warning" aria-hidden="true" />
+                  <span className="font-semibold text-foreground">{Number(rating).toFixed(1)}</span>
+                  {reviewCount > 0 && (
+                    <span className="text-xs text-muted-foreground">({reviewCount})</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-xs font-medium text-muted-foreground">New</span>
               )}
             </div>
           </div>
 
-          <p className="text-sm text-muted-foreground line-clamp-1 mb-3">{location}</p>
+          <p className="mb-3 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">{location}</span>
+            {distance !== undefined && distance !== null && (
+              <span className="shrink-0 font-medium text-foreground-soft">
+                {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`}
+              </span>
+            )}
+          </p>
 
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {sports.slice(0, 3).map((sport) => (
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {sports.slice(0, 2).map((sport) => (
               <span
                 key={sport}
-                className="inline-flex items-center rounded-md bg-surface-1 border border-border px-2 py-0.5 text-[11px] font-medium text-foreground-soft"
+                className="inline-flex min-h-6 items-center rounded-full border border-border bg-surface-1 px-2.5 text-xs font-medium text-foreground-soft"
               >
                 {sport}
               </span>
             ))}
-            {sports.length > 3 && (
-              <span className="inline-flex items-center rounded-md bg-surface-1 border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                +{sports.length - 3}
+            {sports.length > 2 && (
+              <span className="inline-flex min-h-6 items-center rounded-full border border-border bg-surface-1 px-2.5 text-xs font-medium text-muted-foreground">
+                +{sports.length - 2}
               </span>
             )}
           </div>
 
-          <div className="flex items-end justify-between pt-3 border-t border-border">
+          <div className="mt-auto flex items-end justify-between border-t border-border pt-3">
             {/* The dram sign is not in JetBrains Mono, so setting the whole
                 string in `.stat-numeral` dropped a proportional Armenian glyph
                 into a monospaced run — measured, it collided with the first
@@ -156,9 +158,9 @@ const VenueCard = ({
               suffix="/ hour"
               className="text-xl font-bold text-foreground"
             />
-            <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-              View
-              <ArrowUpRight className="h-3.5 w-3.5" />
+            <span className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-primary">
+              View venue
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </span>
           </div>
         </div>

@@ -39,9 +39,16 @@ const JoinTeamPage = () => {
 
   return (
     <Layout>
-      <div className="container py-16 text-center" role="status" aria-label="Loading the team">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Joining team...</p>
+      <div className="container max-w-lg py-12 md:py-20" role="status" aria-live="polite">
+        <div className="rounded-xl border border-border bg-card px-5 py-12 text-center shadow-xs">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft text-primary">
+            <Loader2 className="h-6 w-6 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">Joining team</h1>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            We're checking the invite and your access. You'll continue to the team when this is complete.
+          </p>
+        </div>
       </div>
     </Layout>
   );

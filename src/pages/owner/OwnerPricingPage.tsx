@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, Edit, Lightbulb, Loader2, Plus, Trash2 } from "lucide-react";
+import { Banknote, Edit, Info, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Price } from "@/components/ui/price";
 import {
   Select,
   SelectContent,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorPanel } from "@/components/common/StatusPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerVenues } from "@/hooks/useVenues";
 
@@ -37,7 +38,13 @@ interface PriceRule {
 const OwnerPricingPage = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading, isProfileLoading } = useAuth();
-  const { data: myVenues = [], isLoading: venuesLoading } = useOwnerVenues(user?.id);
+  const {
+    data: myVenues = [],
+    isLoading: venuesLoading,
+    isError: venuesError,
+    isFetching: venuesFetching,
+    refetch: refetchVenues,
+  } = useOwnerVenues(user?.id);
 
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
 
@@ -79,8 +86,23 @@ const OwnerPricingPage = () => {
     return (
       <OwnerLayout title="Pricing">
         <div className="flex items-center justify-center h-64" role="status" aria-label="Loading pricing">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-primary motion-reduce:animate-none" />
         </div>
+      </OwnerLayout>
+    );
+  }
+
+  if (venuesError) {
+    return (
+      <OwnerLayout title="Pricing" subtitle="Review the hourly rate used for venue bookings.">
+        <Card className="max-w-3xl">
+          <ErrorPanel
+            what="your venues"
+            description="Pricing has not changed. Try loading your venues again."
+            onRetry={() => refetchVenues()}
+            isRetrying={venuesFetching}
+          />
+        </Card>
       </OwnerLayout>
     );
   }
@@ -101,157 +123,191 @@ const OwnerPricingPage = () => {
   };
 
   return (
-    <OwnerLayout title="Pricing" subtitle="Set up pricing rules for your venues">
+    <OwnerLayout title="Pricing" subtitle="Review the hourly rate used for venue bookings.">
       {myVenues.length === 0 ? (
-        <Card>
+        <Card className="max-w-3xl">
           <EmptyState
             icon={Banknote}
             title="No venues to price"
-            description="Add a venue first to set up pricing."
-            actionLabel="Add Your First Venue"
+            description="Add a venue first to set its hourly rate."
+            actionLabel="Add first venue"
             actionHref="/add-venue"
           />
         </Card>
       ) : (
-        <div className="max-w-4xl space-y-6">
-          {/* Venue Selector */}
-          <div>
-            <Label className="mb-2 block">Select Venue</Label>
-            <Select
-              value={selectedVenueId || ""}
-              onValueChange={setSelectedVenueId}
-            >
-              <SelectTrigger aria-label="Venue" className="w-full max-w-xs">
-                <SelectValue placeholder="Select a venue" />
-              </SelectTrigger>
-              <SelectContent>
-                {myVenues.map((venue) => (
-                  <SelectItem key={venue.id} value={venue.id}>
-                    {venue.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="max-w-5xl space-y-5">
+          <section
+            aria-labelledby="pricing-venue-context"
+            className="rounded-lg border border-border bg-surface-1 p-4 sm:flex sm:items-end sm:justify-between sm:gap-6"
+          >
+            <div className="min-w-0">
+              <p className="eyebrow">Venue context</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <h2
+                  id="pricing-venue-context"
+                  className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground"
+                >
+                  {selectedVenue?.name || "Choose a venue"}
+                </h2>
+                {selectedVenue && (
+                  <Badge variant={selectedVenue.is_active ? "default" : "secondary"}>
+                    {selectedVenue.is_active ? "Active" : "Draft"}
+                  </Badge>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The rate below is read from this venue's listing.
+              </p>
+            </div>
+            <div className="mt-4 w-full sm:mt-0 sm:max-w-xs">
+              <Label htmlFor="pricing-venue">Venue</Label>
+              <Select value={selectedVenueId || ""} onValueChange={setSelectedVenueId}>
+                <SelectTrigger id="pricing-venue" className="mt-1.5">
+                  <SelectValue placeholder="Select a venue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {myVenues.map((venue) => (
+                    <SelectItem key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
 
-          {/* Base Price */}
-          <Card>
-            <CardHeader>
-              <CardTitle as="h2" className="flex items-center gap-2">
-                <Banknote className="h-5 w-5 text-primary" />
-                Base Price
-              </CardTitle>
-              <CardDescription>
-                The default hourly rate for this venue
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Wraps: the input, the "per hour" label and a 220px button
-                  were one non-wrapping row, which put the button 3px past the
-                  right edge of a 375px screen and scrolled the page. */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <div className="relative min-w-0 flex-1 max-w-xs">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">֏</span>
-                  {/* The ֏ prefix is decorative text, not a label, so this
-                      field announced as an unnamed spinbutton. */}
-                  <Input
-                    type="number"
-                    aria-label="Hourly rate in Armenian dram"
-                    value={selectedVenue?.price_per_hour || 0}
-                    className="pl-8"
-                    readOnly
-                  />
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
+            <Card>
+              <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle as="h2" className="flex items-center gap-2 text-lg">
+                      <Banknote aria-hidden="true" className="h-5 w-5 text-primary" />
+                      Base hourly rate
+                    </CardTitle>
+                    <CardDescription className="mt-1.5">
+                      The amount shown during discovery and booking.
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary">Current rate</Badge>
                 </div>
-                <span className="text-muted-foreground">per hour</span>
-                <Button variant="outline" onClick={() => navigate(`/venue/${selectedVenueId}/edit`)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit in Venue Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                <div className="rounded-lg border border-border bg-surface-1 p-5 sm:p-6">
+                  <p className="text-sm font-medium text-muted-foreground">Per hour</p>
+                  <div className="mt-3">
+                    {selectedVenue ? (
+                      <Price
+                        amount={selectedVenue.price_per_hour}
+                        suffix="per hour"
+                        className="text-3xl font-semibold tracking-extra-tight text-foreground sm:text-4xl"
+                        suffixClassName="ml-1 text-sm"
+                      />
+                    ) : (
+                      <span className="font-display text-3xl font-semibold text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                    Pricing is maintained with the venue's listing details so the same rate is used throughout the product.
+                  </p>
+                </div>
 
-          {/* Dynamic Pricing Rules */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle as="h2">Dynamic Pricing Rules</CardTitle>
-                <CardDescription>
-                  Set different prices based on day and time
-                </CardDescription>
-              </div>
-              {/* Disabled: nothing persists pricing rules yet, and a button
-                  that silently does nothing is worse than one that says so. */}
-              <Button size="sm" disabled title="Pricing rules aren't available yet">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Rule
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {priceRules.length === 0 ? (
-                <EmptyState
-                  icon={Banknote}
-                  title="Every booking uses your base rate"
-                  description="Different prices for weekends, evenings or peak hours aren't available yet. Change the base rate in venue settings above."
-                  className="py-8"
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Rule Name</TableHead>
-                      <TableHead>Days</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {priceRules.map((rule) => (
-                      <TableRow key={rule.id}>
-                        <TableCell className="font-medium">{rule.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{dayTypeLabels[rule.dayType]}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{timeRangeLabels[rule.timeRange]}</Badge>
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          ֏{rule.pricePerHour.toLocaleString()}/hr
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Changes open the existing venue editor.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    disabled={!selectedVenueId}
+                    onClick={() => navigate(`/venue/${selectedVenueId}/edit`)}
+                  >
+                    <Edit aria-hidden="true" />
+                    Edit venue pricing
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Pricing Tips */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <h3 className="mb-3 flex items-center gap-1.5 font-medium text-foreground">
-                <Lightbulb className="h-4 w-4 text-primary" aria-hidden="true" />
-                Pricing tips
-              </h3>
-              <ul className="text-sm text-muted-foreground space-y-2">
-                <li>• Set higher prices for peak hours (evenings and weekends) to maximize revenue</li>
-                <li>• Offer discounts for early morning slots to fill less popular times</li>
-                <li>• Consider seasonal pricing during holidays or special events</li>
-                <li>• Monitor your competitors' pricing in your area</li>
-              </ul>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle as="h2" className="text-lg">Pricing coverage</CardTitle>
+                    <CardDescription className="mt-1.5">
+                      What the current booking system supports.
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline">Base rate only</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                {priceRules.length === 0 ? (
+                  <div className="rounded-lg border border-border bg-surface-1 p-4">
+                    <div className="flex items-start gap-3">
+                      <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-information" />
+                      <div>
+                        <h3 className="font-semibold text-foreground">One rate applies to every time slot</h3>
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                          Weekend, evening, and peak-hour overrides are not available, so no hidden rule changes the base rate shown here.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Rule name</TableHead>
+                          <TableHead>Days</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {priceRules.map((rule) => (
+                          <TableRow key={rule.id}>
+                            <TableCell className="font-medium">{rule.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{dayTypeLabels[rule.dayType]}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{timeRangeLabels[rule.timeRange]}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Price amount={rule.pricePerHour} suffix="per hour" className="font-semibold" />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" aria-label={`Edit ${rule.name}`}>
+                                  <Edit aria-hidden="true" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  aria-label={`Delete ${rule.name}`}
+                                >
+                                  <Trash2 aria-hidden="true" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                  To change what customers pay today, update the base hourly rate in venue settings.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </OwnerLayout>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { atVenue } from "@/lib/venueTime";
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, CircleAlert, Clock3, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
@@ -106,21 +106,35 @@ export default function BookingStatusPage() {
   const renderBody = () => {
     if (!finalStatus) {
       return (
-        <div className="text-center py-8" role="status" aria-label="Loading your booking">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h1 className="text-xl font-semibold mb-1">Confirming your payment…</h1>
-          <p className="text-muted-foreground text-sm">This usually takes a few seconds.</p>
+        <div className="px-5 py-12 text-center sm:px-8" role="status" aria-live="polite">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+          </div>
+          <h1 className="font-display text-xl font-semibold tracking-extra-tight sm:text-2xl">
+            Confirming your payment…
+          </h1>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            This usually takes a few seconds. You can leave this page open.
+          </p>
         </div>
       );
     }
     if (finalStatus === "paid") {
       return (
-        <div className="text-center py-8">
-          <CheckCircle2 className="h-14 w-14 text-green-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-1">Booking confirmed!</h1>
+        <div className="px-5 py-10 text-center sm:px-8 sm:py-12">
+          <span className="sr-only" role="status" aria-live="polite">
+            Booking confirmed.
+          </span>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-success/25 bg-success/10 text-success">
+            <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
+          </div>
+          <p className="eyebrow mb-2 text-success">Payment received</p>
+          <h1 className="font-display text-2xl font-semibold tracking-extra-tight sm:text-3xl">
+            Booking confirmed
+          </h1>
           {booking && (
             <>
-              <p className="text-muted-foreground mb-6">
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
                 {booking.venue_name} ·{" "}
                 {booking.starts_at
                   ? `${format(atVenue(booking.starts_at), "EEE, MMM d")} at ${format(atVenue(booking.starts_at), "HH:mm")}`
@@ -132,7 +146,7 @@ export default function BookingStatusPage() {
                   since the sending domain is still unverified. Someone querying
                   a charge on their card statement had nothing on this page to
                   point at. */}
-              <dl className="mx-auto mb-6 max-w-xs space-y-1 rounded-xl bg-surface-1 px-4 py-3 text-sm">
+              <dl className="surface-inset mx-auto my-6 max-w-sm space-y-2 rounded-lg px-4 py-3.5 text-sm">
                 {booking.amount_minor != null && (
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-muted-foreground">Paid</dt>
@@ -150,19 +164,23 @@ export default function BookingStatusPage() {
               </dl>
             </>
           )}
-          <div className="flex justify-center gap-3">
-            <Button asChild>
+          <div className="flex flex-col justify-center gap-2 sm:flex-row">
+            <Button asChild className="w-full sm:w-auto">
               <Link to="/dashboard">My bookings</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="w-full sm:w-auto">
               <Link to="/venues">Browse more venues</Link>
             </Button>
           </div>
           {booking?.starts_at && new Date(booking.starts_at) > new Date() && (
-            <div className="mt-6 border-t pt-4">
+            <div className="mt-7 border-t border-border pt-5">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
+                  >
                     Cancel booking
                   </Button>
                 </AlertDialogTrigger>
@@ -178,6 +196,7 @@ export default function BookingStatusPage() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep booking</AlertDialogCancel>
                     <AlertDialogAction
+                      className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid/90"
                       onClick={async () => {
                         try {
                           const result = await cancelBooking.mutateAsync({ bookingId: booking.id });
@@ -208,18 +227,41 @@ export default function BookingStatusPage() {
       );
     }
     const failed = ["failed", "cancelled", "expired", "timeout", "no_payment"].includes(finalStatus);
+    const stillProcessing = finalStatus === "timeout";
+    const cancelledBooking = !failed;
+    const StatusIcon = stillProcessing ? Clock3 : cancelledBooking ? CircleAlert : XCircle;
     return (
-      <div className="text-center py-8">
-        <XCircle className="h-14 w-14 text-destructive mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-1">
+      <div className="px-5 py-10 text-center sm:px-8 sm:py-12">
+        <span className="sr-only" role="status" aria-live="polite">
+          {finalStatus === "timeout" ? "Payment is still processing." : "Payment or booking status updated."}
+        </span>
+        <div
+          className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border ${
+            stillProcessing
+              ? "border-information/25 bg-information/10 text-information"
+              : cancelledBooking
+                ? "border-warning/25 bg-warning/10 text-warning"
+                : "border-destructive/25 bg-destructive/5 text-destructive"
+          }`}
+        >
+          <StatusIcon className="h-7 w-7" aria-hidden="true" />
+        </div>
+        <p
+          className={`eyebrow mb-2 ${
+            stillProcessing ? "text-information" : cancelledBooking ? "text-warning" : "text-destructive"
+          }`}
+        >
+          {stillProcessing ? "Provider response pending" : cancelledBooking ? "Booking update" : "Payment status"}
+        </p>
+        <h1 className="font-display text-2xl font-semibold tracking-extra-tight sm:text-3xl">
           {finalStatus === "timeout" ? "Payment still processing" : failed ? "Payment not completed" : "Booking cancelled"}
         </h1>
-        <p className="text-muted-foreground mb-6">
+        <p className="mx-auto mb-6 mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
           {finalStatus === "timeout"
             ? "We haven't received confirmation yet. If you completed the payment, this page will update — check back shortly."
             : "No money was taken. You can try booking the slot again."}
         </p>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link to={booking ? `/venue/${booking.venue_uuid ?? booking.venue_id}` : "/venues"}>Back to venue</Link>
         </Button>
       </div>
@@ -227,11 +269,13 @@ export default function BookingStatusPage() {
   };
 
   return (
-    <Layout>
-      <div className="container max-w-lg py-10">
-        <Card>
-          <CardContent>{renderBody()}</CardContent>
-        </Card>
+    <Layout showFooter={false} showMobileNav={false} showAssistant={false}>
+      <div className="section-tinted min-h-[calc(100dvh-4rem)] py-6 sm:py-10">
+        <div className="container max-w-xl">
+          <Card className="shadow-sm">
+            <CardContent className="p-0">{renderBody()}</CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );

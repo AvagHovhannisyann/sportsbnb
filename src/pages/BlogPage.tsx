@@ -1,109 +1,24 @@
 import { Link } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
-import type { MotionProps, Variants } from "framer-motion";
+import { ArrowRight, BookOpen, Calendar, Clock } from "lucide-react";
+import { format } from "date-fns";
 import Layout from "@/components/layout/Layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import SEOHead, { createBreadcrumbJsonLd } from "@/components/seo/SEOHead";
 import { usePublishedBlogPosts } from "@/hooks/useBlogPosts";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, ArrowRight, BookOpen } from "lucide-react";
-import { format } from "date-fns";
-import { easeOutExpo } from "@/lib/motion";
 
-/* ------------------------------------------------------------------
-   Motion.
-
-   Two things move: the post cards deal in, and the read-time row
-   settles a beat after the card it belongs to. Everything else — the
-   hover lift, the cover zoom — is the shared `.card-lift` treatment
-   and a transform, so this page adds no new hover vocabulary.
-
-   Easing comes from lib/motion, which mirrors --ease-out-expo in
-   index.css. Under `prefers-reduced-motion: reduce` the props are
-   omitted entirely rather than given a zero duration, so cards mount
-   in their final state — the convention HomePage and DiscoverPage
-   established.
-   ------------------------------------------------------------------ */
-
-/** Gap between one card's entrance and the next. */
-const CARD_STAGGER_STEP = 0.05;
-/**
- * The index past which every remaining card shares the last delay.
- *
- * The listing is unpaginated — `usePublishedBlogPosts` returns every
- * published post — so without a cap a growing blog would eventually be
- * dealing out cards a second after the data landed. Capped, the
- * stagger costs 400ms whether there are three posts or ninety.
- */
-const CARD_STAGGER_CAP = 8;
-
-const cardDelay = (index: number) => Math.min(index, CARD_STAGGER_CAP) * CARD_STAGGER_STEP;
-
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: (index: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: easeOutExpo, delay: cardDelay(index) },
-  }),
-};
-
-/**
- * The date + read-time row, arriving just behind its own card.
- *
- * Translate only, deliberately: this row is a descendant of the card,
- * which is already fading in, and a nested opacity animation would
- * fade it twice — visibly slower than everything around it. Riding the
- * card's fade and adding only the settle keeps it one entrance with a
- * late beat rather than two competing ones.
- */
-const metaVariants: Variants = {
-  hidden: { y: 6 },
-  visible: (index: number) => ({
-    y: 0,
-    transition: { duration: 0.25, ease: easeOutExpo, delay: cardDelay(index) + 0.18 },
-  }),
+const estimateReadTime = (content: string) => {
+  const words = content.split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 200));
 };
 
 const BlogPage = () => {
   const { data: posts, isLoading } = usePublishedBlogPosts();
-  const prefersReduced = useReducedMotion();
-
-  const cardMotion = (index: number): MotionProps =>
-    prefersReduced
-      ? {}
-      : { variants: cardVariants, initial: "hidden", animate: "visible", custom: index };
-
-  const metaMotion = (index: number): MotionProps =>
-    prefersReduced
-      ? {}
-      : { variants: metaVariants, initial: "hidden", animate: "visible", custom: index };
-
-  // Hover affordances are withheld rather than undone with `motion-reduce:`
-  // utilities: those have to out-specify the class they are cancelling, and
-  // two utilities of equal specificity are settled by stylesheet order.
-  const coverZoom = `w-full h-full object-cover${
-    prefersReduced ? "" : " transition-transform duration-300 group-hover:scale-105"
-  }`;
-  // The read-more arrow is the card's one hover embellishment: it fades in
-  // and leans toward where the click goes.
-  const readArrow = `h-4 w-4 text-primary opacity-0 group-hover:opacity-100${
-    prefersReduced
-      ? ""
-      : " -translate-x-1 transition-[opacity,transform] duration-200 ease-out group-hover:translate-x-0"
-  }`;
 
   const breadcrumbJsonLd = createBreadcrumbJsonLd([
     { name: "Home", url: "/" },
     { name: "Blog", url: "/blog" },
   ]);
-
-  const estimateReadTime = (content: string) => {
-    const words = content.split(/\s+/).length;
-    return Math.max(1, Math.ceil(words / 200));
-  };
 
   return (
     <Layout>
@@ -114,101 +29,103 @@ const BlogPage = () => {
         jsonLd={breadcrumbJsonLd}
       />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-primary/10 via-background to-accent/30 py-16 md:py-24">
-        <div className="container text-center">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-            <BookOpen className="h-4 w-4" />
-            SportsBnb Blog
+      <header className="border-b border-border bg-surface-1">
+        <div className="container grid gap-6 py-14 md:py-20 lg:grid-cols-[1fr_0.75fr] lg:items-end lg:gap-16">
+          <div>
+            <div className="mb-5 flex items-center gap-3 text-sm font-semibold text-foreground-soft">
+              <span className="h-2 w-2 rounded-full bg-brand-tuff" aria-hidden="true" />
+              Sportsbnb journal
+            </div>
+            <h1 className="max-w-3xl text-balance font-display text-4xl font-semibold leading-[1.03] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              Practical notes for players and venue owners.
+            </h1>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Insights & Tips for Athletes & Venue Owners
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Expert advice on finding sports facilities, growing your venue business, and making the most of your sports experience.
+          <p className="max-w-xl text-lg leading-relaxed text-foreground-soft lg:pb-1">
+            Guides to booking sports facilities, operating a venue, and making more of the time you spend playing.
           </p>
         </div>
-      </section>
+      </header>
 
-      {/* Posts Grid */}
-      <section className="container py-12 md:py-16">
+      <section className="container py-12 md:py-16" aria-label="Articles">
         {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-48 w-full" />
-                <CardContent className="p-6 space-y-3">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-6 w-full" />
+          <div className="grid gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading articles">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="border-t border-border pt-4">
+                <Skeleton className="aspect-[3/2] w-full rounded-xl bg-surface-2" />
+                <div className="mt-5 space-y-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-7 w-4/5" />
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-3/4" />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         ) : posts && posts.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post, index) => (
-              <motion.div key={post.id} {...cardMotion(index)}>
-                <Link to={`/blog/${post.slug}`} className="group block h-full">
-                <Card className="card-lift h-full overflow-hidden border-border/50">
+          <div className="grid gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <Link
+                key={post.id}
+                to={`/blog/${post.slug}`}
+                className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+              >
+                <article className="h-full border-t border-border pt-4">
                   {post.cover_image_url ? (
-                    <div className="h-48 overflow-hidden">
+                    <div className="aspect-[3/2] overflow-hidden rounded-xl bg-surface-2">
                       <img
                         src={post.cover_image_url}
-                        alt={post.title}
-                        className={coverZoom}
+                        alt=""
+                        className="h-full w-full object-cover"
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                   ) : (
-                    <div className="h-48 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <BookOpen className="h-12 w-12 text-primary/40" />
+                    <div className="flex aspect-[3/2] items-center justify-center rounded-xl border border-border bg-surface-1">
+                      <BookOpen className="h-8 w-8 text-primary" strokeWidth={1.5} aria-hidden="true" />
                     </div>
                   )}
-                  <CardContent className="p-6">
+
+                  <div className="mt-5">
                     {post.target_keyword && (
-                      <Badge variant="secondary" className="mb-3 text-xs">
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-foreground-soft">
                         {post.target_keyword}
-                      </Badge>
+                      </p>
                     )}
-                    <h2 className="text-xl font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                    <h2 className="line-clamp-2 text-xl font-semibold leading-snug text-foreground transition-colors duration-150 group-hover:text-primary">
                       {post.title}
                     </h2>
                     {post.excerpt && (
-                      <p className="text-muted-foreground text-sm line-clamp-3 mb-4">
+                      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-foreground-soft">
                         {post.excerpt}
                       </p>
                     )}
-                    <motion.div
-                      {...metaMotion(index)}
-                      className="flex items-center justify-between text-xs text-muted-foreground"
-                    >
-                      <div className="flex items-center gap-3">
-                        {post.published_at && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {format(new Date(post.published_at), "MMM d, yyyy")}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          {estimateReadTime(post.content)} min read
+                    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                      {post.published_at && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                          {format(new Date(post.published_at), "MMM d, yyyy")}
                         </span>
-                      </div>
-                      <ArrowRight className={readArrow} />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-                </Link>
-              </motion.div>
+                      )}
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                        {estimateReadTime(post.content)} min read
+                      </span>
+                    </div>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                      Read article
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  </div>
+                </article>
+              </Link>
             ))}
           </div>
         ) : (
           <EmptyState
             icon={BookOpen}
             title="No articles yet"
-            description="Check back soon for expert tips and insights."
+            description="Check back soon for tips and product updates."
           />
         )}
       </section>

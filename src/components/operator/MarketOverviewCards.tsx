@@ -1,66 +1,157 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { TONE_CHIP } from "@/lib/chips";
+import {
+  Activity,
+  AlertTriangle,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  CircleDollarSign,
+  MapPin,
+  UserPlus,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
+import { StatusPanel } from "@/components/common/StatusPanel";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, Banknote, Users, Gamepad2, TrendingUp } from "lucide-react";
-import { MarketMetrics, formatMoney } from "@/hooks/useOperatorMetrics";
-
-const flagFor = (market: string) => {
-  if (market === "Yerevan") return "🇦🇲";
-  if (market === "Los Angeles") return "🇺🇸";
-  return "🌍";
-};
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { type MarketMetrics, formatMoney } from "@/hooks/useOperatorMetrics";
+import { TONE_CHIP } from "@/lib/chips";
 
 export function MarketOverviewCards({ markets }: { markets: MarketMetrics[] }) {
-  const primary = markets.filter((m) => m.market !== "Other");
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {primary.map((m) => (
-        <Card key={m.market} className="overflow-hidden">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{flagFor(m.market)}</span>
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">{m.market}</h2>
-                  <p className="text-xs text-muted-foreground">{m.currency} market</p>
-                </div>
-              </div>
-              <Badge
-                className={
-                  m.liquidityHealthy
-                    ? TONE_CHIP.positive
-                    : TONE_CHIP.warning
-                }
-              >
-                {m.liquidityHealthy ? "Healthy liquidity" : "Below target"}
-              </Badge>
-            </div>
+  const primaryMarkets = markets.filter((market) => market.market !== "Other");
 
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <Metric icon={Banknote} label="GMV (30d)" value={formatMoney(m.gmv30d, m.currency)} />
-              <Metric icon={Calendar} label="Bookings" value={m.bookings30d.toString()} />
-              <Metric icon={Users} label="New users" value={m.newUsers30d.toString()} />
-            </div>
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border">
-              <Metric icon={Building2} label="Venues" value={`${m.activeVenues}/${m.venues}`} />
-              <Metric icon={Gamepad2} label="Open games" value={m.openGames.toString()} />
-              <Metric icon={TrendingUp} label="Games/day" value={m.openGamesPerDay.toFixed(1)} />
-            </div>
-          </CardContent>
+  return (
+    <section aria-labelledby="market-health-heading">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2
+            id="market-health-heading"
+            className="font-display text-xl font-semibold tracking-extra-tight text-foreground"
+          >
+            Market health
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            A side-by-side view of marketplace activity and seven-day game supply.
+          </p>
+        </div>
+        <Badge variant="outline">30-day window</Badge>
+      </div>
+
+      {primaryMarkets.length === 0 ? (
+        <Card>
+          <StatusPanel
+            icon={MapPin}
+            title="No primary markets to report"
+            description="Yerevan and Los Angeles will appear here once the operator report includes them."
+            className="py-9"
+          />
         </Card>
-      ))}
-    </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {primaryMarkets.map((market) => (
+            <MarketCard key={market.market} market={market} />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
-function Metric({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function MarketCard({ market }: { market: MarketMetrics }) {
+  const LiquidityIcon = market.liquidityHealthy ? CheckCircle2 : AlertTriangle;
+
   return (
-    <div>
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-        <Icon className="h-3 w-3" />
-        {label}
-      </div>
-      <div className="text-lg font-semibold text-foreground tabular-nums">{value}</div>
+    <Card className="min-w-0 overflow-hidden">
+      <CardHeader className="p-5 pb-4 sm:p-6 sm:pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-1 text-foreground-soft">
+              <MapPin aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate font-display text-lg font-semibold tracking-extra-tight text-foreground">
+                {market.market}
+              </h3>
+              <p className="text-xs font-medium text-muted-foreground">{market.currency} market</p>
+            </div>
+          </div>
+          <Badge
+            variant="outline"
+            className={market.liquidityHealthy ? TONE_CHIP.positive : TONE_CHIP.warning}
+          >
+            <LiquidityIcon aria-hidden="true" className="h-3.5 w-3.5" />
+            {market.liquidityHealthy ? "Healthy liquidity" : "Below liquidity target"}
+          </Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+          <Metric
+            icon={CircleDollarSign}
+            label="GMV"
+            hint="Last 30 days"
+            value={formatMoney(market.gmv30d, market.currency)}
+          />
+          <Metric
+            icon={CalendarDays}
+            label="Bookings"
+            hint="Last 30 days"
+            value={market.bookings30d.toLocaleString()}
+          />
+          <Metric
+            icon={UserPlus}
+            label="New users"
+            hint="Last 30 days"
+            value={market.newUsers30d.toLocaleString()}
+          />
+        </dl>
+
+        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-border pt-5 sm:grid-cols-3">
+          <Metric
+            icon={Building2}
+            label="Active venues"
+            hint={`${market.venues.toLocaleString()} total`}
+            value={market.activeVenues.toLocaleString()}
+          />
+          <Metric
+            icon={UsersRound}
+            label="Open games"
+            hint="Upcoming public"
+            value={market.openGames.toLocaleString()}
+          />
+          <Metric
+            icon={Activity}
+            label="Games per day"
+            hint="Seven-day proxy"
+            value={market.openGamesPerDay.toFixed(1)}
+          />
+        </dl>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Metric({
+  icon: Icon,
+  label,
+  hint,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="flex items-center gap-1.5 text-xs font-medium leading-4 text-muted-foreground">
+        <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+        <span>{label}</span>
+      </dt>
+      <dd className="stat-numeral mt-1 break-words text-xl font-semibold leading-tight text-foreground">
+        {value}
+      </dd>
+      <dd className="mt-0.5 text-[0.6875rem] leading-4 text-muted-foreground">{hint}</dd>
     </div>
   );
 }

@@ -6,17 +6,21 @@ import { cn } from "@/lib/utils";
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
->(({ className, ...props }, ref) => (
+>(({ className, "aria-label": ariaLabel, "aria-invalid": ariaInvalid, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
-    className={cn("relative flex w-full touch-none select-none items-center", className)}
+    className={cn("relative flex h-11 w-full touch-none select-none items-center", className)}
     {...props}
   >
     {/* Same reason as Progress: --secondary is near-white here. */}
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-surface-3">
+    <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-surface-3">
       <SliderPrimitive.Range className="absolute h-full bg-primary" />
     </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+    <SliderPrimitive.Thumb
+      aria-label={ariaLabel ?? "Value"}
+      aria-invalid={ariaInvalid}
+      className="block h-6 w-6 rounded-full border-2 border-primary bg-background shadow-xs ring-offset-background transition-[background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none hover:border-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive/20 disabled:pointer-events-none disabled:opacity-50"
+    />
   </SliderPrimitive.Root>
 ));
 Slider.displayName = SliderPrimitive.Root.displayName;

@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Medal } from "lucide-react";
+import { Trophy, Medal, Target, Flag, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const AchievementsSection = () => {
@@ -89,7 +89,7 @@ const AchievementsSection = () => {
                 <Trophy className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-foreground">Level {level}</h3>
+                <h3 className="font-display text-lg font-semibold text-foreground">Level {level}</h3>
                 <p className="text-sm text-muted-foreground">{xp} XP total</p>
               </div>
             </div>
@@ -117,14 +117,22 @@ const AchievementsSection = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {achievements.map((ach: any) => {
               const earned = earnedIds.has(ach.id);
+              const AchievementIcon = achievementIcons[ach.category as keyof typeof achievementIcons] ?? Trophy;
               return (
-                <Card key={ach.id} className={earned ? "border-primary/30 bg-primary/5" : "opacity-60"}>
+                <Card key={ach.id} className={earned ? "border-primary/30 bg-primary-soft" : "bg-surface-1"}>
                   <CardContent className="p-4 text-center">
-                    <div className="text-3xl mb-2">{ach.icon}</div>
+                    <div className={cn(
+                      "mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg border",
+                      earned
+                        ? "border-primary/20 bg-card text-primary"
+                        : "border-border bg-card text-muted-foreground",
+                    )}>
+                      <AchievementIcon className="h-5 w-5" aria-hidden="true" />
+                    </div>
                     <h4 className="font-semibold text-sm text-foreground">{ach.name}</h4>
                     <p className="text-xs text-muted-foreground mt-1">{ach.description}</p>
                     <Badge variant={earned ? "default" : "outline"} className="mt-2 text-xs">
-                      {earned ? `+${ach.xp_reward} XP` : `${ach.xp_reward} XP`}
+                      {earned ? `Earned · +${ach.xp_reward} XP` : `Locked · ${ach.xp_reward} XP`}
                     </Badge>
                   </CardContent>
                 </Card>
@@ -195,3 +203,10 @@ const AchievementsSection = () => {
 };
 
 export default AchievementsSection;
+
+const achievementIcons = {
+  booking: Target,
+  games: Trophy,
+  hosting: Flag,
+  social: Users,
+} as const;

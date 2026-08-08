@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Logo } from "@/components/brand/Logo";
+import { CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import { toast } from "sonner";
+
+import { AuthHeading, AuthPanel, AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/useAuth";
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -54,14 +55,6 @@ const ResetPasswordPage = () => {
 
     return { score, checks };
   })();
-
-  const getStrengthColor = () => {
-    if (passwordStrength.score <= 20) return "bg-destructive";
-    if (passwordStrength.score <= 40) return "bg-orange-500";
-    if (passwordStrength.score <= 60) return "bg-yellow-500";
-    if (passwordStrength.score <= 80) return "bg-blue-500";
-    return "bg-green-500";
-  };
 
   const getStrengthLabel = () => {
     if (passwordStrength.score <= 20) return "Very weak";
@@ -115,156 +108,138 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Panel */}
-      <div className="surface-invert hidden lg:flex lg:w-1/2 bg-secondary p-12 flex-col justify-between">
-        <div>
-          <Link to="/" aria-label="Sportsbnb home" className="inline-flex items-center">
-            <Logo variant="full" className="h-8 w-auto" />
-          </Link>
-        </div>
-        
-        <div className="max-w-md">
-          <h1 className="auth-hero-title text-secondary-foreground">
-            Create new password
-          </h1>
-          <p className="text-lg text-secondary-foreground/70">
-            Choose a strong password to secure your account.
-          </p>
-        </div>
-        
-        {/* /50 composited to #808582 on this near-white panel: 3.48:1,
-            under the 4.5:1 body copy needs. /60 measures 4.80:1 and is
-            still quieter than the /70 lede above it, so the hierarchy the
-            alpha was drawing survives. */}
-        <div className="text-sm text-secondary-foreground/60">
-          © {new Date().getFullYear()} Sportsbnb
-        </div>
-      </div>
-
-      {/* Right Panel */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {isSuccess ? (
-            <div className="text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto mb-6">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h2 className="auth-form-title">Password updated!</h2>
-              <p className="text-muted-foreground mb-6">
-                Your password has been successfully reset. You'll be redirected to login shortly.
-              </p>
-              <Button asChild className="w-full">
-                <Link to="/login">Go to login</Link>
-              </Button>
+    <AuthShell
+      asideTitle="Set a strong password and get back on court."
+      asideDescription="Your reset link establishes a temporary secure session. Sportsbnb keeps the account update focused and direct."
+      backTo="/login"
+      backLabel="Back to sign in"
+    >
+      {isSuccess ? (
+        <section aria-labelledby="reset-success-heading">
+          <AuthHeading id="reset-success-heading" title="Password updated" description="Your new password is ready to use." />
+          <AuthPanel className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft text-primary">
+              <CheckCircle2 aria-hidden="true" className="h-7 w-7" />
             </div>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to login
-              </Link>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground" role="status" aria-live="polite">
+              You will be signed out and redirected to sign in shortly.
+            </p>
+            <Button asChild className="mt-6 w-full">
+              <Link to="/login">Go to sign in</Link>
+            </Button>
+          </AuthPanel>
+        </section>
+      ) : (
+        <section aria-labelledby="reset-heading">
+          <AuthHeading id="reset-heading" title="Set a new password" description="Use at least eight characters. A longer, unique phrase is easier to protect." />
+          <AuthPanel>
+            <div className="mb-6 flex items-center gap-3 rounded-lg bg-surface-1 p-3 text-sm leading-relaxed text-muted-foreground">
+              <Lock aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />
+              This change applies only to the account opened by your reset link.
+            </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <Lock className="h-6 w-6 text-primary" />
+            <form onSubmit={handleSubmit} className="space-y-5" aria-labelledby="reset-heading">
+              <div className="space-y-2">
+                <Label htmlFor="password">New password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    autoComplete="new-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErrors((prev) => ({ ...prev, password: "" }));
+                    }}
+                    className="h-12 pr-11"
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={
+                      errors.password
+                        ? password
+                          ? "reset-password-error reset-password-strength"
+                          : "reset-password-error"
+                        : password
+                          ? "reset-password-strength"
+                          : undefined
+                    }
+                    required
+                  />
+                  <button
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0.5 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                  >
+                    {showPassword ? <EyeOff aria-hidden="true" className="h-5 w-5" /> : <Eye aria-hidden="true" className="h-5 w-5" />}
+                  </button>
                 </div>
-                <div>
-                  <h2 className="auth-form-title">Set new password</h2>
-                  <p className="text-muted-foreground">Must be at least 8 characters</p>
-                </div>
+                {errors.password && (
+                  <p id="reset-password-error" role="alert" className="text-sm text-destructive">{errors.password}</p>
+                )}
+
+                {password && (
+                  <div id="reset-password-strength" className="rounded-lg bg-surface-1 p-3" aria-live="polite">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground">Password strength</span>
+                      <span className={passwordStrength.score >= 60 ? "font-medium text-primary" : "font-medium text-warning"}>
+                        {getStrengthLabel()}
+                      </span>
+                    </div>
+                    <Progress value={passwordStrength.score} className="mt-2 h-1.5" />
+                  </div>
+                )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="password">New password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      autoComplete="new-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter new password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setErrors((prev) => ({ ...prev, password: "" }));
-                      }}
-                      className={`h-12 pr-10 ${errors.password ? "border-destructive" : ""}`}
-                      required
-                    />
-                    <button
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showPassword}
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password}</p>
-                  )}
-                  
-                  {/* Password strength indicator */}
-                  {password && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Password strength</span>
-                        <span className={`font-medium ${
-                          passwordStrength.score >= 60 ? "text-green-600" : "text-muted-foreground"
-                        }`}>
-                          {getStrengthLabel()}
-                        </span>
-                      </div>
-                      <Progress value={passwordStrength.score} className={`h-2 ${getStrengthColor()}`} />
-                    </div>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    autoComplete="new-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Enter it again"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                    }}
+                    className="h-12 pr-11"
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={errors.confirmPassword ? "reset-confirm-error" : undefined}
+                    required
+                  />
+                  <button
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showConfirmPassword}
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-0.5 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                  >
+                    {showConfirmPassword ? <EyeOff aria-hidden="true" className="h-5 w-5" /> : <Eye aria-hidden="true" className="h-5 w-5" />}
+                  </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p id="reset-confirm-error" role="alert" className="text-sm text-destructive">{errors.confirmPassword}</p>
+                )}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm password</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      autoComplete="new-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm new password"
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                      }}
-                      className={`h-12 pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
-                      required
-                    />
-                    <button
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showConfirmPassword}
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-                  )}
-                </div>
-
-                <Button type="submit" className="w-full h-12" size="lg" disabled={isLoading}>
-                  {isLoading ? "Updating..." : "Reset password"}
-                </Button>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+                    Updating…
+                  </>
+                ) : (
+                  "Reset password"
+                )}
+              </Button>
+            </form>
+          </AuthPanel>
+        </section>
+      )}
+    </AuthShell>
   );
 };
 

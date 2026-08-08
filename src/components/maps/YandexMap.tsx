@@ -389,14 +389,14 @@ export const YandexPopup: React.FC<YandexPopupProps> = ({
   children,
 }) => (
   <YandexMarker position={position} anchor="bottom" zIndex={1000} blockEvents>
-    <div className="relative mb-3 w-[260px] max-w-[80vw] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg">
+    <div className="relative mb-3 w-[260px] max-w-[80vw] rounded-xl border border-border bg-popover p-3 pr-11 text-popover-foreground shadow-lg">
       <button
         type="button"
         aria-label={closeLabel}
         onClick={onClose}
-        className="absolute right-1.5 top-1.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="absolute right-0 top-0 flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
       {children}
       {/* The stem. Rotated square rather than a border triangle so it can

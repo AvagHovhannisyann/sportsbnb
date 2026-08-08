@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 export interface BlogPost {
   id: string;
@@ -66,7 +66,6 @@ export function useAllBlogPosts() {
 
 export function useCreateBlogPost() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (post: {
@@ -94,17 +93,16 @@ export function useCreateBlogPost() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
-      toast({ title: "Blog post created successfully" });
+      toast.success("Blog post created successfully");
     },
     onError: (error: Error) => {
-      toast({ title: "Error creating post", description: error.message, variant: "destructive" });
+      toast.error("Error creating post", { description: error.message });
     },
   });
 }
 
 export function useUpdateBlogPost() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<BlogPost> & { id: string }) => {
@@ -123,17 +121,16 @@ export function useUpdateBlogPost() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
-      toast({ title: "Blog post updated successfully" });
+      toast.success("Blog post updated successfully");
     },
     onError: (error: Error) => {
-      toast({ title: "Error updating post", description: error.message, variant: "destructive" });
+      toast.error("Error updating post", { description: error.message });
     },
   });
 }
 
 export function useDeleteBlogPost() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -145,10 +142,10 @@ export function useDeleteBlogPost() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
-      toast({ title: "Blog post deleted" });
+      toast.success("Blog post deleted");
     },
     onError: (error: Error) => {
-      toast({ title: "Error deleting post", description: error.message, variant: "destructive" });
+      toast.error("Error deleting post", { description: error.message });
     },
   });
 }

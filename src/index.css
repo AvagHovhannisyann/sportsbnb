@@ -1,56 +1,53 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap");
-/* Separate request because `text=` subsets the whole call: this one returns
-   only U+058F (֏). See the --font-* notes below for why it is needed. */
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&text=%D6%8F&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================================
-   Sportsbnb Design System — "Court at night"
-   - Dark-first: near-black green-tinted surfaces, electric
-     court-green accent for actions and live states
-   - Strong type hierarchy: Space Grotesk display + DM Sans body,
-     JetBrains Mono tabular numerals for prices/times (scoreboard)
-   - Glass used structurally (nav, booking panel, modal chrome),
-     content surfaces stay opaque for legibility and trust
-   - Warm light theme retained as the secondary mode
+   Sportsbnb Design System — "Open Court"
+   - Light-first chalk and mineral surfaces with Basalt text
+   - Deep court green for primary action; tuff clay used sparingly
+   - Space Grotesk display + DM Sans body with full Armenian support
+   - Depth is structural and restrained; content stays opaque
    ============================================================ */
 
 @layer base {
   :root {
-    /* ── Surfaces (layered neutrals, warm undertone) ── */
-    --background: 40 18% 97%;          /* page bg — warm off-white */
-    --surface-1: 36 16% 95%;           /* sub-section bg */
-    --surface-2: 0 0% 100%;            /* elevated card */
-    --surface-3: 36 14% 92%;           /* inset / muted block */
+    /* ── Surfaces: chalk, paper, and mineral ── */
+    --background: 42 24% 97%;
+    --surface-1: 40 20% 94%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 36 16% 90%;
 
-    --foreground: 220 28% 10%;         /* near-black, slight cool */
-    --foreground-soft: 220 15% 28%;    /* secondary text */
+    --foreground: 166 18% 12%;
+    --foreground-soft: 163 9% 34%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 28% 10%;
+    --card-foreground: 166 18% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 28% 10%;
+    --popover-foreground: 166 18% 12%;
 
-    /* ── Brand accent — deep, confident emerald ── */
-    --primary: 158 72% 22%;
-    --primary-foreground: 40 30% 98%;
-    --primary-soft: 158 40% 94%;       /* tinted background */
+    /* ── Brand: deep court green with a scarce Armenian tuff accent ── */
+    --primary: 158 58% 23%;
+    --primary-foreground: 42 30% 98%;
+    --primary-soft: 154 30% 92%;
+    --brand-tuff: 14 46% 46%;
+    --brand-tuff-soft: 15 43% 94%;
 
-    /* ── Secondary — warm graphite ── */
-    --secondary: 220 18% 14%;
-    --secondary-foreground: 40 25% 97%;
+    /* ── Secondary — Basalt inverse surface ── */
+    --secondary: 166 18% 14%;
+    --secondary-foreground: 42 25% 97%;
 
     /* ── Muted ── */
-    --muted: 36 14% 92%;
-    --muted-foreground: 220 12% 42%;
+    --muted: 40 16% 92%;
+    --muted-foreground: 163 8% 40%;
 
     /* ── Accent — subtle hover surface ── */
-    --accent: 36 16% 93%;
-    --accent-foreground: 220 28% 10%;
+    --accent: 154 22% 92%;
+    --accent-foreground: 166 18% 12%;
 
     /* Two tokens, because one cannot serve both roles.
        `--destructive` is what `text-destructive` and `border-destructive`
@@ -60,8 +57,8 @@
        Measured on the signup form: the old single value gave 3.85:1 for error
        copy on a card and 4.04:1 for white on the button. Both failed AA, and
        moving the one value fixed either at the other's expense. */
-    --destructive: 358 68% 44%;
-    --destructive-solid: 358 68% 44%;
+    --destructive: 4 62% 42%;
+    --destructive-solid: 4 62% 42%;
     --destructive-foreground: 0 0% 100%;
 
     /* Both measured on white: the old --warning was 2.18:1 and the old
@@ -69,12 +66,13 @@
        a fill anywhere — `text-warning` twice, `text-success` never — so
        darkening them costs nothing and makes them readable. The dark theme's
        values already passed (8.81 and 7.20 on card) and are unchanged. */
-    --success: 158 64% 28%;
-    --warning: 35 92% 32%;
+    --success: 148 56% 27%;
+    --warning: 35 82% 31%;
+    --information: 210 58% 39%;
 
     /* ── Borders / inputs / focus ── */
-    --border: 30 12% 88%;
-    --border-strong: 30 10% 78%;
+    --border: 38 12% 86%;
+    --border-strong: 164 8% 70%;
     /* The edge of a control, not a divider.
        WCAG 1.4.11 wants 3:1 for anything that identifies a UI component, and
        a text input's boundary is exactly that. `--border` is 1.41:1 against a
@@ -82,62 +80,55 @@
        thing telling you where a field begins. Kept separate so raising it does
        not repaint every card and table in the app, which is a design decision
        rather than an accessibility requirement. */
-    --border-interactive: 30 12% 50%;
-    --input: 30 12% 88%;
-    --ring: 158 72% 22%;
+    --border-interactive: 164 8% 48%;
+    --input: 164 8% 48%;
+    --ring: 158 58% 23%;
 
-    --radius: 0.875rem;
+    --radius: 0.625rem;
 
     /* ── Sidebar ── */
-    --sidebar-background: 36 16% 95%;
-    --sidebar-foreground: 220 28% 10%;
-    --sidebar-primary: 158 72% 22%;
-    --sidebar-primary-foreground: 40 30% 98%;
-    --sidebar-accent: 36 16% 90%;
-    --sidebar-accent-foreground: 220 28% 10%;
-    --sidebar-border: 30 12% 86%;
-    --sidebar-ring: 158 72% 22%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 166 18% 12%;
+    --sidebar-primary: 158 58% 23%;
+    --sidebar-primary-foreground: 42 30% 98%;
+    --sidebar-accent: 154 22% 92%;
+    --sidebar-accent-foreground: 166 18% 12%;
+    --sidebar-border: 38 12% 86%;
+    --sidebar-ring: 158 58% 23%;
 
     /* ── Charts ── */
-    --chart-1: 158 72% 22%;
-    --chart-2: 200 70% 40%;
-    --chart-3: 35 85% 52%;
-    --chart-4: 268 55% 50%;
-    --chart-5: 220 15% 35%;
+    --chart-1: 158 58% 23%;
+    --chart-2: 210 58% 39%;
+    --chart-3: 14 46% 48%;
+    --chart-4: 35 72% 42%;
+    --chart-5: 166 9% 38%;
 
-    /* ── Fonts ──
-       'Noto Sans Armenian' sits in every stack purely to carry U+058F, the
-       dram sign. None of Space Grotesk, DM Sans or JetBrains Mono includes it,
-       so every price in the app — ~20 surfaces, all of them going through
-       formatPrice — fell through to whatever the OS happened to supply, and
-       rendered as a wrong glyph where that guess was poor. CSS fallback is
-       per-glyph, so Latin still sets in the primary face; only the dram sign
-       resolves here. The @import subsets to that single codepoint, so the cost
-       is a ~1KB file rather than a whole Armenian family. */
+    /* Noto Sans Armenian supplies complete Armenian-script coverage, including
+       the dram sign, while Latin keeps the product's established typefaces. */
     --font-display: 'Space Grotesk', 'Noto Sans Armenian', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-sans: 'DM Sans', 'Noto Sans Armenian', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', 'Noto Sans Armenian', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* ── Refined shadow system (soft, layered) ── */
-    --shadow-2xs: 0 1px 2px 0 hsl(220 30% 12% / 0.04);
-    --shadow-xs:  0 1px 2px 0 hsl(220 30% 12% / 0.05), 0 1px 1px 0 hsl(220 30% 12% / 0.03);
-    --shadow-sm:  0 2px 4px -1px hsl(220 30% 12% / 0.06), 0 1px 2px -1px hsl(220 30% 12% / 0.04);
-    --shadow:     0 4px 8px -2px hsl(220 30% 12% / 0.08), 0 2px 4px -2px hsl(220 30% 12% / 0.05);
-    --shadow-md:  0 8px 16px -4px hsl(220 30% 12% / 0.10), 0 3px 6px -3px hsl(220 30% 12% / 0.06);
-    --shadow-lg:  0 16px 32px -8px hsl(220 30% 12% / 0.12), 0 6px 12px -4px hsl(220 30% 12% / 0.07);
-    --shadow-xl:  0 24px 48px -12px hsl(220 30% 12% / 0.18), 0 10px 20px -5px hsl(220 30% 12% / 0.08);
-    --shadow-2xl: 0 32px 64px -16px hsl(220 30% 12% / 0.25);
-    --shadow-ring-primary: 0 0 0 4px hsl(var(--primary) / 0.12);
+    /* Quiet elevation: borders and spacing carry ordinary hierarchy. */
+    --shadow-2xs: 0 1px 1px hsl(166 24% 10% / 0.025);
+    --shadow-xs: 0 1px 2px hsl(166 24% 10% / 0.04);
+    --shadow-sm: 0 2px 5px hsl(166 24% 10% / 0.05);
+    --shadow: 0 5px 14px -8px hsl(166 24% 10% / 0.16);
+    --shadow-md: 0 12px 28px -14px hsl(166 24% 10% / 0.22);
+    --shadow-lg: 0 20px 44px -22px hsl(166 24% 10% / 0.28);
+    --shadow-xl: 0 28px 64px -30px hsl(166 24% 10% / 0.32);
+    --shadow-2xl: 0 36px 80px -34px hsl(166 24% 10% / 0.38);
+    --shadow-ring-primary: 0 0 0 4px hsl(var(--primary) / 0.14);
 
-    --tracking-tight: -0.025em;
-    --tracking-tighter: -0.04em;
+    --tracking-tight: -0.018em;
+    --tracking-tighter: -0.032em;
 
     /* ── Motion primitives ── */
-    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --dur-fast: 150ms;
-    --dur-base: 250ms;
-    --dur-slow: 400ms;
+    --ease-out-expo: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1);
+    --dur-fast: 100ms;
+    --dur-base: 160ms;
+    --dur-slow: 220ms;
 
     /* ── Glass (light) ──
        Same defect as the dark bar, mirrored. A light bar is washed out by
@@ -146,18 +137,19 @@
        section, all five below AA. Latent today — the app ships dark-only — but
        the light tokens are maintained and audited, so they should be right.
        Measured, like the dark one, with `glass-contrast.mjs --light`. */
-    --glass-bg: 40 18% 97%;
-    --glass-alpha: 0.93;
-    --glass-border: 30 12% 88%;
-    --glass-blur: 16px;
+    --glass-bg: 42 24% 97%;
+    --glass-alpha: 0.96;
+    --glass-border: 38 12% 86%;
+    --glass-blur: 12px;
   }
 
-  /* "Court at night" — the default look */
+  /* Optional inverse mode. The main application is light-first; embedded or
+     explicitly dark surfaces keep the same restrained Open Court hierarchy. */
   .dark {
-    --background: 160 22% 5%;          /* near-black, green-tinted — deepest step */
-    --surface-1: 160 18% 10%;          /* tinted section band — must read as a step, not a shade */
-    --surface-2: 160 15% 14%;          /* elevated card */
-    --surface-3: 158 13% 18%;          /* inset / muted block */
+    --background: 166 22% 8%;
+    --surface-1: 166 18% 12%;
+    --surface-2: 166 15% 15%;
+    --surface-3: 164 12% 19%;
 
     --foreground: 100 20% 96%;         /* chalk white, warm-green cast */
     --foreground-soft: 130 8% 72%;
@@ -168,18 +160,19 @@
     --popover: 160 16% 12%;
     --popover-foreground: 100 20% 96%;
 
-    /* Electric court-green — actions, live states */
-    --primary: 151 90% 47%;
-    --primary-foreground: 160 25% 5%;
-    --primary-soft: 155 45% 12%;
+    --primary: 153 52% 60%;
+    --primary-foreground: 166 24% 8%;
+    --primary-soft: 158 24% 17%;
+    --brand-tuff: 14 58% 66%;
+    --brand-tuff-soft: 14 26% 18%;
 
     --secondary: 100 20% 96%;
     --secondary-foreground: 160 22% 6%;
 
-    --muted: 158 13% 13%;
-    --muted-foreground: 130 8% 64%;
+    --muted: 164 12% 16%;
+    --muted-foreground: 150 8% 70%;
 
-    --accent: 158 14% 14%;
+    --accent: 164 12% 18%;
     --accent-foreground: 100 20% 96%;
 
     /* Dark: text must lighten to clear the card, the fill must darken to
@@ -189,35 +182,36 @@
     --destructive-solid: 358 68% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 151 80% 44%;
-    --warning: 42 95% 55%;
+    --success: 148 52% 58%;
+    --warning: 36 86% 64%;
+    --information: 210 68% 68%;
 
-    --border: 157 12% 22%;
-    --border-strong: 155 10% 26%;
+    --border: 164 10% 24%;
+    --border-strong: 162 9% 31%;
     /* 42% clears 3:1 on background, card, surface-1 and surface-2. */
-    --border-interactive: 157 12% 42%;
-    --input: 157 12% 17%;
-    --ring: 151 90% 47%;
+    --border-interactive: 162 9% 45%;
+    --input: 162 9% 45%;
+    --ring: 153 52% 60%;
 
-    --sidebar-background: 160 20% 6%;
+    --sidebar-background: 166 20% 9%;
     --sidebar-foreground: 100 20% 96%;
-    --sidebar-primary: 151 90% 47%;
-    --sidebar-primary-foreground: 160 25% 5%;
-    --sidebar-accent: 158 14% 12%;
+    --sidebar-primary: 153 52% 60%;
+    --sidebar-primary-foreground: 166 24% 8%;
+    --sidebar-accent: 164 12% 17%;
     --sidebar-accent-foreground: 100 20% 96%;
-    --sidebar-border: 157 12% 15%;
-    --sidebar-ring: 151 90% 47%;
+    --sidebar-border: 164 10% 24%;
+    --sidebar-ring: 153 52% 60%;
 
-    --chart-1: 151 90% 47%;
-    --chart-2: 190 80% 50%;
-    --chart-3: 42 95% 55%;
+    --chart-1: 153 52% 60%;
+    --chart-2: 210 68% 68%;
+    --chart-3: 14 58% 66%;
     /* Was 268 65% 62%. Every other chart token can carry text on its own 10%
        tint at AA; this one measured 3.35:1, which is fine for a chart fill
        (graphical objects need 3:1) but fails the moment it is used in markup
        — which it now is, on the skill-level chips. Lightened until the chip
        measured 4.5:1, verified in the browser rather than computed here. */
-    --chart-4: 268 80% 76%;
-    --chart-5: 130 8% 64%;
+    --chart-4: 36 86% 64%;
+    --chart-5: 150 8% 70%;
 
     /* Deeper shadows for the dark stage */
     --shadow-sm:  0 2px 4px -1px hsl(160 30% 2% / 0.5), 0 1px 2px -1px hsl(160 30% 2% / 0.4);
@@ -244,10 +238,10 @@
        over the lightest section in the app stays dark enough for the nav to
        clear 4.5:1, with the blur and saturation — the part that actually reads
        as glass — untouched. */
-    --glass-bg: 160 18% 8%;
-    --glass-alpha: 0.9;
-    --glass-border: 155 20% 30%;
-    --glass-blur: 18px;
+    --glass-bg: 166 18% 10%;
+    --glass-alpha: 0.96;
+    --glass-border: 164 10% 24%;
+    --glass-blur: 12px;
   }
 }
 
@@ -300,28 +294,33 @@
      ------------------------------------------------------------------- */
   .dark .surface-invert,
   .surface-invert.dark-inverted {
-    --background: 40 22% 97%;
-    --foreground: 220 28% 10%;
-    --foreground-soft: 220 15% 28%;
-    --surface-1: 36 16% 95%;
+    --background: 42 24% 97%;
+    --foreground: 166 18% 12%;
+    --foreground-soft: 163 9% 34%;
+    --surface-1: 40 20% 94%;
     --surface-2: 0 0% 100%;
-    --surface-3: 36 14% 92%;
+    --surface-3: 36 16% 90%;
     --card: 0 0% 100%;
-    --card-foreground: 220 28% 10%;
+    --card-foreground: 166 18% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 28% 10%;
-    --primary: 158 72% 22%;
-    --primary-foreground: 40 30% 98%;
-    --primary-soft: 158 40% 94%;
-    --muted: 36 14% 92%;
-    --muted-foreground: 220 12% 42%;
-    --accent: 36 16% 93%;
-    --accent-foreground: 220 28% 10%;
-    --success: 158 64% 32%;
-    --border: 30 12% 88%;
-    --border-strong: 30 10% 78%;
-    --input: 30 12% 88%;
-    --ring: 158 72% 22%;
+    --popover-foreground: 166 18% 12%;
+    --primary: 158 58% 23%;
+    --primary-foreground: 42 30% 98%;
+    --primary-soft: 154 30% 92%;
+    --brand-tuff: 14 46% 46%;
+    --brand-tuff-soft: 15 43% 94%;
+    --muted: 40 16% 92%;
+    --muted-foreground: 163 8% 40%;
+    --accent: 154 22% 92%;
+    --accent-foreground: 166 18% 12%;
+    --success: 148 56% 27%;
+    --warning: 35 82% 31%;
+    --information: 210 58% 39%;
+    --border: 38 12% 86%;
+    --border-strong: 164 8% 70%;
+    --border-interactive: 164 8% 48%;
+    --input: 164 8% 48%;
+    --ring: 158 58% 23%;
   }
 
   /* Strong, confident headings.
@@ -370,28 +369,12 @@
 }
 
 @layer components {
-  /* Display type scale — use for marketing/hero headings */
-  .text-display-2xl { @apply text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.95] font-bold; letter-spacing: var(--tracking-tighter); font-family: var(--font-display); }
-  .text-display-xl  { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.98] font-bold; letter-spacing: var(--tracking-tighter); font-family: var(--font-display); }
-  .text-display-lg  { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.02] font-bold; letter-spacing: var(--tracking-tight); font-family: var(--font-display); }
-  .text-display-md  { @apply text-2xl sm:text-3xl md:text-4xl leading-[1.1] font-semibold; letter-spacing: var(--tracking-tight); font-family: var(--font-display); }
-
   .text-eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.18em] text-primary;
+    @apply text-xs font-semibold uppercase tracking-[0.12em] text-primary;
     font-family: var(--font-sans);
   }
 
   /* Subtle, intentional surfaces */
-  .surface-card {
-    background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow: var(--shadow-sm);
-  }
-  .surface-elevated {
-    background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow: var(--shadow-md);
-  }
   .surface-inset {
     background-color: hsl(var(--surface-1));
     border: 1px solid hsl(var(--border));
@@ -402,49 +385,9 @@
     background-color: hsl(var(--surface-1));
   }
 
-  /* Subtle grid background for hero/section depth */
-  .bg-grid-soft {
-    background-image:
-      linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
-    background-size: 56px 56px;
-  }
-
-  .bg-radial-fade {
-    background: radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.10), transparent 60%);
-  }
-
   /* Refined focus ring */
   .focus-ring {
     @apply outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
-  }
-
-  /* Container with refined max width */
-  .container-tight {
-    @apply container max-w-6xl;
-  }
-
-  /* ── Structural glass: nav, booking panel, modal chrome only ──
-     Backdrop blur + 1px top inner highlight + faint noise. Content
-     cards stay opaque — glass signals chrome, not content. */
-  .glass {
-    background-color: hsl(var(--glass-bg) / var(--glass-alpha));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-    backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-    border: 1px solid hsl(var(--glass-border) / 0.35);
-    box-shadow:
-      inset 0 1px 0 0 hsl(var(--glass-border) / 0.4),
-      var(--shadow-md);
-    position: relative;
-  }
-  .glass::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    opacity: 0.04;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   /**
@@ -461,44 +404,7 @@
    * jobs, decided rather than drifted.
    */
   .page-title {
-    @apply mb-1 text-3xl font-bold tracking-tight text-foreground;
-  }
-
-  /*
-   * The four auth pages share one split-screen template — a marketing panel on
-   * the left, a form panel on the right — and disagreed about both halves of
-   * it. Measured logged out at 1280px:
-   *
-   *   /login            h1 48px   h2 30px
-   *   /signup           h1 48px   h2 30px
-   *   /forgot-password  h1 36px   h2 24px
-   *   /reset-password   h1 36px   h2 24px
-   *
-   * These pages link to each other. "Forgot your password?" sits under the
-   * login form, so one click shrinks both headings.
-   *
-   * Worse, the form heading changes size *within* a page: /login swaps
-   * "Welcome back" (30px, tracking-tight) for "Check your email" (24px, no
-   * tracking) once the magic link is sent, and again for "Two-factor
-   * authentication". Same slot, same panel, three sizes depending on state.
-   *
-   * Colour is deliberately NOT set here, and that is a correction rather than
-   * an omission. The panels split on colour too — `text-white` on login and
-   * signup, `text-secondary-foreground` on forgot and reset — and folding that
-   * into this class made the login heading rgb(12, 19, 16) on rgb(10, 16, 14),
-   * near-black on near-black, about 1.05:1. Measured, not guessed.
-   *
-   * The two panels are genuinely different surfaces: login and signup put the
-   * heading on a dark hero, while forgot and reset use `bg-secondary` with
-   * `surface-invert`, which is near-white in the dark theme. Same size, same
-   * rhythm, different backdrops — so each page keeps its own colour.
-   */
-  .auth-hero-title {
-    @apply mb-5 text-4xl font-bold leading-tight tracking-tight lg:text-5xl;
-  }
-
-  .auth-form-title {
-    @apply mb-2 text-3xl font-bold tracking-tight text-foreground;
+    @apply mb-1 text-3xl font-semibold tracking-tight text-foreground md:text-4xl;
   }
 
   /*
@@ -537,7 +443,7 @@
    * CardContent structure imposed on them.
    */
   .panel {
-    @apply rounded-2xl border border-border bg-card p-6;
+    @apply rounded-xl border border-border bg-card p-5 md:p-6;
   }
 
   /*
@@ -554,7 +460,7 @@
    * values is three different marks.
    */
   .eyebrow {
-    @apply font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary;
+    @apply font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-primary;
   }
 
   /* Scoreboard numerals — prices, times, counts */
@@ -564,25 +470,11 @@
     letter-spacing: -0.02em;
   }
 
-  /* Live indicator dot (pulsing court-green) */
+  /* A static live indicator. Its adjacent label carries the meaning; routine
+     availability does not need ambient animation. */
   .live-dot {
     @apply relative inline-flex h-2 w-2 rounded-full;
     background-color: hsl(var(--primary));
-  }
-  .live-dot::after {
-    content: "";
-    @apply absolute inset-0 rounded-full;
-    background-color: hsl(var(--primary));
-    animation: live-ping 1.8s var(--ease-out-expo) infinite;
-  }
-  @keyframes live-ping {
-    0% { transform: scale(1); opacity: 0.6; }
-    80%, 100% { transform: scale(2.6); opacity: 0; }
-  }
-
-  /* Court-green glow for hero/CTA emphasis */
-  .glow-primary {
-    box-shadow: 0 0 32px -8px hsl(var(--primary) / 0.45), var(--shadow-md);
   }
 
   /*
@@ -612,20 +504,30 @@
    * chatbot's floating button, and the header logo.
    */
   .card-lift {
-    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-lg;
+    @apply transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-sm;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .live-dot::after { animation: none; }
-
-  /* The shadow still answers the pointer; the movement does not. Nothing else
-     in the app declares a hover transform, so this covers the set. */
-  .card-lift {
-    transition: box-shadow 200ms ease;
+  html:focus-within {
+    scroll-behavior: auto;
   }
-  .card-lift:hover {
-    transform: none;
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: hsl(var(--background)) !important;
   }
 }
 

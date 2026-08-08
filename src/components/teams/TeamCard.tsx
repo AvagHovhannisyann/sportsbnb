@@ -33,14 +33,8 @@ const TeamCard = ({ team, showRole }: TeamCardProps) => {
       : `${spotsLeft} ${spotsLeft === 1 ? "spot" : "spots"} open`;
 
   return (
-    <Link to={`/team/${team.id}`} className="group block h-full focus-ring rounded-xl">
-      <Card
-        className={cn(
-          "card-lift flex h-full flex-col overflow-hidden",
-          // The border brightening is this card's own and stays.
-          "hover:border-border-strong",
-        )}
-      >
+    <Link to={`/team/${team.id}`} className="focus-ring group block h-full min-w-0 rounded-lg">
+      <Card className="card-lift flex h-full min-w-0 flex-col overflow-hidden motion-reduce:transition-none">
         <CardContent className="flex h-full flex-col p-4">
           <div className="flex items-start gap-3">
             <Avatar className="h-12 w-12 shrink-0 rounded-lg">
@@ -56,15 +50,15 @@ const TeamCard = ({ team, showRole }: TeamCardProps) => {
                 60px indent mismatch, visible on any card that had one. */}
             <div className="min-w-0 flex-1">
               <div className="mb-1.5 flex items-center gap-1.5">
-                <h3 className="truncate font-semibold text-foreground transition-colors group-hover:text-primary">
+                <h3 className="truncate font-semibold text-foreground">
                   {team.name}
                 </h3>
                 {team.visibility === "private" && (
                   // Was a bare Shield glyph with nothing to say what it meant.
-                  <Lock
-                    className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                    aria-label="Private team"
-                  />
+                  <>
+                    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="sr-only">Private team</span>
+                  </>
                 )}
               </div>
 
@@ -116,7 +110,7 @@ const TeamCard = ({ team, showRole }: TeamCardProps) => {
             >
               <div
                 className={cn(
-                  "h-full rounded-full transition-[width] duration-300",
+                  "h-full rounded-full transition-[width] duration-200 ease-out motion-reduce:transition-none",
                   isFull ? "bg-muted-foreground/50" : "bg-primary",
                 )}
                 style={{ width: `${Math.round(fill * 100)}%` }}

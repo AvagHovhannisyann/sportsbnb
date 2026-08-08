@@ -9,8 +9,8 @@ import { test, expect } from "@playwright/test";
 
 test("home page renders the in-app booking value prop", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(/find a court/i);
-  await expect(page.getByText(/instant booking/i).first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/book the court/i);
+  await expect(page.getByText(/instant confirmation/i).first()).toBeVisible();
   // The WhatsApp-handoff era is over
   await expect(page.locator("body")).not.toContainText(/whatsapp/i);
 });

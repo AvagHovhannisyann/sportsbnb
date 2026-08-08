@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, Check, X } from "lucide-react";
 import { LocationAutocomplete, LocationPlace } from "@/components/location/LocationAutocomplete";
 import { useRegion } from "@/hooks/useRegion";
+import { cn } from "@/lib/utils";
 
 interface VenueLocationPickerProps {
   address: string;
@@ -100,58 +101,80 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
   };
 
   return (
-    <Card className={validationErrors.location ? "border-destructive" : ""}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          Location & Address *
+    <Card className={validationErrors.location ? "border-destructive/60" : undefined}>
+      <CardHeader className="p-5 sm:p-6">
+        <CardTitle as="h2" className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
+          Location &amp; address <span aria-hidden="true">*</span>
         </CardTitle>
         <CardDescription>
-          Search for your venue address and confirm the exact location on the map
+          Search for the address, position the pin, then confirm the exact venue entrance.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Search Address</Label>
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6 sm:pb-6">
+        <div
+          className="space-y-2"
+          role="group"
+          aria-labelledby="venue-address-label"
+          aria-describedby={validationErrors.address ? "venue-address-error" : undefined}
+        >
+          <Label id="venue-address-label" htmlFor="venue-address-search">
+            Search address <span aria-hidden="true">*</span>
+          </Label>
           <LocationAutocomplete
+            id="venue-address-search"
             value={address}
             onSelect={handlePlaceSelect}
             placeholder="Start typing your venue address..."
-            className={validationErrors.address ? "border-destructive" : ""}
+            className={cn(
+              "[&_button]:right-0 [&_button]:flex [&_button]:h-11 [&_button]:w-11 [&_button]:items-center [&_button]:justify-center [&_input]:pr-11",
+              validationErrors.address && "[&_input]:border-destructive",
+            )}
           />
           {validationErrors.address && (
-            <p className="text-sm text-destructive">{validationErrors.address}</p>
+            <p id="venue-address-error" role="alert" className="text-sm text-destructive">{validationErrors.address}</p>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {city && (
-            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">City:</span>
-              <span className="font-medium">{city}</span>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-foreground">City</p>
+            <div className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface-1 px-3.5 text-sm">
+              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className={city ? "font-medium text-foreground" : "text-muted-foreground"}>
+                {city || "Filled from the selected address"}
+              </span>
             </div>
-          )}
-          <div className="space-y-1">
-            <Label htmlFor="zipCode" className="text-sm">Zip Code / Postal Code</Label>
+            {validationErrors.city && (
+              <p id="venue-city-error" role="alert" className="text-sm text-destructive">{validationErrors.city}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="zipCode">Postal code</Label>
             <Input
               id="zipCode"
+              name="zipCode"
+              autoComplete="postal-code"
               placeholder="e.g., 0010"
               value={zipCode}
               onChange={(e) => onZipCodeChange?.(e.target.value)}
-              className={validationErrors.zipCode ? "border-destructive" : ""}
               maxLength={10}
+              aria-invalid={!!validationErrors.zipCode}
+              aria-describedby={validationErrors.zipCode ? "venue-postal-error" : undefined}
             />
             {validationErrors.zipCode && (
-              <p className="text-sm text-destructive">{validationErrors.zipCode}</p>
+              <p id="venue-postal-error" role="alert" className="text-sm text-destructive">{validationErrors.zipCode}</p>
             )}
           </div>
         </div>
 
-        <div className="relative rounded-lg overflow-hidden border border-border">
+        <div
+          className="relative overflow-hidden rounded-lg border border-border bg-surface-1"
+          aria-describedby="venue-map-instructions"
+        >
           <MapsReady>
             <YandexMap
-              style={{ width: "100%", height: "300px" }}
+              className="h-72 w-full sm:h-80"
               ariaLabel="Venue location"
               center={mapCenter}
               zoom={13}
@@ -169,34 +192,46 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
               )}
             </YandexMap>
           </MapsReady>
-          <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded px-2 py-1 text-xs text-muted-foreground">
+          <div
+            id="venue-map-instructions"
+            className="absolute bottom-2 left-2 right-2 w-fit max-w-[calc(100%_-_1rem)] rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm"
+          >
             Click the map or drag the pin to adjust
           </div>
         </div>
 
         {selectedPosition && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                <span className="text-sm">
-                  Selected: {selectedPosition.lat.toFixed(6)}, {selectedPosition.lng.toFixed(6)}
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-1 p-3">
+              <div className="flex min-w-0 items-start gap-2">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="min-w-0 text-sm text-muted-foreground">
+                  Selected coordinates<br />
+                  <span className="break-all font-mono text-xs font-medium text-foreground">
+                    {selectedPosition.lat.toFixed(6)}, {selectedPosition.lng.toFixed(6)}
+                  </span>
                 </span>
               </div>
-              <Button type="button" variant="ghost" size="sm" onClick={handleClearLocation}>
-                <X className="h-4 w-4" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleClearLocation}
+                aria-label="Clear selected location"
+              >
+                <X aria-hidden="true" />
               </Button>
             </div>
             {!isConfirmed ? (
               <Button type="button" onClick={handleConfirmLocation} className="w-full">
-                <Check className="h-4 w-4 mr-2" />
-                Confirm This Location
+                <Check aria-hidden="true" />
+                Confirm this location
               </Button>
             ) : (
-              <Alert className="bg-primary/10 border-primary">
-                <Check className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-primary">
-                  Location confirmed! You can continue with the form.
+              <Alert className="border-primary/30 bg-primary-soft">
+                <Check className="h-4 w-4 text-primary" aria-hidden="true" />
+                <AlertDescription className="font-medium text-foreground">
+                  Location confirmed. You can continue with the listing.
                 </AlertDescription>
               </Alert>
             )}
@@ -204,7 +239,7 @@ export const VenueLocationPicker: React.FC<VenueLocationPickerProps> = ({
         )}
 
         {validationErrors.location && (
-          <p className="text-sm text-destructive">{validationErrors.location}</p>
+          <p id="venue-location-error" role="alert" className="text-sm text-destructive">{validationErrors.location}</p>
         )}
       </CardContent>
     </Card>

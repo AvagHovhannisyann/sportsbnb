@@ -52,31 +52,48 @@ const PlayerDashboard = () => {
   if (authLoading) {
     return (
       <Layout>
-        <div className="container py-16 text-center"><p className="text-muted-foreground">Loading...</p></div>
+        <div className="container flex min-h-[45vh] items-center justify-center py-16" role="status">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            Loading your activity…
+          </div>
+        </div>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="bg-background min-h-screen">
-        <div className="container py-8 space-y-8">
+      <div className="min-h-screen bg-background">
+        <div className="container space-y-10 py-6 sm:py-8 lg:py-10">
           {/* Header */}
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="page-title">
-                Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
+          <div className="grid gap-5 border-b border-border pb-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="max-w-2xl">
+              <p className="mb-2 text-sm font-semibold text-primary">Player home</p>
+              <h1 className="page-title text-balance">
+                Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
               </h1>
-              <p className="text-muted-foreground">Your sports cockpit at a glance.</p>
+              <p className="mt-2 text-foreground-soft">
+                Your bookings, games, and conversations—ordered by what needs attention next.
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="gap-1.5 py-1.5 px-3 border-amber-500/30 text-amber-600 bg-amber-500/10">
-                <Trophy className="h-3.5 w-3.5" /> Level {profile?.level ?? 1}
-              </Badge>
-              <Badge variant="outline" className="gap-1.5 py-1.5 px-3 border-primary/30 text-primary bg-primary/10">
-                <Flame className="h-3.5 w-3.5" /> {profile?.xp ?? 0} XP
-              </Badge>
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <Button asChild variant="outline">
+                <Link to="/venues">Browse venues</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/create-game"><Plus className="h-4 w-4" aria-hidden="true" />Create game</Link>
+              </Button>
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2" aria-label="Player progress">
+            <Badge variant="outline" className="gap-1.5 border-border bg-surface-1 px-3 py-1.5 text-foreground-soft">
+              <Trophy className="h-3.5 w-3.5 text-warning" aria-hidden="true" /> Level {profile?.level ?? 1}
+            </Badge>
+            <Badge variant="outline" className="gap-1.5 border-border bg-surface-1 px-3 py-1.5 text-foreground-soft">
+              <Flame className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> {profile?.xp ?? 0} XP
+            </Badge>
           </div>
 
           {/* The player's own numbers first. These come from queries that are
@@ -84,8 +101,10 @@ const PlayerDashboard = () => {
               function call measured in seconds, and it used to sit here — so
               the top of the logged-in dashboard was a spinner while everything
               real waited underneath it. */}
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
-            {[
+          <section aria-labelledby="activity-summary-title">
+            <h2 id="activity-summary-title" className="sr-only">Activity summary</h2>
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border md:grid-cols-4">
+              {[
               { label: "Awaiting reply", value: pendingInquiries, icon: MessageCircle, to: "/messages" },
               // Pointed at /profile, which has three tabs — profile,
               // notifications, security — and no bookings anywhere on it. The
@@ -96,11 +115,11 @@ const PlayerDashboard = () => {
               { label: "Confirmed bookings", value: confirmedCount, icon: CalendarCheck, to: "/my-bookings" },
               { label: "Games hosted", value: userGames?.hosted?.length ?? 0, icon: Flag, to: "/games" },
               { label: "Games joined", value: userGames?.joined?.length ?? 0, icon: Users, to: "/games" },
-            ].map((s) => (
+              ].map((s) => (
               <Link
                 key={s.label}
                 to={s.to}
-                className="group bg-card px-5 py-5 transition-colors hover:bg-surface-1 focus-ring"
+                className="group min-h-28 bg-card px-4 py-4 transition-colors duration-150 hover:bg-surface-1 focus-ring motion-reduce:transition-none sm:px-5 sm:py-5"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <s.icon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
@@ -126,29 +145,34 @@ const PlayerDashboard = () => {
                 </div>
                 <div className="mt-1.5 text-sm text-muted-foreground">{s.label}</div>
               </Link>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
 
           {/* AI-powered Next Move — supplementary, so it follows the facts. */}
           <NextMoveCard />
 
           {/* Upcoming Plans + Games */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <UpcomingPlansCard />
-            <Card className="min-w-0">
+          <section aria-labelledby="up-next-title" className="space-y-4">
+            <div>
+              <p className="mb-1 text-sm font-semibold text-primary">Up next</p>
+              <h2 id="up-next-title" className="section-title mb-0">Plans that need your attention</h2>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-2">
+              <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Your Games</CardTitle>
-                <Link to="/games" className="text-sm text-primary hover:underline">Find more</Link>
+                <CardTitle as="h3">Your games</CardTitle>
+                <Link to="/games" className="focus-ring inline-flex min-h-11 items-center rounded-md px-2 text-sm font-semibold text-primary hover:text-primary/80">Find more</Link>
               </CardHeader>
               <CardContent className="space-y-3">
                 {gamesLoading ? (
                   <div className="py-8 flex justify-center" role="status" aria-label="Loading your games">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <Loader2 className="h-5 w-5 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
                   </div>
                 ) : upcomingGames.length > 0 ? (
                   upcomingGames.map((game) => (
-                    <Link key={game.id} to={`/game/${game.id}`}>
-                      <div className="p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors">
+                    <Link key={game.id} to={`/game/${game.id}`} className="focus-ring block rounded-lg">
+                      <div className="rounded-lg border border-border p-3 transition-colors duration-150 hover:bg-surface-1 motion-reduce:transition-none">
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -189,19 +213,34 @@ const PlayerDashboard = () => {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          </div>
+              </Card>
+              <UpcomingPlansCard />
+            </div>
+          </section>
 
           {/* Stats / Referrals / Matchmaking / Achievements */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <SportsDNACard />
-            <PlayerStatsCard />
-          </div>
-          <ReferralCard />
-          <div className="grid md:grid-cols-2 gap-6">
-            <GameMatchmakingCard />
-            <AchievementsSection />
-          </div>
+          <section aria-labelledby="progress-title" className="space-y-4">
+            <div>
+              <p className="mb-1 text-sm font-semibold text-primary">Your progress</p>
+              <h2 id="progress-title" className="section-title mb-0">A clearer picture of how you play</h2>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              <SportsDNACard />
+              <PlayerStatsCard />
+            </div>
+          </section>
+
+          <section aria-labelledby="community-tools-title" className="space-y-4">
+            <div>
+              <p className="mb-1 text-sm font-semibold text-primary">Keep playing</p>
+              <h2 id="community-tools-title" className="section-title mb-0">People, progress, and the next match</h2>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              <GameMatchmakingCard />
+              <AchievementsSection />
+            </div>
+            <ReferralCard />
+          </section>
 
           {/* AI Recs */}
           <AIRecommendations />

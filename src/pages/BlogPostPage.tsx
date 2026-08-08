@@ -28,10 +28,11 @@ const BlogPostPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container max-w-3xl py-12">
-          <Skeleton className="h-8 w-48 mb-8" />
-          <Skeleton className="h-12 w-full mb-4" />
-          <Skeleton className="h-6 w-64 mb-8" />
+        <div className="container max-w-3xl py-12 md:py-16" role="status" aria-label="Loading article">
+          <Skeleton className="mb-10 h-5 w-32" />
+          <Skeleton className="mb-4 h-12 w-full" />
+          <Skeleton className="mb-10 h-6 w-64" />
+          <Skeleton className="mb-10 aspect-[16/9] w-full rounded-xl" />
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (
               <Skeleton key={i} className="h-4 w-full" />
@@ -117,39 +118,42 @@ const BlogPostPage = () => {
         jsonLd={[breadcrumbJsonLd, articleJsonLd]}
       />
 
-      <article className="container max-w-3xl py-12">
+      <article className="container max-w-3xl py-12 md:py-16">
         {/* Back link */}
         <Link
           to="/blog"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-8"
+          className="mb-10 inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           All articles
         </Link>
 
         {/* Header */}
-        <header className="mb-10">
+        <header className="border-b border-border pb-8 md:pb-10">
           {post.target_keyword && (
-            <Badge variant="secondary" className="mb-4">
+            <Badge variant="secondary" className="mb-5">
               {post.target_keyword}
             </Badge>
           )}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-6">
+          <h1 className="text-balance font-display text-3xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-5xl">
             {post.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          {post.excerpt && (
+            <p className="mt-5 text-lg leading-relaxed text-foreground-soft">{post.excerpt}</p>
+          )}
+          <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <User className="h-4 w-4" />
+              <User className="h-4 w-4" aria-hidden="true" />
               {post.author_name}
             </span>
             {post.published_at && (
               <span className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-4 w-4" aria-hidden="true" />
                 {format(new Date(post.published_at), "MMMM d, yyyy")}
               </span>
             )}
             <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-4 w-4" aria-hidden="true" />
               {estimateReadTime(post.content)} min read
             </span>
           </div>
@@ -163,17 +167,18 @@ const BlogPostPage = () => {
             card, gallery tile and owner thumbnail has one. 16/9 matches the
             blog index cards, so a post opens at the ratio its card showed. */}
         {post.cover_image_url && (
-          <div className="mb-10 aspect-[16/9] overflow-hidden rounded-xl bg-surface-2">
+          <div className="my-10 aspect-[16/9] overflow-hidden rounded-xl border border-border bg-surface-2 md:my-12">
             <img
               src={post.cover_image_url}
               alt={post.title}
               className="h-full w-full object-cover"
+              decoding="async"
             />
           </div>
         )}
 
         {/* Content */}
-        <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-a:text-primary prose-strong:text-foreground">
+        <div className={`prose prose-lg max-w-none prose-headings:font-display prose-headings:font-semibold prose-headings:text-foreground prose-p:text-foreground-soft prose-a:text-primary prose-strong:text-foreground ${post.cover_image_url ? "" : "mt-10"}`}>
           {/* Markdown headings shift down one level.
               A post is written as a document — it starts at `#` — but here it
               is nested inside a page that already has an `h1` for the title.
@@ -196,15 +201,15 @@ const BlogPostPage = () => {
         </div>
 
         {/* Footer CTA */}
-        <div className="mt-16 p-8 bg-primary/5 rounded-2xl text-center border border-primary/10">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Ready to get started?</h2>
-          <p className="text-muted-foreground mb-4">Find and book sports venues near you, or list your facility today.</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="mt-16 border-t-2 border-brand-tuff pt-8 md:mt-20 md:pt-10">
+          <h2 className="text-2xl font-semibold text-foreground">Put the idea into practice.</h2>
+          <p className="mt-3 max-w-xl text-foreground-soft">Find a sports venue near you, or open the owner guide for listing a facility.</p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button asChild>
-              <Link to="/venues">Browse Venues</Link>
+              <Link to="/venues">Browse venues</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/for-owners">List Your Venue</Link>
+              <Link to="/for-owners">For venue owners</Link>
             </Button>
           </div>
         </div>

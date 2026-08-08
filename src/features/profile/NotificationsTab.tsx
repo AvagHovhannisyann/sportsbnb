@@ -53,37 +53,40 @@ const NotificationsTab = () => {
   }, [profile]);
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <CardTitle>Notification Preferences</CardTitle>
+        <CardTitle as="h2">Notification preferences</CardTitle>
         <CardDescription>
           Choose what notifications you want to receive.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {NOTIFICATION_OPTIONS.map((notification) => (
-          <div key={notification.key} className="flex items-center justify-between">
-            <div>
+      <CardContent>
+        <div className="divide-y divide-border rounded-lg border border-border">
+          {NOTIFICATION_OPTIONS.map((notification) => (
+          <div key={notification.key} className="flex min-h-20 items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+            <div className="min-w-0">
               <div className="font-medium text-foreground">{notification.label}</div>
               <div className="text-sm text-muted-foreground">{notification.description}</div>
             </div>
             <Switch
+              aria-label={notification.label}
               checked={notifications[notification.key]}
               onCheckedChange={(checked) =>
                 setNotifications(prev => ({ ...prev, [notification.key]: checked }))
               }
             />
           </div>
-        ))}
-        <Separator />
+          ))}
+        </div>
+        <Separator className="my-6" />
         <Button onClick={() => saveNotifications(notifications)} disabled={isSavingNotifications}>
           {isSavingNotifications ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
               Saving...
             </>
           ) : (
-            "Save Preferences"
+            "Save preferences"
           )}
         </Button>
       </CardContent>
