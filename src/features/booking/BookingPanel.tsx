@@ -21,6 +21,8 @@ import { VENUE_TIME_ZONE, atVenue } from "@/lib/venueTime";
 interface BookingPanelProps {
   venueId: string;
   pricePerHour: number;
+  /** Listing's settlement currency; the quote and header follow it, not the viewer. */
+  currency?: string | null;
   currencySymbol?: string;
   /** Dates the owner has closed. Distinct from the weekly opening hours, and
       distinct again from every slot being taken — all three produce an empty
@@ -47,6 +49,7 @@ interface BookingPanelProps {
 export function BookingPanel({
   venueId,
   pricePerHour,
+  currency,
   blockedDates = [],
   initialDate = null,
   initialTime = null,
@@ -215,6 +218,7 @@ export function BookingPanel({
         <div className="shrink-0 text-right">
           <Price
             amount={pricePerHour}
+            currency={currency}
             suffix="/ hour"
             className="text-xl font-semibold sm:text-2xl"
             suffixClassName="text-muted-foreground"

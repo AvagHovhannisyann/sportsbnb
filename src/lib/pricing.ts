@@ -42,27 +42,34 @@ export const getOwnerPrice = (customerPrice: number): number => {
   return Math.floor(customerPrice / (1 + PLATFORM_FEE_PERCENTAGE));
 };
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  AMD: "֏",
+  USD: "$",
+  EUR: "€",
+};
+
 /**
  * Format price for display with the appropriate currency symbol.
  *
- * Denominated in Armenian dram unless the viewer is in the US region.
+ * Currency is a property of the listing, not of whoever is looking at it: a
+ * Yerevan pitch costs 13,000 dram to everyone, and a Glendale cage costs $50
+ * to everyone. Callers rendering a venue's price must pass the venue's
+ * `currency` column so the symbol follows the listing across regions.
  *
- * This used to be the other way round — dram only for an exact "AM" region
- * match, dollars for everything else, including the "OTHER" bucket that
- * `useRegion` assigns to every unmapped timezone. Currency is a property of
- * the listing, not of whoever is looking at it: a Yerevan pitch costs 13,000
- * dram to everyone, but it rendered as "$13,000" to any visitor outside
- * Armenia — roughly a 400x overstatement, on the number the entire booking
- * decision turns on. There is no FX layer here to justify a viewer-dependent
- * symbol, and the payment rail behind it settles in AMD.
- *
- * US stays explicit because that inventory is genuinely dollar-priced.
+ * The viewer-region fallback exists only for callers with no listing in scope
+ * (the filter chip's "Under X" label, static homepage sample) and defaults to
+ * dram outside the US, because Armenia is the primary market and the payment
+ * rail settles in AMD. An earlier version of this function did the opposite —
+ * dollars for every unmapped timezone — which relabelled a 13,000-dram pitch
+ * as "$13,000", a ~400x overstatement on the number the booking decision
+ * turns on. There is no FX layer here; never convert, only label.
  *
  * @param price - The price to format
+ * @param currency - ISO 4217 code of the listing ("AMD" | "USD"), if known
  * @returns Formatted price string
  */
-export const formatPrice = (price: number): string => {
-  const { symbol, amount } = formatPriceParts(price);
+export const formatPrice = (price: number, currency?: string | null): string => {
+  const { symbol, amount } = formatPriceParts(price, currency);
   return `${symbol}${amount}`;
 };
 
@@ -85,10 +92,20 @@ export const formatPrice = (price: number): string => {
  * the digits keep their tabular alignment. `formatPrice` still returns the
  * joined string, which is what aria-labels, titles and tests want.
  */
-export const formatPriceParts = (price: number): { symbol: string; amount: string } => {
-  const region = typeof window !== "undefined" ? localStorage.getItem("sportsbnb_region") : null;
+export const formatPriceParts = (
+  price: number,
+  currency?: string | null,
+): { symbol: string; amount: string } => {
+  let symbol: string;
+  if (currency && CURRENCY_SYMBOLS[currency]) {
+    symbol = CURRENCY_SYMBOLS[currency];
+  } else {
+    // No listing currency in scope — fall back to the viewer's region.
+    const region = typeof window !== "undefined" ? localStorage.getItem("sportsbnb_region") : null;
+    symbol = region === "US" ? "$" : "֏";
+  }
   return {
-    symbol: region === "US" ? "$" : "֏",
+    symbol,
     amount: price.toLocaleString(),
   };
 };

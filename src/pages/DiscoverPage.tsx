@@ -710,6 +710,7 @@ const DiscoverPage = () => {
                   location={venue.address || venue.city}
                   sports={venue.sports}
                   price={venue.price_per_hour}
+                  currency={venue.currency}
                   rating={venue.rating}
                   reviewCount={venue.review_count}
                   available={venue.is_active}

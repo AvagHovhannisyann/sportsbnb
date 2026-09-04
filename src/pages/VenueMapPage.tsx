@@ -149,7 +149,7 @@ const VenueMapPage = () => {
                     </p>
                     <div className="mt-2 flex items-center justify-between">
                       <strong className="text-sm">
-                        {formatPrice(getCustomerPrice(selectedVenue.price_per_hour))}/hr
+                        {formatPrice(getCustomerPrice(selectedVenue.price_per_hour), selectedVenue.currency)}/hr
                       </strong>
                       {selectedVenue.rating > 0 && (
                         <span className="inline-flex items-center gap-1 text-sm">

@@ -408,6 +408,7 @@ const VenueDetailsPage = () => {
                 <BookingPanel
                   venueId={venue.id}
                   pricePerHour={venue.price_per_hour}
+                  currency={venue.currency}
                   blockedDates={blockedDates}
                   initialDate={searchParams.get("date")}
                   initialTime={searchParams.get("time")}
@@ -450,6 +451,7 @@ const VenueDetailsPage = () => {
               <p className="truncate">
                 <Price
                   amount={venue.price_per_hour}
+                  currency={venue.currency}
                   suffix="/ hour"
                   className="text-lg font-bold text-foreground"
                   suffixClassName="text-sm text-muted-foreground"
