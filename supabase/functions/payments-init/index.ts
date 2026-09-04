@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       }
       amountMinor = booking.amount_minor;
       currency = booking.currency ?? "AMD";
-      description = `SportsBnB booking — ${booking.venue_name}`;
+      description = `Sportsbnb booking — ${booking.venue_name}`;
     } else {
       const { data: game } = await admin.from("games").select("*").eq("id", gameId).single();
       if (!game) return errorResponse(req, "game not found", 404);
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
       amountMinor = Math.round(pricePerPlayer * 100);
       currency = "AMD";
-      description = `SportsBnB game — ${game.title}`;
+      description = `Sportsbnb game — ${game.title}`;
     }
 
     /**

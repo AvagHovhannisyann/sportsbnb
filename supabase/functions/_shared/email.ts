@@ -4,7 +4,7 @@
  *
  * Env:
  *   RESEND_API_KEY            — Resend API key
- *   EMAIL_FROM                — verified sender, e.g. "SportsBnB <no-reply@sportsbnb.org>"
+ *   EMAIL_FROM                — verified sender, e.g. "Sportsbnb <no-reply@sportsbnb.org>"
  *                               (falls back to Resend's test sender in dev)
  *   EMAIL_REPLY_TO            — optional reply-to
  */
@@ -71,7 +71,7 @@ export function renderEmail(content: EmailContent): string {
         ${ctaHtml}
       </div>
       <p style="text-align:center;margin:20px 0 0;font-size:12px;color:#8b948e;">
-        ${escapeHtml(content.footerNote ?? "SportsBnB — book courts, join games, play more.")}
+        ${escapeHtml(content.footerNote ?? "Sportsbnb — book courts, join games, play more.")}
       </p>
     </div>
   </body>
@@ -87,7 +87,7 @@ export async function sendEmail(params: {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY not configured" };
 
-  const from = Deno.env.get("EMAIL_FROM") ?? "SportsBnB <onboarding@resend.dev>";
+  const from = Deno.env.get("EMAIL_FROM") ?? "Sportsbnb <onboarding@resend.dev>";
   const replyTo = params.replyTo ?? Deno.env.get("EMAIL_REPLY_TO");
 
   const res = await fetch("https://api.resend.com/emails", {

@@ -24,7 +24,7 @@ const FAQPage = () => {
         },
         {
           q: "How do I pay for my booking?",
-          a: "By card — Visa or Mastercard — on a secure payment page. Payment is taken at the time of booking and handled entirely by our payment provider, so your card details never reach SportsBnB.",
+          a: "By card — Visa or Mastercard — on a secure payment page. Payment is taken at the time of booking and handled entirely by our payment provider, so your card details never reach Sportsbnb.",
         },
         {
           q: "Can I change the time of a booking?",

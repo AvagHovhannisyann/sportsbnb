@@ -18,7 +18,7 @@ const CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
 
 const SUGGESTIONS = [
   { icon: MapPin, label: "Find venues", message: "Help me find sports venues near me" },
-  { icon: CalendarCheck, label: "How to book", message: "How do I book a venue on SportsBnB?" },
+  { icon: CalendarCheck, label: "How to book", message: "How do I book a venue on Sportsbnb?" },
   { icon: CreditCard, label: "Pricing plans", message: "What subscription plans are available?" },
   { icon: Users, label: "Join a game", message: "How can I join a pickup game?" },
   { icon: Trophy, label: "Create a team", message: "How do I create and manage a team?" },
@@ -208,7 +208,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <p id="sportsbnb-assistant-title" className="text-sm font-semibold leading-none text-foreground">SportsBnB assistant</p>
+            <p id="sportsbnb-assistant-title" className="text-sm font-semibold leading-none text-foreground">Sportsbnb assistant</p>
             <p className="mt-1 text-xs text-muted-foreground">Venues, bookings, and games</p>
           </div>
         </div>
@@ -233,7 +233,7 @@ export const AIChatbot = ({ hasMobileNav = true }: AIChatbotProps) => {
               <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-3">
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-semibold text-sm text-foreground">Hi! I'm your SportsBnB assistant</h3>
+              <h3 className="font-semibold text-sm text-foreground">Hi! I'm your Sportsbnb assistant</h3>
               <p className="text-xs text-muted-foreground mt-1">Ask me anything about venues, bookings, or games</p>
             </div>
 

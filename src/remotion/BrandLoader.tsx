@@ -1,5 +1,5 @@
 /**
- * BrandLoader — SportsBnB app loading screen.
+ * BrandLoader — Sportsbnb app loading screen.
  *
  * 600×600, 2s @ 30fps (60 frames), a *perfectly* seamless loop: the state at
  * frame `durationInFrames` is bit-identical to the state at frame 0, so the

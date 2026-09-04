@@ -134,7 +134,7 @@ const OwnerWidgetPage = () => {
 <script src="${baseUrl}/widget.js" async></script>`;
 
   const linkCode = `<a href="${baseUrl}/venue/${selectedVenueId}" target="_blank" rel="noopener noreferrer">
-  Book now on SportsBnB
+  Book now on Sportsbnb
 </a>`;
 
   const handleCopy = (code: string, type: string) => {

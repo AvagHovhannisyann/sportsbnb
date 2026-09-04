@@ -369,7 +369,7 @@ const EmbedBookingPage = () => {
               rel="noopener noreferrer"
               className="focus-ring -my-3 ml-1 inline-flex min-h-11 items-center rounded-sm underline underline-offset-4 transition-colors hover:text-foreground motion-reduce:transition-none"
             >
-              SportsBnB
+              Sportsbnb
             </a>
           </p>
         </CardContent>

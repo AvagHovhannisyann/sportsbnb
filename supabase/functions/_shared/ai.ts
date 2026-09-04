@@ -36,7 +36,7 @@ export async function chatCompletion(body: Record<string, unknown>, apiKey?: str
       "Content-Type": "application/json",
       // Optional but recommended by OpenRouter for attribution/rate-limit tiers.
       "HTTP-Referer": Deno.env.get("APP_BASE_URL") ?? "https://sportsbnb.org",
-      "X-Title": "SportsBnB",
+      "X-Title": "Sportsbnb",
     },
     body: JSON.stringify(body),
   });

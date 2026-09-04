@@ -1,5 +1,5 @@
 /**
- * HeroBackdrop — SportsBnB landing-hero background plate.
+ * HeroBackdrop — Sportsbnb landing-hero background plate.
  *
  * 1920×1080, 6s @ 30fps (180 frames), a **perfectly** seamless ambient loop:
  * the state at frame `durationInFrames` is bit-identical to the state at
