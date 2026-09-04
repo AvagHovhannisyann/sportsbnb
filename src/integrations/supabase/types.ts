@@ -2294,6 +2294,7 @@ export type Database = {
           city: string
           contact_name: string | null
           created_at: string
+          currency: string
           description: string | null
           id: string
           image_url: string | null
@@ -2322,6 +2323,7 @@ export type Database = {
           city: string
           contact_name?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           id?: string
           image_url?: string | null
@@ -2350,6 +2352,7 @@ export type Database = {
           city?: string
           contact_name?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           id?: string
           image_url?: string | null
