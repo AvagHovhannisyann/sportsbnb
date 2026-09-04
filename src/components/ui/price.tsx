@@ -21,6 +21,12 @@ import { formatPrice, formatPriceParts } from "@/lib/pricing";
  */
 interface PriceProps {
   amount: number;
+  /**
+   * The listing's currency ("AMD" | "USD"). Always pass it when rendering a
+   * venue's price — the symbol belongs to the listing, not the viewer, so a
+   * Glendale court reads "$50" in Yerevan just as it does in Los Angeles.
+   */
+  currency?: string | null;
   /** Trailing unit, e.g. "/ hour". Set in the body font, never in the numeral. */
   suffix?: string;
   /** Applied to the numeral, for size and weight. */
@@ -29,13 +35,13 @@ interface PriceProps {
   suffixClassName?: string;
 }
 
-export function Price({ amount, suffix, className, suffixClassName }: PriceProps) {
-  const { symbol, amount: figure } = formatPriceParts(amount);
+export function Price({ amount, currency, suffix, className, suffixClassName }: PriceProps) {
+  const { symbol, amount: figure } = formatPriceParts(amount, currency);
 
   return (
     <span className="inline-flex items-baseline gap-0.5 whitespace-nowrap">
       <span className="sr-only">
-        {formatPrice(amount)}
+        {formatPrice(amount, currency)}
         {suffix ? ` ${suffix}` : ""}
       </span>
       {/* Same size as the figure, muted rather than shrunk.
