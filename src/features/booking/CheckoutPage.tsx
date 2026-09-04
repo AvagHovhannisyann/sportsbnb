@@ -429,7 +429,7 @@ export default function CheckoutPage() {
             </Button>
             <p className="flex items-start justify-center gap-1.5 text-center text-xs leading-relaxed text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> You'll be taken to a
-              secure page to pay by card — card details never touch SportsBnB.
+              secure page to pay by card — card details never touch Sportsbnb.
             </p>
             </CardContent>
           </Card>

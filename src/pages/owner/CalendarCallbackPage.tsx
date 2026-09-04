@@ -65,7 +65,7 @@ const CalendarCallbackPage = () => {
                   Connecting calendar
                 </h2>
                 <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                  Keep this page open while SportsBnB completes the account connection.
+                  Keep this page open while Sportsbnb completes the account connection.
                 </p>
                 <span className="sr-only" role="status">
                   Connecting your calendar

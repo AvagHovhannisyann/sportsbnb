@@ -107,14 +107,14 @@ serve(async (req) => {
         break;
       }
       default:
-        text = data.message || 'SportsBnB notification';
+        text = data.message || 'Sportsbnb notification';
     }
 
     const response = await slackApiCall('chat.postMessage', {
       channel: channel || 'general',
       text,
       blocks: blocks.length > 0 ? blocks : undefined,
-      username: 'SportsBnB',
+      username: 'Sportsbnb',
       icon_emoji: ':stadium:',
     });
 

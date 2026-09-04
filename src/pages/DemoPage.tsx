@@ -223,7 +223,7 @@ const DemoPage = () => {
     <Layout>
       <SEOHead
         title="Product tour"
-        description="A guided tour of SportsBnB — the marketplace for booking sports venues in Armenia. Live venues, how a booking works, what owners get, and an honest account of what is still being built."
+        description="A guided tour of Sportsbnb — the marketplace for booking sports venues in Armenia. Live venues, how a booking works, what owners get, and an honest account of what is still being built."
         canonical="/demo"
         jsonLd={createBreadcrumbJsonLd([
           { name: "Home", url: "/" },
@@ -245,7 +245,7 @@ const DemoPage = () => {
           </div>
 
           <h1 className="mt-6 max-w-[20ch] text-balance font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1] tracking-[-0.04em] text-foreground">
-            SportsBnB is a marketplace for{" "}
+            Sportsbnb is a marketplace for{" "}
             <span className="text-primary">booking sports venues in Armenia.</span>
           </h1>
 

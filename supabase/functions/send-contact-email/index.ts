@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     const safeMessage = escapeHtml(message);
 
     const supportEmailResponse = await resend.emails.send({
-      from: "SportsBnB Support <support@sportsbnb.org>",
+      from: "Sportsbnb Support <support@sportsbnb.org>",
       to: ["support@sportsbnb.org"],
       subject: `Contact Form: ${safeSubject}`,
       html: `
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     }
 
     const confirmationEmailResponse = await resend.emails.send({
-      from: "SportsBnB Support <support@sportsbnb.org>",
+      from: "Sportsbnb Support <support@sportsbnb.org>",
       to: [email],
       subject: "We received your message!",
       html: `
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
         <blockquote style="border-left: 3px solid #ccc; padding-left: 10px; margin: 10px 0;">
           ${safeMessage.replace(/\n/g, "<br>")}
         </blockquote>
-        <p>Best regards,<br>The SportsBnB Team</p>
+        <p>Best regards,<br>The Sportsbnb Team</p>
       `,
     });
 

@@ -362,7 +362,7 @@ const OwnerPoliciesPage = () => {
                   <Alert className="bg-surface-1">
                     <Info aria-hidden="true" className="h-4 w-4" />
                     <AlertDescription>
-                      SportsBnB stores these terms but does not automatically add overtime or early-arrival charges to a booking.
+                      Sportsbnb stores these terms but does not automatically add overtime or early-arrival charges to a booking.
                     </AlertDescription>
                   </Alert>
                   <div className="space-y-4">
