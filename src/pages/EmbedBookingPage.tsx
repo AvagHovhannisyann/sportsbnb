@@ -23,6 +23,7 @@ interface VenueData {
   city: string;
   sports: string[];
   pricePerHour: number;
+  currency: string;
   imageUrl: string | null;
   description: string | null;
 }
@@ -98,7 +99,7 @@ const EmbedBookingPage = () => {
       // blank render once dynamic routes were covered.
       const { data: venueData, error: venueError } = await supabase
         .from("venues")
-        .select("id, name, address, city, sports, price_per_hour, image_url, description")
+        .select("id, name, address, city, sports, price_per_hour, currency, image_url, description")
         .eq("id", venueId)
         .eq("is_active", true)
         .single();
@@ -115,6 +116,7 @@ const EmbedBookingPage = () => {
         city: venueData.city,
         sports: venueData.sports,
         pricePerHour: venueData.price_per_hour,
+        currency: venueData.currency,
         imageUrl: venueData.image_url,
         description: venueData.description,
       });
@@ -268,7 +270,7 @@ const EmbedBookingPage = () => {
               Starting from
             </span>
             <span className="whitespace-nowrap text-lg font-semibold text-foreground">
-              <Price amount={getCustomerPrice(venue.pricePerHour)} suffix="/hr" />
+              <Price amount={getCustomerPrice(venue.pricePerHour)} currency={venue.currency} suffix="/hr" />
             </span>
           </div>
 
