@@ -133,6 +133,7 @@ export function LiveInventory() {
               <span className="shrink-0 text-right">
                 <Price
                   amount={venue.price_per_hour}
+                  currency={venue.currency}
                   className="text-ui font-semibold leading-6 text-foreground"
                 />
                 {/* 12px, not 11. Uppercase with letterspacing reads smaller

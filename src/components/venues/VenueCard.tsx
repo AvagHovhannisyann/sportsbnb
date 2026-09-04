@@ -11,6 +11,8 @@ interface VenueCardProps {
   location: string;
   sports: string[];
   price: number;
+  /** The listing's settlement currency — a Glendale card reads "$" in Yerevan too. */
+  currency?: string | null;
   rating: number;
   reviewCount: number;
   available: boolean;
@@ -27,6 +29,7 @@ const VenueCard = ({
   location,
   sports,
   price,
+  currency,
   rating,
   reviewCount,
   distance,
@@ -155,6 +158,7 @@ const VenueCard = ({
                 the sans stack it was drawn for. */}
             <Price
               amount={price}
+              currency={currency}
               suffix="/ hour"
               className="text-xl font-bold text-foreground"
             />

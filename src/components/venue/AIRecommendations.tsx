@@ -88,7 +88,7 @@ const AIRecommendations = () => {
                       </span>
                     )}
                     <span className="font-semibold text-foreground">
-                      {formatPrice(getCustomerPrice(rec.venue?.price_per_hour || 0))}/hr
+                      {formatPrice(getCustomerPrice(rec.venue?.price_per_hour || 0), rec.venue?.currency)}/hr
                     </span>
                   </span>
                 </span>
