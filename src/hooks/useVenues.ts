@@ -17,6 +17,8 @@ export interface Venue {
   image_url: string | null;
   sports: string[];
   price_per_hour: number;
+  /** ISO 4217 — the listing's settlement currency ("AMD" | "USD"). */
+  currency: string;
   is_indoor: boolean;
   amenities: string[];
   is_active: boolean;
